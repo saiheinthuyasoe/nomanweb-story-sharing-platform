@@ -109,4 +109,4 @@ firebase-service-account*.json
 *.tmp
 *.temp
 temp/
-tmp/ firebase-service-account*.json
+tmp/
