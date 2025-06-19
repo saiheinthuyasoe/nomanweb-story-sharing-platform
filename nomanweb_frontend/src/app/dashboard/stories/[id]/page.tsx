@@ -80,7 +80,7 @@ export default function StoryDetailPage() {
   const handleDelete = () => {
     deleteStory(storyId, {
       onSuccess: () => {
-        router.push('/dashboard');
+        router.push('/dashboard/my-stories');
       }
     });
   };
@@ -290,7 +290,7 @@ export default function StoryDetailPage() {
                       </Link>
 
                       <Link
-                        href={`/stories/${story.id}/edit`}
+                        href={`/dashboard/stories/${story.id}/edit`}
                         className="px-4 py-3 border-2 border-nomanweb-primary text-nomanweb-primary rounded-lg hover:bg-nomanweb-primary hover:text-white transition-colors flex items-center space-x-2"
                       >
                         <PencilIcon className="w-4 h-4" />

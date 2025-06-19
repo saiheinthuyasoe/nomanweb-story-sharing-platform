@@ -13,7 +13,7 @@ export default function CreateStoryPage() {
   const handleSubmit = (data: CreateStoryRequest) => {
     createStory(data, {
       onSuccess: (newStory) => {
-        router.push(`/stories/${newStory.id}`);
+        router.push(`/dashboard/stories/${newStory.id}`);
       }
     });
   };

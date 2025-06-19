@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMyStories } from '@/hooks/useStories';
+import { useMyStories, useDeleteStory } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
 import { StoryPreview } from '@/types/story';
 
@@ -39,6 +39,8 @@ export default function MyStoriesPage() {
     page: 0, 
     size: 1000 // Large number to get all stories
   });
+  
+  const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
 
   const handleCreateNew = () => {
     router.push('/stories/create');
@@ -55,13 +57,14 @@ export default function MyStoriesPage() {
   };
 
   const handleSettings = (storyId: string) => {
-    router.push(`/stories/${storyId}/settings`);
+    router.push(`/dashboard/stories/${storyId}/edit`);
   };
 
   const handleDelete = (storyId: string) => {
-    // TODO: Implement delete functionality
-    console.log('Delete story:', storyId);
-    setOpenDropdown(null);
+    if (window.confirm('Are you sure you want to delete this story? This action cannot be undone.')) {
+      deleteStory(storyId);
+      setOpenDropdown(null);
+    }
   };
 
   const getContentStatusBadge = (status: StoryStatus) => {
@@ -372,58 +375,76 @@ export default function MyStoriesPage() {
 
                                {/* Operation Column */}
                                <td className="ant-table-cell ant-table-cell-align-center">
-                                 <div className="ant-space ant-space-horizontal ant-space-align-center">
+                                 <div className="flex items-center justify-center gap-2">
                                    {/* Explorer Button */}
-                                   <div className="ant-space-item">
-                                     <button
-                                       onClick={() => handleExplore(story.id)}
-                                       className="ant-btn ant-btn-primary ant-btn-sm"
-                                     >
-                                       <span className="ant-btn-icon">
-                                         <Eye className="h-3 w-3" />
-                                       </span>
-                                       <span>Explorer</span>
-                                     </button>
-                                   </div>
+                                   <button
+                                     onClick={(e) => {
+                                       e.preventDefault();
+                                       e.stopPropagation();
+                                       handleExplore(story.id);
+                                     }}
+                                     className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                                   >
+                                     <Eye className="h-3 w-3 mr-1" />
+                                     Explorer
+                                   </button>
                                    
-                                   {/* Menu Dropdown */}
-                                   <div className="ant-space-item">
-                                     <div className="ant-dropdown-trigger">
-                                       <button
-                                         onClick={() => setOpenDropdown(openDropdown === story.id ? null : story.id)}
-                                         className="ant-btn ant-btn-default ant-btn-sm ant-btn-icon-only"
-                                       >
-                                         <MoreVertical className="h-4 w-4" />
-                                       </button>
-                                       
-                                       {openDropdown === story.id && (
-                                         <div className="ant-dropdown ant-dropdown-placement-bottomRight">
-                                           <ul className="ant-dropdown-menu">
-                                             <li className="ant-dropdown-menu-item">
-                                               <button
-                                                 onClick={() => {
-                                                   handleSettings(story.id);
-                                                   setOpenDropdown(null);
-                                                 }}
-                                                 className="ant-dropdown-menu-title-content"
-                                               >
-                                                 <Settings className="h-4 w-4 mr-2" />
-                                                 Settings
-                                               </button>
-                                             </li>
-                                             <li className="ant-dropdown-menu-item ant-dropdown-menu-item-danger">
-                                               <button
-                                                 onClick={() => handleDelete(story.id)}
-                                                 className="ant-dropdown-menu-title-content"
-                                               >
-                                                 <Trash2 className="h-4 w-4 mr-2" />
-                                                 Delete
-                                               </button>
-                                             </li>
-                                           </ul>
+                                   {/* Dropdown Menu */}
+                                   <div className="relative">
+                                     <button
+                                       onClick={(e) => {
+                                         e.preventDefault();
+                                         e.stopPropagation();
+                                         setOpenDropdown(openDropdown === story.id ? null : story.id);
+                                       }}
+                                       className="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                       aria-label="More actions"
+                                     >
+                                       <MoreVertical className="h-4 w-4" />
+                                     </button>
+                                     
+                                     {openDropdown === story.id && (
+                                       <>
+                                         {/* Backdrop */}
+                                         <div 
+                                           className="fixed inset-0 z-40" 
+                                           onClick={() => setOpenDropdown(null)}
+                                         />
+                                         
+                                         {/* Dropdown Menu */}
+                                         <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                           <div className="py-1">
+                                             <button
+                                               onClick={(e) => {
+                                                 e.preventDefault();
+                                                 e.stopPropagation();
+                                                 setOpenDropdown(null);
+                                                 handleSettings(story.id);
+                                               }}
+                                               className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                                             >
+                                               <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+                                               <span>Settings</span>
+                                             </button>
+                                             
+                                             <hr className="my-1 border-gray-100" />
+                                             
+                                             <button
+                                               onClick={(e) => {
+                                                 e.preventDefault();
+                                                 e.stopPropagation();
+                                                 setOpenDropdown(null);
+                                                 handleDelete(story.id);
+                                               }}
+                                               className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                                             >
+                                               <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                                               <span>Delete</span>
+                                             </button>
+                                           </div>
                                          </div>
-                                       )}
-                                     </div>
+                                       </>
+                                     )}
                                    </div>
                                  </div>
                                </td>
@@ -441,13 +462,7 @@ export default function MyStoriesPage() {
 
                </div>
 
-       {/* Click outside to close dropdown */}
-       {openDropdown && (
-         <div
-           className="fixed inset-0 z-0"
-           onClick={() => setOpenDropdown(null)}
-         />
-       )}
+
      </div>
   );
 } 

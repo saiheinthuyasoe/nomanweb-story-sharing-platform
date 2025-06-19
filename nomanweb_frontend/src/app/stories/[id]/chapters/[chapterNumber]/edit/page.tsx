@@ -95,7 +95,7 @@ export default function EditChapterPage() {
             contentLength: updatedChapter.content?.length || 0,
             status: updatedChapter.status
           });
-          router.push(`/stories/${storyId}`);
+          router.push(`/dashboard/stories/${storyId}`);
         },
         onError: (error) => {
           console.error('EditPage - Update failed:', error);
@@ -110,12 +110,19 @@ export default function EditChapterPage() {
     try {
       const autoSaveData: UpdateChapterRequest = {
         content: data.content,
+        // Include other form fields in auto-save to prevent them from being overwritten
+        title: data.title !== chapter.title ? data.title : undefined,
+        coinPrice: data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
+        isFree: data.isFree !== chapter.isFree ? data.isFree : undefined,
         isAutoSave: true,
       };
 
       console.log('EditPage - Auto-saving chapter:', {
         chapterId: chapter.id,
         contentLength: data.content?.length || 0,
+        title: data.title,
+        coinPrice: data.coinPrice,
+        isFree: data.isFree,
       });
 
       autoSaveChapter({ id: chapter.id, data: autoSaveData });

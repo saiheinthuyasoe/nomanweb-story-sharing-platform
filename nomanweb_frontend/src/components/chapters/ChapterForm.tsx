@@ -143,8 +143,8 @@ export function ChapterForm({
     // Immediately update the form state to ensure sync
     setValue('content', newContent, { shouldDirty: true, shouldValidate: true });
     
-    // Fast auto-save for content changes
-    if (onAutoSave && newContent && newContent.trim() && isEditing && chapterId) {
+    // Fast auto-save for content changes (works for both create and edit modes)
+    if (onAutoSave && newContent && newContent.trim()) {
       // Clear any existing timeout
       clearTimeout((window as any).contentChangeAutoSaveTimeout);
       
@@ -161,11 +161,13 @@ export function ChapterForm({
           console.log('Fast content change auto-save triggered...');
           await onAutoSave(formData);
           
-          // Show subtle feedback for fast saves
-          toast.success('Auto-saved', { 
-            duration: 1000,
-            style: { fontSize: '12px', opacity: 0.8 }
-          });
+          // Show subtle feedback for fast saves (more subtle for create mode)
+          if (isEditing) {
+            toast.success('Auto-saved', { 
+              duration: 1000,
+              style: { fontSize: '12px', opacity: 0.8 }
+            });
+          }
         } catch (error) {
           console.error('Fast auto-save failed:', error);
         }
@@ -199,8 +201,8 @@ export function ChapterForm({
 
   // Auto-save on page leave/refresh functionality
   useEffect(() => {
-    // Only enable auto-save on leave for editing mode (not creation)
-    if (!isEditing || !chapterId || !onAutoSave) return;
+    // Enable auto-save on leave for both editing and creation modes
+    if (!onAutoSave) return;
 
     const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
       // Check if there are unsaved changes and form hasn't been successfully submitted
@@ -217,22 +219,28 @@ export function ChapterForm({
           
           console.log('Auto-saving draft on page leave...');
           
-          // Use sendBeacon for reliable auto-save on page unload
-          const data = JSON.stringify(formData);
-          if (navigator.sendBeacon && chapterId) {
-            // This is more reliable for page unload scenarios
-            const token = document.cookie.split('; ')
-              .find(row => row.startsWith('token='))
-              ?.split('=')[1];
-            
-            if (token) {
-              navigator.sendBeacon(
-                `/api/chapters/${chapterId}/auto-save`,
-                new Blob([data], { type: 'application/json' })
-              );
+          // For create mode, just use the onAutoSave callback (localStorage save)
+          // For edit mode, use sendBeacon for reliable auto-save on page unload
+          if (isEditing && chapterId) {
+            const data = JSON.stringify(formData);
+            if (navigator.sendBeacon) {
+              // This is more reliable for page unload scenarios
+              const token = document.cookie.split('; ')
+                .find(row => row.startsWith('token='))
+                ?.split('=')[1];
+              
+              if (token) {
+                navigator.sendBeacon(
+                  `/api/chapters/${chapterId}/auto-save`,
+                  new Blob([data], { type: 'application/json' })
+                );
+              }
+            } else {
+              // Fallback to regular async call
+              await onAutoSave(formData);
             }
           } else {
-            // Fallback to regular async call
+            // For create mode, use regular onAutoSave callback
             await onAutoSave(formData);
           }
         } catch (error) {
@@ -462,9 +470,6 @@ export function ChapterForm({
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Chapter' : 'Write New Chapter'}
-          </h1>
           
           <div className="flex items-center space-x-2">
             {lastAutoSave && (
@@ -528,13 +533,21 @@ export function ChapterForm({
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="any"
                   disabled={watchedValues.isFree}
+                  defaultValue={initialData?.coinPrice || 0}
                   {...register('coinPrice', { 
-                    min: { value: 0, message: 'Price cannot be negative' }
+                    min: { value: 0, message: 'Price cannot be negative' },
+                    valueAsNumber: true
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 />
+                {errors.coinPrice && (
+                  <p className="mt-1 text-sm text-red-600">{errors.coinPrice.message}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Current value: {watchedValues.coinPrice || 0}
+                </p>
               </div>
 
               {/* Free Toggle */}

@@ -15,6 +15,7 @@ export interface UpdateChapterRequest {
   content?: string;
   coinPrice?: number;
   isFree?: boolean;
+  chapterNumber?: number;
   shouldPublish?: boolean;
   isAutoSave?: boolean;
 }
@@ -68,8 +69,41 @@ export interface ChapterPreview {
 export const chaptersApi = {
   // Create a new chapter
   async createChapter(data: CreateChapterRequest): Promise<Chapter> {
-    const response = await apiClient.post('/chapters', data);
-    return response.data;
+    console.log('chaptersApi.createChapter - Request data:', {
+      storyId: data.storyId,
+      title: data.title,
+      contentLength: data.content?.length || 0,
+      contentPreview: data.content?.substring(0, 100) || '',
+      chapterNumber: data.chapterNumber,
+      coinPrice: data.coinPrice,
+      isFree: data.isFree,
+      isDraft: data.isDraft
+    });
+    
+    try {
+      const response = await apiClient.post('/chapters', data);
+      console.log('chaptersApi.createChapter - Success response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('chaptersApi.createChapter - Error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        validationErrors: error.response?.data?.errors,
+        errorMessage: error.response?.data?.message
+      });
+      
+      // Log specific validation errors if available
+      if (error.response?.data?.errors) {
+        console.error('Validation errors:', error.response.data.errors);
+        Object.entries(error.response.data.errors).forEach(([field, message]) => {
+          console.error(`- ${field}: ${message}`);
+        });
+      }
+      
+      throw error;
+    }
   },
 
   // Get chapter by ID

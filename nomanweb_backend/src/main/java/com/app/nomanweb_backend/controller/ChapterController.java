@@ -35,8 +35,21 @@ public class ChapterController {
             @Valid @RequestBody CreateChapterRequest request,
             HttpServletRequest httpRequest) {
         try {
+            log.info(
+                    "Creating chapter - Request: storyId={}, title={}, contentLength={}, chapterNumber={}, coinPrice={}, isFree={}, isDraft={}",
+                    request.getStoryId(),
+                    request.getTitle(),
+                    request.getContent() != null ? request.getContent().length() : 0,
+                    request.getChapterNumber(),
+                    request.getCoinPrice(),
+                    request.getIsFree(),
+                    request.getIsDraft());
+
             UUID authorId = getCurrentUserId(httpRequest);
+            log.info("Author ID: {}", authorId);
+
             ChapterResponse chapter = chapterService.createChapter(request, authorId);
+            log.info("Chapter created successfully: {}", chapter.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(chapter);
         } catch (IllegalArgumentException e) {
             log.error("Error creating chapter: {}", e.getMessage());

@@ -11,7 +11,6 @@ public class UpdateChapterRequest {
     @Size(max = 255, message = "Title must not exceed 255 characters")
     private String title;
 
-    @Size(min = 50, message = "Chapter content must be at least 50 characters")
     private String content;
 
     @DecimalMin(value = "0.0", inclusive = true, message = "Coin price must be non-negative")

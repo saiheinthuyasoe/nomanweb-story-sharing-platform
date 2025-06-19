@@ -17,7 +17,6 @@ public class CreateChapterRequest {
     private String title;
 
     @NotBlank(message = "Chapter content is required")
-    @Size(min = 50, message = "Chapter content must be at least 50 characters")
     private String content;
 
     @Min(value = 1, message = "Chapter number must be positive")
