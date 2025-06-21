@@ -1,0 +1,97 @@
+### Admin API Testing Script
+### Use with VS Code REST Client extension or Postman
+
+### Variables
+@baseUrl = http://localhost:8080/api
+@adminEmail = superadmin@nomanweb.com
+@adminPassword = admin123
+
+### 1. Admin Login
+POST {{baseUrl}}/admin/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}",
+  "ipAddress": "127.0.0.1",
+  "userAgent": "TestClient/1.0"
+}
+
+### Extract token from response and set it here
+@adminToken = YOUR_TOKEN_HERE
+
+### 2. Verify Admin Access
+GET {{baseUrl}}/admin/auth/verify-admin
+Authorization: Bearer {{adminToken}}
+
+### 3. Create Admin Invitation
+POST {{baseUrl}}/admin/auth/invitation/create
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "newadmin@example.com",
+  "notes": "Test admin invitation",
+  "expirationHours": 24,
+  "department": "Content Management",
+  "role": "Admin"
+}
+
+### 4. Get All Invitations
+GET {{baseUrl}}/admin/auth/invitations
+Authorization: Bearer {{adminToken}}
+
+### 5. Validate Invitation Token (replace with actual token from step 3)
+GET {{baseUrl}}/admin/auth/invitation/validate/YOUR_INVITATION_TOKEN_HERE
+
+### 6. Register New Admin Using Invitation
+POST {{baseUrl}}/admin/auth/register
+Content-Type: application/json
+
+{
+  "invitationToken": "YOUR_INVITATION_TOKEN_HERE",
+  "email": "newadmin@example.com",
+  "password": "newadmin123",
+  "confirmPassword": "newadmin123",
+  "firstName": "New",
+  "lastName": "Admin",
+  "phoneNumber": "+1234567890",
+  "department": "Content Management"
+}
+
+### 7. Login as New Admin
+POST {{baseUrl}}/admin/auth/login
+Content-Type: application/json
+
+{
+  "email": "newadmin@example.com",
+  "password": "newadmin123",
+  "ipAddress": "127.0.0.1",
+  "userAgent": "TestClient/1.0"
+}
+
+### 8. Get All Admins
+GET {{baseUrl}}/admin/auth/admins
+Authorization: Bearer {{adminToken}}
+
+### 9. Promote Regular User to Admin (if you have a regular user)
+POST {{baseUrl}}/admin/auth/users/USER_ID_HERE/promote
+Authorization: Bearer {{adminToken}}
+
+### 10. Demote Admin to User
+POST {{baseUrl}}/admin/auth/users/USER_ID_HERE/demote
+Authorization: Bearer {{adminToken}}
+
+### 11. Revoke Invitation
+DELETE {{baseUrl}}/admin/auth/invitation/INVITATION_ID_HERE/revoke
+Authorization: Bearer {{adminToken}}
+
+### 12. Cleanup Expired Invitations
+POST {{baseUrl}}/admin/auth/maintenance/cleanup-invitations
+Authorization: Bearer {{adminToken}}
+
+### Expected Responses:
+# Login Success: { "token": "jwt-token", "user": {...} }
+# Invitation Created: { "id": "uuid", "email": "...", "status": "PENDING", ... }
+# Validation Success: { "isValid": true, "email": "...", ... }
+# Registration Success: { "token": "jwt-token", "user": {...} } 

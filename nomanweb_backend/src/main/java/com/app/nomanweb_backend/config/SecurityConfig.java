@@ -6,23 +6,30 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final GlobalExceptionHandler globalExceptionHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -30,62 +37,51 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
+        http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no authentication required
-                        .requestMatchers(HttpMethod.GET, "/api/stories").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/stories/{id}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories/{id}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories/slug/{slug}").permitAll()
-
-                        // Chapter endpoints - public read access to published chapters
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/{id}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}/chapter/{chapterNumber}")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}/paged").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}/first").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}/last").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/{id}/next").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/{id}/previous").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chapters/story/{storyId}/search").permitAll()
-
-                        // Auth endpoints
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/register").permitAll()
-                        .requestMatchers("/api/auth/forgot-password").permitAll()
-                        .requestMatchers("/api/auth/reset-password").permitAll()
-                        .requestMatchers("/api/auth/verify-email").permitAll()
-                        .requestMatchers("/api/auth/resend-verification").permitAll()
-
-                        // OAuth endpoints
+                .authorizeHttpRequests(authz -> authz
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/oauth/**").permitAll()
+                        .requestMatchers("/api/upload/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
 
-                        // Protected endpoints - authentication required
-                        .requestMatchers("/api/auth/profile").authenticated()
-                        .requestMatchers("/api/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/stories").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/stories/{id}").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/stories/{id}").authenticated()
-                        .requestMatchers("/api/stories/my-stories").authenticated()
-                        .requestMatchers("/api/stories/{id}/publish").authenticated()
-                        .requestMatchers("/api/stories/{id}/unpublish").authenticated()
+                        // Admin authentication endpoints - public access for login/register
+                        .requestMatchers("/api/admin/auth/login", "/api/admin/auth/register",
+                                "/api/admin/auth/invitation/validate/**")
+                        .permitAll()
 
-                        // Chapter management endpoints - require authentication
-                        .requestMatchers(HttpMethod.POST, "/api/chapters").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/chapters/{id}").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/chapters/{id}").authenticated()
-                        .requestMatchers("/api/chapters/{id}/publish").authenticated()
-                        .requestMatchers("/api/chapters/{id}/unpublish").authenticated()
-                        .requestMatchers("/api/chapters/{id}/autosave").authenticated()
-                        .requestMatchers("/api/chapters/story/{storyId}/reorder").authenticated()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/chapters/*/moderate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/chapters/moderation").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/stories/*/moderate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/stories/moderation").hasRole("ADMIN")
 
-                        // All other requests require authentication
+                        // Authenticated endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/stories/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/stories/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/stories/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/chapters/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/chapters/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/chapters/**").authenticated()
+                        .requestMatchers("/api/reading-progress/**").authenticated()
+                        .requestMatchers("/api/reading-lists/**").authenticated()
+                        .requestMatchers("/api/reactions/**").authenticated()
+
+                        // User endpoints - all require authentication
+                        .requestMatchers("/api/users/**").authenticated()
+
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

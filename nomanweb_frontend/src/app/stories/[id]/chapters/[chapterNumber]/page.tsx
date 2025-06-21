@@ -4,7 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useChapterByStoryAndNumber, useNextChapter, usePreviousChapter } from '@/hooks/useChapters';
 import { useStory } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useChapterReactionStatus, useToggleChapterLike } from '@/hooks/useReactions';
+import { useBookmarkStatus, useToggleBookmark } from '@/hooks/useReadingLists';
+import { useChapterProgress, useAutoUpdateProgress } from '@/hooks/useReadingProgress';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   ChevronLeftIcon, 
@@ -13,9 +16,15 @@ import {
   HeartIcon, 
   BookmarkIcon,
   ShareIcon,
-  PencilIcon
+  PencilIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
+import { 
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid
+} from '@heroicons/react/24/solid';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 export default function ChapterPage() {
   const params = useParams();
@@ -24,14 +33,26 @@ export default function ChapterPage() {
   const storyId = params.id as string;
   const chapterNumber = parseInt(params.chapterNumber as string);
 
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const { data: story, isLoading: isLoadingStory } = useStory(storyId);
   const { data: chapter, isLoading: isLoadingChapter, error: chapterError } = useChapterByStoryAndNumber(
     storyId, 
     chapterNumber
   );
+
+  // Reaction and bookmark hooks
+  const { data: reactionStatus } = useChapterReactionStatus(chapter?.id || '', !!chapter);
+  const { data: bookmarkStatus } = useBookmarkStatus(storyId, true);
+  const { data: progressData } = useChapterProgress(chapter?.id || '', !!chapter);
+  
+  const toggleChapterLike = useToggleChapterLike();
+  const toggleBookmark = useToggleBookmark();
+  const updateProgress = useAutoUpdateProgress(chapter?.id || '');
+  
+  // Stable reference to updateProgress for useEffect
+  const updateProgressRef = useRef(updateProgress);
+  updateProgressRef.current = updateProgress;
 
   // Check if user is the story author
   const isAuthor = story && user && story.author.id === user.id;
@@ -49,14 +70,72 @@ export default function ChapterPage() {
   };
 
   const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    // TODO: Implement bookmark API call
+    if (!user) {
+      toast.error('Please log in to bookmark stories');
+      return;
+    }
+    toggleBookmark.mutate({ storyId, listType: 'FAVORITE' });
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    // TODO: Implement like API call
+    if (!user) {
+      toast.error('Please log in to like chapters');
+      return;
+    }
+    if (chapter?.id) {
+      toggleChapterLike.mutate(chapter.id);
+    }
   };
+
+  // Reading progress tracking
+  useEffect(() => {
+    if (!chapter?.id || !user || !contentRef.current) return;
+
+    let scrollTimeout: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      if (!contentRef.current) return;
+      
+      // Debounce scroll events to avoid too many calculations
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        if (!contentRef.current) return;
+        
+        const element = contentRef.current;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const elementTop = element.offsetTop;
+        const elementHeight = element.offsetHeight;
+        const windowHeight = window.innerHeight;
+        
+        // Calculate progress based on how much of the content has been scrolled through
+        const contentStart = elementTop;
+        const viewportBottom = scrollTop + windowHeight;
+        
+        if (viewportBottom > contentStart && elementHeight > 0) {
+          const visibleContent = Math.min(viewportBottom - contentStart, elementHeight);
+          const progressPercentage = Math.min((visibleContent / elementHeight) * 100, 100);
+          
+          if (progressPercentage > 0) {
+            updateProgressRef.current(progressPercentage);
+          }
+        }
+      }, 100); // Debounce by 100ms
+    };
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial progress update after a short delay to ensure content is rendered
+    const initialTimeout = setTimeout(() => {
+      handleScroll();
+    }, 500);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+      clearTimeout(initialTimeout);
+    };
+  }, [chapter?.id, user]); // Remove updateProgress from dependencies to prevent infinite loop
 
   const handleShare = () => {
     if (navigator.share) {
@@ -101,6 +180,16 @@ export default function ChapterPage() {
     <div className="min-h-screen bg-white">
       {/* Navigation Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+        {/* Reading Progress Bar */}
+        {progressData?.hasProgress && (
+          <div className="w-full bg-gray-200 h-1">
+            <div 
+              className="bg-blue-600 h-1 transition-all duration-300"
+              style={{ width: `${progressData.progressPercentage}%` }}
+            />
+          </div>
+        )}
+        
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left side - Story info */}
@@ -119,6 +208,15 @@ export default function ChapterPage() {
 
             {/* Right side - Actions */}
             <div className="flex items-center space-x-2">
+              <Link
+                href={`/stories/${storyId}/chapters/${chapterNumber}/read`}
+                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                title="Open in Reading Mode"
+              >
+                <BookOpenIcon className="w-4 h-4" />
+                <span>Read Mode</span>
+              </Link>
+              
               {isAuthor && (
                 <Link
                   href={`/stories/${storyId}/chapters/${chapterNumber}/edit`}
@@ -131,23 +229,33 @@ export default function ChapterPage() {
               <button
                 onClick={handleBookmark}
                 className={`p-2 rounded-lg ${
-                  isBookmarked 
+                  bookmarkStatus?.bookmarked 
                     ? 'text-blue-600 bg-blue-50' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                disabled={toggleBookmark.isPending}
               >
-                <BookmarkIcon className="w-5 h-5" />
+                {bookmarkStatus?.bookmarked ? (
+                  <BookmarkIconSolid className="w-5 h-5" />
+                ) : (
+                  <BookmarkIcon className="w-5 h-5" />
+                )}
               </button>
               
               <button
                 onClick={handleLike}
                 className={`p-2 rounded-lg ${
-                  isLiked 
+                  reactionStatus?.liked 
                     ? 'text-red-600 bg-red-50' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                disabled={toggleChapterLike.isPending}
               >
-                <HeartIcon className="w-5 h-5" />
+                {reactionStatus?.liked ? (
+                  <HeartIconSolid className="w-5 h-5" />
+                ) : (
+                  <HeartIcon className="w-5 h-5" />
+                )}
               </button>
               
               <button
@@ -176,7 +284,7 @@ export default function ChapterPage() {
             </div>
             <div className="flex items-center space-x-1">
               <HeartIcon className="w-4 h-4" />
-              <span>{chapter.likes.toLocaleString()} likes</span>
+              <span>{(reactionStatus?.totalLikes ?? chapter.likes).toLocaleString()} likes</span>
             </div>
             <span>
               {chapter.wordCount.toLocaleString()} words • ~{Math.ceil(chapter.wordCount / 200)} min read
@@ -184,11 +292,17 @@ export default function ChapterPage() {
             <span>
               Published {formatDistanceToNow(new Date(chapter.publishedAt || chapter.createdAt), { addSuffix: true })}
             </span>
+            {progressData?.hasProgress && (
+              <span className="text-blue-600 font-medium">
+                {progressData.progressPercentage.toFixed(0)}% read
+              </span>
+            )}
           </div>
         </div>
 
         {/* Chapter Content */}
         <div 
+          ref={contentRef}
           className="prose prose-lg max-w-none leading-relaxed"
           dangerouslySetInnerHTML={{ __html: chapter.content }}
         />
@@ -204,13 +318,21 @@ export default function ChapterPage() {
               <button
                 onClick={handleLike}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
-                  isLiked 
+                  reactionStatus?.liked 
                     ? 'border-red-200 bg-red-50 text-red-600' 
                     : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
+                disabled={toggleChapterLike.isPending}
               >
-                <HeartIcon className="w-4 h-4" />
-                <span>Like</span>
+                {reactionStatus?.liked ? (
+                  <HeartIconSolid className="w-4 h-4" />
+                ) : (
+                  <HeartIcon className="w-4 h-4" />
+                )}
+                <span>{reactionStatus?.liked ? 'Liked' : 'Like'}</span>
+                {reactionStatus?.totalLikes && reactionStatus.totalLikes > 0 && (
+                  <span className="text-xs">({reactionStatus.totalLikes.toLocaleString()})</span>
+                )}
               </button>
               
               <button

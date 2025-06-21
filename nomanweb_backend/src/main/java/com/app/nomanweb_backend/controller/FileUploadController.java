@@ -143,6 +143,42 @@ public class FileUploadController {
         }
     }
 
+    @PostMapping("/image")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<FileUploadResponse> uploadGenericImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "folder", defaultValue = "content_images") String folder,
+            HttpServletRequest httpRequest) {
+
+        try {
+            log.info("Uploading generic image to folder: {}", folder);
+
+            // Get current user for validation
+            UUID userId = getCurrentUserId(httpRequest);
+
+            // Upload image without updating any entity
+            String imageUrl = fileUploadService.uploadImage(file, folder);
+
+            log.info("Generic image uploaded successfully by user: {}", userId);
+
+            return ResponseEntity.ok(FileUploadResponse.success(
+                    imageUrl,
+                    fileUploadService.extractPublicIdFromUrl(imageUrl),
+                    file.getSize(),
+                    file.getOriginalFilename(),
+                    folder));
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid file upload request: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(FileUploadResponse.error("Invalid file: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to upload generic image", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(FileUploadResponse.error("Failed to upload image: " + e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/image")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<FileUploadResponse> deleteImage(

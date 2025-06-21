@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -92,6 +93,9 @@ public class ChapterController {
             HttpServletRequest httpRequest) {
         try {
             UUID currentUserId = getCurrentUserIdOptional(httpRequest);
+            log.info("Request to get chapter - storyId: {}, chapterNumber: {}, userId: {}", storyId, chapterNumber,
+                    currentUserId);
+
             ChapterResponse chapter = chapterService.getChapterByStoryAndNumber(storyId, chapterNumber, currentUserId);
 
             // Increment view count (async in real implementation)
@@ -99,12 +103,28 @@ public class ChapterController {
                 chapterService.incrementChapterViews(chapter.getId());
             }
 
+            log.info("Successfully returning chapter: {}", chapter.getId());
             return ResponseEntity.ok(chapter);
         } catch (IllegalArgumentException e) {
-            log.error("Error getting chapter: {}", e.getMessage());
-            return ResponseEntity.notFound().build();
+            log.error("Error getting chapter - storyId: {}, chapterNumber: {}, error: {}", storyId, chapterNumber,
+                    e.getMessage());
+
+            // Provide more specific error responses based on the error message
+            if (e.getMessage().contains("Story not found")) {
+                log.error("Story not found: {}", storyId);
+                return ResponseEntity.notFound().build();
+            } else if (e.getMessage().contains("Chapter not found")) {
+                log.error("Chapter not found - storyId: {}, chapterNumber: {}", storyId, chapterNumber);
+                return ResponseEntity.notFound().build();
+            } else if (e.getMessage().contains("Access denied")) {
+                log.error("Access denied to chapter - storyId: {}, chapterNumber: {}", storyId, chapterNumber);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            } else {
+                log.error("Other error: {}", e.getMessage());
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
-            log.error("Unexpected error getting chapter", e);
+            log.error("Unexpected error getting chapter - storyId: {}, chapterNumber: {}", storyId, chapterNumber, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -359,11 +379,12 @@ public class ChapterController {
 
     // Admin/Moderation endpoints
     @GetMapping("/moderation")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<ChapterResponse>> getChaptersForModeration(
             @PageableDefault(size = 20) Pageable pageable,
             HttpServletRequest httpRequest) {
         try {
-            // TODO: Add admin role check
+            // Admin role check handled by @PreAuthorize annotation
             Page<ChapterResponse> chapters = chapterService.getChaptersForModeration(pageable);
             return ResponseEntity.ok(chapters);
         } catch (Exception e) {
@@ -373,6 +394,7 @@ public class ChapterController {
     }
 
     @PostMapping("/{chapterId}/moderate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ChapterResponse> moderateChapter(
             @PathVariable UUID chapterId,
             @RequestParam String notes,
@@ -380,7 +402,7 @@ public class ChapterController {
             HttpServletRequest httpRequest) {
         try {
             UUID moderatorId = getCurrentUserId(httpRequest);
-            // TODO: Add admin role check
+            // Admin role check handled by @PreAuthorize annotation
             ChapterResponse chapter = chapterService.moderateChapter(chapterId, notes, approved, moderatorId);
             return ResponseEntity.ok(chapter);
         } catch (IllegalArgumentException e) {

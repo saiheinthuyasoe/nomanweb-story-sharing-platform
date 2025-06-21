@@ -75,11 +75,12 @@ export function StoryCoverUpload({
       const formData = new FormData();
       formData.append('file', file);
       
-      // Use different endpoint based on whether we have a real storyId
-      const isNewStory = !storyId || storyId === 'new';
-      const endpoint = isNewStory ? '/upload/profile-image' : '/upload/story-cover';
+      // Always use the generic image endpoint for story covers
+      const endpoint = '/upload/image';
+      formData.append('folder', 'story_covers');
       
-      if (!isNewStory) {
+      // Only add storyId if it's not a new story
+      if (storyId && storyId !== 'new') {
         formData.append('storyId', storyId);
       }
 

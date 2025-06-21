@@ -87,7 +87,9 @@ export function ProfileImageUpload({
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await apiClient.post('/upload/profile-image', formData, {
+      formData.append('folder', 'profile_images');
+      
+      const response = await apiClient.post('/upload/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

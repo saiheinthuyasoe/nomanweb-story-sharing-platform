@@ -75,16 +75,9 @@ export function ImageUpload({
       const formData = new FormData();
       formData.append('file', file);
 
-      // Determine endpoint based on folder
-      const endpoint = folder === 'profile_images' 
-        ? '/api/upload/profile-image'
-        : '/api/upload/story-cover';
-
-      // Add story ID for story covers if available
-      if (folder === 'story_covers') {
-        // This should be passed as a prop when uploading story covers
-        // For now, we'll handle it in the parent component
-      }
+      // Use the generic image endpoint
+      const endpoint = '/api/upload/image';
+      formData.append('folder', folder);
 
       // Simulate progress for user feedback
       const progressInterval = setInterval(() => {

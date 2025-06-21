@@ -11,8 +11,10 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CategoryRepository;
 import com.app.nomanweb_backend.service.StoryService;
+import com.app.nomanweb_backend.service.SearchIndexingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ public class StoryServiceImpl implements StoryService {
     private final StoryRepository storyRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public StoryResponse createStory(CreateStoryRequest request, UUID authorId) {
@@ -62,6 +65,9 @@ public class StoryServiceImpl implements StoryService {
 
         story = storyRepository.save(story);
         log.info("Story created successfully with ID: {}", story.getId());
+
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryCreatedEvent(story));
 
         return convertToStoryResponse(story);
     }
@@ -112,6 +118,9 @@ public class StoryServiceImpl implements StoryService {
         story = storyRepository.save(story);
         log.info("Story updated successfully: {}", storyId);
 
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
+
         return convertToStoryResponse(story);
     }
 
@@ -129,6 +138,9 @@ public class StoryServiceImpl implements StoryService {
 
         storyRepository.delete(story);
         log.info("Story deleted successfully: {}", storyId);
+
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryDeletedEvent(storyId));
     }
 
     @Override
@@ -242,6 +254,10 @@ public class StoryServiceImpl implements StoryService {
         story = storyRepository.save(story);
 
         log.info("Story published successfully: {}", storyId);
+
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
+
         return convertToStoryResponse(story);
     }
 
@@ -260,6 +276,10 @@ public class StoryServiceImpl implements StoryService {
         story = storyRepository.save(story);
 
         log.info("Story unpublished successfully: {}", storyId);
+
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
+
         return convertToStoryResponse(story);
     }
 

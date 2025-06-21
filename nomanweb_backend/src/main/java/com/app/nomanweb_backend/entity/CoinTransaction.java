@@ -49,7 +49,7 @@ public class CoinTransaction {
     @Enumerated(EnumType.STRING)
     private ReferenceType referenceType;
 
-    @Column(name = "reference_id", columnDefinition = "BINARY(16)")
+    @Column(name = "reference_id")
     private UUID referenceId;
 
     @Enumerated(EnumType.STRING)

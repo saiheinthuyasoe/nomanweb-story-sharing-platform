@@ -279,6 +279,9 @@ export default function Navbar() {
 
                         {/* Menu Items */}
                         <div className="py-1">
+                          <DropdownLink href="/profile" icon={User}>
+                            Profile
+                          </DropdownLink>
                           <DropdownLink href="/dashboard/my-stories" icon={BookOpen}>
                             My Stories
                           </DropdownLink>
@@ -407,6 +410,9 @@ export default function Navbar() {
               
               {user ? (
                 <>
+                  <MobileNavLink href="/profile" active={isActive('/profile')} icon={User} onClick={closeMobileMenu}>
+                    Profile
+                  </MobileNavLink>
                   <MobileNavLink href="/stories/create" active={isActive('/stories/create')} icon={PlusIcon} onClick={closeMobileMenu}>
                     Write
                   </MobileNavLink>

@@ -155,20 +155,7 @@ export default function StoryDetailPage() {
                 <h1 className="text-3xl lg:text-4xl font-bold text-nomanweb-primary mb-4">{story.title}</h1>
                 
                 {/* Author */}
-                <div className="flex items-center space-x-3 mb-6">
-                  {story.author.profileImageUrl ? (
-                    <Image
-                      src={story.author.profileImageUrl}
-                      alt={story.author.displayName || story.author.username}
-                      width={48}
-                      height={48}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-nomanweb-gradient rounded-full flex items-center justify-center">
-                      <UserIcon className="w-6 h-6 text-white" />
-                    </div>
-                  )}
+                <div className="mb-6">
                   <div>
                     <Link 
                       href={`/authors/${story.author.id}`}
@@ -366,7 +353,7 @@ export default function StoryDetailPage() {
 
         {/* Chapter Management */}
         <div className="mb-8">
-          <ChapterManagement storyId={storyId} isAuthor={isAuthor} />
+          <ChapterManagement storyId={storyId} isAuthor={isAuthor || false} />
         </div>
 
         {/* Delete Confirmation Modal */}

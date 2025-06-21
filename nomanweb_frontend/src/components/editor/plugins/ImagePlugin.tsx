@@ -24,8 +24,9 @@ export const INSERT_IMAGE_COMMAND = createCommand('INSERT_IMAGE_COMMAND');
 async function uploadImageToCloudinary(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('folder', 'chapters'); // Use chapters folder for editor uploads
 
-  const response = await apiClient.post('/upload/profile-image', formData, {
+  const response = await apiClient.post('/upload/image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

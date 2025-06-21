@@ -71,7 +71,14 @@
 		<dependency>
 			<groupId>org.typesense</groupId>
 			<artifactId>typesense-java</artifactId>
-			<version>1.0.0</version>
+			<version>0.7.0</version>
+		</dependency>
+		
+		<!-- OkHttp for Typesense client -->
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>4.12.0</version>
 		</dependency>
 
 		<!-- JWT -->

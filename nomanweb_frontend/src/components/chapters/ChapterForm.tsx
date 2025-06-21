@@ -163,10 +163,10 @@ export function ChapterForm({
           
           // Show subtle feedback for fast saves (more subtle for create mode)
           if (isEditing) {
-            toast.success('Auto-saved', { 
-              duration: 1000,
-              style: { fontSize: '12px', opacity: 0.8 }
-            });
+          toast.success('Auto-saved', { 
+            duration: 1000,
+            style: { fontSize: '12px', opacity: 0.8 }
+          });
           }
         } catch (error) {
           console.error('Fast auto-save failed:', error);
@@ -222,21 +222,21 @@ export function ChapterForm({
           // For create mode, just use the onAutoSave callback (localStorage save)
           // For edit mode, use sendBeacon for reliable auto-save on page unload
           if (isEditing && chapterId) {
-            const data = JSON.stringify(formData);
+          const data = JSON.stringify(formData);
             if (navigator.sendBeacon) {
-              // This is more reliable for page unload scenarios
-              const token = document.cookie.split('; ')
-                .find(row => row.startsWith('token='))
-                ?.split('=')[1];
-              
-              if (token) {
-                navigator.sendBeacon(
-                  `/api/chapters/${chapterId}/auto-save`,
-                  new Blob([data], { type: 'application/json' })
-                );
-              }
-            } else {
-              // Fallback to regular async call
+            // This is more reliable for page unload scenarios
+            const token = document.cookie.split('; ')
+              .find(row => row.startsWith('token='))
+              ?.split('=')[1];
+            
+            if (token) {
+              navigator.sendBeacon(
+                `/api/chapters/${chapterId}/auto-save`,
+                new Blob([data], { type: 'application/json' })
+              );
+            }
+          } else {
+            // Fallback to regular async call
               await onAutoSave(formData);
             }
           } else {

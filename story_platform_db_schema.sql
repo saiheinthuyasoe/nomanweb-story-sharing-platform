@@ -12,7 +12,7 @@
         bio TEXT,
         role ENUM('user', 'admin') DEFAULT 'user',
         status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
-        coin_balance DECIMAL(10,2) DEFAULT 0.00,
+        3DECIMAL(10,2) DEFAULT 0.00,
         total_earned_coins DECIMAL(10,2) DEFAULT 0.00,
         line_user_id VARCHAR(100), -- For LINE integration
         google_id VARCHAR(100), -- For Google OAuth

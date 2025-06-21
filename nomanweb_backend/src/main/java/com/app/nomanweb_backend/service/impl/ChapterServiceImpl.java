@@ -19,9 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.PageImpl;
 
 @Service
 @RequiredArgsConstructor
@@ -107,17 +110,24 @@ public class ChapterServiceImpl implements ChapterService {
     @Override
     @Transactional(readOnly = true)
     public ChapterResponse getChapterByStoryAndNumber(UUID storyId, Integer chapterNumber, UUID currentUserId) {
+        log.info("Getting chapter by story: {} and chapter number: {}, user: {}", storyId, chapterNumber,
+                currentUserId);
+
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new IllegalArgumentException("Story not found"));
+        log.info("Story found: {}", story.getTitle());
 
         Chapter chapter = chapterRepository.findByStoryAndChapterNumber(story, chapterNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+        log.info("Chapter found: {} - {}", chapter.getId(), chapter.getTitle());
 
         // Check access permissions
         if (!canUserAccessChapter(chapter.getId(), currentUserId)) {
+            log.error("Access denied to chapter: {} for user: {}", chapter.getId(), currentUserId);
             throw new IllegalArgumentException("Access denied to this chapter");
         }
 
+        log.info("Access granted, returning chapter response");
         return mapToChapterResponse(chapter, currentUserId);
     }
 
@@ -451,30 +461,43 @@ public class ChapterServiceImpl implements ChapterService {
     @Override
     @Transactional(readOnly = true)
     public boolean canUserAccessChapter(UUID chapterId, UUID userId) {
-        if (userId == null) {
-            return false;
-        }
+        log.info("Checking access for chapter: {}, user: {}", chapterId, userId);
 
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-        // Author can always access
-        if (chapter.getStory().getAuthor().getId().equals(userId)) {
+        log.info("Chapter found - Status: {}, IsFree: {}, Author: {}",
+                chapter.getStatus(), chapter.getIsFree(), chapter.getStory().getAuthor().getId());
+
+        // Author can always access (if authenticated)
+        if (userId != null && chapter.getStory().getAuthor().getId().equals(userId)) {
+            log.info("Access granted - User is the author");
             return true;
         }
 
-        // Chapter must be published
+        // Chapter must be published for public access
         if (chapter.getStatus() != Chapter.Status.PUBLISHED) {
+            log.info("Access denied - Chapter is not published");
             return false;
         }
 
-        // Free chapters are accessible to all
+        // Free published chapters are accessible to everyone (including anonymous
+        // users)
         if (chapter.getIsFree()) {
+            log.info("Access granted - Chapter is free and published");
             return true;
         }
 
+        // For paid chapters, user must be authenticated and have purchased it
+        if (userId == null) {
+            log.info("Access denied - Chapter is paid and user is not authenticated");
+            return false;
+        }
+
         // Check if user has purchased the chapter
-        return hasUserPurchasedChapter(chapterId, userId);
+        boolean hasPurchased = hasUserPurchasedChapter(chapterId, userId);
+        log.info("Access check for paid chapter - User has purchased: {}", hasPurchased);
+        return hasPurchased;
     }
 
     @Override
@@ -530,7 +553,24 @@ public class ChapterServiceImpl implements ChapterService {
     @Transactional(readOnly = true)
     public Page<ChapterResponse> getChaptersForModeration(Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findByModerationStatus(Chapter.ModerationStatus.PENDING, pageable);
-        return chapters.map(chapter -> mapToChapterResponse(chapter, null));
+
+        // Filter out orphaned chapters (chapters whose stories don't exist) and map to
+        // response
+        List<ChapterResponse> validChapters = chapters.getContent().stream()
+                .map(chapter -> {
+                    try {
+                        return mapToChapterResponse(chapter, null);
+                    } catch (Exception e) {
+                        log.warn("Skipping orphaned chapter {} during moderation fetch: {}",
+                                chapter.getId(), e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // Create a new page with filtered results
+        return new PageImpl<>(validChapters, pageable, chapters.getTotalElements());
     }
 
     @Override
@@ -548,8 +588,18 @@ public class ChapterServiceImpl implements ChapterService {
 
     // Mapping methods
     private ChapterResponse mapToChapterResponse(Chapter chapter, UUID currentUserId) {
-        // Build navigation info
+        try {
+            // Build navigation info - this might fail if story doesn't exist
         ChapterResponse.NavigationInfo navigation = buildNavigationInfo(chapter, currentUserId);
+
+            // Try to access story info safely
+            Story story = chapter.getStory();
+            ChapterResponse.StoryInfo storyInfo = ChapterResponse.StoryInfo.builder()
+                    .id(story.getId())
+                    .title(story.getTitle())
+                    .authorUsername(story.getAuthor().getUsername())
+                    .totalChapters(story.getTotalChapters())
+                    .build();
 
         return ChapterResponse.builder()
                 .id(chapter.getId())
@@ -562,12 +612,7 @@ public class ChapterServiceImpl implements ChapterService {
                 .status(chapter.getStatus())
                 .moderationStatus(chapter.getModerationStatus())
                 .moderationNotes(chapter.getModerationNotes())
-                .story(ChapterResponse.StoryInfo.builder()
-                        .id(chapter.getStory().getId())
-                        .title(chapter.getStory().getTitle())
-                        .authorUsername(chapter.getStory().getAuthor().getUsername())
-                        .totalChapters(chapter.getStory().getTotalChapters())
-                        .build())
+                    .story(storyInfo)
                 .views(chapter.getViews())
                 .likes(chapter.getLikes())
                 .navigation(navigation)
@@ -575,6 +620,43 @@ public class ChapterServiceImpl implements ChapterService {
                 .updatedAt(chapter.getUpdatedAt())
                 .publishedAt(chapter.getPublishedAt())
                 .build();
+
+        } catch (Exception e) {
+            log.error("Error mapping chapter {} to response, story might be missing: {}", chapter.getId(),
+                    e.getMessage());
+
+            // Return a minimal response for orphaned chapters
+            return ChapterResponse.builder()
+                    .id(chapter.getId())
+                    .chapterNumber(chapter.getChapterNumber())
+                    .title(chapter.getTitle())
+                    .content(chapter.getContent())
+                    .wordCount(chapter.getWordCount())
+                    .coinPrice(chapter.getCoinPrice())
+                    .isFree(chapter.getIsFree())
+                    .status(chapter.getStatus())
+                    .moderationStatus(chapter.getModerationStatus())
+                    .moderationNotes(chapter.getModerationNotes())
+                    .story(ChapterResponse.StoryInfo.builder()
+                            .id(null)
+                            .title("Story Not Found")
+                            .authorUsername("Unknown")
+                            .totalChapters(0)
+                            .build())
+                    .views(chapter.getViews())
+                    .likes(chapter.getLikes())
+                    .navigation(ChapterResponse.NavigationInfo.builder()
+                            .nextChapterNumber(null)
+                            .previousChapterNumber(null)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .totalChapters(0)
+                            .build())
+                    .createdAt(chapter.getCreatedAt())
+                    .updatedAt(chapter.getUpdatedAt())
+                    .publishedAt(chapter.getPublishedAt())
+                    .build();
+        }
     }
 
     private ChapterPreviewResponse mapToChapterPreviewResponse(Chapter chapter) {
@@ -595,6 +677,7 @@ public class ChapterServiceImpl implements ChapterService {
     }
 
     private ChapterResponse.NavigationInfo buildNavigationInfo(Chapter chapter, UUID currentUserId) {
+        try {
         Story story = chapter.getStory();
 
         Optional<Chapter> nextChapter = chapterRepository.findNextChapter(
@@ -609,5 +692,18 @@ public class ChapterServiceImpl implements ChapterService {
                 .hasPrevious(previousChapter.isPresent())
                 .totalChapters(story.getTotalChapters())
                 .build();
+        } catch (Exception e) {
+            log.warn("Could not build navigation info for chapter {}, story might be missing: {}",
+                    chapter.getId(), e.getMessage());
+
+            // Return empty navigation info for orphaned chapters
+            return ChapterResponse.NavigationInfo.builder()
+                    .nextChapterNumber(null)
+                    .previousChapterNumber(null)
+                    .hasNext(false)
+                    .hasPrevious(false)
+                    .totalChapters(0)
+                    .build();
+        }
     }
 }

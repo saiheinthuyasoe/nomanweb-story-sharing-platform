@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nomanweb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nomanweb_db
+      POSTGRES_USER: nomanweb_user
+      POSTGRES_PASSWORD: nomanweb_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - nomanweb-network
+
+  # Typesense Search Engine
+  typesense:
+    image: typesense/typesense:0.25.2
+    container_name: nomanweb_typesense
+    restart: unless-stopped
+    environment:
+      TYPESENSE_DATA_DIR: /data
+      TYPESENSE_API_KEY: nomanweb-search-api-key-2024
+      TYPESENSE_ENABLE_CORS: true
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense_data:/data
+    networks:
+      - nomanweb-network
+    command: '--data-dir /data --api-key=nomanweb-search-api-key-2024 --listen-port 8108 --enable-cors'
+
+  # Nginx Reverse Proxy (Optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: nomanweb_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - typesense
+    networks:
+      - nomanweb-network
+    profiles:
+      - production
+
+networks:
+  nomanweb-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  typesense_data:
+    driver: local 

@@ -264,12 +264,12 @@ export default function CreateChapterPage() {
             </div>
             
             <div className="flex space-x-2">
-              <button
-                onClick={() => router.push(`/stories/${storyId}`)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+            <button
+              onClick={() => router.push(`/stories/${storyId}`)}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
             </div>
           </div>
         </div>

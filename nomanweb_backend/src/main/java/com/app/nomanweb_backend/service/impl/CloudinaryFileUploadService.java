@@ -195,6 +195,8 @@ public class CloudinaryFileUploadService implements FileUploadService {
                 return 500; // Profile images max width
             case "story_covers":
                 return 800; // Story cover max width
+            case "chapters":
+                return 1200; // Chapter content images max width
             default:
                 return 1200; // Default max width
         }
@@ -206,6 +208,8 @@ public class CloudinaryFileUploadService implements FileUploadService {
                 return 500; // Profile images max height (square)
             case "story_covers":
                 return 1200; // Story cover max height
+            case "chapters":
+                return 1200; // Chapter content images max height
             default:
                 return 1200; // Default max height
         }

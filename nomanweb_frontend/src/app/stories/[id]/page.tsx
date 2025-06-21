@@ -180,7 +180,7 @@ export default function StoryReaderView() {
   };
 
   const handleReadStory = () => {
-    router.push(`/stories/${storyId}/read/1`);
+    router.push(`/stories/${storyId}/chapters/1/read`);
   };
 
   const handleAddToLibrary = () => {
@@ -496,7 +496,7 @@ export default function StoryReaderView() {
                   <div
                     key={chapter.id}
                     className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/stories/${storyId}/read/${chapter.chapterNumber}`)}
+                    onClick={() => router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}`)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

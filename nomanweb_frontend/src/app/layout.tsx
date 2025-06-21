@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Merriweather, Open_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { ToastProvider } from "@/components/providers/ToastProvider";
-import Navbar from "@/components/layout/Navbar";
+import ConditionalNavbar from "@/components/layout/ConditionalNavbar";
+import ConditionalMainContent from "@/components/layout/ConditionalMainContent";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const merriweather = Merriweather({
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+  variable: "--font-merriweather",
+});
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  variable: "--font-open-sans",
 });
 
 export const metadata: Metadata = {
@@ -22,12 +34,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${merriweather.variable} ${openSans.variable} font-sans antialiased`}>
         <Providers>
-          <Navbar />
-          <main className="main-content">
+          <ConditionalNavbar />
+          <ConditionalMainContent>
             {children}
-          </main>
+          </ConditionalMainContent>
           <ToastProvider />
         </Providers>
       </body>
