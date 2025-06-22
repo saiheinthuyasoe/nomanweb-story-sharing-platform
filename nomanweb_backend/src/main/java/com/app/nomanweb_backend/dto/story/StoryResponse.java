@@ -26,6 +26,7 @@ public class StoryResponse {
 
     private Story.Status status;
     private Story.ContentType contentType;
+    private Story.ContentStatus contentStatus;
     private Story.ModerationStatus moderationStatus;
 
     // Statistics

@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.FirebaseService;
 import com.app.nomanweb_backend.service.LineOAuthService;
 import com.app.nomanweb_backend.service.OAuthService;
+import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import com.google.firebase.auth.FirebaseToken;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final LineOAuthService lineOAuthService;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final ProfileImageDownloadService profileImageDownloadService;
 
     @Override
     public LoginResponse authenticateWithGoogle(String idToken) {
@@ -51,7 +53,11 @@ public class OAuthServiceImpl implements OAuthService {
 
                 // Update profile if needed
                 if (picture != null && !picture.equals(user.getProfileImageUrl())) {
-                    user.setProfileImageUrl(picture);
+                    // Download and store the image in Cloudinary
+                    String cloudinaryUrl = profileImageDownloadService.downloadAndStoreProfileImage(picture, "google");
+                    if (cloudinaryUrl != null) {
+                        user.setProfileImageUrl(cloudinaryUrl);
+                    }
                 }
             } else {
                 // Check if user exists by email
@@ -64,16 +70,28 @@ public class OAuthServiceImpl implements OAuthService {
                     user.setLastLoginAt(LocalDateTime.now());
 
                     if (picture != null) {
-                        user.setProfileImageUrl(picture);
+                        // Download and store the image in Cloudinary
+                        String cloudinaryUrl = profileImageDownloadService.downloadAndStoreProfileImage(picture,
+                                "google");
+                        if (cloudinaryUrl != null) {
+                            user.setProfileImageUrl(cloudinaryUrl);
+                        }
                     }
                 } else {
                     // Create new user
+                    String cloudinaryImageUrl = null;
+                    if (picture != null) {
+                        // Download and store the image in Cloudinary
+                        cloudinaryImageUrl = profileImageDownloadService.downloadAndStoreProfileImage(picture,
+                                "google");
+                    }
+
                     user = User.builder()
                             .email(email)
                             .username(generateUsernameFromEmail(email))
                             .displayName(name)
                             .googleId(googleId)
-                            .profileImageUrl(picture)
+                            .profileImageUrl(cloudinaryImageUrl)
                             .role(User.Role.USER)
                             .status(User.Status.ACTIVE)
                             .emailVerified(emailVerified) // Google emails are pre-verified
@@ -123,18 +141,29 @@ public class OAuthServiceImpl implements OAuthService {
 
                 // Update profile if needed
                 if (pictureUrl != null && !pictureUrl.equals(user.getProfileImageUrl())) {
-                    user.setProfileImageUrl(pictureUrl);
+                    // Download and store the image in Cloudinary
+                    String cloudinaryUrl = profileImageDownloadService.downloadAndStoreProfileImage(pictureUrl, "line");
+                    if (cloudinaryUrl != null) {
+                        user.setProfileImageUrl(cloudinaryUrl);
+                    }
                 }
             } else {
                 // Create new user (LINE doesn't provide email, so we'll need to collect it
                 // later)
                 String tempEmail = generateUsernameFromLineId(lineUserId) + "@line.temp";
+
+                String cloudinaryImageUrl = null;
+                if (pictureUrl != null) {
+                    // Download and store the image in Cloudinary
+                    cloudinaryImageUrl = profileImageDownloadService.downloadAndStoreProfileImage(pictureUrl, "line");
+                }
+
                 user = User.builder()
                         .email(tempEmail) // Set temporary email to satisfy validation
                         .username(generateUsernameFromLineId(lineUserId))
                         .displayName(displayName)
                         .lineUserId(lineUserId)
-                        .profileImageUrl(pictureUrl)
+                        .profileImageUrl(cloudinaryImageUrl)
                         .role(User.Role.USER)
                         .status(User.Status.ACTIVE)
                         .emailVerified(false) // Will need to collect email separately

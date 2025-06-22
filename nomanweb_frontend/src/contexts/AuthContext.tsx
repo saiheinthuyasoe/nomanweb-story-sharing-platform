@@ -15,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   setAuthData: (token: string, user: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -100,6 +101,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
   };
 
+  const refreshUser = async () => {
+    try {
+      const token = Cookies.get('token');
+      if (token) {
+        const userData = await authApi.getProfile();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -108,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     updateUser,
     setAuthData,
+    refreshUser,
   };
 
   return (

@@ -4,10 +4,12 @@ import com.app.nomanweb_backend.dto.chapter.ChapterResponse;
 import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.Story;
+import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.ChapterService;
+import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,13 +18,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -38,6 +43,7 @@ public class AdminController {
         private final StoryRepository storyRepository;
         private final ChapterRepository chapterRepository;
         private final UserRepository userRepository;
+        private final ProfileImageDownloadService profileImageDownloadService;
 
         // Dashboard Statistics
         @GetMapping("/dashboard/stats")
@@ -221,6 +227,128 @@ public class AdminController {
                 } catch (Exception e) {
                         log.error("Error setting featured content", e);
                         return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/migrate-oauth-images")
+        public ResponseEntity<Map<String, Object>> migrateOAuthImages() {
+                try {
+                        log.info("Starting OAuth profile image migration...");
+
+                        // Find all users with external OAuth profile images
+                        List<User> usersWithExternalImages = userRepository.findAll().stream()
+                                        .filter(user -> user.getProfileImageUrl() != null &&
+                                                        (user.getProfileImageUrl().contains("googleusercontent.com") ||
+                                                                        user.getProfileImageUrl().contains(
+                                                                                        "profile-cdn.line-scdn.net")
+                                                                        ||
+                                                                        user.getProfileImageUrl().contains(
+                                                                                        "graph.facebook.com")))
+                                        .collect(Collectors.toList());
+
+                        log.info("Found {} users with external OAuth profile images", usersWithExternalImages.size());
+
+                        int successCount = 0;
+                        int failureCount = 0;
+
+                        for (User user : usersWithExternalImages) {
+                                try {
+                                        String externalUrl = user.getProfileImageUrl();
+                                        String provider = "";
+
+                                        if (externalUrl.contains("googleusercontent.com")) {
+                                                provider = "google";
+                                        } else if (externalUrl.contains("profile-cdn.line-scdn.net")) {
+                                                provider = "line";
+                                        } else if (externalUrl.contains("graph.facebook.com")) {
+                                                provider = "facebook";
+                                        }
+
+                                        log.info("Migrating {} profile image for user {}: {}", provider, user.getId(),
+                                                        externalUrl);
+
+                                        String cloudinaryUrl = profileImageDownloadService
+                                                        .downloadAndStoreProfileImage(externalUrl, provider);
+
+                                        if (cloudinaryUrl != null && !cloudinaryUrl.equals(externalUrl)) {
+                                                user.setProfileImageUrl(cloudinaryUrl);
+                                                userRepository.save(user);
+                                                successCount++;
+                                                log.info("Successfully migrated profile image for user {}",
+                                                                user.getId());
+                                        } else {
+                                                failureCount++;
+                                                log.warn("Failed to migrate profile image for user {}", user.getId());
+                                        }
+
+                                        // Add small delay to avoid overwhelming external services
+                                        Thread.sleep(1000);
+
+                                } catch (Exception e) {
+                                        failureCount++;
+                                        log.error("Error migrating profile image for user {}: {}", user.getId(),
+                                                        e.getMessage());
+                                }
+                        }
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("totalUsers", usersWithExternalImages.size());
+                        result.put("successCount", successCount);
+                        result.put("failureCount", failureCount);
+                        result.put("message", "OAuth profile image migration completed");
+
+                        log.info("OAuth profile image migration completed. Success: {}, Failures: {}", successCount,
+                                        failureCount);
+
+                        return ResponseEntity.ok(result);
+
+                } catch (Exception e) {
+                        log.error("Error during OAuth profile image migration: {}", e.getMessage(), e);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(Map.of("error", "Migration failed: " + e.getMessage()));
+                }
+        }
+
+        @GetMapping("/check-oauth-images")
+        public ResponseEntity<Map<String, Object>> checkOAuthImages() {
+                try {
+                        // Find all users with external OAuth profile images
+                        List<User> usersWithExternalImages = userRepository.findAll().stream()
+                                        .filter(user -> user.getProfileImageUrl() != null &&
+                                                        (user.getProfileImageUrl().contains("googleusercontent.com") ||
+                                                                        user.getProfileImageUrl().contains(
+                                                                                        "profile-cdn.line-scdn.net")
+                                                                        ||
+                                                                        user.getProfileImageUrl().contains(
+                                                                                        "graph.facebook.com")))
+                                        .collect(Collectors.toList());
+
+                        // Count by provider
+                        long googleImages = usersWithExternalImages.stream()
+                                        .filter(user -> user.getProfileImageUrl().contains("googleusercontent.com"))
+                                        .count();
+
+                        long lineImages = usersWithExternalImages.stream()
+                                        .filter(user -> user.getProfileImageUrl().contains("profile-cdn.line-scdn.net"))
+                                        .count();
+
+                        long facebookImages = usersWithExternalImages.stream()
+                                        .filter(user -> user.getProfileImageUrl().contains("graph.facebook.com"))
+                                        .count();
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("totalExternalImages", usersWithExternalImages.size());
+                        result.put("googleImages", googleImages);
+                        result.put("lineImages", lineImages);
+                        result.put("facebookImages", facebookImages);
+                        result.put("needsMigration", usersWithExternalImages.size() > 0);
+
+                        return ResponseEntity.ok(result);
+
+                } catch (Exception e) {
+                        log.error("Error checking OAuth profile images: {}", e.getMessage(), e);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(Map.of("error", "Failed to check OAuth images: " + e.getMessage()));
                 }
         }
 

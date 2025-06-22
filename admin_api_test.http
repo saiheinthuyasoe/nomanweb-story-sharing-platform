@@ -90,6 +90,27 @@ Authorization: Bearer {{adminToken}}
 POST {{baseUrl}}/admin/auth/maintenance/cleanup-invitations
 Authorization: Bearer {{adminToken}}
 
+### 13. Get Dashboard Stats
+GET {{baseUrl}}/admin/dashboard/stats
+Authorization: Bearer {{adminToken}}
+
+### 14. Get Stories for Moderation
+GET {{baseUrl}}/admin/moderation/stories?page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### 15. Get Chapters for Moderation
+GET {{baseUrl}}/admin/moderation/chapters?page=0&size=10
+Authorization: Bearer {{adminToken}}
+
+### 16. Check OAuth Profile Images
+GET {{baseUrl}}/admin/check-oauth-images
+Authorization: Bearer {{adminToken}}
+
+### 17. Migrate OAuth Profile Images
+POST {{baseUrl}}/admin/migrate-oauth-images
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
 ### Expected Responses:
 # Login Success: { "token": "jwt-token", "user": {...} }
 # Invitation Created: { "id": "uuid", "email": "...", "status": "PENDING", ... }

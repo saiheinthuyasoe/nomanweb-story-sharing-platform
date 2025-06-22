@@ -36,10 +36,12 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
         // Find stories by moderation status
         Page<Story> findByModerationStatus(Story.ModerationStatus moderationStatus, Pageable pageable);
 
-        // Search stories by title or description
+        // Search stories by title, description, or author name
         @Query("SELECT s FROM Story s WHERE s.status = :status AND " +
                         "(LOWER(s.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-                        "LOWER(s.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+                        "LOWER(s.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+                        "LOWER(s.author.displayName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+                        "LOWER(s.author.username) LIKE LOWER(CONCAT('%', :query, '%')))")
         Page<Story> searchByTitleOrDescription(@Param("query") String query,
                         @Param("status") Story.Status status,
                         Pageable pageable);
@@ -88,10 +90,12 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
                         "(:status IS NULL OR s.status = :status) AND " +
                         "(:categoryId IS NULL OR s.category.id = :categoryId) AND " +
                         "(:contentType IS NULL OR s.contentType = :contentType) AND " +
+                        "(:contentStatus IS NULL OR s.contentStatus = :contentStatus) AND " +
                         "(:authorId IS NULL OR s.author.id = :authorId)")
         Page<Story> findStoriesWithFilters(@Param("status") Story.Status status,
                         @Param("categoryId") UUID categoryId,
                         @Param("contentType") Story.ContentType contentType,
+                        @Param("contentStatus") Story.ContentStatus contentStatus,
                         @Param("authorId") UUID authorId,
                         Pageable pageable);
 }

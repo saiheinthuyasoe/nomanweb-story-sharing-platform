@@ -5,8 +5,8 @@ export interface User {
   displayName?: string;
   profileImageUrl?: string;
   bio?: string;
-  role: 'USER' | 'ADMIN';
-  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED';
+  role: 'user' | 'admin';
+  status: 'active' | 'suspended' | 'banned';
   coinBalance: number;
   totalEarnedCoins: number;
   lineUserId?: string;
@@ -21,4 +21,46 @@ export interface AuthResponse {
   user: User;
   token: string;
   refreshToken: string;
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  user: User;
+  type: 'NEW_CHAPTER' | 'NEW_STORY' | 'GIFT_RECEIVED' | 'COMMENT' | 'LIKE' | 'FOLLOW' | 'SYSTEM';
+  title: string;
+  message: string;
+  relatedType?: 'STORY' | 'CHAPTER' | 'USER' | 'GIFT' | 'COMMENT';
+  relatedId?: string;
+  isRead: boolean;
+  sentViaLine: boolean;
+  lineMessageId?: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface NotificationStats {
+  total: number;
+  unread: number;
+  new_chapter: number;
+  new_story: number;
+  gift_received: number;
+  comment: number;
+  like: number;
+  follow: number;
+  system: number;
+}
+
+// Social interaction types
+export interface UserFollow {
+  id: string;
+  follower: User;
+  following: User;
+  createdAt: string;
+}
+
+export interface FollowStats {
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
 } 

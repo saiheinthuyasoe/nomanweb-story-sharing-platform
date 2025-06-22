@@ -32,6 +32,7 @@ export interface Story {
   category?: CategoryInfo;
   status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
   contentType: 'FREE' | 'PAID' | 'MIXED';
+  contentStatus: 'ONGOING' | 'COMPLETED';
   moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
   totalViews: number;
@@ -54,6 +55,8 @@ export interface StoryPreview {
   category?: CategoryInfo;
   status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
   contentType: 'FREE' | 'PAID' | 'MIXED';
+  contentStatus: 'ONGOING' | 'COMPLETED';
+  moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
   totalViews: number;
   totalLikes: number;
@@ -68,6 +71,7 @@ export interface CreateStoryRequest {
   description?: string;
   categoryId?: string;
   contentType?: 'FREE' | 'PAID' | 'MIXED';
+  contentStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
 }
@@ -77,6 +81,7 @@ export interface UpdateStoryRequest {
   description?: string;
   categoryId?: string;
   contentType?: 'FREE' | 'PAID' | 'MIXED';
+  contentStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
 }

@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.dto.story.UpdateStoryRequest;
 import com.app.nomanweb_backend.service.FileUploadService;
 import com.app.nomanweb_backend.service.AuthService;
+import com.app.nomanweb_backend.service.CachedAuthService;
 import com.app.nomanweb_backend.service.StoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class FileUploadController {
 
     private final FileUploadService fileUploadService;
     private final AuthService authService;
+    private final CachedAuthService cachedAuthService;
     private final StoryService storyService;
 
     @PostMapping("/profile-image")
@@ -56,11 +58,11 @@ public class FileUploadController {
             // Upload new image
             String imageUrl = fileUploadService.uploadImage(file, "profile_images");
 
-            // Update user profile image
+            // Update user profile image using cached service
             User updatedUser = User.builder()
                     .profileImageUrl(imageUrl)
                     .build();
-            authService.updateProfile(userId, updatedUser);
+            cachedAuthService.updateProfileCached(userId, updatedUser);
 
             log.info("Profile image uploaded successfully for user: {}", userId);
 

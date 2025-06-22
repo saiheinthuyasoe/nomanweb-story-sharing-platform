@@ -67,13 +67,28 @@ export default function MyStoriesPage() {
     }
   };
 
-  const getContentStatusBadge = (status: StoryStatus) => {
-    // Map story status to content status
+  const getContentStatusBadge = (contentStatus: 'ONGOING' | 'COMPLETED') => {
+    // Map content status from database
     const statusConfig = {
-      DRAFT: { text: 'Ongoing', className: 'bg-yellow-100 text-yellow-700' },
-      PUBLISHED: { text: 'Ongoing', className: 'bg-yellow-100 text-yellow-700' },
-      COMPLETED: { text: 'Completed', className: 'bg-green-100 text-green-700' },
-      SUSPENDED: { text: 'Ongoing', className: 'bg-yellow-100 text-yellow-700' }
+      ONGOING: { text: 'Ongoing', className: 'bg-yellow-100 text-yellow-700' },
+      COMPLETED: { text: 'Completed', className: 'bg-green-100 text-green-700' }
+    };
+    
+    const config = statusConfig[contentStatus] || statusConfig.ONGOING;
+    return (
+      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
+        {config.text}
+      </span>
+    );
+  };
+
+  const getPublicationStatusBadge = (status: StoryStatus) => {
+    // Map publication status
+    const statusConfig = {
+      DRAFT: { text: 'Draft', className: 'bg-gray-100 text-gray-700' },
+      PUBLISHED: { text: 'Published', className: 'bg-blue-100 text-blue-700' },
+      COMPLETED: { text: 'Published', className: 'bg-blue-100 text-blue-700' },
+      SUSPENDED: { text: 'Suspended', className: 'bg-red-100 text-red-700' }
     };
     
     const config = statusConfig[status] || statusConfig.DRAFT;
@@ -116,11 +131,7 @@ export default function MyStoriesPage() {
     return num.toString();
   };
 
-  // Mock data for demonstration - would come from API based on activeTab
-  const getMockModerationStatus = (): ModerationStatus => {
-    const statuses: ModerationStatus[] = ['PENDING', 'APPROVED', 'REJECTED'];
-    return statuses[Math.floor(Math.random() * statuses.length)];
-  };
+  // Removed mock moderation status - now using real data from API
 
   const stories = storiesPage?.content || [];
   const filteredStories = stories.filter(story => {
@@ -254,6 +265,9 @@ export default function MyStoriesPage() {
                                <div className="ant-table-column-title">Story</div>
                              </th>
                              <th className="ant-table-cell" style={{ width: '96px' }}>
+                               <div className="ant-table-column-title">Content Status</div>
+                             </th>
+                             <th className="ant-table-cell" style={{ width: '96px' }}>
                                <div className="ant-table-column-title">Status</div>
                              </th>
                              <th className="ant-table-cell" style={{ width: '112px' }}>
@@ -338,14 +352,19 @@ export default function MyStoriesPage() {
                                  </div>
                                </td>
 
-                               {/* Status Column */}
+                               {/* Content Status Column */}
                                <td className="ant-table-cell">
-                                 {getContentStatusBadge(story.status as StoryStatus)}
+                                 {getContentStatusBadge(story.contentStatus)}
+                               </td>
+
+                               {/* Publication Status Column */}
+                               <td className="ant-table-cell">
+                                 {getPublicationStatusBadge(story.status as StoryStatus)}
                                </td>
 
                                {/* Moderation Status Column */}
                                <td className="ant-table-cell">
-                                 {getModerationBadge(getMockModerationStatus())}
+                                 {getModerationBadge(story.moderationStatus)}
                                </td>
 
                                {/* Chapters Column */}

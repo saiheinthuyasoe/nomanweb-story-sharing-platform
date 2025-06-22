@@ -61,6 +61,11 @@ public class Story {
     @Builder.Default
     private ContentType contentType = ContentType.FREE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "content_status")
+    @Builder.Default
+    private ContentStatus contentStatus = ContentStatus.ONGOING;
+
     @Column(name = "total_chapters")
     @Builder.Default
     private Integer totalChapters = 0;
@@ -136,6 +141,10 @@ public class Story {
 
     public enum ContentType {
         FREE, PAID, MIXED
+    }
+
+    public enum ContentStatus {
+        ONGOING, COMPLETED
     }
 
     public enum ModerationStatus {

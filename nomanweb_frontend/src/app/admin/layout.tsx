@@ -49,6 +49,11 @@ const adminNavItems = [
     icon: ChartBarIcon
   },
   {
+    name: 'OAuth Migration',
+    href: '/admin/migration',
+    icon: CogIcon
+  },
+  {
     name: 'Settings',
     href: '/admin/settings',
     icon: CogIcon

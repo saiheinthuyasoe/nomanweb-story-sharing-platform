@@ -5,6 +5,7 @@ import { Upload, X, Loader2, Link, Camera, Plus, Edit3, Trash2, User } from 'luc
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/api/client';
+import { preloadImage, isImageCached, markImageAsCached, getCachedImageResult, shouldAttemptOAuthImageLoad } from '@/lib/imageLoader';
 
 interface ProfileImageUploadProps {
   value?: string;
@@ -87,9 +88,7 @@ export function ProfileImageUpload({
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      formData.append('folder', 'profile_images');
-      
-      const response = await apiClient.post('/upload/image', formData, {
+      const response = await apiClient.post('/upload/profile-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -193,30 +192,66 @@ export function ProfileImageUpload({
   };
 
   // Main profile image display component
-  const ProfileDisplay = () => {
+  const ProfileDisplay = React.memo(() => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [isExternalOAuth, setIsExternalOAuth] = useState(false);
 
     useEffect(() => {
-      if (value) {
+      if (value && value.trim()) {
+        // Check if it's an external OAuth image
+        const isExternal = value.includes('googleusercontent.com') || 
+                          value.includes('profile-cdn.line-scdn.net') ||
+                          value.includes('graph.facebook.com');
+        setIsExternalOAuth(isExternal);
+
+        // Check if image is already cached
+        const cachedResult = getCachedImageResult(value);
+        if (cachedResult) {
+          setImageLoaded(cachedResult.success);
+          setImageError(!cachedResult.success);
+          return;
+        }
+
+        // Check if we should attempt to load OAuth images
+        if (isExternal && !shouldAttemptOAuthImageLoad(value)) {
+          // OAuth image is in cooldown, show error state immediately
+          setImageLoaded(false);
+          setImageError(true);
+          console.warn('OAuth image load skipped - in cooldown period');
+          return;
+        }
+        
         setImageLoaded(false);
         setImageError(false);
+        
+        // Use preloader for better image loading
+        preloadImage(value).then((result) => {
+          setImageLoaded(result.success);
+          setImageError(!result.success);
+          if (!result.success && !isExternalOAuth) {
+            // Only log non-OAuth errors to reduce console noise
+            console.error('Image preload failed:', result.error);
+          }
+        });
+      } else {
+        setImageLoaded(false);
+        setImageError(false);
+        setIsExternalOAuth(false);
       }
-    }, [value]);
+    }, [value]); // Only depend on value, not on imageLoaded/imageError
 
-    const handleImageLoad = () => {
-      console.log('✅ Profile image loaded successfully');
+    const handleImageLoad = useCallback(() => {
       setImageLoaded(true);
       setImageError(false);
-    };
+    }, []);
 
-    const handleImageError = () => {
-      console.log('❌ Profile image failed to load');
+    const handleImageError = useCallback(() => {
       setImageLoaded(false);
       setImageError(true);
-    };
+    }, []);
 
-    if (value) {
+    if (value && value.trim()) {
       return (
         <div className="text-center">
           {/* Simple circular image container */}
@@ -228,32 +263,42 @@ export function ProfileImageUpload({
               </div>
             )}
 
-            {/* Error state */}
+            {/* Error state - show default avatar for OAuth errors, X for other errors */}
             {imageError && (
               <div 
-                className={`${config.container} border-2 border-red-300 rounded-full bg-red-50 flex items-center justify-center cursor-pointer hover:bg-red-100`}
+                className={`${config.container} border-2 ${isExternalOAuth ? 'border-blue-300 bg-blue-50' : 'border-red-300 bg-red-50'} rounded-full flex items-center justify-center cursor-pointer ${isExternalOAuth ? 'hover:bg-blue-100' : 'hover:bg-red-100'}`}
                 onClick={openModal}
+                title={isExternalOAuth ? "Social media image temporarily unavailable - click to upload a new one" : "Image failed to load - click to try again"}
               >
-                <X className={`${config.icon} text-red-400`} />
+                {isExternalOAuth ? (
+                  <User className={`${config.icon} text-blue-400`} />
+                ) : (
+                  <X className={`${config.icon} text-red-400`} />
+                )}
+                {/* Small indicator for OAuth rate limiting */}
+                {isExternalOAuth && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white flex items-center justify-center">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Simple circular image display */}
-            {!imageError && (
+            {/* Simple circular image display - only show if successfully preloaded */}
+            {!imageError && value && imageLoaded && (
               <img 
                 src={value} 
                 alt="Profile"
                 className={`${config.container} object-cover border-2 border-gray-200 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300`}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-                style={{ 
-                  display: imageLoaded ? 'block' : 'none'
-                }}
+                loading="eager"
+                crossOrigin="anonymous"
               />
             )}
 
             {/* Edit button overlay - positioned outside the image */}
-            {imageLoaded && (
+            {(imageLoaded || (imageError && isExternalOAuth)) && (
               <button
                 onClick={openModal}
                 className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg transition-colors flex items-center justify-center"
@@ -275,21 +320,37 @@ export function ProfileImageUpload({
                 )}
                 
                 {imageError && (
-                  <div className="space-x-2">
-                    <button
-                      onClick={openModal}
-                      className="text-xs text-blue-500 hover:text-blue-700"
-                    >
-                      Try again
-                    </button>
-                    {onRemove && (
-                      <button
-                        onClick={handleRemove}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
+                  <div className="space-y-1">
+                    {isExternalOAuth ? (
+                      <div className="text-center">
+                        <p className="text-xs text-blue-600 mb-1">
+                          Social media image temporarily unavailable
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Provider rate limit active - please wait a few minutes
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-red-600">
+                        Image failed to load
+                      </p>
                     )}
+                    <div className="space-x-2">
+                      <button
+                        onClick={openModal}
+                        className={`text-xs ${isExternalOAuth ? 'text-blue-500 hover:text-blue-700' : 'text-blue-500 hover:text-blue-700'}`}
+                      >
+                        {isExternalOAuth ? 'Upload new image' : 'Try again'}
+                      </button>
+                      {onRemove && (
+                        <button
+                          onClick={handleRemove}
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -328,7 +389,7 @@ export function ProfileImageUpload({
         )}
       </div>
     );
-  };
+  });
 
   // Modal content components (same as StoryCoverUpload but profile-themed)
   const ModeSelector = () => (

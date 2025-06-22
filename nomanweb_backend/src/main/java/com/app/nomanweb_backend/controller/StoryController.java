@@ -93,14 +93,16 @@ public class StoryController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String contentType,
+            @RequestParam(required = false) String contentStatus,
             @RequestParam(required = false) UUID authorId) {
         try {
             Page<StoryPreviewResponse> stories;
 
             // If filters are provided, use filtered search
-            if (status != null || categoryId != null || contentType != null || authorId != null) {
+            if (status != null || categoryId != null || contentType != null || contentStatus != null
+                    || authorId != null) {
                 stories = storyService.getStoriesWithFilters(
-                        status, categoryId, contentType, authorId, sortBy, page, size);
+                        status, categoryId, contentType, contentStatus, authorId, sortBy, page, size);
             } else {
                 stories = storyService.getPublishedStories(page, size, sortBy);
             }

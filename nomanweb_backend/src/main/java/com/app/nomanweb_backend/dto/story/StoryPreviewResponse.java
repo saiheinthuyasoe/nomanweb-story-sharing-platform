@@ -25,6 +25,8 @@ public class StoryPreviewResponse {
 
     private Story.Status status;
     private Story.ContentType contentType;
+    private Story.ContentStatus contentStatus;
+    private Story.ModerationStatus moderationStatus;
 
     // Key statistics
     private Integer totalChapters;

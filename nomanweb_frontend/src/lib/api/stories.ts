@@ -15,6 +15,7 @@ export interface GetStoriesParams {
   status?: string;
   categoryId?: string;
   contentType?: string;
+  contentStatus?: string;
   authorId?: string;
 }
 

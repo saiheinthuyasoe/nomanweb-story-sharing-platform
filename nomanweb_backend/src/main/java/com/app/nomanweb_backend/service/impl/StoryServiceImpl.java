@@ -57,6 +57,7 @@ public class StoryServiceImpl implements StoryService {
                 .author(author)
                 .category(category)
                 .contentType(request.getContentType())
+                .contentStatus(request.getContentStatus())
                 .coverImageUrl(request.getCoverImageUrl())
                 .status(Story.Status.DRAFT)
                 .moderationStatus(Story.ModerationStatus.PENDING)
@@ -105,6 +106,9 @@ public class StoryServiceImpl implements StoryService {
         }
         if (request.getContentType() != null) {
             story.setContentType(request.getContentType());
+        }
+        if (request.getContentStatus() != null) {
+            story.setContentStatus(request.getContentStatus());
         }
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -224,16 +228,18 @@ public class StoryServiceImpl implements StoryService {
     @Override
     @Transactional(readOnly = true)
     public Page<StoryPreviewResponse> getStoriesWithFilters(
-            String status, UUID categoryId, String contentType, UUID authorId,
+            String status, UUID categoryId, String contentType, String contentStatus, UUID authorId,
             String sortBy, int page, int size) {
 
         Story.Status statusEnum = status != null ? Story.Status.valueOf(status) : null;
         Story.ContentType contentTypeEnum = contentType != null ? Story.ContentType.valueOf(contentType) : null;
+        Story.ContentStatus contentStatusEnum = contentStatus != null ? Story.ContentStatus.valueOf(contentStatus)
+                : null;
         Sort sort = createSort(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Story> stories = storyRepository.findStoriesWithFilters(
-                statusEnum, categoryId, contentTypeEnum, authorId, pageable);
+                statusEnum, categoryId, contentTypeEnum, contentStatusEnum, authorId, pageable);
 
         return stories.map(this::convertToStoryPreviewResponse);
     }
@@ -350,6 +356,7 @@ public class StoryServiceImpl implements StoryService {
                         .build() : null)
                 .status(story.getStatus())
                 .contentType(story.getContentType())
+                .contentStatus(story.getContentStatus())
                 .moderationStatus(story.getModerationStatus())
                 .totalChapters(story.getTotalChapters())
                 .totalViews(story.getTotalViews())
@@ -382,6 +389,8 @@ public class StoryServiceImpl implements StoryService {
                         .build() : null)
                 .status(story.getStatus())
                 .contentType(story.getContentType())
+                .contentStatus(story.getContentStatus())
+                .moderationStatus(story.getModerationStatus())
                 .totalChapters(story.getTotalChapters())
                 .totalViews(story.getTotalViews())
                 .totalLikes(story.getTotalLikes())

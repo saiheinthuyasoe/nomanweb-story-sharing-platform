@@ -375,22 +375,22 @@ npm run dev
 ## 🚀 **Development Phases**
 
 ### **Phase 1: Core Infrastructure ✅ COMPLETED**
-- [x] Project setup and dependencies
-- [x] PostgreSQL database with complete schema (20+ tables)
-- [x] Complete JWT authentication system
-- [x] Email/password authentication with validation
-- [x] Email verification system (fully functional)
-- [x] Google OAuth integration (ready for Firebase setup)
-- [x] LINE OAuth integration
-- [x] Multi-provider authentication (all providers working)
-- [x] Password reset with email service
-- [x] Basic UI components and routing
-- [x] Modern state management with @tanstack/react-query v5
-- [x] Syntax highlighting with Shiki
-- [x] Comprehensive testing framework
-- [x] Security implementation (JWT, CORS, validation)
+- [ ] Project setup and dependencies
+- [ ] PostgreSQL database with complete schema (20+ tables)
+- [ ] Complete JWT authentication system
+- [ ] Email/password authentication with validation
+- [ ] Email verification system (fully functional)
+- [ ] Google OAuth integration (ready for Firebase setup)
+- [ ] LINE OAuth integration
+- [ ] Multi-provider authentication (all providers working)
+- [ ] Password reset with email service
+- [ ] Basic UI components and routing
+- [ ] Modern state management with @tanstack/react-query v5
+- [ ] Syntax highlighting with Shiki
+- [ ] Comprehensive testing framework
+- [ ] Security implementation (JWT, CORS, validation)
 - [ ] User profile management
-- [x] Authentication context and state management
+- [ ] Authentication context and state management
 
 **🎉 Phase 1 Results:**
 - **Authentication System**: 100% functional
@@ -400,15 +400,15 @@ npm run dev
 - **User Management**: Registration, login, profile updates, password reset
 
 ### **Phase 2: Content Management System ✅ COMPLETED**
-- [x] **Story CRUD Operations** - Create, read, update, delete stories
-- [x] **Rich Text Editor** - Advanced story writing interface with Lexical
-- [x] **Chapter Management** - Multi-chapter story support with navigation
-- [x] **Category System** - Genre-based organization with 10+ categories
-- [x] **File Upload System** - Cover images and media with Cloudinary
-- [x] **Content Moderation** - Review and approval workflow with admin dashboard
-- [x] **Advanced Search** - Story discovery and filtering using Typesense
-- [x] **Draft/Publish Workflow** - Content lifecycle management
-- [x] **BONUS**: Admin dashboard, search indexing automation, reading progress
+- [ ] **Story CRUD Operations** - Create, read, update, delete stories
+- [ ] **Rich Text Editor** - Advanced story writing interface with Lexical
+- [ ] **Chapter Management** - Multi-chapter story support with navigation
+- [ ] **Category System** - Genre-based organization with 10+ categories
+- [ ] **File Upload System** - Cover images and media with Cloudinary
+- [ ] **Content Moderation** - Review and approval workflow with admin dashboard
+- [ ] **Advanced Search** - Story discovery and filtering using Typesense
+- [ ] **Draft/Publish Workflow** - Content lifecycle management
+- [ ] **BONUS**: Admin dashboard, search indexing automation, reading progress
 
 **🎯 Phase 2 Goals:**
 - Complete story creation and management system
@@ -421,9 +421,10 @@ npm run dev
 - [ ] Coin economy implementation
 - [ ] Gift system with virtual items
 - [ ] Chapter purchase and access control
-- [ ] Payment processing with LINE integration
+- [ ] Payment processing with PromptPay QR code using Stripe for testing now
 - [ ] Revenue tracking and analytics
-- [ ] Withdrawal system with PromptPay
+- [ ] Withdrawal system with PromptPay QR code using Stripe for testing now
+- [ ] Admin Control Coin Man
 
 ### **Phase 4: Social Features 📋 PLANNED**
 - [ ] User following and notification system

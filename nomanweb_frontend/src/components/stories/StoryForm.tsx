@@ -38,6 +38,7 @@ export function StoryForm({
       description: story?.description || '',
       categoryId: story?.category?.id || '',
       contentType: story?.contentType || 'FREE',
+      contentStatus: story?.contentStatus || 'ONGOING',
       coverImageUrl: story?.coverImageUrl || '',
       tags: story?.tags || [],
     }
@@ -133,8 +134,8 @@ export function StoryForm({
           )}
         </div>
 
-        {/* Category and Content Type Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Category, Content Type, and Content Status Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Category */}
           <div>
             <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -167,6 +168,21 @@ export function StoryForm({
               <option value="FREE">Free</option>
               <option value="PAID">Paid</option>
               <option value="MIXED">Mixed (Free & Paid)</option>
+            </select>
+          </div>
+
+          {/* Content Status */}
+          <div>
+            <label htmlFor="contentStatus" className="block text-sm font-medium text-gray-700 mb-2">
+              Content Status
+            </label>
+            <select
+              id="contentStatus"
+              {...register('contentStatus')}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="ONGOING">Ongoing</option>
+              <option value="COMPLETED">Completed</option>
             </select>
           </div>
         </div>

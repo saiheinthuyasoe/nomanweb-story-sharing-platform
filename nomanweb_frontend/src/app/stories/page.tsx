@@ -14,6 +14,7 @@ export default function StoriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [contentType, setContentType] = useState('');
+  const [contentStatus, setContentStatus] = useState('');
   const [sortBy, setSortBy] = useState('');
 
   // Get search query from URL parameters
@@ -39,6 +40,7 @@ export default function StoriesPage() {
     sortBy,
     categoryId: selectedCategory || undefined,
     contentType: contentType || undefined,
+    contentStatus: contentStatus || undefined,
   });
 
   // Use search results if there's a search query, otherwise use regular stories
@@ -67,6 +69,7 @@ export default function StoriesPage() {
     setSearchQuery('');
     setSelectedCategory('');
     setContentType('');
+    setContentStatus('');
     setSortBy('');
     router.push('/stories');
   };
@@ -121,7 +124,7 @@ export default function StoriesPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -130,7 +133,7 @@ export default function StoriesPage() {
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
-                  placeholder="Search stories..."
+                  placeholder="Search by title or author..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -190,6 +193,29 @@ export default function StoriesPage() {
                 <option value="PAID">Paid</option>
                 <option value="MIXED">Mixed</option>
               </select>
+            </div>
+
+            {/* Content Status - disabled during search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content Status
+              </label>
+              <select
+                value={contentStatus}
+                onChange={(e) => {
+                  setContentStatus(e.target.value);
+                  setPage(0);
+                }}
+                disabled={!!urlSearchQuery}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">All Status</option>
+                <option value="ONGOING">Ongoing</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+              {urlSearchQuery && (
+                <p className="text-xs text-gray-500 mt-1">Filters disabled during search</p>
+              )}
             </div>
 
             {/* Sort By - disabled during search */}
