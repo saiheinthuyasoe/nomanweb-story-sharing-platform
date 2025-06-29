@@ -19,13 +19,31 @@ import {
   ShoppingCart,
   History,
   BookmarkIcon,
-  Library
+  Library,
+  Users
 } from 'lucide-react';
+import { ActiveCollaborators } from '@/components/collaboration/ActiveCollaborators';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  
+  // Check if on chapter edit page
+  const isChapterEditPage = pathname.includes('/chapters/') && pathname.includes('/edit');
+  // Extract chapter ID from URL like /stories/[storyId]/chapters/[chapterNumber]/edit
+  const getChapterIdFromPath = () => {
+    if (!isChapterEditPage) return null;
+    const pathParts = pathname.split('/');
+    const storyIndex = pathParts.findIndex(part => part === 'stories');
+    if (storyIndex !== -1 && pathParts[storyIndex + 1] && pathParts[storyIndex + 3]) {
+      // For now, we can't get the actual chapter ID from URL since it's story/chapter number
+      // We'll need to get it from the edit page component context
+      return 'edit-page-chapter'; // placeholder
+    }
+    return null;
+  };
+  const chapterId = getChapterIdFromPath();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -158,6 +176,16 @@ export default function Navbar() {
                   </>
                 )}
               </div>
+              
+              {/* Active Collaborators for Chapter Edit Pages */}
+              {isChapterEditPage && (
+                <div className="hidden lg:flex items-center ml-6 px-3 py-1 bg-white/10 rounded-lg">
+                  <Users className="w-4 h-4 text-white mr-2" />
+                  <span className="text-white text-sm font-medium">Collaborating</span>
+                  {/* Note: We would need the actual chapter ID here for real functionality */}
+                  {/* <ActiveCollaborators chapterId={actualChapterId} /> */}
+                </div>
+              )}
             </div>
 
             {/* Center Section - Mobile Search */}
@@ -211,6 +239,15 @@ export default function Navbar() {
               {/* Desktop User Section */}
               {user ? (
                 <div className="hidden lg:flex items-center space-x-3">
+                  {/* Library */}
+                  <Link 
+                    href="/library"
+                    className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth"
+                    title="Library"
+                  >
+                    <Library className="h-5 w-5" />
+                  </Link>
+
                   {/* Notifications */}
                   <button className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth relative">
                     <Bell className="h-5 w-5" />
@@ -240,7 +277,7 @@ export default function Navbar() {
 
                     {/* User Dropdown Menu - Desktop Only */}
                     {isUserDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-[70] py-2 hidden lg:block">
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-[9999] py-2 hidden lg:block">
                         {/* User Info */}
                         <div className="px-4 py-3 border-b border-gray-100">
                           <div className="flex items-center space-x-3">
@@ -271,7 +308,13 @@ export default function Navbar() {
                               <Coins className="h-4 w-4 text-yellow-600" />
                               <span className="text-sm font-medium text-gray-700">{user.coinBalance}</span>
                             </div>
-                            <button className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md hover:bg-yellow-200 transition-colors">
+                            <button 
+                              onClick={() => {
+                                setIsUserDropdownOpen(false);
+                                router.push('/buy-coins');
+                              }}
+                              className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md hover:bg-yellow-200 transition-colors"
+                            >
                               Buy
                             </button>
                           </div>
@@ -389,7 +432,13 @@ export default function Navbar() {
                       <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-300" />
                       <span className="text-xs sm:text-sm font-medium text-white">{user.coinBalance}</span>
                     </div>
-                    <button className="text-xs bg-yellow-400/30 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-sm sm:rounded-md hover:bg-yellow-400/40 transition-colors">
+                    <button 
+                      onClick={() => {
+                        closeMobileMenu();
+                        router.push('/buy-coins');
+                      }}
+                      className="text-xs bg-yellow-400/30 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-sm sm:rounded-md hover:bg-yellow-400/40 transition-colors"
+                    >
                       Buy
                     </button>
                   </div>

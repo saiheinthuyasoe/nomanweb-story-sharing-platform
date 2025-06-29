@@ -198,6 +198,24 @@ public class ChapterController {
         }
     }
 
+    // Bulk delete chapters
+    @DeleteMapping("/bulk")
+    public ResponseEntity<Void> bulkDeleteChapters(
+            @RequestBody List<UUID> chapterIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkDeleteChapters(chapterIds, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk deleting chapters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk deleting chapters", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Get chapters by story
     @GetMapping("/story/{storyId}")
     public ResponseEntity<List<ChapterPreviewResponse>> getChaptersByStory(
@@ -410,6 +428,152 @@ public class ChapterController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("Unexpected error moderating chapter", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Trash management endpoints
+
+    // Move chapter to trash
+    @PostMapping("/{chapterId}/trash")
+    public ResponseEntity<Void> moveChapterToTrash(
+            @PathVariable UUID chapterId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.moveChapterToTrash(chapterId, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error moving chapter to trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error moving chapter to trash", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Restore chapter from trash
+    @PostMapping("/{chapterId}/restore")
+    public ResponseEntity<Void> restoreChapterFromTrash(
+            @PathVariable UUID chapterId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.restoreChapterFromTrash(chapterId, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error restoring chapter from trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error restoring chapter from trash", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Permanently delete chapter
+    @DeleteMapping("/{chapterId}/permanent")
+    public ResponseEntity<Void> permanentlyDeleteChapter(
+            @PathVariable UUID chapterId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.permanentlyDeleteChapter(chapterId, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error permanently deleting chapter: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error permanently deleting chapter", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get chapters in trash by story
+    @GetMapping("/story/{storyId}/trash")
+    public ResponseEntity<List<ChapterPreviewResponse>> getTrashByStory(
+            @PathVariable UUID storyId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            List<ChapterPreviewResponse> trashChapters = chapterService.getTrashByStory(storyId, authorId);
+            return ResponseEntity.ok(trashChapters);
+        } catch (IllegalArgumentException e) {
+            log.error("Error getting trash chapters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error getting trash chapters", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Bulk move to trash
+    @PostMapping("/bulk/trash")
+    public ResponseEntity<Void> bulkMoveToTrash(
+            @RequestBody List<UUID> chapterIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkMoveToTrash(chapterIds, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk moving chapters to trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk moving chapters to trash", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Bulk restore from trash
+    @PostMapping("/bulk/restore")
+    public ResponseEntity<Void> bulkRestoreFromTrash(
+            @RequestBody List<UUID> chapterIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkRestoreFromTrash(chapterIds, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk restoring chapters from trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk restoring chapters from trash", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Bulk permanently delete
+    @DeleteMapping("/bulk/permanent")
+    public ResponseEntity<Void> bulkPermanentlyDelete(
+            @RequestBody List<UUID> chapterIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkPermanentlyDelete(chapterIds, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk permanently deleting chapters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk permanently deleting chapters", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Empty trash for story
+    @DeleteMapping("/story/{storyId}/empty-trash")
+    public ResponseEntity<Void> emptyTrash(
+            @PathVariable UUID storyId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.emptyTrash(storyId, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error emptying trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error emptying trash", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

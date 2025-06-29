@@ -29,15 +29,28 @@ public class ReadingListController {
 
     @PostMapping("/story/{storyId}/bookmark")
     public ResponseEntity<?> toggleBookmark(@PathVariable UUID storyId,
-            @RequestParam(defaultValue = "FAVORITE") String listType,
+            @RequestParam(defaultValue = "LIKE") String listType,
             Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User user = userRepository.findByUsername(username)
+            String userIdStr = authentication.getName();
+            UUID userId = UUID.fromString(userIdStr);
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             Story story = storyRepository.findById(storyId)
                     .orElseThrow(() -> new RuntimeException("Story not found"));
+
+            // Handle special "REMOVE" case
+            if ("REMOVE".equals(listType.toUpperCase())) {
+                // Remove all bookmarks for this story
+                List<ReadingList> allBookmarks = readingListRepository.findByUserIdAndStoryId(user.getId(), storyId);
+                readingListRepository.deleteAll(allBookmarks);
+
+                return ResponseEntity.ok(Map.of(
+                        "bookmarked", false,
+                        "message", "Removed from library",
+                        "listType", "REMOVED"));
+            }
 
             ReadingList.ListType type = ReadingList.ListType.valueOf(listType.toUpperCase());
 
@@ -89,8 +102,9 @@ public class ReadingListController {
 
             // Check if user is authenticated
             if (authentication != null && authentication.isAuthenticated()) {
-                String username = authentication.getName();
-                User user = userRepository.findByUsername(username).orElse(null);
+                String userIdStr = authentication.getName();
+                UUID userId = UUID.fromString(userIdStr);
+                User user = userRepository.findById(userId).orElse(null);
 
                 if (user != null) {
                     List<ReadingList> bookmarks = readingListRepository.findByUserIdAndStoryId(user.getId(), storyId);
@@ -117,15 +131,21 @@ public class ReadingListController {
     public ResponseEntity<?> getMyReadingLists(@RequestParam(required = false) String listType,
             Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User user = userRepository.findByUsername(username)
+            String userIdStr = authentication.getName();
+            UUID userId = UUID.fromString(userIdStr);
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             List<ReadingList> readingLists;
 
             if (listType != null) {
-                ReadingList.ListType type = ReadingList.ListType.valueOf(listType.toUpperCase());
-                readingLists = readingListRepository.findByUserIdAndListTypeOrderByAddedAtDesc(user.getId(), type);
+                try {
+                    ReadingList.ListType type = ReadingList.ListType.valueOf(listType.toUpperCase());
+                    readingLists = readingListRepository.findByUserIdAndListTypeOrderByAddedAtDesc(user.getId(), type);
+                } catch (IllegalArgumentException e) {
+                    // Invalid list type, return empty list
+                    readingLists = new java.util.ArrayList<>();
+                }
             } else {
                 readingLists = readingListRepository.findByUserIdOrderByAddedAtDesc(user.getId());
             }
@@ -143,8 +163,9 @@ public class ReadingListController {
             @RequestParam String status,
             Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User user = userRepository.findByUsername(username)
+            String userIdStr = authentication.getName();
+            UUID userId = UUID.fromString(userIdStr);
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             Story story = storyRepository.findById(storyId)

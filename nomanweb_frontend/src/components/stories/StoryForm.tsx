@@ -37,14 +37,17 @@ export function StoryForm({
       title: story?.title || '',
       description: story?.description || '',
       categoryId: story?.category?.id || '',
-      contentType: story?.contentType || 'FREE',
+      pricingType: story?.pricingType || 'FREE',
       contentStatus: story?.contentStatus || 'ONGOING',
       coverImageUrl: story?.coverImageUrl || '',
       tags: story?.tags || [],
+      bookPrice: story?.bookPrice || undefined,
+      defaultChapterPrice: story?.defaultChapterPrice || undefined,
     }
   });
 
   const watchedCoverImage = watch('coverImageUrl');
+  const watchedPricingType = watch('pricingType');
 
   useEffect(() => {
     setValue('tags', selectedTags);
@@ -80,7 +83,22 @@ export function StoryForm({
   };
 
   const onFormSubmit = (data: CreateStoryRequest | UpdateStoryRequest) => {
-    onSubmit({ ...data, tags: selectedTags });
+    const submissionData = { ...data, tags: selectedTags };
+    
+    // Only include pricing fields when relevant to pricing type
+    if (data.pricingType === 'FREE') {
+      // Remove pricing fields for free content
+      delete submissionData.bookPrice;
+      delete submissionData.defaultChapterPrice;
+    } else if (data.pricingType === 'WHOLE_BOOK') {
+      // Only include bookPrice for whole book pricing
+      delete submissionData.defaultChapterPrice;
+    } else if (data.pricingType === 'PAID_PER_CHAPTER') {
+      // Only include defaultChapterPrice for per-chapter pricing
+      delete submissionData.bookPrice;
+    }
+    
+    onSubmit(submissionData);
   };
 
   return (
@@ -155,19 +173,19 @@ export function StoryForm({
             </select>
           </div>
 
-          {/* Content Type */}
+          {/* Pricing Type */}
           <div>
-            <label htmlFor="contentType" className="block text-sm font-medium text-gray-700 mb-2">
-              Content Type
+            <label htmlFor="pricingType" className="block text-sm font-medium text-gray-700 mb-2">
+              Pricing Type
             </label>
             <select
-              id="contentType"
-              {...register('contentType')}
+              id="pricingType"
+              {...register('pricingType')}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="FREE">Free</option>
-              <option value="PAID">Paid</option>
-              <option value="MIXED">Mixed (Free & Paid)</option>
+              <option value="PAID_PER_CHAPTER">Paid per Chapter</option>
+              <option value="WHOLE_BOOK">Whole Book</option>
             </select>
           </div>
 
@@ -186,6 +204,84 @@ export function StoryForm({
             </select>
           </div>
         </div>
+
+        {/* Pricing Section - Only show for paid content */}
+        {(watchedPricingType === 'PAID_PER_CHAPTER' || watchedPricingType === 'WHOLE_BOOK') && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <span className="text-yellow-500 mr-2">💰</span>
+              Pricing Settings
+            </h3>
+            
+            {/* Whole Book Price - Only show for WHOLE_BOOK type */}
+            {watchedPricingType === 'WHOLE_BOOK' && (
+              <div className="mb-6">
+                <label htmlFor="bookPrice" className="block text-sm font-medium text-gray-700 mb-2">
+                  Book Price (Coins) *
+                </label>
+                <input
+                  type="number"
+                  id="bookPrice"
+                  min="1"
+                  step="1"
+                  {...register('bookPrice', {
+                    required: watchedPricingType === 'WHOLE_BOOK' ? 'Book price is required for whole book pricing' : false,
+                    min: { value: 1, message: 'Book price must be at least 1 coin' },
+                    validate: value => {
+                      if (watchedPricingType === 'WHOLE_BOOK' && (!value || value <= 0)) {
+                        return 'Book price is required for whole book pricing';
+                      }
+                      return true;
+                    }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-xs"
+                  placeholder="Enter book price in coins"
+                />
+                {errors.bookPrice && (
+                  <p className="mt-1 text-sm text-red-600">{errors.bookPrice.message}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Readers will pay this price once to access all chapters
+                </p>
+              </div>
+            )}
+
+            {/* Paid Per Chapter Information - Only show for PAID_PER_CHAPTER */}
+            {watchedPricingType === 'PAID_PER_CHAPTER' && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <span className="text-blue-500 text-lg">📝</span>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Chapter Pricing</h4>
+                    <p className="text-sm text-blue-700 mb-2">
+                      You'll set the price for each chapter individually when you create or edit chapters.
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      This gives you flexibility to price chapters based on their content and length.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Pricing Information */}
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="text-sm font-medium text-green-900 mb-2">💡 Pricing Information</h4>
+              <ul className="text-xs text-green-700 space-y-1">
+                <li>• You earn 70% of each transaction (platform takes 30%)</li>
+                <li>• Readers can send you gifts regardless of pricing type</li>
+                {watchedPricingType === 'WHOLE_BOOK' && (
+                  <li>• Whole book purchases give readers access to all current and future chapters</li>
+                )}
+                {watchedPricingType === 'PAID_PER_CHAPTER' && (
+                  <li>• Set individual chapter prices when creating or editing chapters</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Cover Image */}
         <div>

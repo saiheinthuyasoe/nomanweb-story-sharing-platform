@@ -5,7 +5,7 @@ export interface BookmarkStatus {
   listTypes: {
     reading: boolean;
     completed: boolean;
-    favorite: boolean;
+    liked: boolean;
     want_to_read: boolean;
   };
 }
@@ -29,13 +29,13 @@ export interface ReadingListItem {
     coverImageUrl?: string;
     totalChapters: number;
   };
-  listType: 'READING' | 'COMPLETED' | 'FAVORITE' | 'WANT_TO_READ';
+  listType: 'READING' | 'COMPLETED' | 'LIKE' | 'WANT_TO_READ';
   addedAt: string;
 }
 
 export const readingListsApi = {
   // Bookmark operations
-  async toggleBookmark(storyId: string, listType: string = 'FAVORITE'): Promise<BookmarkResponse> {
+  async toggleBookmark(storyId: string, listType: string = 'LIKE'): Promise<BookmarkResponse> {
     const response = await apiClient.post(`/reading-lists/story/${storyId}/bookmark`, null, {
       params: { listType }
     });

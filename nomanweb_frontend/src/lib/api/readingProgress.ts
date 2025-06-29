@@ -76,4 +76,10 @@ export const readingProgressApi = {
     });
     return response.data;
   },
+
+  // Clear reading history
+  async clearReadingHistory(): Promise<{ message: string; deletedCount: number }> {
+    const response = await apiClient.delete('/reading-progress/clear-history');
+    return response.data;
+  },
 }; 

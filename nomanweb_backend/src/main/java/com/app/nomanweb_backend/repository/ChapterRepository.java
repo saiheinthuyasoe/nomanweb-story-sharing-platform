@@ -17,44 +17,57 @@ import java.util.UUID;
 @Repository
 public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
-        // Find chapters by story ordered by chapter number
-        List<Chapter> findByStoryOrderByChapterNumberAsc(Story story);
+        // Find chapters by story ordered by chapter number (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        List<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story);
 
-        // Find chapters by story with pagination
-        Page<Chapter> findByStoryOrderByChapterNumberAsc(Story story, Pageable pageable);
+        // Find chapters by story with pagination (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        Page<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story, Pageable pageable);
 
-        // Find specific chapter by story and chapter number
-        Optional<Chapter> findByStoryAndChapterNumber(Story story, Integer chapterNumber);
+        // Find specific chapter by story and chapter number (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        Optional<Chapter> findByStoryAndChapterNumber(@Param("story") Story story,
+                        @Param("chapterNumber") Integer chapterNumber);
 
-        // Find chapters by story and status
-        List<Chapter> findByStoryAndStatus(Story story, Chapter.Status status);
+        // Find chapters by story and status (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        List<Chapter> findByStoryAndStatus(@Param("story") Story story, @Param("status") Chapter.Status status);
 
-        // Find published chapters by story
-        List<Chapter> findByStoryAndStatusOrderByChapterNumberAsc(Story story, Chapter.Status status);
+        // Find published chapters by story (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        List<Chapter> findByStoryAndStatusOrderByChapterNumberAsc(@Param("story") Story story,
+                        @Param("status") Chapter.Status status);
 
-        // Count chapters by story
-        long countByStory(Story story);
+        // Count chapters by story (excluding deleted)
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        long countByStory(@Param("story") Story story);
 
-        // Count published chapters by story
-        long countByStoryAndStatus(Story story, Chapter.Status status);
+        // Count published chapters by story (excluding deleted)
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        long countByStoryAndStatus(@Param("story") Story story, @Param("status") Chapter.Status status);
 
-        // Find next chapter
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber > :currentNumber AND c.status = :status ORDER BY c.chapterNumber ASC LIMIT 1")
+        // Find next chapter (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber > :currentNumber AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC LIMIT 1")
         Optional<Chapter> findNextChapter(@Param("story") Story story,
                         @Param("currentNumber") Integer currentNumber,
                         @Param("status") Chapter.Status status);
 
-        // Find previous chapter
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber < :currentNumber AND c.status = :status ORDER BY c.chapterNumber DESC LIMIT 1")
+        // Find previous chapter (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber < :currentNumber AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber DESC LIMIT 1")
         Optional<Chapter> findPreviousChapter(@Param("story") Story story,
                         @Param("currentNumber") Integer currentNumber,
                         @Param("status") Chapter.Status status);
 
-        // Find first chapter of a story
-        Optional<Chapter> findFirstByStoryAndStatusOrderByChapterNumberAsc(Story story, Chapter.Status status);
+        // Find first chapter of a story (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC LIMIT 1")
+        Optional<Chapter> findFirstByStoryAndStatusOrderByChapterNumberAsc(@Param("story") Story story,
+                        @Param("status") Chapter.Status status);
 
-        // Find last chapter of a story
-        Optional<Chapter> findFirstByStoryAndStatusOrderByChapterNumberDesc(Story story, Chapter.Status status);
+        // Find last chapter of a story (excluding deleted)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber DESC LIMIT 1")
+        Optional<Chapter> findFirstByStoryAndStatusOrderByChapterNumberDesc(@Param("story") Story story,
+                        @Param("status") Chapter.Status status);
 
         // Find chapters by moderation status
         Page<Chapter> findByModerationStatus(Chapter.ModerationStatus moderationStatus, Pageable pageable);
@@ -82,4 +95,22 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
         // Count chapters created after a specific date
         long countByCreatedAtAfter(LocalDateTime date);
+
+        // Trash-related queries
+
+        // Find chapters in trash by story
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.isDeleted = true ORDER BY c.deletedAt DESC")
+        List<Chapter> findTrashByStory(@Param("story") Story story);
+
+        // Find all chapters by story including deleted (for author management)
+        @Query("SELECT c FROM Chapter c WHERE c.story = :story ORDER BY c.isDeleted ASC, c.chapterNumber ASC")
+        List<Chapter> findAllByStoryIncludingDeleted(@Param("story") Story story);
+
+        // Count chapters in trash by story
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.isDeleted = true")
+        long countTrashByStory(@Param("story") Story story);
+
+        // Find chapters in trash older than specified date (for cleanup)
+        @Query("SELECT c FROM Chapter c WHERE c.isDeleted = true AND c.deletedAt < :cutoffDate")
+        List<Chapter> findTrashOlderThan(@Param("cutoffDate") LocalDateTime cutoffDate);
 }

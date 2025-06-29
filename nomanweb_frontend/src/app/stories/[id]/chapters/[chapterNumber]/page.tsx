@@ -1,30 +1,63 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useChapterByStoryAndNumber, useNextChapter, usePreviousChapter } from '@/hooks/useChapters';
+import { useChapterByStoryAndNumber } from '@/hooks/useChapters';
 import { useStory } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
-import { useChapterReactionStatus, useToggleChapterLike } from '@/hooks/useReactions';
-import { useBookmarkStatus, useToggleBookmark } from '@/hooks/useReadingLists';
 import { useChapterProgress, useAutoUpdateProgress } from '@/hooks/useReadingProgress';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon, 
   EyeIcon, 
-  HeartIcon, 
-  BookmarkIcon,
-  ShareIcon,
   PencilIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { 
-  HeartIcon as HeartIconSolid,
-  BookmarkIcon as BookmarkIconSolid
-} from '@heroicons/react/24/solid';
+  Settings, 
+  List,
+  X
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { chaptersApi } from '@/lib/api/chapters';
+
+interface ReadingSettings {
+  fontSize: number;
+  fontFamily: string;
+  backgroundColor: string;
+  textColor: string;
+  lineHeight: number;
+  darkMode: boolean;
+}
+
+const defaultSettings: ReadingSettings = {
+  fontSize: 18,
+  fontFamily: 'Georgia',
+  backgroundColor: '#ffffff',
+  textColor: '#1a1a1a',
+  lineHeight: 1.7,
+  darkMode: false,
+};
+
+const fontOptions = [
+  { name: 'Georgia', value: 'Georgia' },
+  { name: 'Merriweather', value: 'Merriweather' },
+  { name: 'Times New Roman', value: 'Times New Roman' },
+  { name: 'Arial', value: 'Arial' },
+  { name: 'Open Sans', value: 'Open Sans' },
+];
+
+const backgroundOptions = [
+  { name: 'White', value: '#ffffff', textColor: '#1a1a1a' },
+  { name: 'Cream', value: '#faf7f0', textColor: '#2d2d2d' },
+  { name: 'Light Gray', value: '#f5f5f5', textColor: '#1a1a1a' },
+  { name: 'Dark', value: '#1a1a1a', textColor: '#e5e5e5' },
+  { name: 'Black', value: '#000000', textColor: '#ffffff' },
+];
 
 export default function ChapterPage() {
   const params = useParams();
@@ -35,24 +68,43 @@ export default function ChapterPage() {
 
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const [settings, setSettings] = useState<ReadingSettings>(defaultSettings);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showTableOfContents, setShowTableOfContents] = useState(false);
+
   const { data: story, isLoading: isLoadingStory } = useStory(storyId);
   const { data: chapter, isLoading: isLoadingChapter, error: chapterError } = useChapterByStoryAndNumber(
     storyId, 
     chapterNumber
   );
 
-  // Reaction and bookmark hooks
-  const { data: reactionStatus } = useChapterReactionStatus(chapter?.id || '', !!chapter);
-  const { data: bookmarkStatus } = useBookmarkStatus(storyId, true);
+  // Fetch all chapters for table of contents
+  const { data: allChapters } = useQuery({
+    queryKey: ['chapters', storyId],
+    queryFn: () => chaptersApi.getChaptersByStory(storyId),
+  });
+
   const { data: progressData } = useChapterProgress(chapter?.id || '', !!chapter);
-  
-  const toggleChapterLike = useToggleChapterLike();
-  const toggleBookmark = useToggleBookmark();
   const updateProgress = useAutoUpdateProgress(chapter?.id || '');
   
   // Stable reference to updateProgress for useEffect
   const updateProgressRef = useRef(updateProgress);
   updateProgressRef.current = updateProgress;
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('reading-settings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
+
+  // Save settings to localStorage
+  const updateSettings = (newSettings: Partial<ReadingSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    localStorage.setItem('reading-settings', JSON.stringify(updated));
+  };
 
   // Check if user is the story author
   const isAuthor = story && user && story.author.id === user.id;
@@ -66,24 +118,6 @@ export default function ChapterPage() {
   const handleNext = () => {
     if (chapter?.navigation.hasNext) {
       router.push(`/stories/${storyId}/chapters/${chapter.navigation.nextChapterNumber}`);
-    }
-  };
-
-  const handleBookmark = () => {
-    if (!user) {
-      toast.error('Please log in to bookmark stories');
-      return;
-    }
-    toggleBookmark.mutate({ storyId, listType: 'FAVORITE' });
-  };
-
-  const handleLike = () => {
-    if (!user) {
-      toast.error('Please log in to like chapters');
-      return;
-    }
-    if (chapter?.id) {
-      toggleChapterLike.mutate(chapter.id);
     }
   };
 
@@ -101,23 +135,17 @@ export default function ChapterPage() {
       scrollTimeout = setTimeout(() => {
         if (!contentRef.current) return;
         
-        const element = contentRef.current;
+        // Simple scroll-based progress calculation
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const elementTop = element.offsetTop;
-        const elementHeight = element.offsetHeight;
+        const documentHeight = document.documentElement.scrollHeight;
         const windowHeight = window.innerHeight;
         
-        // Calculate progress based on how much of the content has been scrolled through
-        const contentStart = elementTop;
-        const viewportBottom = scrollTop + windowHeight;
+        // Calculate how much of the page has been scrolled
+        const scrollableHeight = documentHeight - windowHeight;
+        const progressPercentage = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
         
-        if (viewportBottom > contentStart && elementHeight > 0) {
-          const visibleContent = Math.min(viewportBottom - contentStart, elementHeight);
-          const progressPercentage = Math.min((visibleContent / elementHeight) * 100, 100);
-          
-          if (progressPercentage > 0) {
-            updateProgressRef.current(progressPercentage);
-          }
+        if (progressPercentage > 0) {
+          updateProgressRef.current(Math.min(100, Math.max(0, progressPercentage)));
         }
       }, 100); // Debounce by 100ms
     };
@@ -137,17 +165,7 @@ export default function ChapterPage() {
     };
   }, [chapter?.id, user]); // Remove updateProgress from dependencies to prevent infinite loop
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${chapter?.title} - ${story?.title}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      // Show toast notification
-    }
-  };
+
 
   if (isLoadingStory || isLoadingChapter) {
     return (
@@ -177,9 +195,15 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div 
+      className="min-h-screen transition-colors duration-300"
+      style={{ 
+        backgroundColor: settings.backgroundColor,
+        color: settings.textColor,
+      }}
+    >
       {/* Navigation Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+      <div className="sticky top-0 border-b border-gray-200 z-10" style={{ backgroundColor: settings.backgroundColor }}>
         {/* Reading Progress Bar */}
         {progressData?.hasProgress && (
           <div className="w-full bg-gray-200 h-1">
@@ -202,7 +226,7 @@ export default function ChapterPage() {
               </Link>
               <span className="text-gray-300">•</span>
               <span className="text-gray-600 text-sm">
-                Chapter {chapter.chapterNumber}
+                Chapter {chapter.chapterNumber} (Preview)
               </span>
             </div>
 
@@ -225,47 +249,31 @@ export default function ChapterPage() {
                   <PencilIcon className="w-5 h-5" />
                 </Link>
               )}
-              
-              <button
-                onClick={handleBookmark}
-                className={`p-2 rounded-lg ${
-                  bookmarkStatus?.bookmarked 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                disabled={toggleBookmark.isPending}
-              >
-                {bookmarkStatus?.bookmarked ? (
-                  <BookmarkIconSolid className="w-5 h-5" />
-                ) : (
-                  <BookmarkIcon className="w-5 h-5" />
-                )}
-              </button>
-              
-              <button
-                onClick={handleLike}
-                className={`p-2 rounded-lg ${
-                  reactionStatus?.liked 
-                    ? 'text-red-600 bg-red-50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                disabled={toggleChapterLike.isPending}
-              >
-                {reactionStatus?.liked ? (
-                  <HeartIconSolid className="w-5 h-5" />
-                ) : (
-                  <HeartIcon className="w-5 h-5" />
-                )}
-              </button>
-              
-              <button
-                onClick={handleShare}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-              >
-                <ShareIcon className="w-5 h-5" />
-              </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Right Panel Controls */}
+      <div className="fixed top-1/2 right-4 transform -translate-y-1/2 z-40">
+        <div className="flex flex-col gap-2">
+          {/* Table of Contents Button */}
+          <button
+            onClick={() => setShowTableOfContents(true)}
+            className="w-12 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+            title="Table of Contents"
+          >
+            <List className="w-5 h-5" />
+          </button>
+          
+          {/* Settings Button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-12 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+            title="Reading Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -273,18 +281,19 @@ export default function ChapterPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Chapter Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {chapter.title}
-          </h1>
+          <div className="flex items-center space-x-3 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {chapter.title}
+            </h1>
+            <span className="px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
+              Preview
+            </span>
+          </div>
           
           <div className="flex items-center space-x-6 text-sm text-gray-500">
             <div className="flex items-center space-x-1">
               <EyeIcon className="w-4 h-4" />
               <span>{chapter.views.toLocaleString()} views</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <HeartIcon className="w-4 h-4" />
-              <span>{(reactionStatus?.totalLikes ?? chapter.likes).toLocaleString()} likes</span>
             </div>
             <span>
               {chapter.wordCount.toLocaleString()} words • ~{Math.ceil(chapter.wordCount / 200)} min read
@@ -300,49 +309,81 @@ export default function ChapterPage() {
           </div>
         </div>
 
-        {/* Chapter Content */}
+        {/* Chapter Preview Content */}
         <div 
           ref={contentRef}
           className="prose prose-lg max-w-none leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: chapter.content }}
-        />
+          style={{
+            fontSize: `${settings.fontSize}px`,
+            fontFamily: settings.fontFamily,
+            lineHeight: settings.lineHeight,
+          }}
+        >
+          {(() => {
+            // Strip HTML tags to get text length for more accurate preview
+            const textContent = chapter.content.replace(/<[^>]*>/g, '');
+            const isLongContent = textContent.length > 300;
+            
+            // For preview, show first 300 characters of text content
+            let previewContent = chapter.content;
+            if (isLongContent) {
+              // Find a good breaking point in HTML content
+              const htmlWords = chapter.content.split(' ');
+              let wordCount = 0;
+              let charCount = 0;
+              let previewHtml = '';
+              
+              for (const word of htmlWords) {
+                const wordText = word.replace(/<[^>]*>/g, '');
+                if (charCount + wordText.length > 300) break;
+                previewHtml += word + ' ';
+                charCount += wordText.length;
+                wordCount++;
+              }
+              
+              previewContent = previewHtml.trim();
+            }
+            
+            return (
+              <>
+                <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                
+                {/* Preview Overlay and Call to Action */}
+                {isLongContent && (
+                  <div className="relative mt-8">
+                    {/* Gradient Fade Effect */}
+                    <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                    
+                    {/* Preview Message */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                      <div className="flex items-center justify-center mb-4">
+                        <BookOpenIcon className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                        Continue Reading
+                      </h3>
+                      <p className="text-blue-700 mb-4">
+                        This is just a preview. Click below to read the full chapter in our enhanced reading mode.
+                      </p>
+                      <Link
+                        href={`/stories/${storyId}/chapters/${chapterNumber}/read`}
+                        className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <BookOpenIcon className="w-5 h-5" />
+                        <span>Read Full Chapter</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
 
         {/* Chapter Footer */}
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              End of Chapter {chapter.chapterNumber}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleLike}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
-                  reactionStatus?.liked 
-                    ? 'border-red-200 bg-red-50 text-red-600' 
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-                disabled={toggleChapterLike.isPending}
-              >
-                {reactionStatus?.liked ? (
-                  <HeartIconSolid className="w-4 h-4" />
-                ) : (
-                  <HeartIcon className="w-4 h-4" />
-                )}
-                <span>{reactionStatus?.liked ? 'Liked' : 'Like'}</span>
-                {reactionStatus?.totalLikes && reactionStatus.totalLikes > 0 && (
-                  <span className="text-xs">({reactionStatus.totalLikes.toLocaleString()})</span>
-                )}
-              </button>
-              
-              <button
-                onClick={handleShare}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-              >
-                <ShareIcon className="w-4 h-4" />
-                <span>Share</span>
-              </button>
-            </div>
+          <div className="text-center text-sm text-gray-500">
+            End of Chapter {chapter.chapterNumber} Preview
           </div>
         </div>
       </div>
@@ -397,6 +438,143 @@ export default function ChapterPage() {
           </div>
         </div>
       </div>
+
+      {/* Table of Contents Modal */}
+      {showTableOfContents && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <List className="w-5 h-5" />
+                Table of Contents
+              </h3>
+              <button
+                onClick={() => setShowTableOfContents(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-96 p-4">
+              {allChapters && allChapters.length > 0 ? (
+                <div className="space-y-2">
+                  {allChapters.map((ch) => (
+                    <Link
+                      key={ch.id}
+                      href={`/stories/${storyId}/chapters/${ch.chapterNumber}`}
+                      onClick={() => setShowTableOfContents(false)}
+                      className={`block w-full text-left p-3 rounded-lg border transition-all duration-200 ${
+                        ch.chapterNumber === chapterNumber
+                          ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300'
+                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="font-medium">Chapter {ch.chapterNumber}</div>
+                      <div className="text-sm opacity-75 truncate">{ch.title}</div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  No chapters available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Reading Settings
+              </h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto max-h-96 p-4 space-y-6">
+              {/* Font Size */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Font Size</label>
+                <input
+                  type="range"
+                  min="14"
+                  max="24"
+                  value={settings.fontSize}
+                  onChange={(e) => updateSettings({ fontSize: parseInt(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="text-sm text-gray-600 mt-1">{settings.fontSize}px</div>
+              </div>
+
+              {/* Font Family */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Font Family</label>
+                <select
+                  value={settings.fontFamily}
+                  onChange={(e) => updateSettings({ fontFamily: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-700"
+                >
+                  {fontOptions.map(font => (
+                    <option key={font.value} value={font.value}>
+                      {font.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Background Color */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Background</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {backgroundOptions.map(bg => (
+                    <button
+                      key={bg.value}
+                      onClick={() => updateSettings({ 
+                        backgroundColor: bg.value, 
+                        textColor: bg.textColor 
+                      })}
+                      className={`p-3 rounded border-2 ${
+                        settings.backgroundColor === bg.value 
+                          ? 'border-blue-500' 
+                          : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: bg.value, color: bg.textColor }}
+                    >
+                      {bg.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Line Height */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Line Height</label>
+                <input
+                  type="range"
+                  min="1.2"
+                  max="2.0"
+                  step="0.1"
+                  value={settings.lineHeight}
+                  onChange={(e) => updateSettings({ lineHeight: parseFloat(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="text-sm text-gray-600 mt-1">{settings.lineHeight}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

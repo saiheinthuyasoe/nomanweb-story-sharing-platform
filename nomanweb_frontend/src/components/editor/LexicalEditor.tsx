@@ -21,6 +21,8 @@ import { ImageNode } from './nodes/ImageNode';
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { chaptersApi } from '@/lib/api/chapters';
+import CursorTrackingPlugin from './plugins/CursorTrackingPlugin';
+import RealtimeContentPlugin from './plugins/RealtimeContentPlugin';
 
 // Theme configuration for Lexical
 const lexicalTheme = {
@@ -81,29 +83,35 @@ const editorConfig = {
 interface LexicalEditorProps {
   value?: string;
   onChange?: (content: string, wordCount: number, characterCount: number) => void;
+  onCursorChange?: (position: number, selectionStart: number, selectionEnd: number) => void;
   onAutoSave?: (content: string) => void;
   placeholder?: string;
   className?: string;
   autoSaveInterval?: number;
   isDarkMode?: boolean;
   chapterId?: string;
+  registerContentUpdateCallback?: (callback: (content: string) => void) => () => void;
 }
 
 // Inner component that has access to the editor context
 function EditorContent({
   value,
   onChange,
+  onCursorChange,
   onAutoSave,
   autoSaveInterval,
   chapterId,
-  isDarkMode = false
+  isDarkMode = false,
+  registerContentUpdateCallback,
 }: {
   value?: string;
   onChange?: (content: string, wordCount: number, characterCount: number) => void;
+  onCursorChange?: (position: number, selectionStart: number, selectionEnd: number) => void;
   onAutoSave?: (content: string) => void;
   autoSaveInterval: number;
   chapterId?: string;
   isDarkMode?: boolean;
+  registerContentUpdateCallback?: (callback: (content: string) => void) => () => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [wordCount, setWordCount] = useState(0);
@@ -191,6 +199,7 @@ function EditorContent({
       <ListPlugin />
       <ImagePlugin />
       <InitialContentPlugin value={value} />
+      {onCursorChange && <CursorTrackingPlugin onCursorChange={onCursorChange} />}
       {onAutoSave && (
         <AutoSavePlugin 
           onAutoSave={performAutoSave} 
@@ -198,6 +207,7 @@ function EditorContent({
         />
       )}
       <FloatingTextToolbarPlugin />
+      <RealtimeContentPlugin registerContentUpdateCallback={registerContentUpdateCallback} />
       
       {/* Real-time stats display under the editor */}
       <div className={cn(
@@ -242,12 +252,14 @@ function EditorContent({
 export default function LexicalEditor({
   value = '',
   onChange,
+  onCursorChange,
   onAutoSave,
   placeholder = 'Start writing your content...',
   className,
   autoSaveInterval = 30000,
   isDarkMode = false,
-  chapterId
+  chapterId,
+  registerContentUpdateCallback,
 }: LexicalEditorProps) {
   return (
     <div className={cn('lexical-editor-container', className, isDarkMode && 'dark')} data-lexical-editor="true">
@@ -302,10 +314,12 @@ export default function LexicalEditor({
             <EditorContent
               value={value}
               onChange={onChange}
+              onCursorChange={onCursorChange}
               onAutoSave={onAutoSave}
               autoSaveInterval={autoSaveInterval}
               chapterId={chapterId}
               isDarkMode={isDarkMode}
+              registerContentUpdateCallback={registerContentUpdateCallback}
             />
           </div>
         </div>

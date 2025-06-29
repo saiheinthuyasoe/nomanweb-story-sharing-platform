@@ -133,6 +133,10 @@ export default function CreateChapterPage() {
           onSubmit={handleSubmit}
           isLoading={isCreating}
           maxChapterNumber={story.totalChapters || 0}
+          story={{
+            pricingType: story.pricingType,
+            bookPrice: story.bookPrice
+          }}
         />
       </div>
     </div>

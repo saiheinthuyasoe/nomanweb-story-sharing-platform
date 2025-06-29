@@ -88,6 +88,13 @@ public class Chapter {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted = false;
+
     // Relationships
     @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -149,5 +156,20 @@ public class Chapter {
         } else {
             this.wordCount = 0;
         }
+    }
+
+    // Trash management helper methods
+    public void moveToTrash() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restoreFromTrash() {
+        this.isDeleted = false;
+        this.deletedAt = null;
+    }
+
+    public boolean isInTrash() {
+        return this.isDeleted != null && this.isDeleted;
     }
 }

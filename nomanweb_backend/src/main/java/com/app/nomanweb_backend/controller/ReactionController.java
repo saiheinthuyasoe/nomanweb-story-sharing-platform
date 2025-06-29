@@ -11,6 +11,7 @@ import com.app.nomanweb_backend.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,14 +30,29 @@ public class ReactionController {
         private final UserRepository userRepository;
 
         @PostMapping("/story/{storyId}/like")
+        @Transactional
         public ResponseEntity<?> toggleStoryLike(@PathVariable UUID storyId, Authentication authentication) {
                 try {
-                        String username = authentication.getName();
-                        User user = userRepository.findByUsername(username)
-                                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        // Check authentication first
+                        if (authentication == null || !authentication.isAuthenticated()) {
+                                return ResponseEntity.status(401)
+                                                .body(Map.of("error", "Authentication required to like stories"));
+                        }
+
+                        String userIdStr = authentication.getName();
+                        if (userIdStr == null || userIdStr.isEmpty()) {
+                                return ResponseEntity.status(401)
+                                                .body(Map.of("error", "Invalid authentication token"));
+                        }
+
+                        UUID userId = UUID.fromString(userIdStr);
+                        System.out.println("User " + userId + " trying to like story: " + storyId);
+
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
                         Story story = storyRepository.findById(storyId)
-                                        .orElseThrow(() -> new RuntimeException("Story not found"));
+                                        .orElseThrow(() -> new RuntimeException("Story not found: " + storyId));
 
                         // Check if reaction already exists
                         boolean exists = reactionRepository.existsByUserIdAndTargetTypeAndTargetId(
@@ -52,6 +68,7 @@ public class ReactionController {
                                 storyRepository.save(story);
                                 response.put("liked", false);
                                 response.put("message", "Story unliked");
+                                System.out.println("User " + user.getUsername() + " unliked story: " + storyId);
                         } else {
                                 // Like - add reaction
                                 Reaction reaction = Reaction.builder()
@@ -65,22 +82,27 @@ public class ReactionController {
                                 storyRepository.save(story);
                                 response.put("liked", true);
                                 response.put("message", "Story liked");
+                                System.out.println("User " + user.getUsername() + " liked story: " + storyId);
                         }
 
                         response.put("totalLikes", story.getTotalLikes());
                         return ResponseEntity.ok(response);
 
                 } catch (Exception e) {
+                        System.err.println("Error in toggleStoryLike: " + e.getMessage());
+                        e.printStackTrace();
                         return ResponseEntity.badRequest()
                                         .body(Map.of("error", "Failed to toggle like: " + e.getMessage()));
                 }
         }
 
         @PostMapping("/chapter/{chapterId}/like")
+        @Transactional
         public ResponseEntity<?> toggleChapterLike(@PathVariable UUID chapterId, Authentication authentication) {
                 try {
-                        String username = authentication.getName();
-                        User user = userRepository.findByUsername(username)
+                        String userIdStr = authentication.getName();
+                        UUID userId = UUID.fromString(userIdStr);
+                        User user = userRepository.findById(userId)
                                         .orElseThrow(() -> new RuntimeException("User not found"));
 
                         Chapter chapter = chapterRepository.findById(chapterId)
@@ -134,12 +156,17 @@ public class ReactionController {
 
                         // Check if user is authenticated
                         if (authentication != null && authentication.isAuthenticated()) {
-                                String username = authentication.getName();
-                                User user = userRepository.findByUsername(username).orElse(null);
+                                String userIdStr = authentication.getName();
+                                try {
+                                        UUID userId = UUID.fromString(userIdStr);
+                                        User user = userRepository.findById(userId).orElse(null);
 
-                                if (user != null) {
-                                        isLiked = reactionRepository.existsByUserIdAndTargetTypeAndTargetId(
-                                                        user.getId(), Reaction.TargetType.STORY, storyId);
+                                        if (user != null) {
+                                                isLiked = reactionRepository.existsByUserIdAndTargetTypeAndTargetId(
+                                                                user.getId(), Reaction.TargetType.STORY, storyId);
+                                        }
+                                } catch (IllegalArgumentException e) {
+                                        // Invalid UUID format, skip authentication check
                                 }
                         }
 
@@ -164,12 +191,17 @@ public class ReactionController {
 
                         // Check if user is authenticated
                         if (authentication != null && authentication.isAuthenticated()) {
-                                String username = authentication.getName();
-                                User user = userRepository.findByUsername(username).orElse(null);
+                                String userIdStr = authentication.getName();
+                                try {
+                                        UUID userId = UUID.fromString(userIdStr);
+                                        User user = userRepository.findById(userId).orElse(null);
 
-                                if (user != null) {
-                                        isLiked = reactionRepository.existsByUserIdAndTargetTypeAndTargetId(
-                                                        user.getId(), Reaction.TargetType.CHAPTER, chapterId);
+                                        if (user != null) {
+                                                isLiked = reactionRepository.existsByUserIdAndTargetTypeAndTargetId(
+                                                                user.getId(), Reaction.TargetType.CHAPTER, chapterId);
+                                        }
+                                } catch (IllegalArgumentException e) {
+                                        // Invalid UUID format, skip authentication check
                                 }
                         }
 

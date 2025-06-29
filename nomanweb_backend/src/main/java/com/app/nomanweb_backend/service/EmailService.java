@@ -11,4 +11,7 @@ public interface EmailService {
     void sendWelcomeEmail(User user);
 
     void sendPasswordChangeNotification(User user);
+
+    void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
+            String role, String invitationUrl, String customMessage);
 }

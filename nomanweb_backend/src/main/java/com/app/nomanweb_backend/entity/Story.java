@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Story {
 
     @Id
@@ -35,6 +37,7 @@ public class Story {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private User author;
 
     @NotBlank
@@ -50,6 +53,7 @@ public class Story {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Category category;
 
     @Enumerated(EnumType.STRING)
@@ -57,9 +61,9 @@ public class Story {
     private Status status = Status.DRAFT;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "content_type")
+    @Column(name = "pricing_type")
     @Builder.Default
-    private ContentType contentType = ContentType.FREE;
+    private PricingType pricingType = PricingType.FREE;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "content_status")
@@ -85,6 +89,13 @@ public class Story {
     @Column(name = "total_coins_earned", precision = 10, scale = 2)
     @Builder.Default
     private BigDecimal totalCoinsEarned = BigDecimal.ZERO;
+
+    // Pricing fields
+    @Column(name = "book_price", precision = 8, scale = 2)
+    private BigDecimal bookPrice; // Price for whole book purchase
+
+    @Column(name = "default_chapter_price", precision = 8, scale = 2)
+    private BigDecimal defaultChapterPrice; // Default price per chapter
 
     @Column(name = "is_featured")
     @Builder.Default
@@ -139,8 +150,8 @@ public class Story {
         DRAFT, PUBLISHED, COMPLETED, SUSPENDED
     }
 
-    public enum ContentType {
-        FREE, PAID, MIXED
+    public enum PricingType {
+        FREE, PAID_PER_CHAPTER, WHOLE_BOOK
     }
 
     public enum ContentStatus {
@@ -189,14 +200,18 @@ public class Story {
     }
 
     public boolean isFree() {
-        return this.contentType == ContentType.FREE;
+        return this.pricingType == PricingType.FREE;
+    }
+
+    public boolean isPaidPerChapter() {
+        return this.pricingType == PricingType.PAID_PER_CHAPTER;
+    }
+
+    public boolean isWholeBook() {
+        return this.pricingType == PricingType.WHOLE_BOOK;
     }
 
     public boolean isPaid() {
-        return this.contentType == ContentType.PAID;
-    }
-
-    public boolean isMixed() {
-        return this.contentType == ContentType.MIXED;
+        return this.pricingType == PricingType.PAID_PER_CHAPTER || this.pricingType == PricingType.WHOLE_BOOK;
     }
 }

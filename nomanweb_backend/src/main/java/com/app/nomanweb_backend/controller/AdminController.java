@@ -23,6 +23,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,13 +160,364 @@ public class AdminController {
                         @RequestParam(required = false) String search,
                         @RequestParam(required = false) String status) {
                 try {
-                        // TODO: Implement user management endpoints
+                        log.info("Admin getting users - page: {}, search: {}, status: {}",
+                                        pageable.getPageNumber(), search, status);
+
+                        // Get all users from repository
+                        List<User> allUsers = userRepository.findAll();
+
+                        // Apply filters
+                        List<User> filteredUsers = allUsers.stream()
+                                        .filter(user -> {
+                                                boolean matchesSearch = search == null || search.trim().isEmpty() ||
+                                                                user.getUsername().toLowerCase()
+                                                                                .contains(search.toLowerCase())
+                                                                ||
+                                                                user.getEmail().toLowerCase()
+                                                                                .contains(search.toLowerCase());
+
+                                                boolean matchesStatus = status == null || status.trim().isEmpty() ||
+                                                                (user.getStatus() != null && user.getStatus().toString()
+                                                                                .toLowerCase()
+                                                                                .equals(status.toLowerCase()));
+
+                                                return matchesSearch && matchesStatus;
+                                        })
+                                        .collect(Collectors.toList());
+
+                        // Calculate pagination
+                        int start = (int) pageable.getOffset();
+                        int end = Math.min(start + pageable.getPageSize(), filteredUsers.size());
+                        List<User> pageUsers = start < filteredUsers.size() ? filteredUsers.subList(start, end)
+                                        : new ArrayList<>();
+
+                        // Convert to response format
+                        List<Map<String, Object>> userResponses = pageUsers.stream()
+                                        .map(user -> {
+                                                Map<String, Object> userMap = new HashMap<>();
+                                                userMap.put("id", user.getId().toString());
+                                                userMap.put("username", user.getUsername());
+                                                userMap.put("email", user.getEmail());
+                                                userMap.put("role", user.getRole().toString());
+                                                userMap.put("status",
+                                                                user.getStatus() != null
+                                                                                ? user.getStatus().toString()
+                                                                                                .toLowerCase()
+                                                                                : "unknown"); // Convert enum to
+                                                                                              // lowercase, handle null
+                                                userMap.put("createdAt", user.getCreatedAt());
+                                                userMap.put("lastLoginAt", user.getLastLoginAt());
+                                                userMap.put("emailVerified", user.getEmailVerified());
+                                                userMap.put("profileImageUrl", user.getProfileImageUrl());
+
+                                                // Add stats (TODO: get from actual queries)
+                                                userMap.put("totalStories", 0);
+                                                userMap.put("totalFollowers", 0);
+                                                userMap.put("totalFollowing", 0);
+
+                                                return userMap;
+                                        })
+                                        .collect(Collectors.toList());
+
+                        // Create page object
+                        Map<String, Object> usersPage = new HashMap<>();
+                        usersPage.put("content", userResponses);
+                        usersPage.put("totalElements", filteredUsers.size());
+                        usersPage.put("totalPages",
+                                        (int) Math.ceil((double) filteredUsers.size() / pageable.getPageSize()));
+                        usersPage.put("size", pageable.getPageSize());
+                        usersPage.put("number", pageable.getPageNumber());
+
                         Map<String, Object> result = new HashMap<>();
-                        result.put("users", Page.empty());
-                        result.put("totalUsers", 0);
+                        result.put("users", usersPage);
+                        result.put("totalUsers", allUsers.size());
+
+                        log.info("Returning {} users out of {} total", userResponses.size(), allUsers.size());
                         return ResponseEntity.ok(result);
+
                 } catch (Exception e) {
                         log.error("Error getting users", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/users/{userId}")
+        public ResponseEntity<Map<String, Object>> getUserDetails(@PathVariable UUID userId) {
+                try {
+                        log.info("Admin getting user details for userId: {}", userId);
+
+                        // Find user by ID
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Convert to detailed response format
+                        Map<String, Object> userDetail = new HashMap<>();
+                        userDetail.put("id", user.getId().toString());
+                        userDetail.put("username", user.getUsername());
+                        userDetail.put("displayName", user.getDisplayName());
+                        userDetail.put("email", user.getEmail());
+                        userDetail.put("role", user.getRole().toString());
+                        userDetail.put("status", user.getStatus() != null ? user.getStatus().toString().toLowerCase()
+                                        : "unknown");
+                        userDetail.put("createdAt", user.getCreatedAt());
+                        userDetail.put("updatedAt", user.getUpdatedAt());
+                        userDetail.put("lastLoginAt", user.getLastLoginAt());
+                        userDetail.put("lastLoginIp", null); // Field not available in User entity
+                        userDetail.put("emailVerified", user.getEmailVerified());
+                        userDetail.put("profileImageUrl", user.getProfileImageUrl());
+                        userDetail.put("bio", user.getBio());
+
+                        // Additional fields for admin view
+                        userDetail.put("coinBalance", user.getCoinBalance());
+                        userDetail.put("totalEarnedCoins", user.getTotalEarnedCoins());
+                        userDetail.put("lastPasswordChange", user.getLastPasswordChange());
+                        userDetail.put("lineUserId", user.getLineUserId());
+                        userDetail.put("googleId", user.getGoogleId());
+
+                        // Calculate stats (TODO: get from actual queries)
+                        userDetail.put("totalStories", 0);
+                        userDetail.put("totalFollowers", 0);
+                        userDetail.put("totalFollowing", 0);
+                        userDetail.put("totalComments", 0);
+                        userDetail.put("reportedCount", 0);
+
+                        log.info("Returning user details for userId: {}", userId);
+                        return ResponseEntity.ok(userDetail);
+
+                } catch (RuntimeException e) {
+                        log.error("User not found: {}", userId);
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error getting user details", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PutMapping("/users/{userId}")
+        public ResponseEntity<Map<String, Object>> updateUser(
+                        @PathVariable UUID userId,
+                        @RequestBody Map<String, Object> updateData,
+                        HttpServletRequest httpRequest) {
+                try {
+                        log.info("Admin updating user: {}", userId);
+                        UUID adminId = getCurrentUserId(httpRequest);
+
+                        // Find user by ID
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Update user fields
+                        if (updateData.containsKey("username")) {
+                                String username = (String) updateData.get("username");
+                                if (username != null && !username.trim().isEmpty()) {
+                                        user.setUsername(username.trim());
+                                }
+                        }
+
+                        if (updateData.containsKey("displayName")) {
+                                user.setDisplayName((String) updateData.get("displayName"));
+                        }
+
+                        if (updateData.containsKey("email")) {
+                                String email = (String) updateData.get("email");
+                                if (email != null && !email.trim().isEmpty()) {
+                                        user.setEmail(email.trim());
+                                }
+                        }
+
+                        if (updateData.containsKey("role")) {
+                                String roleStr = (String) updateData.get("role");
+                                if (roleStr != null) {
+                                        user.setRole(User.Role.valueOf(roleStr.toUpperCase()));
+                                }
+                        }
+
+                        if (updateData.containsKey("status")) {
+                                String statusStr = (String) updateData.get("status");
+                                if (statusStr != null) {
+                                        user.setStatus(User.Status.valueOf(statusStr.toUpperCase()));
+                                }
+                        }
+
+                        if (updateData.containsKey("bio")) {
+                                user.setBio((String) updateData.get("bio"));
+                        }
+
+                        if (updateData.containsKey("emailVerified")) {
+                                Boolean emailVerified = (Boolean) updateData.get("emailVerified");
+                                if (emailVerified != null) {
+                                        user.setEmailVerified(emailVerified);
+                                }
+                        }
+
+                        if (updateData.containsKey("coinBalance")) {
+                                Object coinBalanceObj = updateData.get("coinBalance");
+                                if (coinBalanceObj != null) {
+                                        BigDecimal coinBalance;
+                                        if (coinBalanceObj instanceof Number) {
+                                                coinBalance = BigDecimal
+                                                                .valueOf(((Number) coinBalanceObj).doubleValue());
+                                        } else {
+                                                coinBalance = new BigDecimal(coinBalanceObj.toString());
+                                        }
+                                        user.setCoinBalance(coinBalance);
+                                }
+                        }
+
+                        // Handle password update if provided
+                        if (updateData.containsKey("newPassword")) {
+                                String newPassword = (String) updateData.get("newPassword");
+                                if (newPassword != null && !newPassword.trim().isEmpty()) {
+                                        // TODO: Hash password properly using PasswordEncoder
+                                        // For now, we'll skip password updates to avoid security issues
+                                        log.warn("Password update requested but not implemented for security reasons");
+                                }
+                        }
+
+                        // Update timestamp
+                        user.setUpdatedAt(LocalDateTime.now());
+
+                        // Save user
+                        User updatedUser = userRepository.save(user);
+
+                        log.info("User {} updated successfully by admin {}", userId, adminId);
+
+                        // Return success response
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", true);
+                        response.put("message", "User updated successfully");
+                        response.put("userId", updatedUser.getId().toString());
+
+                        return ResponseEntity.ok(response);
+
+                } catch (RuntimeException e) {
+                        log.error("User not found: {}", userId);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                        .body(Map.of("error", "User not found"));
+                } catch (Exception e) {
+                        log.error("Error updating user", e);
+                        return ResponseEntity.internalServerError()
+                                        .body(Map.of("error", "Internal server error"));
+                }
+        }
+
+        @DeleteMapping("/users/{userId}")
+        public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable UUID userId) {
+                try {
+                        log.info("Admin deleting user: {}", userId);
+
+                        // Find user by ID
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Prevent deletion of admin users
+                        if (user.getRole() == User.Role.ADMIN) {
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("error", "Cannot delete admin users"));
+                        }
+
+                        // Delete user
+                        userRepository.deleteById(userId);
+
+                        log.info("User {} deleted successfully", userId);
+                        return ResponseEntity.ok(Map.of("success", true, "message", "User deleted successfully"));
+
+                } catch (RuntimeException e) {
+                        log.error("User not found: {}", userId);
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                        .body(Map.of("error", "User not found"));
+                } catch (Exception e) {
+                        log.error("Error deleting user", e);
+                        return ResponseEntity.internalServerError()
+                                        .body(Map.of("error", "Internal server error"));
+                }
+        }
+
+        @GetMapping("/users/{userId}/activity")
+        public ResponseEntity<List<Map<String, Object>>> getUserActivityLogs(@PathVariable UUID userId) {
+                try {
+                        log.info("Admin getting activity logs for userId: {}", userId);
+
+                        // Verify user exists
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // For now, return mock data since we don't have an activity log table
+                        // TODO: Implement real activity logging system
+                        List<Map<String, Object>> activityLogs = new ArrayList<>();
+
+                        // Mock activity logs
+                        Map<String, Object> loginLog = new HashMap<>();
+                        loginLog.put("id", "1");
+                        loginLog.put("action", "LOGIN");
+                        loginLog.put("description", "User logged in");
+                        loginLog.put("timestamp", LocalDateTime.now().minusHours(2));
+                        loginLog.put("ipAddress", "192.168.1.100");
+                        loginLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        activityLogs.add(loginLog);
+
+                        Map<String, Object> storyLog = new HashMap<>();
+                        storyLog.put("id", "2");
+                        storyLog.put("action", "STORY_CREATE");
+                        storyLog.put("description", "Created story \"The Mystery of the Lost Castle\"");
+                        storyLog.put("timestamp", LocalDateTime.now().minusDays(1));
+                        storyLog.put("ipAddress", "192.168.1.100");
+                        storyLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        activityLogs.add(storyLog);
+
+                        Map<String, Object> profileLog = new HashMap<>();
+                        profileLog.put("id", "3");
+                        profileLog.put("action", "PROFILE_UPDATE");
+                        profileLog.put("description", "Updated profile information");
+                        profileLog.put("timestamp", LocalDateTime.now().minusDays(2));
+                        profileLog.put("ipAddress", "192.168.1.100");
+                        profileLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                        activityLogs.add(profileLog);
+
+                        log.info("Returning {} activity logs for userId: {}", activityLogs.size(), userId);
+                        return ResponseEntity.ok(activityLogs);
+
+                } catch (RuntimeException e) {
+                        log.error("User not found: {}", userId);
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error getting user activity logs", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/users/{userId}/reports")
+        public ResponseEntity<List<Map<String, Object>>> getUserReports(@PathVariable UUID userId) {
+                try {
+                        log.info("Admin getting reports for userId: {}", userId);
+
+                        // Verify user exists
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // For now, return mock data since we don't have a reports table
+                        // TODO: Implement real reporting system
+                        List<Map<String, Object>> reports = new ArrayList<>();
+
+                        // Mock reports
+                        Map<String, Object> report = new HashMap<>();
+                        report.put("id", "1");
+                        report.put("type", "story");
+                        report.put("reason", "Inappropriate Content");
+                        report.put("description", "Story contains violent content not suitable for all audiences");
+                        report.put("reportedBy", "user123");
+                        report.put("reportedAt", LocalDateTime.now().minusDays(3));
+                        report.put("status", "pending");
+                        reports.add(report);
+
+                        log.info("Returning {} reports for userId: {}", reports.size(), userId);
+                        return ResponseEntity.ok(reports);
+
+                } catch (RuntimeException e) {
+                        log.error("User not found: {}", userId);
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error getting user reports", e);
                         return ResponseEntity.internalServerError().build();
                 }
         }
@@ -171,11 +525,28 @@ public class AdminController {
         @PostMapping("/users/{userId}/suspend")
         public ResponseEntity<Void> suspendUser(
                         @PathVariable UUID userId,
-                        @RequestParam String reason,
+                        @RequestBody Map<String, String> requestBody,
                         HttpServletRequest httpRequest) {
                 try {
                         UUID adminId = getCurrentUserId(httpRequest);
-                        // TODO: Implement user suspension
+                        String reason = requestBody.get("reason");
+
+                        if (reason == null || reason.trim().isEmpty()) {
+                                return ResponseEntity.badRequest().build();
+                        }
+
+                        // Find and update user status
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        if (user.getRole() == User.Role.ADMIN) {
+                                return ResponseEntity.badRequest().build(); // Cannot suspend admins
+                        }
+
+                        user.setStatus(User.Status.SUSPENDED);
+                        user.setUpdatedAt(LocalDateTime.now());
+                        userRepository.save(user);
+
                         log.info("User {} suspended by admin {}: {}", userId, adminId, reason);
                         return ResponseEntity.ok().build();
                 } catch (Exception e) {
@@ -190,11 +561,83 @@ public class AdminController {
                         HttpServletRequest httpRequest) {
                 try {
                         UUID adminId = getCurrentUserId(httpRequest);
-                        // TODO: Implement user unsuspension
+
+                        // Find and update user status
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        if (user.getStatus() != User.Status.SUSPENDED) {
+                                return ResponseEntity.badRequest().build(); // User is not suspended
+                        }
+
+                        user.setStatus(User.Status.ACTIVE);
+                        user.setUpdatedAt(LocalDateTime.now());
+                        userRepository.save(user);
+
                         log.info("User {} unsuspended by admin {}", userId, adminId);
                         return ResponseEntity.ok().build();
                 } catch (Exception e) {
                         log.error("Error unsuspending user", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/users/{userId}/ban")
+        public ResponseEntity<Void> banUser(
+                        @PathVariable UUID userId,
+                        @RequestBody Map<String, String> requestBody,
+                        HttpServletRequest httpRequest) {
+                try {
+                        UUID adminId = getCurrentUserId(httpRequest);
+                        String reason = requestBody.get("reason");
+
+                        if (reason == null || reason.trim().isEmpty()) {
+                                return ResponseEntity.badRequest().build();
+                        }
+
+                        // Find and update user status
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        if (user.getRole() == User.Role.ADMIN) {
+                                return ResponseEntity.badRequest().build(); // Cannot ban admins
+                        }
+
+                        user.setStatus(User.Status.BANNED);
+                        user.setUpdatedAt(LocalDateTime.now());
+                        userRepository.save(user);
+
+                        log.info("User {} banned by admin {}: {}", userId, adminId, reason);
+                        return ResponseEntity.ok().build();
+                } catch (Exception e) {
+                        log.error("Error banning user", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/users/{userId}/unban")
+        public ResponseEntity<Void> unbanUser(
+                        @PathVariable UUID userId,
+                        HttpServletRequest httpRequest) {
+                try {
+                        UUID adminId = getCurrentUserId(httpRequest);
+
+                        // Find and update user status
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        if (user.getStatus() != User.Status.BANNED) {
+                                return ResponseEntity.badRequest().build(); // User is not banned
+                        }
+
+                        user.setStatus(User.Status.ACTIVE);
+                        user.setUpdatedAt(LocalDateTime.now());
+                        userRepository.save(user);
+
+                        log.info("User {} unbanned by admin {}", userId, adminId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception e) {
+                        log.error("Error unbanning user", e);
                         return ResponseEntity.internalServerError().build();
                 }
         }

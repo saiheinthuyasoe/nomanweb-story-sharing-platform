@@ -32,7 +32,7 @@ public class Reaction {
     @Column(name = "target_type", nullable = false)
     private TargetType targetType;
 
-    @Column(name = "target_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "target_id", nullable = false)
     private UUID targetId;
 
     @Enumerated(EnumType.STRING)

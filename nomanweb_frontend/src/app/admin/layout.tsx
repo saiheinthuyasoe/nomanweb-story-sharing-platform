@@ -10,7 +10,8 @@ import {
   DocumentTextIcon,
   ExclamationTriangleIcon,
   CogIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminLayoutProps {
@@ -32,6 +33,11 @@ const adminNavItems = [
     name: 'User Management',
     href: '/admin/users',
     icon: UserGroupIcon
+  },
+  {
+    name: 'Coin Management',
+    href: '/admin/coins',
+    icon: CurrencyDollarIcon
   },
   {
     name: 'Admin Invitations',

@@ -9,6 +9,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CoinTransactionRepository;
 import com.app.nomanweb_backend.service.ChapterService;
+import com.app.nomanweb_backend.service.CollaborationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ public class ChapterServiceImpl implements ChapterService {
     private final StoryRepository storyRepository;
     private final UserRepository userRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final CollaborationService collaborationService;
 
     private static final int WORDS_PER_MINUTE = 200; // Average reading speed
 
@@ -146,9 +148,13 @@ public class ChapterServiceImpl implements ChapterService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-        // Validate ownership
-        if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
-            throw new IllegalArgumentException("Only the author can update this chapter");
+        // Validate ownership or collaboration permissions
+        boolean isAuthor = chapter.getStory().getAuthor().getId().equals(authorId);
+        boolean hasEditPermission = collaborationService.hasEditPermission(chapterId, authorId);
+
+        if (!isAuthor && !hasEditPermission) {
+            throw new IllegalArgumentException(
+                    "Only the author or collaborators with edit permissions can update this chapter");
         }
 
         log.info(
@@ -251,22 +257,14 @@ public class ChapterServiceImpl implements ChapterService {
 
     @Override
     public void deleteChapter(UUID chapterId, UUID authorId) {
-        Chapter chapter = chapterRepository.findById(chapterId)
-                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+        // This method now performs soft delete by moving to trash
+        moveChapterToTrash(chapterId, authorId);
+    }
 
-        // Validate ownership
-        if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
-            throw new IllegalArgumentException("Only the author can delete this chapter");
-        }
-
-        Story story = chapter.getStory();
-        chapterRepository.delete(chapter);
-
-        // Update story chapter count
-        story.setTotalChapters(Math.max(0, story.getTotalChapters() - 1));
-        storyRepository.save(story);
-
-        log.info("Chapter deleted: {}", chapterId);
+    @Override
+    public void bulkDeleteChapters(List<UUID> chapterIds, UUID authorId) {
+        // This method now performs soft delete by moving to trash
+        bulkMoveToTrash(chapterIds, authorId);
     }
 
     @Override
@@ -475,6 +473,13 @@ public class ChapterServiceImpl implements ChapterService {
             return true;
         }
 
+        // Check if user is a collaborator (collaborators can access regardless of
+        // chapter status)
+        if (userId != null && collaborationService.hasAccessToChapter(chapterId, userId)) {
+            log.info("Access granted - User is a collaborator");
+            return true;
+        }
+
         // Chapter must be published for public access
         if (chapter.getStatus() != Chapter.Status.PUBLISHED) {
             log.info("Access denied - Chapter is not published");
@@ -590,7 +595,7 @@ public class ChapterServiceImpl implements ChapterService {
     private ChapterResponse mapToChapterResponse(Chapter chapter, UUID currentUserId) {
         try {
             // Build navigation info - this might fail if story doesn't exist
-        ChapterResponse.NavigationInfo navigation = buildNavigationInfo(chapter, currentUserId);
+            ChapterResponse.NavigationInfo navigation = buildNavigationInfo(chapter, currentUserId);
 
             // Try to access story info safely
             Story story = chapter.getStory();
@@ -601,25 +606,25 @@ public class ChapterServiceImpl implements ChapterService {
                     .totalChapters(story.getTotalChapters())
                     .build();
 
-        return ChapterResponse.builder()
-                .id(chapter.getId())
-                .chapterNumber(chapter.getChapterNumber())
-                .title(chapter.getTitle())
-                .content(chapter.getContent())
-                .wordCount(chapter.getWordCount())
-                .coinPrice(chapter.getCoinPrice())
-                .isFree(chapter.getIsFree())
-                .status(chapter.getStatus())
-                .moderationStatus(chapter.getModerationStatus())
-                .moderationNotes(chapter.getModerationNotes())
+            return ChapterResponse.builder()
+                    .id(chapter.getId())
+                    .chapterNumber(chapter.getChapterNumber())
+                    .title(chapter.getTitle())
+                    .content(chapter.getContent())
+                    .wordCount(chapter.getWordCount())
+                    .coinPrice(chapter.getCoinPrice())
+                    .isFree(chapter.getIsFree())
+                    .status(chapter.getStatus())
+                    .moderationStatus(chapter.getModerationStatus())
+                    .moderationNotes(chapter.getModerationNotes())
                     .story(storyInfo)
-                .views(chapter.getViews())
-                .likes(chapter.getLikes())
-                .navigation(navigation)
-                .createdAt(chapter.getCreatedAt())
-                .updatedAt(chapter.getUpdatedAt())
-                .publishedAt(chapter.getPublishedAt())
-                .build();
+                    .views(chapter.getViews())
+                    .likes(chapter.getLikes())
+                    .navigation(navigation)
+                    .createdAt(chapter.getCreatedAt())
+                    .updatedAt(chapter.getUpdatedAt())
+                    .publishedAt(chapter.getPublishedAt())
+                    .build();
 
         } catch (Exception e) {
             log.error("Error mapping chapter {} to response, story might be missing: {}", chapter.getId(),
@@ -678,20 +683,20 @@ public class ChapterServiceImpl implements ChapterService {
 
     private ChapterResponse.NavigationInfo buildNavigationInfo(Chapter chapter, UUID currentUserId) {
         try {
-        Story story = chapter.getStory();
+            Story story = chapter.getStory();
 
-        Optional<Chapter> nextChapter = chapterRepository.findNextChapter(
-                story, chapter.getChapterNumber(), Chapter.Status.PUBLISHED);
-        Optional<Chapter> previousChapter = chapterRepository.findPreviousChapter(
-                story, chapter.getChapterNumber(), Chapter.Status.PUBLISHED);
+            Optional<Chapter> nextChapter = chapterRepository.findNextChapter(
+                    story, chapter.getChapterNumber(), Chapter.Status.PUBLISHED);
+            Optional<Chapter> previousChapter = chapterRepository.findPreviousChapter(
+                    story, chapter.getChapterNumber(), Chapter.Status.PUBLISHED);
 
-        return ChapterResponse.NavigationInfo.builder()
-                .nextChapterNumber(nextChapter.map(Chapter::getChapterNumber).orElse(null))
-                .previousChapterNumber(previousChapter.map(Chapter::getChapterNumber).orElse(null))
-                .hasNext(nextChapter.isPresent())
-                .hasPrevious(previousChapter.isPresent())
-                .totalChapters(story.getTotalChapters())
-                .build();
+            return ChapterResponse.NavigationInfo.builder()
+                    .nextChapterNumber(nextChapter.map(Chapter::getChapterNumber).orElse(null))
+                    .previousChapterNumber(previousChapter.map(Chapter::getChapterNumber).orElse(null))
+                    .hasNext(nextChapter.isPresent())
+                    .hasPrevious(previousChapter.isPresent())
+                    .totalChapters(story.getTotalChapters())
+                    .build();
         } catch (Exception e) {
             log.warn("Could not build navigation info for chapter {}, story might be missing: {}",
                     chapter.getId(), e.getMessage());
@@ -705,5 +710,246 @@ public class ChapterServiceImpl implements ChapterService {
                     .totalChapters(0)
                     .build();
         }
+    }
+
+    // Trash management implementations
+
+    @Override
+    public void moveChapterToTrash(UUID chapterId, UUID authorId) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+
+        // Validate ownership
+        if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+            throw new IllegalArgumentException("Only the author can delete this chapter");
+        }
+
+        // Move to trash
+        chapter.moveToTrash();
+        chapterRepository.save(chapter);
+
+        // Update story chapter count (active chapters)
+        Story story = chapter.getStory();
+        story.setTotalChapters(Math.max(0, story.getTotalChapters() - 1));
+        storyRepository.save(story);
+
+        log.info("Chapter moved to trash: {}", chapterId);
+    }
+
+    @Override
+    public void restoreChapterFromTrash(UUID chapterId, UUID authorId) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+
+        // Validate ownership
+        if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+            throw new IllegalArgumentException("Only the author can restore this chapter");
+        }
+
+        if (!chapter.isInTrash()) {
+            throw new IllegalArgumentException("Chapter is not in trash");
+        }
+
+        // Restore from trash
+        chapter.restoreFromTrash();
+        chapterRepository.save(chapter);
+
+        // Update story chapter count (active chapters)
+        Story story = chapter.getStory();
+        story.setTotalChapters(story.getTotalChapters() + 1);
+        storyRepository.save(story);
+
+        log.info("Chapter restored from trash: {}", chapterId);
+    }
+
+    @Override
+    public void permanentlyDeleteChapter(UUID chapterId, UUID authorId) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+
+        // Validate ownership
+        if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+            throw new IllegalArgumentException("Only the author can permanently delete this chapter");
+        }
+
+        if (!chapter.isInTrash()) {
+            throw new IllegalArgumentException("Chapter must be in trash before permanent deletion");
+        }
+
+        // Permanently delete
+        chapterRepository.delete(chapter);
+
+        log.info("Chapter permanently deleted: {}", chapterId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChapterPreviewResponse> getTrashByStory(UUID storyId, UUID authorId) {
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new IllegalArgumentException("Story not found"));
+
+        // Validate ownership
+        if (!story.getAuthor().getId().equals(authorId)) {
+            throw new IllegalArgumentException("Only the author can view trash");
+        }
+
+        List<Chapter> trashChapters = chapterRepository.findTrashByStory(story);
+        return trashChapters.stream()
+                .map(this::mapToChapterPreviewResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void bulkMoveToTrash(List<UUID> chapterIds, UUID authorId) {
+        log.info("Bulk moving {} chapters to trash for author: {}", chapterIds.size(), authorId);
+
+        if (chapterIds.isEmpty()) {
+            return;
+        }
+
+        // Fetch all chapters and validate ownership
+        List<Chapter> chapters = chapterRepository.findAllById(chapterIds);
+
+        if (chapters.size() != chapterIds.size()) {
+            throw new IllegalArgumentException("Some chapters were not found");
+        }
+
+        // Validate that all chapters belong to the same author
+        for (Chapter chapter : chapters) {
+            if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+                throw new IllegalArgumentException("Only the author can delete chapters");
+            }
+        }
+
+        // Group chapters by story for efficient processing
+        var chaptersByStory = chapters.stream()
+                .collect(Collectors.groupingBy(Chapter::getStory));
+
+        // Move chapters to trash and update story counts
+        for (var entry : chaptersByStory.entrySet()) {
+            Story story = entry.getKey();
+            List<Chapter> storyChapters = entry.getValue();
+
+            // Move all chapters to trash
+            for (Chapter chapter : storyChapters) {
+                chapter.moveToTrash();
+            }
+            chapterRepository.saveAll(storyChapters);
+
+            // Update story chapter count
+            int deletedCount = storyChapters.size();
+            story.setTotalChapters(Math.max(0, story.getTotalChapters() - deletedCount));
+            storyRepository.save(story);
+
+            log.info("Moved {} chapters to trash from story: {}", deletedCount, story.getId());
+        }
+
+        log.info("Bulk move to trash completed successfully for {} chapters", chapterIds.size());
+    }
+
+    @Override
+    public void bulkRestoreFromTrash(List<UUID> chapterIds, UUID authorId) {
+        log.info("Bulk restoring {} chapters from trash for author: {}", chapterIds.size(), authorId);
+
+        if (chapterIds.isEmpty()) {
+            return;
+        }
+
+        // Fetch all chapters and validate ownership
+        List<Chapter> chapters = chapterRepository.findAllById(chapterIds);
+
+        if (chapters.size() != chapterIds.size()) {
+            throw new IllegalArgumentException("Some chapters were not found");
+        }
+
+        // Validate that all chapters belong to the same author and are in trash
+        for (Chapter chapter : chapters) {
+            if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+                throw new IllegalArgumentException("Only the author can restore chapters");
+            }
+            if (!chapter.isInTrash()) {
+                throw new IllegalArgumentException("Chapter is not in trash: " + chapter.getId());
+            }
+        }
+
+        // Group chapters by story for efficient processing
+        var chaptersByStory = chapters.stream()
+                .collect(Collectors.groupingBy(Chapter::getStory));
+
+        // Restore chapters and update story counts
+        for (var entry : chaptersByStory.entrySet()) {
+            Story story = entry.getKey();
+            List<Chapter> storyChapters = entry.getValue();
+
+            // Restore all chapters
+            for (Chapter chapter : storyChapters) {
+                chapter.restoreFromTrash();
+            }
+            chapterRepository.saveAll(storyChapters);
+
+            // Update story chapter count
+            int restoredCount = storyChapters.size();
+            story.setTotalChapters(story.getTotalChapters() + restoredCount);
+            storyRepository.save(story);
+
+            log.info("Restored {} chapters from trash for story: {}", restoredCount, story.getId());
+        }
+
+        log.info("Bulk restore from trash completed successfully for {} chapters", chapterIds.size());
+    }
+
+    @Override
+    public void bulkPermanentlyDelete(List<UUID> chapterIds, UUID authorId) {
+        log.info("Permanently deleting {} chapters for author: {}", chapterIds.size(), authorId);
+
+        if (chapterIds.isEmpty()) {
+            return;
+        }
+
+        // Fetch all chapters and validate ownership
+        List<Chapter> chapters = chapterRepository.findAllById(chapterIds);
+
+        if (chapters.size() != chapterIds.size()) {
+            throw new IllegalArgumentException("Some chapters were not found");
+        }
+
+        // Validate that all chapters belong to the same author and are in trash
+        for (Chapter chapter : chapters) {
+            if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
+                throw new IllegalArgumentException("Only the author can permanently delete chapters");
+            }
+            if (!chapter.isInTrash()) {
+                throw new IllegalArgumentException(
+                        "Chapter must be in trash before permanent deletion: " + chapter.getId());
+            }
+        }
+
+        // Permanently delete all chapters
+        chapterRepository.deleteAll(chapters);
+
+        log.info("Permanently deleted {} chapters", chapterIds.size());
+    }
+
+    @Override
+    public void emptyTrash(UUID storyId, UUID authorId) {
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new IllegalArgumentException("Story not found"));
+
+        // Validate ownership
+        if (!story.getAuthor().getId().equals(authorId)) {
+            throw new IllegalArgumentException("Only the author can empty trash");
+        }
+
+        List<Chapter> trashChapters = chapterRepository.findTrashByStory(story);
+
+        if (trashChapters.isEmpty()) {
+            log.info("No chapters in trash for story: {}", storyId);
+            return;
+        }
+
+        // Permanently delete all chapters in trash
+        chapterRepository.deleteAll(trashChapters);
+
+        log.info("Emptied trash: permanently deleted {} chapters from story: {}", trashChapters.size(), storyId);
     }
 }

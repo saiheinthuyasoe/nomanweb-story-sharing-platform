@@ -20,6 +20,9 @@ public interface ChapterService {
 
     void deleteChapter(UUID chapterId, UUID authorId);
 
+    // Bulk delete chapters
+    void bulkDeleteChapters(List<UUID> chapterIds, UUID authorId);
+
     // Chapter listing and navigation
     List<ChapterPreviewResponse> getChaptersByStory(UUID storyId, UUID currentUserId);
 
@@ -65,4 +68,21 @@ public interface ChapterService {
     Page<ChapterResponse> getChaptersForModeration(Pageable pageable);
 
     ChapterResponse moderateChapter(UUID chapterId, String moderationNotes, boolean approved, UUID moderatorId);
+
+    // Trash management
+    void moveChapterToTrash(UUID chapterId, UUID authorId);
+
+    void restoreChapterFromTrash(UUID chapterId, UUID authorId);
+
+    void permanentlyDeleteChapter(UUID chapterId, UUID authorId);
+
+    List<ChapterPreviewResponse> getTrashByStory(UUID storyId, UUID authorId);
+
+    void bulkMoveToTrash(List<UUID> chapterIds, UUID authorId);
+
+    void bulkRestoreFromTrash(List<UUID> chapterIds, UUID authorId);
+
+    void bulkPermanentlyDelete(List<UUID> chapterIds, UUID authorId);
+
+    void emptyTrash(UUID storyId, UUID authorId);
 }

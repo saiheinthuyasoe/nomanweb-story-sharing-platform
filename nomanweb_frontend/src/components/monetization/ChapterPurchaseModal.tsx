@@ -1,0 +1,185 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { X, Coins, Lock, CreditCard } from 'lucide-react';
+
+interface ChapterPurchaseModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  chapterId: string;
+  chapterTitle: string;
+  coinPrice: number;
+  onPurchaseComplete?: () => void;
+}
+
+export default function ChapterPurchaseModal({
+  isOpen,
+  onClose,
+  chapterId,
+  chapterTitle,
+  coinPrice,
+  onPurchaseComplete,
+}: ChapterPurchaseModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCoinBalance();
+    }
+  }, [isOpen]);
+
+  const fetchCoinBalance = async () => {
+    try {
+      const response = await fetch('/api/monetization/balance', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (response.ok) {
+        const balance = await response.json();
+        setCoinBalance(balance);
+      }
+    } catch (error) {
+      console.error('Error fetching coin balance:', error);
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (coinPrice > coinBalance) {
+      alert('Insufficient coins');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/monetization/chapters/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          chapterId,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Chapter purchased successfully!');
+        onPurchaseComplete?.();
+        onClose();
+      } else {
+        const error = await response.text();
+        alert(`Failed to purchase chapter: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error purchasing chapter:', error);
+      alert('Failed to purchase chapter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const canAfford = coinPrice <= coinBalance;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Lock className="h-5 w-5 text-blue-600" />
+                Purchase Chapter
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Chapter Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-medium text-blue-900 mb-2">{chapterTitle}</h3>
+            <div className="flex items-center gap-2 text-blue-800">
+              <Coins className="h-4 w-4" />
+              <span className="font-bold">{coinPrice} Coins</span>
+            </div>
+          </div>
+
+          {/* Balance Info */}
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-yellow-800">Your Balance:</span>
+              <div className="flex items-center gap-2 text-yellow-800">
+                <Coins className="h-4 w-4" />
+                <span className="font-bold">{coinBalance.toLocaleString()} Coins</span>
+              </div>
+            </div>
+            {!canAfford && (
+              <p className="text-red-600 text-sm mt-2">
+                You need {(coinPrice - coinBalance).toLocaleString()} more coins to purchase this chapter.
+              </p>
+            )}
+          </div>
+
+          {/* Purchase Info */}
+          <div className="mb-6 p-4 border rounded-lg">
+            <h4 className="font-medium mb-2">What you'll get:</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Unlimited access to this chapter</li>
+              <li>• Support the author with 70% of the purchase price</li>
+              <li>• Access from any device</li>
+            </ul>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePurchase}
+              disabled={!canAfford || loading}
+              className="flex-1 flex items-center gap-2"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <CreditCard className="h-4 w-4" />
+              )}
+              Purchase
+            </Button>
+          </div>
+
+          {!canAfford && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600 mb-2">Need more coins?</p>
+              <Button
+                onClick={() => {
+                  // Navigate to coin purchase page - placeholder for now
+                  alert('Coin purchase feature coming soon!');
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Buy Coins
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+} 

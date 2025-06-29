@@ -2,6 +2,7 @@ package com.app.nomanweb_backend.repository;
 
 import com.app.nomanweb_backend.entity.Reaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,5 +24,6 @@ public interface ReactionRepository extends JpaRepository<Reaction, UUID> {
     long countByTargetTypeAndTargetId(@Param("targetType") Reaction.TargetType targetType,
             @Param("targetId") UUID targetId);
 
+    @Modifying
     void deleteByUserIdAndTargetTypeAndTargetId(UUID userId, Reaction.TargetType targetType, UUID targetId);
 }

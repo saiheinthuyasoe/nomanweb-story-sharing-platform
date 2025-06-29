@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,6 +11,22 @@ import {
   useDeleteStory 
 } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
+import { 
+  useStoryReactionStatus, 
+  useToggleStoryLike 
+} from '@/hooks/useReactions';
+import { 
+  useBookmarkStatus, 
+  useToggleBookmark 
+} from '@/hooks/useReadingLists';
+import { useChaptersByStory } from '@/hooks/useChapters';
+import { 
+  useStoryComments, 
+  useCreateComment,
+  useDeleteComment,
+  useUpdateComment,
+  useToggleCommentLike 
+} from '@/hooks/useComments';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   EyeIcon, 
@@ -23,8 +39,18 @@ import {
   ShareIcon,
   CalendarIcon,
   TagIcon,
-  PlusIcon
+  PlusIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
+  BookmarkIcon,
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
+import { 
+  HeartIcon as HeartIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+  ShoppingBagIcon as ShoppingBagIconSolid
+} from '@heroicons/react/24/solid';
 import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
 import { 
@@ -108,14 +134,60 @@ export default function StoryReaderView() {
   const { mutate: unpublishStory, isPending: isUnpublishing } = useUnpublishStory();
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
   
+  // Reaction hooks with real-time updates
+  const { 
+    data: reactionStatus, 
+    isFetching: isFetchingReactions 
+  } = useStoryReactionStatus(storyId, !!user, true); // Enable real-time updates
+  const { mutate: toggleStoryLike, isPending: isLikeLoading } = useToggleStoryLike();
+  
+  // Reading list hooks
+  const { data: bookmarkStatus } = useBookmarkStatus(storyId, !!user);
+  const { mutate: toggleBookmark, isPending: isBookmarkLoading } = useToggleBookmark();
+  
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'chapters' | 'comments'>('about');
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isInLibrary, setIsInLibrary] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [giftAmount, setGiftAmount] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowLibraryDropdown(false);
+      }
+    };
+
+    if (showLibraryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLibraryDropdown]);
+  
+  // Fetch chapters and comments data with real-time updates
+  const { data: storyChapters = [], isLoading: isLoadingChapters } = useChaptersByStory(storyId, !!storyId);
+  const { 
+    data: commentsData, 
+    isLoading: isLoadingComments, 
+    isFetching: isFetchingComments,
+    refetch: refetchComments 
+  } = useStoryComments(storyId, 0, 20, true); // Enable real-time updates
+  const { mutate: createComment, isPending: isCreatingComment } = useCreateComment();
+  const { mutate: deleteComment, isPending: isDeletingComment } = useDeleteComment();
+  const { mutate: updateComment, isPending: isUpdatingComment } = useUpdateComment();
+  const { mutate: toggleCommentLike, isPending: isTogglingCommentLike } = useToggleCommentLike();
+  
+  // Extract comments from the paginated response
+  const storyComments = (commentsData as any)?.content || [];
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
@@ -183,12 +255,83 @@ export default function StoryReaderView() {
     router.push(`/stories/${storyId}/chapters/1/read`);
   };
 
-  const handleAddToLibrary = () => {
-    setIsInLibrary(!isInLibrary);
+  const handleAddToLibrary = (listType: string = 'LIKE') => {
+    if (!user) {
+      toast.error('Please login to add to library');
+      return;
+    }
+    
+    toggleBookmark({ 
+      storyId, 
+      listType 
+    });
+    setShowLibraryDropdown(false);
   };
 
+  const getLibraryButtonStatus = () => {
+    if (!bookmarkStatus?.listTypes) return { inLibrary: false, types: [] };
+    
+    const activeTypes = Object.entries(bookmarkStatus.listTypes)
+      .filter(([_, active]) => active)
+      .map(([type, _]) => type);
+    
+    return {
+      inLibrary: activeTypes.length > 0,
+      types: activeTypes
+    };
+  };
+
+  const libraryStatus = getLibraryButtonStatus();
+
+  const libraryOptions = [
+    {
+      type: 'READING',
+      label: 'Currently Reading',
+      icon: EyeIcon,
+      solidIcon: EyeIcon,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100'
+    },
+    {
+      type: 'WANT_TO_READ',
+      label: 'Want to Read',
+      icon: BookmarkIcon,
+      solidIcon: BookmarkIconSolid,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100'
+    },
+              {
+            type: 'LIKE',
+            label: 'Liked',
+      icon: HeartIcon,
+      solidIcon: HeartIconSolid,
+      color: 'text-red-600',
+      bgColor: 'bg-red-100'
+    },
+    {
+      type: 'COMPLETED',
+      label: 'Completed',
+      icon: CheckCircleIcon,
+      solidIcon: CheckCircleIconSolid,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100'
+    },
+    {
+      type: 'PURCHASED',
+      label: 'Purchased',
+      icon: ShoppingBagIcon,
+      solidIcon: ShoppingBagIconSolid,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-100'
+    }
+  ];
+
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    if (!user) {
+      toast.error('Please login to like this story');
+      return;
+    }
+    toggleStoryLike(storyId);
   };
 
   const handleRating = (rating: number) => {
@@ -197,10 +340,54 @@ export default function StoryReaderView() {
   };
 
   const handleCommentSubmit = () => {
+    if (!user) {
+      toast.error('Please log in to comment');
+      return;
+    }
+    
     if (newComment.trim()) {
-      // Submit comment to API
+      createComment({
+        storyId,
+        content: newComment.trim(),
+      });
       setNewComment('');
     }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      deleteComment(commentId);
+    }
+  };
+
+  const handleEditComment = (commentId: string, currentContent: string) => {
+    setEditingCommentId(commentId);
+    setEditContent(currentContent);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingCommentId || !editContent.trim()) return;
+    
+    updateComment({
+      commentId: editingCommentId,
+      content: editContent.trim(),
+    });
+    
+    setEditingCommentId(null);
+    setEditContent('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditContent('');
+  };
+
+  const handleCommentLike = (commentId: string) => {
+    if (!user) {
+      toast.error('Please log in to like comments');
+      return;
+    }
+    toggleCommentLike(commentId);
   };
 
   const getContentStatus = (status: string) => {
@@ -221,43 +408,7 @@ export default function StoryReaderView() {
     });
   };
 
-  // Mock data for chapters and comments since they're not in the Story type
-  const chapters = Array.from({ length: 10 }, (_, i) => ({
-    id: `chapter-${i + 1}`,
-    chapterNumber: i + 1,
-    title: `Chapter ${i + 1}: ${['The Beginning', 'First Steps', 'Discovery', 'The Challenge', 'New Allies', 'Dark Secrets', 'The Battle', 'Revelations', 'The Choice', 'New Dawn'][i]}`,
-    content: "Chapter content preview...",
-    wordCount: 2500 + Math.floor(Math.random() * 1000),
-    views: Math.floor(Math.random() * 5000) + 1000,
-    likes: Math.floor(Math.random() * 500) + 50,
-    createdAt: new Date(2024, 0, 15 + i).toISOString()
-  }));
 
-  const comments = Array.from({ length: 5 }, (_, i) => ({
-    id: `comment-${i + 1}`,
-    user: {
-      id: `user-${i + 1}`,
-      username: `reader${i + 1}`,
-      profileImageUrl: "/api/placeholder/32/32"
-    },
-    content: [
-      "This story is absolutely amazing! The world-building is incredible and the characters feel so real.",
-      "I can't wait for the next chapter! The cliffhanger is killing me.",
-      "The magic system in this story is so well thought out. Love the attention to detail!",
-      "Been following this story from the beginning. It just keeps getting better!",
-      "The character development is phenomenal. Aria's growth throughout the story is beautiful."
-    ][i],
-    likes: Math.floor(Math.random() * 100) + 10,
-    createdAt: new Date(2024, 11, 1 - i).toISOString()
-  }));
-
-  const recommendedStories = Array.from({ length: 5 }, (_, i) => ({
-    id: `rec-${i + 1}`,
-    title: ['Realm of Shadows', 'Dragon\'s Legacy', 'The Enchanted Forest', 'Mystic Warriors', 'Kingdom of Light'][i],
-    rating: 4.0 + Math.random(),
-    genre: ['Fantasy', 'Adventure', 'Romance', 'Sci-Fi', 'Mystery'][i],
-    coverImageUrl: "/api/placeholder/150/200"
-  }));
 
   // Mock rating data since it's not in the Story type
   const storyRating = 4.25;
@@ -347,7 +498,9 @@ export default function StoryReaderView() {
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Heart className="h-5 w-5 text-gray-400 mx-auto mb-1" />
-                  <div className="text-lg font-semibold text-gray-900">{formatNumber(story.totalLikes)}</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatNumber(reactionStatus?.totalLikes || story.totalLikes)}
+                  </div>
                   <div className="text-xs text-gray-500">Likes</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -404,17 +557,81 @@ export default function StoryReaderView() {
                   <BookOpen className="h-5 w-5" />
                   <span>Read</span>
                 </button>
-                <button
-                  onClick={handleAddToLibrary}
-                  className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center space-x-2 ${
-                    isInLibrary
-                      ? 'bg-green-100 text-green-700 border border-green-200'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>{isInLibrary ? 'In Library' : 'Add to Library'}</span>
-                </button>
+                {/* Library Dropdown Button */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowLibraryDropdown(!showLibraryDropdown)}
+                    disabled={isBookmarkLoading}
+                    className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center space-x-2 ${
+                      libraryStatus.inLibrary
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    } ${isBookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>
+                      {isBookmarkLoading 
+                        ? 'Updating...' 
+                        : libraryStatus.inLibrary 
+                          ? `In Library (${libraryStatus.types.length})` 
+                          : 'Add to Library'
+                      }
+                    </span>
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showLibraryDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                      <div className="p-3 border-b border-gray-100">
+                        <h3 className="text-sm font-medium text-gray-900">Add to Library</h3>
+                        <p className="text-xs text-gray-500">Choose a reading list</p>
+                      </div>
+                      <div className="p-2">
+                        {libraryOptions.map((option) => {
+                          const Icon = option.icon;
+                          const SolidIcon = option.solidIcon;
+                          const isActive = bookmarkStatus?.listTypes?.[option.type.toLowerCase() as keyof typeof bookmarkStatus.listTypes];
+                          
+                          return (
+                            <button
+                              key={option.type}
+                              onClick={() => handleAddToLibrary(option.type)}
+                              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                isActive
+                                  ? `${option.bgColor} ${option.color}`
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {isActive ? (
+                                <SolidIcon className="h-5 w-5" />
+                              ) : (
+                                <Icon className="h-5 w-5" />
+                              )}
+                              <span className="flex-1 text-left">{option.label}</span>
+                              {isActive && (
+                                <span className="text-xs">✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                        
+                        {libraryStatus.inLibrary && (
+                          <>
+                            <div className="border-t border-gray-100 my-2"></div>
+                            <button
+                              onClick={() => handleAddToLibrary('REMOVE')}
+                              className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                              <span>Remove from Library</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleShare}
                   className="bg-white text-gray-700 px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2"
@@ -424,14 +641,26 @@ export default function StoryReaderView() {
                 </button>
                 <button
                   onClick={handleLike}
-                  className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center space-x-2 ${
-                    isLiked
+                  disabled={isLikeLoading || isFetchingReactions}
+                  className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 ${
+                    reactionStatus?.liked
                       ? 'bg-red-100 text-red-700 border border-red-200'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                  } ${(isLikeLoading || isFetchingReactions) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={reactionStatus?.liked ? 'Unlike story' : 'Like story'}
                 >
-                  <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                  <span>Like</span>
+                  <Heart className={`h-5 w-5 transition-all duration-200 ${
+                    reactionStatus?.liked ? 'fill-current' : ''
+                  } ${isLikeLoading ? 'animate-pulse' : ''} ${isFetchingReactions ? 'animate-spin' : ''}`} />
+                  <span className="transition-all duration-200">
+                    {reactionStatus?.liked ? 'Liked' : 'Like'}
+                    {isFetchingReactions && <span className="ml-1 text-xs animate-pulse">↻</span>}
+                  </span>
+                  {reactionStatus?.totalLikes && reactionStatus.totalLikes > 0 && (
+                    <span className="text-xs transition-all duration-200">
+                      ({formatNumber(reactionStatus.totalLikes)})
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -492,37 +721,83 @@ export default function StoryReaderView() {
 
             {activeTab === 'chapters' && (
               <div className="space-y-4">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}`)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 mb-1">{chapter.title}</h4>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{formatNumber(chapter.views)}</span>
+                {isLoadingChapters ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : storyChapters.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Chapters Yet</h3>
+                    <p className="text-gray-600">This story doesn't have any chapters published yet.</p>
+                  </div>
+                ) : (
+                  storyChapters.map((chapter: any) => (
+                    <div
+                      key={chapter.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 mb-1">
+                            Chapter {chapter.chapterNumber}: {chapter.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
+                          </p>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Heart className="h-4 w-4" />
-                          <span>{formatNumber(chapter.likes)}</span>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{formatNumber(chapter.views)}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Heart className="h-4 w-4" />
+                            <span>{formatNumber(chapter.likes)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
 
             {activeTab === 'comments' && (
               <div className="space-y-6">
+                {/* Comments Header with Real-time Status */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Comments ({story.totalComments})</h3>
+                  <div className="flex items-center space-x-2">
+                    {/* Real-time status indicator */}
+                    <div className="flex items-center space-x-2">
+                      {isFetchingComments ? (
+                        <div className="flex items-center space-x-1 text-sm text-blue-600">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                          <span>Updating...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1 text-sm text-green-600">
+                          <div className="animate-pulse rounded-full h-2 w-2 bg-green-500"></div>
+                          <span className="text-xs">Live</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Manual refresh button */}
+                    <button
+                      onClick={() => refetchComments()}
+                      className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600 transition-colors p-1 rounded hover:bg-gray-100"
+                      title="Refresh comments"
+                      disabled={isFetchingComments}
+                    >
+                      <ChevronRight className={`h-4 w-4 ${isFetchingComments ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Comment Input */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <textarea
@@ -535,52 +810,134 @@ export default function StoryReaderView() {
                   <div className="flex justify-end mt-3">
                     <button
                       onClick={handleCommentSubmit}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      disabled={isCreatingComment || !newComment.trim()}
+                      className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                        isCreatingComment || !newComment.trim()
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
                     >
-                      Send
+                      {isCreatingComment ? 'Posting...' : 'Send'}
                     </button>
                   </div>
                 </div>
 
                 {/* Comments List */}
                 <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          {comment.user.profileImageUrl ? (
-                            <Image
-                              src={comment.user.profileImageUrl}
-                              alt={comment.user.username}
-                              width={32}
-                              height={32}
-                              className="rounded-full"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                              <User className="h-4 w-4 text-gray-600" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-900">{comment.user.username}</span>
-                            <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                  {isLoadingComments ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : storyComments.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Comments Yet</h3>
+                      <p className="text-gray-600">Be the first to share your thoughts about this story!</p>
+                    </div>
+                  ) : (
+                    storyComments.map((comment: any) => (
+                      <div key={comment.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            {comment.user.profileImageUrl ? (
+                              <Image
+                                src={comment.user.profileImageUrl}
+                                alt={comment.user.username}
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                                <User className="h-4 w-4 text-gray-600" />
+                              </div>
+                            )}
                           </div>
-                          <p className="text-gray-700 mb-2">{comment.content}</p>
-                          <div className="flex items-center space-x-4">
-                            <button className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600">
-                              <ThumbsUp className="h-4 w-4" />
-                              <span>{comment.likes}</span>
-                            </button>
-                            <button className="text-sm text-gray-500 hover:text-red-600">
-                              <Flag className="h-4 w-4" />
-                            </button>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="font-medium text-gray-900">{comment.user.username}</span>
+                              <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                            </div>
+                            
+                            {/* Comment content - editable if user is editing this comment */}
+                            {editingCommentId === comment.id ? (
+                              <div className="mb-2">
+                                <textarea
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                  rows={3}
+                                  placeholder="Edit your comment..."
+                                />
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <button
+                                    onClick={handleSaveEdit}
+                                    disabled={isUpdatingComment || !editContent.trim()}
+                                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                                  >
+                                    {isUpdatingComment ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-gray-700 mb-2">{comment.content}</p>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <button 
+                                  onClick={() => handleCommentLike(comment.id)}
+                                  disabled={isTogglingCommentLike}
+                                  className={`flex items-center space-x-1 text-sm transition-colors ${
+                                    isTogglingCommentLike 
+                                      ? 'text-gray-400 cursor-not-allowed' 
+                                      : 'text-gray-500 hover:text-blue-600'
+                                  }`}
+                                  title="Like comment"
+                                >
+                                  <ThumbsUp className={`h-4 w-4 ${isTogglingCommentLike ? 'animate-pulse' : ''}`} />
+                                  <span>{comment.likes || 0}</span>
+                                </button>
+                                <button className="text-sm text-gray-500 hover:text-red-600">
+                                  <Flag className="h-4 w-4" />
+                                </button>
+                                
+                                {/* Edit button for comment author */}
+                                {user && user.id === comment.user.id && editingCommentId !== comment.id && (
+                                  <button
+                                    onClick={() => handleEditComment(comment.id, comment.content)}
+                                    className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600"
+                                    title="Edit comment"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                    <span>Edit</span>
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Delete button for story owner or comment author */}
+                              {user && ((story && user.id === story.author.id) || user.id === comment.user.id) && editingCommentId !== comment.id && (
+                                <button
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  disabled={isDeletingComment}
+                                  className="flex items-center space-x-1 text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+                                  title="Delete comment"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                  <span>{isDeletingComment ? 'Deleting...' : 'Delete'}</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -636,33 +993,16 @@ export default function StoryReaderView() {
           </div>
         </div>
 
-        {/* Recommended Stories */}
+        {/* Recommended Stories - Temporarily disabled */}
+        {/* 
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Recommended For You</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {recommendedStories.map((recStory) => (
-              <Link
-                key={recStory.id}
-                href={`/stories/${recStory.id}`}
-                className="group block"
-              >
-                <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                  <div className="aspect-[3/4] bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg mb-3 flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <h4 className="font-medium text-gray-900 text-sm mb-1 group-hover:text-blue-600 transition-colors">
-                    {recStory.title}
-                  </h4>
-                  <div className="flex items-center space-x-1 mb-1">
-                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                    <span className="text-xs text-gray-600">{recStory.rating.toFixed(1)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500">{recStory.genre}</p>
-                </div>
-              </Link>
-            ))}
+          <div className="text-center py-8">
+            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Recommendations coming soon!</p>
           </div>
         </div>
+        */}
       </div>
     </div>
   );

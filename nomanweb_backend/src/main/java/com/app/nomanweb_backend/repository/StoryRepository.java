@@ -81,7 +81,7 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
         long countByCreatedAtAfter(LocalDateTime date);
 
         // Find stories with specific content type
-        Page<Story> findByContentTypeAndStatus(Story.ContentType contentType,
+        Page<Story> findByPricingTypeAndStatus(Story.PricingType pricingType,
                         Story.Status status,
                         Pageable pageable);
 
@@ -89,12 +89,12 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
         @Query("SELECT s FROM Story s WHERE " +
                         "(:status IS NULL OR s.status = :status) AND " +
                         "(:categoryId IS NULL OR s.category.id = :categoryId) AND " +
-                        "(:contentType IS NULL OR s.contentType = :contentType) AND " +
+                        "(:pricingType IS NULL OR s.pricingType = :pricingType) AND " +
                         "(:contentStatus IS NULL OR s.contentStatus = :contentStatus) AND " +
                         "(:authorId IS NULL OR s.author.id = :authorId)")
         Page<Story> findStoriesWithFilters(@Param("status") Story.Status status,
                         @Param("categoryId") UUID categoryId,
-                        @Param("contentType") Story.ContentType contentType,
+                        @Param("pricingType") Story.PricingType pricingType,
                         @Param("contentStatus") Story.ContentStatus contentStatus,
                         @Param("authorId") UUID authorId,
                         Pageable pageable);

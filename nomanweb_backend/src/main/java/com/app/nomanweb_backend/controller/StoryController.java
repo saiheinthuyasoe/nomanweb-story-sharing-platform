@@ -44,11 +44,21 @@ public class StoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StoryResponse> getStory(@PathVariable UUID id) {
+    public ResponseEntity<StoryResponse> getStory(
+            @PathVariable UUID id,
+            @RequestParam(required = false, defaultValue = "false") boolean incrementView,
+            HttpServletRequest httpRequest) {
         try {
             StoryResponse story = storyService.getStoryById(id);
-            // Increment view count
-            storyService.incrementViews(id);
+
+            // Only increment view count if explicitly requested and user is not the author
+            if (incrementView) {
+                UUID currentUserId = getCurrentUserIdOptional(httpRequest);
+                if (currentUserId == null || !story.getAuthor().getId().equals(currentUserId)) {
+                    storyService.incrementViews(id);
+                }
+            }
+
             return ResponseEntity.ok(story);
         } catch (RuntimeException e) {
             log.error("Error getting story {}: {}", id, e.getMessage());
@@ -92,17 +102,17 @@ public class StoryController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID categoryId,
-            @RequestParam(required = false) String contentType,
+            @RequestParam(required = false) String pricingType,
             @RequestParam(required = false) String contentStatus,
             @RequestParam(required = false) UUID authorId) {
         try {
             Page<StoryPreviewResponse> stories;
 
             // If filters are provided, use filtered search
-            if (status != null || categoryId != null || contentType != null || contentStatus != null
+            if (status != null || categoryId != null || pricingType != null || contentStatus != null
                     || authorId != null) {
                 stories = storyService.getStoriesWithFilters(
-                        status, categoryId, contentType, contentStatus, authorId, sortBy, page, size);
+                        status, categoryId, pricingType, contentStatus, authorId, sortBy, page, size);
             } else {
                 stories = storyService.getPublishedStories(page, size, sortBy);
             }
@@ -245,6 +255,26 @@ public class StoryController {
         }
     }
 
+    @PostMapping("/{id}/view")
+    public ResponseEntity<Void> incrementStoryView(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID currentUserId = getCurrentUserIdOptional(httpRequest);
+            StoryResponse story = storyService.getStoryById(id);
+
+            // Only increment view count if user is not the author
+            if (currentUserId == null || !story.getAuthor().getId().equals(currentUserId)) {
+                storyService.incrementViews(id);
+            }
+
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Error incrementing story view {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     private UUID getUserIdFromRequest(HttpServletRequest request) {
         // Get the authenticated user from SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -253,5 +283,13 @@ public class StoryController {
             return UUID.fromString(authentication.getName());
         }
         throw new RuntimeException("No valid authentication found");
+    }
+
+    private UUID getCurrentUserIdOptional(HttpServletRequest request) {
+        try {
+            return getUserIdFromRequest(request);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

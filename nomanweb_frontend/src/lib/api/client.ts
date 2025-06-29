@@ -29,18 +29,24 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Only redirect to login for protected endpoints
+      // Only redirect to login for certain critical endpoints that indicate session expiry
       const url = error.config?.url || '';
-      const isProtectedEndpoint = url.includes('/auth/profile') || 
-                                  url.includes('/my-stories') || 
-                                  (error.config?.method !== 'GET') ||
-                                  url.includes('/publish') ||
-                                  url.includes('/unpublish');
+      const isSessionExpiryEndpoint = url.includes('/auth/profile') || 
+                                     url.includes('/my-stories') ||
+                                     url.includes('/dashboard') ||
+                                     url.includes('/publish') ||
+                                     url.includes('/unpublish');
       
-      Cookies.remove('token');
+      // Don't auto-logout for comment creation or other user actions - let them handle the error
+      const isUserActionEndpoint = url.includes('/comments') ||
+                                   url.includes('/reactions') ||
+                                   url.includes('/reading-lists');
       
-      if (isProtectedEndpoint && typeof window !== 'undefined') {
-        window.location.href = '/login';
+      if (isSessionExpiryEndpoint && !isUserActionEndpoint) {
+        Cookies.remove('token');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

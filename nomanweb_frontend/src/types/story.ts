@@ -31,7 +31,7 @@ export interface Story {
   author: AuthorInfo;
   category?: CategoryInfo;
   status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
-  contentType: 'FREE' | 'PAID' | 'MIXED';
+  pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
   contentStatus: 'ONGOING' | 'COMPLETED';
   moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
@@ -39,6 +39,8 @@ export interface Story {
   totalLikes: number;
   totalComments: number;
   totalCoinsEarned: number;
+  bookPrice?: number;
+  defaultChapterPrice?: number;
   isFeatured: boolean;
   tags: string[];
   createdAt: string;
@@ -54,7 +56,7 @@ export interface StoryPreview {
   author: AuthorInfo;
   category?: CategoryInfo;
   status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
-  contentType: 'FREE' | 'PAID' | 'MIXED';
+  pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
   contentStatus: 'ONGOING' | 'COMPLETED';
   moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
@@ -70,20 +72,24 @@ export interface CreateStoryRequest {
   title: string;
   description?: string;
   categoryId?: string;
-  contentType?: 'FREE' | 'PAID' | 'MIXED';
+  pricingType?: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
   contentStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
+  bookPrice?: number;
+  defaultChapterPrice?: number;
 }
 
 export interface UpdateStoryRequest {
   title?: string;
   description?: string;
   categoryId?: string;
-  contentType?: 'FREE' | 'PAID' | 'MIXED';
+  pricingType?: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
   contentStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
+  bookPrice?: number;
+  defaultChapterPrice?: number;
 }
 
 export interface StoriesResponse {
@@ -144,6 +150,6 @@ export interface ReadingList {
   id: string;
   user: User;
   story: Story;
-  listType: 'READING' | 'COMPLETED' | 'FAVORITE' | 'WANT_TO_READ';
+  listType: 'READING' | 'COMPLETED' | 'LIKE' | 'WANT_TO_READ';
   addedAt: string;
 } 

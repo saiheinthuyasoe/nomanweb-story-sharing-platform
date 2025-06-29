@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class ReadingList {
 
     @Id
@@ -26,10 +28,12 @@ public class ReadingList {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "story_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Story story;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +46,12 @@ public class ReadingList {
 
     // Enums
     public enum ListType {
-        READING, COMPLETED, FAVORITE, WANT_TO_READ
+        READING,
+        COMPLETED,
+        LIKE,
+        WANT_TO_READ,
+        PURCHASED,
+        HISTORY
     }
 
     // Helper methods
@@ -50,15 +59,16 @@ public class ReadingList {
         return this.listType == ListType.READING;
     }
 
-    public boolean isCompleted() {
-        return this.listType == ListType.COMPLETED;
+    public boolean isLike() {
+        return this.listType == ListType.LIKE;
     }
 
-    public boolean isFavorite() {
-        return this.listType == ListType.FAVORITE;
+    public boolean isPurchased() {
+        return this.listType == ListType.PURCHASED;
     }
 
-    public boolean isWantToRead() {
-        return this.listType == ListType.WANT_TO_READ;
+    public boolean isHistory() {
+        return this.listType == ListType.HISTORY;
     }
+
 }

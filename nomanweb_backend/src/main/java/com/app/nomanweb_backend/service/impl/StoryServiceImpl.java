@@ -56,9 +56,11 @@ public class StoryServiceImpl implements StoryService {
                 .description(request.getDescription())
                 .author(author)
                 .category(category)
-                .contentType(request.getContentType())
+                .pricingType(request.getPricingType())
                 .contentStatus(request.getContentStatus())
                 .coverImageUrl(request.getCoverImageUrl())
+                .bookPrice(request.getBookPrice())
+                .defaultChapterPrice(request.getDefaultChapterPrice())
                 .status(Story.Status.DRAFT)
                 .moderationStatus(Story.ModerationStatus.PENDING)
                 .tags(request.getTags() != null ? request.getTags() : new ArrayList<>())
@@ -104,8 +106,8 @@ public class StoryServiceImpl implements StoryService {
         if (request.getCoverImageUrl() != null) {
             story.setCoverImageUrl(request.getCoverImageUrl());
         }
-        if (request.getContentType() != null) {
-            story.setContentType(request.getContentType());
+        if (request.getPricingType() != null) {
+            story.setPricingType(request.getPricingType());
         }
         if (request.getContentStatus() != null) {
             story.setContentStatus(request.getContentStatus());
@@ -117,6 +119,12 @@ public class StoryServiceImpl implements StoryService {
         }
         if (request.getTags() != null) {
             story.setTags(request.getTags());
+        }
+        if (request.getBookPrice() != null) {
+            story.setBookPrice(request.getBookPrice());
+        }
+        if (request.getDefaultChapterPrice() != null) {
+            story.setDefaultChapterPrice(request.getDefaultChapterPrice());
         }
 
         story = storyRepository.save(story);
@@ -228,18 +236,18 @@ public class StoryServiceImpl implements StoryService {
     @Override
     @Transactional(readOnly = true)
     public Page<StoryPreviewResponse> getStoriesWithFilters(
-            String status, UUID categoryId, String contentType, String contentStatus, UUID authorId,
+            String status, UUID categoryId, String pricingType, String contentStatus, UUID authorId,
             String sortBy, int page, int size) {
 
         Story.Status statusEnum = status != null ? Story.Status.valueOf(status) : null;
-        Story.ContentType contentTypeEnum = contentType != null ? Story.ContentType.valueOf(contentType) : null;
+        Story.PricingType pricingTypeEnum = pricingType != null ? Story.PricingType.valueOf(pricingType) : null;
         Story.ContentStatus contentStatusEnum = contentStatus != null ? Story.ContentStatus.valueOf(contentStatus)
                 : null;
         Sort sort = createSort(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Story> stories = storyRepository.findStoriesWithFilters(
-                statusEnum, categoryId, contentTypeEnum, contentStatusEnum, authorId, pageable);
+                statusEnum, categoryId, pricingTypeEnum, contentStatusEnum, authorId, pageable);
 
         return stories.map(this::convertToStoryPreviewResponse);
     }
@@ -355,7 +363,7 @@ public class StoryServiceImpl implements StoryService {
                         .slug(story.getCategory().getSlug())
                         .build() : null)
                 .status(story.getStatus())
-                .contentType(story.getContentType())
+                .pricingType(story.getPricingType())
                 .contentStatus(story.getContentStatus())
                 .moderationStatus(story.getModerationStatus())
                 .totalChapters(story.getTotalChapters())
@@ -363,6 +371,8 @@ public class StoryServiceImpl implements StoryService {
                 .totalLikes(story.getTotalLikes())
                 .totalComments(story.getTotalComments())
                 .totalCoinsEarned(story.getTotalCoinsEarned())
+                .bookPrice(story.getBookPrice())
+                .defaultChapterPrice(story.getDefaultChapterPrice())
                 .isFeatured(story.getIsFeatured())
                 .tags(story.getTags() != null ? story.getTags() : new ArrayList<>())
                 .createdAt(story.getCreatedAt())
@@ -388,7 +398,7 @@ public class StoryServiceImpl implements StoryService {
                         .slug(story.getCategory().getSlug())
                         .build() : null)
                 .status(story.getStatus())
-                .contentType(story.getContentType())
+                .pricingType(story.getPricingType())
                 .contentStatus(story.getContentStatus())
                 .moderationStatus(story.getModerationStatus())
                 .totalChapters(story.getTotalChapters())

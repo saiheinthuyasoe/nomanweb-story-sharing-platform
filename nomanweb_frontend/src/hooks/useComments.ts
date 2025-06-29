@@ -3,21 +3,46 @@ import { toast } from 'react-hot-toast';
 import { commentsApi, CreateCommentRequest, CreateReplyRequest, CommentResponse } from '@/lib/api/comments';
 import { Comment } from '@/types/story';
 
-// Get story comments
-export const useStoryComments = (storyId: string, page: number = 0, size: number = 20) => {
+// Get story comments with real-time updates
+export const useStoryComments = (storyId: string, page: number = 0, size: number = 20, realTime: boolean = true) => {
+  const queryClient = useQueryClient();
+  
   return useQuery({
     queryKey: ['comments', 'story', storyId, page, size],
     queryFn: () => commentsApi.getStoryComments(storyId, page, size),
     enabled: !!storyId,
+    // Real-time polling every 10 seconds
+    refetchInterval: realTime ? 10000 : false,
+    // Refetch when window regains focus
+    refetchOnWindowFocus: true,
+    // Keep previous data while fetching new data
+    placeholderData: (previousData) => previousData,
+    // Notify when new comments are detected
+    onSuccess: (newData, queryKey) => {
+      const previousData = queryClient.getQueryData(['comments', 'story', storyId, page, size]);
+      if (previousData && newData) {
+        const prevCount = (previousData as any)?.totalElements || 0;
+        const newCount = newData.totalElements || 0;
+        if (newCount > prevCount && prevCount > 0) {
+          toast.success(`${newCount - prevCount} new comment(s) detected!`);
+        }
+      }
+    },
   });
 };
 
-// Get chapter comments
-export const useChapterComments = (chapterId: string, page: number = 0, size: number = 20) => {
+// Get chapter comments with real-time updates
+export const useChapterComments = (chapterId: string, page: number = 0, size: number = 20, realTime: boolean = true) => {
   return useQuery({
     queryKey: ['comments', 'chapter', chapterId, page, size],
     queryFn: () => commentsApi.getChapterComments(chapterId, page, size),
     enabled: !!chapterId,
+    // Real-time polling every 10 seconds
+    refetchInterval: realTime ? 10000 : false,
+    // Refetch when window regains focus
+    refetchOnWindowFocus: true,
+    // Keep previous data while fetching new data
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -75,6 +100,8 @@ export const useCreateComment = () => {
       // Invalidate relevant comment queries
       if (variables.storyId) {
         queryClient.invalidateQueries({ queryKey: ['comments', 'story', variables.storyId] });
+        // Invalidate story query to update comment count
+        queryClient.invalidateQueries({ queryKey: ['story', variables.storyId] });
       }
       if (variables.chapterId) {
         queryClient.invalidateQueries({ queryKey: ['comments', 'chapter', variables.chapterId] });
@@ -105,6 +132,9 @@ export const useCreateReply = () => {
       // Invalidate story/chapter comments to update counts
       queryClient.invalidateQueries({ queryKey: ['comments', 'story'] });
       queryClient.invalidateQueries({ queryKey: ['comments', 'chapter'] });
+      
+      // Invalidate story queries to update comment counts
+      queryClient.invalidateQueries({ queryKey: ['story'] });
       
       toast.success('Reply posted successfully!');
     },
@@ -142,6 +172,8 @@ export const useDeleteComment = () => {
     onSuccess: () => {
       // Invalidate all comment queries
       queryClient.invalidateQueries({ queryKey: ['comments'] });
+      // Invalidate story queries to update comment counts
+      queryClient.invalidateQueries({ queryKey: ['story'] });
       
       toast.success('Comment deleted successfully!');
     },
@@ -151,20 +183,70 @@ export const useDeleteComment = () => {
   });
 };
 
-// Toggle comment like
+// Toggle comment like with optimistic updates
 export const useToggleCommentLike = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (commentId: string) => commentsApi.toggleCommentLike(commentId),
+    // Optimistic update - immediately update UI before server response
+    onMutate: async (commentId: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+
+      // Snapshot the previous value
+      const previousComments = queryClient.getQueriesData({ queryKey: ['comments'] });
+
+      // Optimistically update comment like count
+      queryClient.setQueriesData({ queryKey: ['comments'] }, (old: any) => {
+        if (!old) return old;
+        
+        // Handle paginated response
+        if (old.content && Array.isArray(old.content)) {
+          return {
+            ...old,
+            content: old.content.map((comment: any) => 
+              comment.id === commentId 
+                ? { ...comment, likes: (comment.likes || 0) + 1 }
+                : comment
+            )
+          };
+        }
+        
+        // Handle direct array response
+        if (Array.isArray(old)) {
+          return old.map((comment: any) => 
+            comment.id === commentId 
+              ? { ...comment, likes: (comment.likes || 0) + 1 }
+              : comment
+          );
+        }
+        
+        return old;
+      });
+
+      // Return context with previous data for rollback
+      return { previousComments };
+    },
     onSuccess: (data, commentId) => {
-      // Invalidate comment queries to update like counts
+      // Update with actual server response
       queryClient.invalidateQueries({ queryKey: ['comments'] });
       
       toast.success(data.message);
     },
-    onError: (error: any) => {
+    onError: (error: any, commentId, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousComments) {
+        context.previousComments.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
       toast.error(error.response?.data?.error || 'Failed to toggle like');
+    },
+    // Always refetch after error or success to ensure consistency
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
     },
   });
 };

@@ -289,6 +289,10 @@ export default function CreateChapterPage() {
           onAutoSave={handleAutoSave}
           isLoading={isCreating}
           maxChapterNumber={story.totalChapters || 0}
+          story={{
+            pricingType: story.pricingType,
+            bookPrice: story.bookPrice
+          }}
         />
       </div>
     </div>

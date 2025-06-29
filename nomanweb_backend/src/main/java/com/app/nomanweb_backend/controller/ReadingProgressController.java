@@ -33,10 +33,18 @@ public class ReadingProgressController {
 
     @PostMapping("/chapter/{chapterId}/update")
     public ResponseEntity<?> updateReadingProgress(@PathVariable UUID chapterId,
-            @RequestParam BigDecimal progressPercentage,
+            @RequestParam Double progressPercentage,
             Authentication authentication) {
         try {
             System.out.println("Updating progress for chapter: " + chapterId + ", progress: " + progressPercentage);
+
+            // Validate progress percentage
+            if (progressPercentage < 0 || progressPercentage > 100) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Progress percentage must be between 0 and 100"));
+            }
+
+            BigDecimal progressBigDecimal = BigDecimal.valueOf(progressPercentage);
 
             // Check if user is authenticated
             if (authentication == null || !authentication.isAuthenticated() ||
@@ -45,8 +53,8 @@ public class ReadingProgressController {
 
                 // Return a success response for anonymous users without saving anything
                 Map<String, Object> response = new HashMap<>();
-                response.put("progressPercentage", progressPercentage);
-                response.put("isCompleted", progressPercentage.compareTo(new BigDecimal("100")) >= 0);
+                response.put("progressPercentage", progressBigDecimal);
+                response.put("isCompleted", progressBigDecimal.compareTo(new BigDecimal("100")) >= 0);
                 response.put("lastReadAt", null);
                 response.put("message", "Progress tracked locally (not saved)");
 
@@ -78,13 +86,13 @@ public class ReadingProgressController {
             ReadingProgress progress;
             if (existingProgress.isPresent()) {
                 progress = existingProgress.get();
-                progress.updateProgress(progressPercentage);
+                progress.updateProgress(progressBigDecimal);
             } else {
                 progress = ReadingProgress.builder()
                         .user(user)
                         .story(story)
                         .chapter(chapter)
-                        .progressPercentage(progressPercentage)
+                        .progressPercentage(progressBigDecimal)
                         .build();
             }
 
@@ -210,6 +218,13 @@ public class ReadingProgressController {
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
         try {
+            // Check if user is authenticated
+            if (authentication == null || !authentication.isAuthenticated() ||
+                    authentication.getName().equals("anonymousUser")) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("error", "Authentication required"));
+            }
+
             String userIdString = authentication.getName();
             UUID userId = UUID.fromString(userIdString);
             User user = userRepository.findById(userId)
@@ -226,6 +241,38 @@ public class ReadingProgressController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Failed to get reading progress: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/clear-history")
+    public ResponseEntity<?> clearReadingHistory(Authentication authentication) {
+        try {
+            // Check if user is authenticated
+            if (authentication == null || !authentication.isAuthenticated() ||
+                    authentication.getName().equals("anonymousUser")) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("error", "Authentication required"));
+            }
+
+            String userIdString = authentication.getName();
+            UUID userId = UUID.fromString(userIdString);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Get all reading progress for user
+            List<ReadingProgress> userProgress = readingProgressRepository
+                    .findByUserIdOrderByLastReadAtDesc(user.getId());
+
+            // Delete all reading progress
+            readingProgressRepository.deleteAll(userProgress);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Reading history cleared successfully",
+                    "deletedCount", userProgress.size()));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to clear reading history: " + e.getMessage()));
         }
     }
 }

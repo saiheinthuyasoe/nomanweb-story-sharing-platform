@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface CreateChapterRequest {
   storyId: string;
@@ -29,8 +29,8 @@ export interface Chapter {
   wordCount: number;
   coinPrice: number;
   isFree: boolean;
-  status: 'DRAFT' | 'PUBLISHED';
-  moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "DRAFT" | "PUBLISHED";
+  moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   moderationNotes?: string;
   views: number;
   likes: number;
@@ -59,7 +59,7 @@ export interface ChapterPreview {
   wordCount: number;
   coinPrice: number;
   isFree: boolean;
-  status: 'DRAFT' | 'PUBLISHED';
+  status: "DRAFT" | "PUBLISHED";
   views: number;
   likes: number;
   createdAt: string;
@@ -69,39 +69,44 @@ export interface ChapterPreview {
 export const chaptersApi = {
   // Create a new chapter
   async createChapter(data: CreateChapterRequest): Promise<Chapter> {
-    console.log('chaptersApi.createChapter - Request data:', {
+    console.log("chaptersApi.createChapter - Request data:", {
       storyId: data.storyId,
       title: data.title,
       contentLength: data.content?.length || 0,
-      contentPreview: data.content?.substring(0, 100) || '',
+      contentPreview: data.content?.substring(0, 100) || "",
       chapterNumber: data.chapterNumber,
       coinPrice: data.coinPrice,
       isFree: data.isFree,
-      isDraft: data.isDraft
+      isDraft: data.isDraft,
     });
-    
+
     try {
-      const response = await apiClient.post('/chapters', data);
-      console.log('chaptersApi.createChapter - Success response:', response.data);
+      const response = await apiClient.post("/chapters", data);
+      console.log(
+        "chaptersApi.createChapter - Success response:",
+        response.data
+      );
       return response.data;
     } catch (error: any) {
-      console.error('chaptersApi.createChapter - Error:', {
+      console.error("chaptersApi.createChapter - Error:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
         message: error.message,
         validationErrors: error.response?.data?.errors,
-        errorMessage: error.response?.data?.message
+        errorMessage: error.response?.data?.message,
       });
-      
+
       // Log specific validation errors if available
       if (error.response?.data?.errors) {
-        console.error('Validation errors:', error.response.data.errors);
-        Object.entries(error.response.data.errors).forEach(([field, message]) => {
-          console.error(`- ${field}: ${message}`);
-        });
+        console.error("Validation errors:", error.response.data.errors);
+        Object.entries(error.response.data.errors).forEach(
+          ([field, message]) => {
+            console.error(`- ${field}: ${message}`);
+          }
+        );
       }
-      
+
       throw error;
     }
   },
@@ -113,19 +118,30 @@ export const chaptersApi = {
   },
 
   // Get chapter by story ID and chapter number
-  async getChapterByStoryAndNumber(storyId: string, chapterNumber: number): Promise<Chapter> {
-    const response = await apiClient.get(`/chapters/story/${storyId}/chapter/${chapterNumber}`);
+  async getChapterByStoryAndNumber(
+    storyId: string,
+    chapterNumber: number
+  ): Promise<Chapter> {
+    const response = await apiClient.get(
+      `/chapters/story/${storyId}/chapter/${chapterNumber}`
+    );
     return response.data;
   },
 
   // Update chapter
-  async updateChapter(id: string, data: UpdateChapterRequest): Promise<Chapter> {
+  async updateChapter(
+    id: string,
+    data: UpdateChapterRequest
+  ): Promise<Chapter> {
     const response = await apiClient.put(`/chapters/${id}`, data);
     return response.data;
   },
 
   // Auto-save chapter (for rich text editor)
-  async autoSaveChapter(id: string, data: UpdateChapterRequest): Promise<Chapter> {
+  async autoSaveChapter(
+    id: string,
+    data: UpdateChapterRequest
+  ): Promise<Chapter> {
     const response = await apiClient.put(`/chapters/${id}/autosave`, data);
     return response.data;
   },
@@ -133,6 +149,22 @@ export const chaptersApi = {
   // Delete chapter
   async deleteChapter(id: string): Promise<void> {
     await apiClient.delete(`/chapters/${id}`);
+  },
+
+  // Bulk delete chapters (using multiple single delete calls)
+  async bulkDeleteChapters(chapterIds: string[]): Promise<void> {
+    console.log("bulkDeleteChapters called with:", chapterIds);
+    console.log(
+      "Using multiple single delete calls - NOT calling /chapters/bulk"
+    );
+
+    const deletePromises = chapterIds.map((id) => {
+      console.log(`Deleting chapter ${id} via /chapters/${id}`);
+      return apiClient.delete(`/chapters/${id}`);
+    });
+
+    await Promise.all(deletePromises);
+    console.log("All chapters deleted successfully via individual calls");
   },
 
   // Get chapters by story
@@ -143,10 +175,16 @@ export const chaptersApi = {
 
   // Get chapters by story with pagination
   async getChaptersByStoryPaged(
-    storyId: string, 
+    storyId: string,
     params: { page?: number; size?: number } = {}
-  ): Promise<{ content: ChapterPreview[]; totalPages: number; totalElements: number }> {
-    const response = await apiClient.get(`/chapters/story/${storyId}/paged`, { params });
+  ): Promise<{
+    content: ChapterPreview[];
+    totalPages: number;
+    totalElements: number;
+  }> {
+    const response = await apiClient.get(`/chapters/story/${storyId}/paged`, {
+      params,
+    });
     return response.data;
   },
 
@@ -188,10 +226,13 @@ export const chaptersApi = {
   },
 
   // Search chapters within story
-  async searchChaptersInStory(storyId: string, query: string): Promise<ChapterPreview[]> {
-    const response = await apiClient.get(`/chapters/story/${storyId}/search`, { 
-      params: { q: query } 
+  async searchChaptersInStory(
+    storyId: string,
+    query: string
+  ): Promise<ChapterPreview[]> {
+    const response = await apiClient.get(`/chapters/story/${storyId}/search`, {
+      params: { q: query },
     });
     return response.data;
   },
-}; 
+};

@@ -14,7 +14,7 @@ export interface GetStoriesParams {
   sortBy?: string;
   status?: string;
   categoryId?: string;
-  contentType?: string;
+  pricingType?: string;
   contentStatus?: string;
   authorId?: string;
 }
@@ -103,6 +103,10 @@ export const storiesApi = {
   async canUserAccessStory(id: string): Promise<boolean> {
     const response = await apiClient.get(`/stories/${id}/can-access`);
     return response.data;
+  },
+
+  async incrementStoryView(id: string): Promise<void> {
+    await apiClient.post(`/stories/${id}/view`);
   },
 };
 

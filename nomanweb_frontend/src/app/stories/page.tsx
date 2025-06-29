@@ -13,7 +13,7 @@ export default function StoriesPage() {
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [contentType, setContentType] = useState('');
+  const [pricingType, setPricingType] = useState('');
   const [contentStatus, setContentStatus] = useState('');
   const [sortBy, setSortBy] = useState('');
 
@@ -39,7 +39,7 @@ export default function StoriesPage() {
     size: 12,
     sortBy,
     categoryId: selectedCategory || undefined,
-    contentType: contentType || undefined,
+          pricingType: pricingType || undefined,
     contentStatus: contentStatus || undefined,
   });
 
@@ -68,7 +68,7 @@ export default function StoriesPage() {
     setPage(0);
     setSearchQuery('');
     setSelectedCategory('');
-    setContentType('');
+    setPricingType('');
     setContentStatus('');
     setSortBy('');
     router.push('/stories');
@@ -174,15 +174,15 @@ export default function StoriesPage() {
               )}
             </div>
 
-            {/* Content Type - disabled during search */}
+            {/* Pricing Type - disabled during search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content Type
+                Pricing Type
               </label>
               <select
-                value={contentType}
+                value={pricingType}
                 onChange={(e) => {
-                  setContentType(e.target.value);
+                  setPricingType(e.target.value);
                   setPage(0);
                 }}
                 disabled={!!urlSearchQuery}
@@ -190,8 +190,8 @@ export default function StoriesPage() {
               >
                 <option value="">All Types</option>
                 <option value="FREE">Free</option>
-                <option value="PAID">Paid</option>
-                <option value="MIXED">Mixed</option>
+                <option value="PAID_PER_CHAPTER">Paid per Chapter</option>
+                <option value="WHOLE_BOOK">Whole Book</option>
               </select>
             </div>
 

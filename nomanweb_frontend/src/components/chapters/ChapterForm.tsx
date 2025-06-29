@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { LexicalEditor } from '@/components/editor';
 import { Save, Settings, Clock, Coins } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useRealtimeCollaboration } from '@/hooks/useRealtimeCollaboration';
+import { useAuth } from '@/contexts/AuthContext';
+import { ActiveCollaborators } from '@/components/collaboration/ActiveCollaborators';
 
 interface ChapterFormData {
   storyId: string;
@@ -26,6 +29,10 @@ interface ChapterFormProps {
   isLoading?: boolean;
   isEditing?: boolean;
   maxChapterNumber?: number;
+  story?: {
+    pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
+    bookPrice?: number;
+  };
 }
 
 export function ChapterForm({
@@ -36,7 +43,8 @@ export function ChapterForm({
   onAutoSave,
   isLoading = false,
   isEditing = false,
-  maxChapterNumber = 0
+  maxChapterNumber = 0,
+  story
 }: ChapterFormProps) {
   const [content, setContent] = useState(initialData?.content || '');
   const [wordCount, setWordCount] = useState(0);
@@ -46,10 +54,34 @@ export function ChapterForm({
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Auth context
+  const { user } = useAuth();
+
+  // Real-time collaboration
+  const { sendContentUpdate, sendCursorPosition, sendSelectionRange, registerContentUpdateCallback, isConnected, collaborators } = useRealtimeCollaboration(chapterId || '');
+
+  console.log('ChapterForm: Real-time collaboration status:', {
+    chapterId,
+    isConnected,
+    hasSendContentUpdate: !!sendContentUpdate,
+    hasRegisterCallback: !!registerContentUpdateCallback,
+    collaboratorsCount: collaborators.length
+  });
+
   // Ref to track the latest content
   const latestContentRef = useRef(initialData?.content || '');
   const previousContentRef = useRef(initialData?.content || '');
   const router = useRouter();
+
+  // Handle cursor position changes for real-time collaboration
+  const handleCursorChange = useCallback((position: number, selectionStart: number, selectionEnd: number) => {
+    if (chapterId) {
+      sendCursorPosition(position);
+      if (selectionStart !== selectionEnd) {
+        sendSelectionRange(selectionStart, selectionEnd);
+      }
+    }
+  }, [chapterId, sendCursorPosition, sendSelectionRange]);
 
   const {
     register,
@@ -143,6 +175,43 @@ export function ChapterForm({
     // Immediately update the form state to ensure sync
     setValue('content', newContent, { shouldDirty: true, shouldValidate: true });
     
+    // Real-time collaboration: Send content update to other collaborators
+    if (chapterId && newContent) {
+      const previousContent = previousContentRef.current;
+      
+      // Only send update if content actually changed
+      if (newContent !== previousContent) {
+        console.log('ChapterForm: Content changed, scheduling real-time update:', {
+          previousLength: previousContent.length,
+          newLength: newContent.length,
+          chapterId
+        });
+        
+        // Debounce content updates to prevent too many messages
+        clearTimeout((window as any).contentUpdateTimeout);
+        (window as any).contentUpdateTimeout = setTimeout(() => {
+          console.log('ChapterForm: Sending real-time content update:', {
+            contentLength: newContent.length,
+            chapterId,
+            isConnected,
+            hasSendContentUpdate: !!sendContentUpdate
+          });
+          
+          // For now, send the full content as a replacement
+          // This is simpler and more reliable than trying to calculate diffs
+          if (sendContentUpdate && isConnected) {
+            sendContentUpdate(newContent, 0, newContent.length, 'replace');
+            console.log('ChapterForm: Real-time content update sent successfully');
+          } else {
+            console.log('ChapterForm: Cannot send real-time update - WebSocket not connected or function not available');
+          }
+          
+          // Update previous content ref
+          previousContentRef.current = newContent;
+        }, 300); // 300ms debounce for more responsive collaboration
+      }
+    }
+    
     // Fast auto-save for content changes (works for both create and edit modes)
     if (onAutoSave && newContent && newContent.trim()) {
       // Clear any existing timeout
@@ -173,7 +242,7 @@ export function ChapterForm({
         }
       }, 500); // Very fast - 500ms delay
     }
-  }, [setValue, onAutoSave, isEditing, chapterId, watchedValues]);
+  }, [setValue, onAutoSave, isEditing, chapterId, watchedValues, sendContentUpdate]);
 
   // Auto-save functionality
   const handleAutoSave = useCallback(async (autoSaveContent: string) => {
@@ -465,11 +534,26 @@ export function ChapterForm({
     handleSubmit(onFormSubmit)();
   };
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout((window as any).contentUpdateTimeout);
+      clearTimeout((window as any).contentChangeAutoSaveTimeout);
+    };
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold">
+              {isEditing ? 'Edit Chapter' : 'Create Chapter'}
+            </h1>
+            
+         
+          </div>
           
           <div className="flex items-center space-x-2">
             {lastAutoSave && (
@@ -524,44 +608,102 @@ export function ChapterForm({
                 </p>
               </div>
 
-              {/* Pricing */}
+              {/* Pricing - Based on Story Pricing Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <Coins size={16} className="inline mr-1" />
-                  Coin Price
+                  Chapter Price
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  disabled={watchedValues.isFree}
-                  defaultValue={initialData?.coinPrice || 0}
-                  {...register('coinPrice', { 
-                    min: { value: 0, message: 'Price cannot be negative' },
-                    valueAsNumber: true
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                />
-                {errors.coinPrice && (
-                  <p className="mt-1 text-sm text-red-600">{errors.coinPrice.message}</p>
+                {story?.pricingType === 'PAID_PER_CHAPTER' ? (
+                  // Allow setting price for PAID_PER_CHAPTER
+                  <>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      disabled={watchedValues.isFree}
+                      defaultValue={initialData?.coinPrice || 0}
+                      {...register('coinPrice', { 
+                        min: { value: 0, message: 'Price cannot be negative' },
+                        valueAsNumber: true
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                      placeholder="Enter chapter price"
+                    />
+                    {errors.coinPrice && (
+                      <p className="mt-1 text-sm text-red-600">{errors.coinPrice.message}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      Current value: {watchedValues.coinPrice || 0} coins
+                    </p>
+                  </>
+                ) : story?.pricingType === 'WHOLE_BOOK' ? (
+                  // Show book price for WHOLE_BOOK
+                  <>
+                    <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-blue-50 text-blue-900">
+                      Included in book price
+                    </div>
+                    <p className="mt-1 text-xs text-blue-600">
+                      Readers pay {story.bookPrice || 0} coins for the entire book
+                    </p>
+                    <input type="hidden" {...register('coinPrice', { valueAsNumber: true })} value="0" />
+                    <input type="hidden" {...register('isFree')} value="" />
+                  </>
+                ) : (
+                  // FREE stories
+                  <>
+                    <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-green-50 text-green-900">
+                      Free to read
+                    </div>
+                    <p className="mt-1 text-xs text-green-600">
+                      This story is free for all readers
+                    </p>
+                    <input type="hidden" {...register('coinPrice', { valueAsNumber: true })} value="0" />
+                    <input type="hidden" {...register('isFree')} value="on" />
+                  </>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Current value: {watchedValues.coinPrice || 0}
-                </p>
               </div>
 
-              {/* Free Toggle */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  {...register('isFree')}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 text-sm text-gray-700">
-                  Free to read
-                </label>
-              </div>
+              {/* Free Toggle - Only for PAID_PER_CHAPTER */}
+              {story?.pricingType === 'PAID_PER_CHAPTER' && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    {...register('isFree')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Free to read
+                  </label>
+                </div>
+              )}
             </div>
+
+            {/* Story Pricing Information */}
+            {story && (
+              <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">📖 Story Pricing Information</h4>
+                <div className="text-xs text-gray-700 space-y-1">
+                  {story.pricingType === 'FREE' && (
+                    <p>• This is a <span className="font-medium text-green-700">FREE</span> story - all chapters are free to read</p>
+                  )}
+                  {story.pricingType === 'WHOLE_BOOK' && (
+                    <>
+                      <p>• This is a <span className="font-medium text-blue-700">WHOLE BOOK</span> story</p>
+                      <p>• Readers pay <span className="font-medium">{story.bookPrice || 0} coins</span> once to access all chapters</p>
+                      <p>• Individual chapter prices are not applicable</p>
+                    </>
+                  )}
+                  {story.pricingType === 'PAID_PER_CHAPTER' && (
+                    <>
+                      <p>• This is a <span className="font-medium text-purple-700">PAID PER CHAPTER</span> story</p>
+                      <p>• You can set individual prices for each chapter</p>
+                      <p>• Readers pay separately for each chapter they want to read</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Editor preferences */}
             <div className="flex items-center space-x-4">
@@ -603,14 +745,28 @@ export function ChapterForm({
           <LexicalEditor
             value={content}
             onChange={handleContentChange}
+            onCursorChange={handleCursorChange}
             placeholder="Start writing your chapter..."
             isDarkMode={isDarkMode}
             autoSaveInterval={10000}
             className="min-h-[500px]"
             chapterId={chapterId}
+            registerContentUpdateCallback={registerContentUpdateCallback}
           />
           {errors.content && (
             <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
+          )}
+          
+          {/* Debug info - remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-xs text-gray-500">
+              <p>Debug Info:</p>
+              <p>Collaborators: {collaborators.length + (user ? 1 : 0)} (including you)</p>
+              <p>Others: {collaborators.length}</p>
+              <p>Current User: {user?.id}</p>
+              <p>WebSocket Connected: {isConnected ? 'Yes' : 'No'}</p>
+              <p>Chapter ID: {chapterId}</p>
+            </div>
           )}
         </div>
 

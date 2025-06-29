@@ -25,7 +25,7 @@ public class StoryResponse {
     private CategoryInfo category;
 
     private Story.Status status;
-    private Story.ContentType contentType;
+    private Story.PricingType pricingType;
     private Story.ContentStatus contentStatus;
     private Story.ModerationStatus moderationStatus;
 
@@ -35,6 +35,10 @@ public class StoryResponse {
     private Long totalLikes;
     private Long totalComments;
     private BigDecimal totalCoinsEarned;
+
+    // Pricing
+    private BigDecimal bookPrice;
+    private BigDecimal defaultChapterPrice;
 
     private Boolean isFeatured;
     private List<String> tags;

@@ -25,8 +25,10 @@ import {
   TagIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
+import { Coins } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
+import { QuickCreateChapter } from '@/components/chapters/QuickCreateChapter';
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -207,7 +209,7 @@ export default function StoryDetailPage() {
                 )}
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className={`grid grid-cols-2 gap-4 mb-6 ${story.pricingType === 'WHOLE_BOOK' ? 'md:grid-cols-3 lg:grid-cols-5' : 'md:grid-cols-4'}`}>
                   <StatCard
                     icon={EyeIcon}
                     value={story.totalViews.toLocaleString()}
@@ -232,6 +234,16 @@ export default function StoryDetailPage() {
                     label="Comments"
                     gradient="from-yellow-500 to-orange-600"
                   />
+                  
+                  {/* Book Price Stat - Only for WHOLE_BOOK stories */}
+                  {story.pricingType === 'WHOLE_BOOK' && (
+                    <StatCard
+                      icon={Coins}
+                      value={`${story.bookPrice || 0}`}
+                      label="Book Price (Coins)"
+                      gradient="from-purple-500 to-indigo-600"
+                    />
+                  )}
                 </div>
 
                 {/* Dates */}
@@ -250,14 +262,14 @@ export default function StoryDetailPage() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
-                  {/* Read/Start Reading Button */}
+                  {/* Preview Button */}
                   {story.totalChapters > 0 ? (
                     <Link
                       href={`/stories/${story.id}/chapters/1`}
                       className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift flex items-center space-x-2"
                     >
-                      <BookOpenIcon className="w-4 h-4" />
-                      <span>Start Reading</span>
+                      <EyeIcon className="w-4 h-4" />
+                      <span>Preview</span>
                     </Link>
                   ) : (
                     <div className="px-6 py-3 bg-gray-300 text-gray-600 rounded-lg font-medium cursor-not-allowed">
@@ -268,13 +280,10 @@ export default function StoryDetailPage() {
                   {/* Author Actions */}
                   {isAuthor && (
                     <>
-                      <Link
-                        href={`/stories/${story.id}/chapters/create`}
-                        className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                      >
-                        <PlusIcon className="w-4 h-4" />
-                        <span>Add Chapter</span>
-                      </Link>
+                      <QuickCreateChapter
+                        storyId={story.id}
+                        totalChapters={story.totalChapters || 0}
+                      />
 
                       <Link
                         href={`/dashboard/stories/${story.id}/edit`}
@@ -332,12 +341,24 @@ export default function StoryDetailPage() {
             <BookOpenIcon className="w-5 h-5" />
             <span>Story Details</span>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <DetailCard
-              title="Content Type"
-              value={story.contentType}
-              color={story.contentType === 'FREE' ? 'green' : story.contentType === 'PAID' ? 'blue' : 'purple'}
+              title="Pricing Type"
+              value={story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 
+                     story.pricingType === 'WHOLE_BOOK' ? `WHOLE BOOK (${story.bookPrice || 0} coins)` : 
+                     story.pricingType}
+              color={story.pricingType === 'FREE' ? 'green' : story.pricingType === 'PAID_PER_CHAPTER' ? 'blue' : 'purple'}
             />
+            
+            {/* Book Price - Only show for WHOLE_BOOK pricing */}
+            {story.pricingType === 'WHOLE_BOOK' && (
+              <BookPriceCard 
+                title="Book Price"
+                value={`${story.bookPrice || 0} coins`}
+                color="purple"
+              />
+            )}
+            
             <DetailCard
               title="Moderation Status"
               value={story.moderationStatus}
@@ -353,7 +374,14 @@ export default function StoryDetailPage() {
 
         {/* Chapter Management */}
         <div className="mb-8">
-          <ChapterManagement storyId={storyId} isAuthor={isAuthor || false} />
+          <ChapterManagement 
+            storyId={storyId} 
+            isAuthor={isAuthor || false}
+            story={{
+              pricingType: story.pricingType,
+              bookPrice: story.bookPrice
+            }}
+          />
         </div>
 
         {/* Delete Confirmation Modal */}
@@ -435,6 +463,40 @@ function DetailCard({
       <span className={`px-3 py-1 text-sm font-medium rounded-full ${colorClasses[color as keyof typeof colorClasses]}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+// Book Price Card Component - Enhanced for book pricing
+function BookPriceCard({ 
+  title, 
+  value, 
+  color 
+}: { 
+  title: string; 
+  value: string; 
+  color: string;
+}) {
+  const colorClasses = {
+    green: 'bg-green-100 text-green-800 border-green-200',
+    blue: 'bg-blue-100 text-blue-800 border-blue-200',
+    purple: 'bg-purple-100 text-purple-800 border-purple-200',
+    yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    red: 'bg-red-100 text-red-800 border-red-200'
+  };
+
+  return (
+    <div className={`p-4 rounded-lg border-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
+      <div className="flex items-center space-x-2 mb-2">
+        <span className="text-2xl">💰</span>
+        <h4 className="text-sm font-medium text-gray-700">{title}</h4>
+      </div>
+      <div className="text-xl font-bold text-purple-900">
+        {value}
+      </div>
+      <p className="text-xs text-purple-700 mt-1">
+        Readers pay this price once for full access
+      </p>
     </div>
   );
 }

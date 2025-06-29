@@ -64,7 +64,9 @@ export const useUpdateReadingStatus = () => {
 };
 
 // Convenience hooks for specific list types
-export const useFavoriteStories = () => useMyReadingLists('FAVORITE');
+export const useLikedStories = () => useMyReadingLists('LIKE');
 export const useCurrentlyReading = () => useMyReadingLists('READING');
 export const useCompletedStories = () => useMyReadingLists('COMPLETED');
-export const useWantToReadStories = () => useMyReadingLists('WANT_TO_READ'); 
+export const useWantToReadStories = () => useMyReadingLists('WANT_TO_READ');
+export const usePurchasedStories = () => useMyReadingLists('PURCHASED');
+export const useHistoryStories = () => useMyReadingLists('HISTORY'); 

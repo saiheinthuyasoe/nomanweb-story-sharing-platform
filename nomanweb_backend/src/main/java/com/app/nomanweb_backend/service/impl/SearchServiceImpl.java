@@ -59,7 +59,7 @@ public class SearchServiceImpl implements SearchService {
             fields.add(Map.of("name", "author_name", "type", "string"));
             fields.add(Map.of("name", "category_name", "type", "string"));
             fields.add(Map.of("name", "tags", "type", "string[]"));
-            fields.add(Map.of("name", "content_type", "type", "string"));
+            fields.add(Map.of("name", "pricing_type", "type", "string"));
             fields.add(Map.of("name", "status", "type", "string"));
             fields.add(Map.of("name", "total_views", "type", "int64"));
             fields.add(Map.of("name", "total_likes", "type", "int64"));
@@ -178,7 +178,7 @@ public class SearchServiceImpl implements SearchService {
 
         } catch (Exception e) {
             log.error("Error searching stories by category with Typesense", e);
-        return new ArrayList<>();
+            return new ArrayList<>();
         }
     }
 
@@ -215,7 +215,7 @@ public class SearchServiceImpl implements SearchService {
 
         } catch (Exception e) {
             log.error("Error searching stories by author with Typesense", e);
-        return new ArrayList<>();
+            return new ArrayList<>();
         }
     }
 
@@ -306,7 +306,7 @@ public class SearchServiceImpl implements SearchService {
 
         } catch (Exception e) {
             log.error("Error searching authors with Typesense", e);
-        return searchUsers(query, page, size);
+            return searchUsers(query, page, size);
         }
     }
 
@@ -434,7 +434,7 @@ public class SearchServiceImpl implements SearchService {
 
         } catch (Exception e) {
             log.error("Error getting similar stories", e);
-        return new ArrayList<>();
+            return new ArrayList<>();
         }
     }
 
@@ -472,7 +472,7 @@ public class SearchServiceImpl implements SearchService {
         document.put("author_name", story.getAuthor().getDisplayNameOrUsername());
         document.put("category_name", story.getCategory() != null ? story.getCategory().getName() : "");
         document.put("tags", story.getTags() != null ? story.getTags() : new ArrayList<>());
-        document.put("content_type", story.getContentType().toString());
+        document.put("pricing_type", story.getPricingType().toString());
         document.put("status", story.getStatus().toString());
         document.put("total_views", story.getTotalViews() != null ? story.getTotalViews() : 0L);
         document.put("total_likes", story.getTotalLikes() != null ? story.getTotalLikes() : 0L);
@@ -534,7 +534,7 @@ public class SearchServiceImpl implements SearchService {
 
         } catch (Exception e) {
             log.error("Error parsing users from search response", e);
-        return new ArrayList<>();
+            return new ArrayList<>();
         }
     }
 

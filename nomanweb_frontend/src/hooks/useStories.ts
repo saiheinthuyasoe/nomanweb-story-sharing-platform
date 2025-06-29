@@ -177,4 +177,12 @@ export const useCategory = (id: string) => {
     queryFn: () => categoriesApi.getCategory(id),
     enabled: !!id,
   });
+};
+
+// View tracking
+export const useIncrementStoryView = () => {
+  return useMutation({
+    mutationFn: (id: string) => storiesApi.incrementStoryView(id),
+    // Don't show toast notifications for view tracking
+  });
 }; 

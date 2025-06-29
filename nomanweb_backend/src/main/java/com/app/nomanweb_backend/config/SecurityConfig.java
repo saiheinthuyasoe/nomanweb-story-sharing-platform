@@ -47,14 +47,19 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
+                        // WebSocket endpoints for real-time collaboration
+                        .requestMatchers("/ws/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/websocket/health").permitAll()
                         .requestMatchers("/api/oauth/**").permitAll()
                         .requestMatchers("/api/upload/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/stories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
 
                         // Admin authentication endpoints - public access for login/register
                         .requestMatchers("/api/admin/auth/login", "/api/admin/auth/register",
@@ -78,6 +83,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/reading-progress/**").authenticated()
                         .requestMatchers("/api/reading-lists/**").authenticated()
                         .requestMatchers("/api/reactions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/comments/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
 
                         // User endpoints - all require authentication
                         .requestMatchers("/api/users/**").authenticated()

@@ -20,7 +20,7 @@ public class RateLimitService {
     private final Bandwidth loginBandwidth = Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1)));
 
     // Registration attempts: 3 attempts per hour per IP
-    private final Bandwidth registrationBandwidth = Bandwidth.classic(3, Refill.intervally(3, Duration.ofHours(1)));
+    private final Bandwidth registrationBandwidth = Bandwidth.classic(3, Refill.intervally(3, Duration.ofSeconds(1)));
 
     // Password reset attempts: 3 attempts per hour per IP
     private final Bandwidth passwordResetBandwidth = Bandwidth.classic(3, Refill.intervally(3, Duration.ofHours(1)));

@@ -67,6 +67,12 @@ public class CommentServiceImpl implements CommentService {
         }
 
         Comment comment = commentRepository.save(commentBuilder.build());
+
+        // Update story comment count
+        Story story = comment.getStory();
+        story.incrementComments();
+        storyRepository.save(story);
+
         log.info("Created comment {} by user {} on {}",
                 comment.getId(), userId, chapterId != null ? "chapter " + chapterId : "story " + storyId);
         return comment;
@@ -91,6 +97,11 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         reply = commentRepository.save(reply);
+
+        // Update story comment count for replies too
+        Story story = reply.getStory();
+        story.incrementComments();
+        storyRepository.save(story);
 
         // Notify parent comment author
         if (!parentComment.getUser().getId().equals(userId)) {
@@ -130,6 +141,11 @@ public class CommentServiceImpl implements CommentService {
         if (!canUserDeleteComment(commentId, userId)) {
             throw new IllegalArgumentException("User not authorized to delete this comment");
         }
+
+        // Update story comment count before deleting
+        Story story = comment.getStory();
+        story.decrementComments();
+        storyRepository.save(story);
 
         commentRepository.delete(comment);
         log.info("Deleted comment {} by user {}", commentId, userId);
@@ -358,8 +374,21 @@ public class CommentServiceImpl implements CommentService {
             return false;
 
         // Users can delete their own comments, or admins can delete any comment
-        return comment.getUser().getId().equals(userId) ||
-                User.Role.ADMIN.equals(user.getRole());
+        if (comment.getUser().getId().equals(userId) || User.Role.ADMIN.equals(user.getRole())) {
+            return true;
+        }
+
+        // Story owners can delete comments on their stories
+        if (comment.getStory() != null && comment.getStory().getAuthor().getId().equals(userId)) {
+            return true;
+        }
+
+        // Chapter owners can delete comments on their chapters
+        if (comment.getChapter() != null && comment.getChapter().getStory().getAuthor().getId().equals(userId)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override

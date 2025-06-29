@@ -24,7 +24,7 @@ public class StoryPreviewResponse {
     private CategoryInfo category;
 
     private Story.Status status;
-    private Story.ContentType contentType;
+    private Story.PricingType pricingType;
     private Story.ContentStatus contentStatus;
     private Story.ModerationStatus moderationStatus;
 

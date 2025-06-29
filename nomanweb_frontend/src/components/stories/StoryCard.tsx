@@ -55,16 +55,18 @@ export function StoryCard({ story, showAuthor = true, className = '' }: StoryCar
             </div>
           )}
 
-          {/* Content type badge */}
+          {/* Pricing type badge */}
           <div className="absolute bottom-2 right-2">
             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-              story.contentType === 'FREE' 
+              story.pricingType === 'FREE' 
                 ? 'bg-green-100 text-green-800' 
-                : story.contentType === 'PAID'
+                : story.pricingType === 'PAID_PER_CHAPTER'
                 ? 'bg-blue-100 text-blue-800'
                 : 'bg-purple-100 text-purple-800'
             }`}>
-              {story.contentType}
+              {story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 
+               story.pricingType === 'WHOLE_BOOK' ? 'WHOLE BOOK' : 
+               story.pricingType}
             </span>
           </div>
         </div>

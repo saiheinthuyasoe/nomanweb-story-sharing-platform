@@ -121,11 +121,14 @@ export default function ChapterReadPage() {
       const scrollTop = window.pageYOffset;
       setShowScrollTop(scrollTop > 300);
 
-      // Update reading progress
-      if (contentRef.current && chapter) {
-        const element = contentRef.current;
-        const scrollPercent = (scrollTop / (element.scrollHeight - window.innerHeight)) * 100;
-        const clampedPercent = Math.min(100, Math.max(0, scrollPercent));
+      // Update reading progress - simplified calculation
+      if (chapter) {
+        const documentHeight = document.documentElement.scrollHeight;
+        const windowHeight = window.innerHeight;
+        const scrollableHeight = documentHeight - windowHeight;
+        const progressPercent = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
+        const clampedPercent = Math.min(100, Math.max(0, progressPercent));
+        
         updateProgress(clampedPercent);
       }
     };

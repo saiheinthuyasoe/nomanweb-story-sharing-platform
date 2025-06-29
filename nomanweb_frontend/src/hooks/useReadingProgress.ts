@@ -22,10 +22,11 @@ export const useStoryProgress = (storyId: string, enabled: boolean = true) => {
 };
 
 // My reading progress
-export const useMyReadingProgress = (page: number = 0, size: number = 20) => {
+export const useMyReadingProgress = (page: number = 0, size: number = 20, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['reading-progress', 'my-progress', page, size],
     queryFn: () => readingProgressApi.getMyReadingProgress(page, size),
+    enabled: enabled,
   });
 };
 
@@ -78,6 +79,24 @@ export const useUpdateReadingProgress = () => {
       }
       // Only retry server errors up to 2 times
       return failureCount < 2;
+    },
+  });
+};
+
+// Clear reading history
+export const useClearReadingHistory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => readingProgressApi.clearReadingHistory(),
+    onSuccess: (data) => {
+      // Invalidate all reading progress queries
+      queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+      
+      toast.success(`Reading history cleared (${data.deletedCount} items removed)`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to clear reading history');
     },
   });
 };
