@@ -22,8 +22,9 @@ import {
   EyeIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { OnlineCollaborators } from '@/components/collaboration/OnlineCollaborators';
-import { RealtimeCollaborationIndicator } from '@/components/collaboration/RealtimeCollaborationIndicator';
+import { LiveblocksRoomProvider } from '@/components/collaboration/LiveblocksRoomProvider';
+import { LiveblocksActiveCollaborators } from '@/components/collaboration/LiveblocksActiveCollaborators';
+import { LiveblocksFeaturesChecklist } from '@/components/collaboration/LiveblocksFeaturesChecklist';
 import { useChapterCollaborators, useCreateInvitation, useUpdateCollaboratorRole, useRemoveCollaborator } from '@/hooks/useCollaborations';
 import { CollaborationResponse } from '@/lib/api/collaborations';
 import Image from 'next/image';
@@ -289,112 +290,129 @@ export default function EditChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Google Docs-style Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            {/* Left side */}
-            <div className="flex items-center space-x-4">
-              <Link 
-                href={`/dashboard/stories/${storyId}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Back to story"
-              >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
-              </Link>
-              
-              <div className="flex items-center space-x-2">
-                <BookOpenIcon className="w-5 h-5 text-blue-600" />
-                <div>
-                  <h1 className="text-lg font-medium text-gray-900 truncate max-w-md">
-                    {chapter.title || 'Untitled Chapter'}
-                  </h1>
-                  <p className="text-xs text-gray-500">
-                    {story.title} • Chapter {chapter.chapterNumber}
-                  </p>
+    <LiveblocksRoomProvider 
+      chapterId={chapter.id}
+      initialContent={chapter.content || ''}
+    >
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Google Docs-style Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14">
+              {/* Left side */}
+              <div className="flex items-center space-x-4">
+                <Link 
+                  href={`/dashboard/stories/${storyId}`}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Back to story"
+                >
+                  <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+                </Link>
+                
+                <div className="flex items-center space-x-2">
+                  <BookOpenIcon className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h1 className="text-lg font-medium text-gray-900 truncate max-w-md">
+                      {chapter.title || 'Untitled Chapter'}
+                    </h1>
+                    <p className="text-xs text-gray-500">
+                      {story.title} • Chapter {chapter.chapterNumber}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right side - Save status and collaborators */}
-            <div className="flex items-center space-x-4">
-              {/* Real-time Collaboration Indicator */}
-              {chapter && <RealtimeCollaborationIndicator chapterId={chapter.id} />}
-              
-              {/* Invite Button */}
-              {user?.id === story.author.id && (
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  title="Invite collaborator"
-                >
-                  <UserPlusIcon className="w-4 h-4" />
-                  <span>Invite</span>
-                </button>
-              )}
-              
-              {/* Save Status */}
-              <div className="flex items-center space-x-2">
-                {saveStatus === 'saving' && (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span className="text-sm text-gray-600">Saving...</span>
-                  </>
+              {/* Right side - Save status and collaborators */}
+              <div className="flex items-center space-x-4">
+                {/* Liveblocks Features Status */}
+                <div className="flex items-center space-x-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-700 font-medium">Liveblocks Active</span>
+                </div>
+                
+                {/* Real-time Collaboration Indicator - Liveblocks */}
+                {chapter && <LiveblocksActiveCollaborators chapterId={chapter.id} />}
+                
+                {/* Invite Button */}
+                {user?.id === story.author.id && (
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    title="Invite collaborator"
+                  >
+                    <UserPlusIcon className="w-4 h-4" />
+                    <span>Invite</span>
+                  </button>
                 )}
-                {saveStatus === 'saved' && (
-                  <>
-                    <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                    <span className="text-sm text-green-600">Saved</span>
-                  </>
-                )}
-                {saveStatus === 'error' && (
-                  <>
-                    <ExclamationCircleIcon className="w-5 h-5 text-red-600" />
-                    <span className="text-sm text-red-600">Error saving</span>
-                  </>
-                )}
-                {saveStatus === 'idle' && lastSaved && (
-                  <>
-                    <CloudIcon className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-500">
-                      Last saved {lastSaved.toLocaleTimeString()}
-                    </span>
-                  </>
-                )}
+                
+                {/* Save Status */}
+                <div className="flex items-center space-x-2">
+                  {saveStatus === 'saving' && (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm text-gray-600">Saving...</span>
+                    </>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <>
+                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-600">Saved</span>
+                    </>
+                  )}
+                  {saveStatus === 'error' && (
+                    <>
+                      <ExclamationCircleIcon className="w-5 h-5 text-red-600" />
+                      <span className="text-sm text-red-600">Error saving</span>
+                    </>
+                  )}
+                  {saveStatus === 'idle' && lastSaved && (
+                    <>
+                      <CloudIcon className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm text-gray-500">
+                        Last saved {lastSaved.toLocaleTimeString()}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
-          <ChapterForm
-            storyId={storyId}
-            chapterId={chapter.id}
-            initialData={{
-              title: chapter.title,
-              content: chapter.content,
-              coinPrice: chapter.coinPrice,
-              isFree: chapter.isFree,
-              isDraft: chapter.status === 'DRAFT',
-              chapterNumber: chapter.chapterNumber,
-            }}
-            onSubmit={handleSubmit}
-            onAutoSave={handleAutoSave}
-            isLoading={isPending}
-            isEditing={true}
-            story={{
-              pricingType: story.pricingType,
-              bookPrice: story.bookPrice
-            }}
+        {/* Main content */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Liveblocks Features Checklist */}
+          <LiveblocksFeaturesChecklist 
+            chapterId={chapter.id} 
+            content={chapter.content || ''} 
           />
+          
+          <div className="bg-white rounded-lg shadow-sm">
+            <ChapterForm
+              storyId={storyId}
+              chapterId={chapter.id}
+              initialData={{
+                title: chapter.title,
+                content: chapter.content,
+                coinPrice: chapter.coinPrice,
+                isFree: chapter.isFree,
+                isDraft: chapter.status === 'DRAFT',
+                chapterNumber: chapter.chapterNumber,
+              }}
+              onSubmit={handleSubmit}
+              onAutoSave={handleAutoSave}
+              isLoading={isPending}
+              isEditing={true}
+              useLiveblocks={true}
+              story={{
+                pricingType: story.pricingType,
+                bookPrice: story.bookPrice
+              }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Invite Modal */}
+        {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -533,7 +551,8 @@ export default function EditChapterPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LiveblocksRoomProvider>
   );
 }
 

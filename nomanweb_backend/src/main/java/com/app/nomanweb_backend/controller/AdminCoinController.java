@@ -2,20 +2,30 @@ package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.CoinPackage;
+import com.app.nomanweb_backend.entity.CoinTransaction;
 import com.app.nomanweb_backend.repository.UserRepository;
+import com.app.nomanweb_backend.repository.CoinTransactionRepository;
 import com.app.nomanweb_backend.service.CoinPackageService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,7 +38,11 @@ public class AdminCoinController {
 
     private final UserRepository userRepository;
     private final CoinPackageService coinPackageService;
+    private final CoinTransactionRepository coinTransactionRepository;
     private final JwtUtil jwtUtil;
+
+    // SSE emitters for coin package updates
+    private static final List<SseEmitter> coinPackageEmitters = new CopyOnWriteArrayList<>();
 
     // Coin Transaction Statistics
     @GetMapping("/stats")
@@ -80,87 +94,79 @@ public class AdminCoinController {
             log.info("Admin getting coin transactions - search: {}, type: {}, status: {}",
                     search, type, status);
 
-            // For now, return mock transaction data
-            // TODO: Implement real transaction logging system
+            // Get all transactions with pagination
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<CoinTransaction> transactionPage = coinTransactionRepository.findAll(pageable);
+
             List<Map<String, Object>> transactions = new ArrayList<>();
 
-            // Mock transactions based on users
-            List<User> users = userRepository.findAll();
-            int transactionId = 1;
+            for (CoinTransaction transaction : transactionPage.getContent()) {
+                // Apply filters
+                if (search != null && !search.trim().isEmpty()) {
+                    String searchLower = search.toLowerCase();
+                    String username = transaction.getUser().getUsername();
+                    String email = transaction.getUser().getEmail();
+                    String description = transaction.getDescription();
 
-            for (User user : users.stream().limit(10).collect(Collectors.toList())) {
-                // Mock purchase transaction
-                Map<String, Object> purchaseTransaction = new HashMap<>();
-                purchaseTransaction.put("id", String.valueOf(transactionId++));
+                    if (!username.toLowerCase().contains(searchLower) &&
+                            !email.toLowerCase().contains(searchLower) &&
+                            !description.toLowerCase().contains(searchLower)) {
+                        continue;
+                    }
+                }
+
+                if (type != null && !type.trim().isEmpty()) {
+                    if (!transaction.getTransactionType().name().equalsIgnoreCase(type)) {
+                        continue;
+                    }
+                }
+
+                if (status != null && !status.trim().isEmpty()) {
+                    if (!transaction.getStatus().name().equalsIgnoreCase(status)) {
+                        continue;
+                    }
+                }
+
+                if (dateFrom != null && !dateFrom.trim().isEmpty()) {
+                    LocalDateTime fromDate = LocalDateTime.parse(dateFrom + "T00:00:00");
+                    if (transaction.getCreatedAt().isBefore(fromDate)) {
+                        continue;
+                    }
+                }
+
+                if (dateTo != null && !dateTo.trim().isEmpty()) {
+                    LocalDateTime toDate = LocalDateTime.parse(dateTo + "T23:59:59");
+                    if (transaction.getCreatedAt().isAfter(toDate)) {
+                        continue;
+                    }
+                }
+
+                // Build transaction response
+                Map<String, Object> transactionMap = new HashMap<>();
+                transactionMap.put("id", transaction.getId().toString());
 
                 Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("id", user.getId().toString());
-                userInfo.put("username", user.getUsername());
-                userInfo.put("email", user.getEmail());
-                purchaseTransaction.put("user", userInfo);
+                userInfo.put("id", transaction.getUser().getId().toString());
+                userInfo.put("username", transaction.getUser().getUsername());
+                userInfo.put("email", transaction.getUser().getEmail());
+                transactionMap.put("user", userInfo);
 
-                purchaseTransaction.put("type", "purchase");
-                purchaseTransaction.put("amount", 100);
-                purchaseTransaction.put("status", "completed");
-                purchaseTransaction.put("date", LocalDateTime.now().minusDays(1));
-                purchaseTransaction.put("description", "Coin package purchase");
-                purchaseTransaction.put("reference", "TXN" + String.format("%03d", transactionId - 1));
+                transactionMap.put("type", transaction.getTransactionType().name().toLowerCase());
+                transactionMap.put("amount", transaction.getAmount());
+                transactionMap.put("status", transaction.getStatus().name().toLowerCase());
+                transactionMap.put("date", transaction.getCreatedAt());
+                transactionMap.put("description", transaction.getDescription());
+                transactionMap.put("balanceBefore", transaction.getBalanceBefore());
+                transactionMap.put("balanceAfter", transaction.getBalanceAfter());
+                transactionMap.put("reference", "TXN" + transaction.getId().toString().substring(0, 8).toUpperCase());
 
-                transactions.add(purchaseTransaction);
-
-                // Mock transfer transaction if user has coins
-                if (user.getCoinBalance() != null && user.getCoinBalance().compareTo(BigDecimal.ZERO) > 0) {
-                    Map<String, Object> transferTransaction = new HashMap<>();
-                    transferTransaction.put("id", String.valueOf(transactionId++));
-                    transferTransaction.put("user", userInfo);
-                    transferTransaction.put("type", "transfer_in");
-                    transferTransaction.put("amount", user.getCoinBalance().intValue());
-                    transferTransaction.put("status", "completed");
-                    transferTransaction.put("date", LocalDateTime.now().minusHours(2));
-                    transferTransaction.put("description", "Admin coin transfer");
-                    transferTransaction.put("reference", "TXN" + String.format("%03d", transactionId - 1));
-
-                    transactions.add(transferTransaction);
-                }
+                transactions.add(transactionMap);
             }
 
-            // Apply filters
-            List<Map<String, Object>> filteredTransactions = transactions.stream()
-                    .filter(transaction -> {
-                        if (search != null && !search.trim().isEmpty()) {
-                            Map<String, Object> userInfo = (Map<String, Object>) transaction.get("user");
-                            String username = (String) userInfo.get("username");
-                            String email = (String) userInfo.get("email");
-                            return username.toLowerCase().contains(search.toLowerCase()) ||
-                                    email.toLowerCase().contains(search.toLowerCase());
-                        }
-                        return true;
-                    })
-                    .filter(transaction -> {
-                        if (type != null && !type.trim().isEmpty()) {
-                            return type.equals(transaction.get("type"));
-                        }
-                        return true;
-                    })
-                    .filter(transaction -> {
-                        if (status != null && !status.trim().isEmpty()) {
-                            return status.equals(transaction.get("status"));
-                        }
-                        return true;
-                    })
-                    .collect(Collectors.toList());
-
-            // Apply pagination
-            int start = page * size;
-            int end = Math.min(start + size, filteredTransactions.size());
-            List<Map<String, Object>> pageTransactions = start < filteredTransactions.size()
-                    ? filteredTransactions.subList(start, end)
-                    : new ArrayList<>();
-
             log.info("Returning {} transactions out of {} total",
-                    pageTransactions.size(), filteredTransactions.size());
+                    transactions.size(), transactionPage.getTotalElements());
 
-            return ResponseEntity.ok(pageTransactions);
+            return ResponseEntity.ok(transactions);
         } catch (Exception e) {
             log.error("Error getting coin transactions", e);
             return ResponseEntity.internalServerError().build();
@@ -210,20 +216,18 @@ public class AdminCoinController {
             // Parse and validate data
             Integer coins = coinsObj instanceof Number ? ((Number) coinsObj).intValue()
                     : Integer.parseInt(coinsObj.toString());
-            BigDecimal priceUsd = priceObj instanceof Number ? BigDecimal.valueOf(((Number) priceObj).doubleValue())
+            BigDecimal priceThb = priceObj instanceof Number ? BigDecimal.valueOf(((Number) priceObj).doubleValue())
                     : new BigDecimal(priceObj.toString());
-
-            // Convert USD to THB (assuming 1 USD = 35 THB)
-            BigDecimal priceThb = priceUsd.multiply(BigDecimal.valueOf(35));
 
             Integer bonusCoins = packageData.get("bonusCoins") != null
                     ? ((Number) packageData.get("bonusCoins")).intValue()
                     : 0;
             Boolean isActive = packageData.get("isActive") != null ? (Boolean) packageData.get("isActive") : true;
+            String description = (String) packageData.get("description");
 
             // Create package
             CoinPackage createdPackage = coinPackageService.createPackage(
-                    name, coins, priceThb, bonusCoins, BigDecimal.ZERO, isActive);
+                    name, coins, priceThb, bonusCoins, BigDecimal.ZERO, isActive, description);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -232,6 +236,10 @@ public class AdminCoinController {
             response.put("package", convertCoinPackageToMap(createdPackage));
 
             log.info("Coin package created successfully: {}", response);
+
+            // Broadcast package creation to all subscribers
+            broadcastCoinPackageUpdate("created", convertCoinPackageToMap(createdPackage));
+
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("Validation error creating coin package: {}", e.getMessage());
@@ -270,20 +278,18 @@ public class AdminCoinController {
             // Parse and validate data
             Integer coins = coinsObj instanceof Number ? ((Number) coinsObj).intValue()
                     : Integer.parseInt(coinsObj.toString());
-            BigDecimal priceUsd = priceObj instanceof Number ? BigDecimal.valueOf(((Number) priceObj).doubleValue())
+            BigDecimal priceThb = priceObj instanceof Number ? BigDecimal.valueOf(((Number) priceObj).doubleValue())
                     : new BigDecimal(priceObj.toString());
-
-            // Convert USD to THB
-            BigDecimal priceThb = priceUsd.multiply(BigDecimal.valueOf(35));
 
             Integer bonusCoins = packageData.get("bonusCoins") != null
                     ? ((Number) packageData.get("bonusCoins")).intValue()
                     : 0;
             Boolean isActive = packageData.get("isActive") != null ? (Boolean) packageData.get("isActive") : true;
+            String description = (String) packageData.get("description");
 
             // Update package
             CoinPackage updatedPackage = coinPackageService.updatePackage(
-                    id, name, coins, priceThb, bonusCoins, BigDecimal.ZERO, isActive);
+                    id, name, coins, priceThb, bonusCoins, BigDecimal.ZERO, isActive, description);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -292,6 +298,10 @@ public class AdminCoinController {
             response.put("package", convertCoinPackageToMap(updatedPackage));
 
             log.info("Coin package {} updated successfully", packageId);
+
+            // Broadcast package update to all subscribers
+            broadcastCoinPackageUpdate("updated", convertCoinPackageToMap(updatedPackage));
+
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("Validation error updating coin package: {}", e.getMessage());
@@ -322,6 +332,12 @@ public class AdminCoinController {
             response.put("message", "Coin package deleted successfully");
 
             log.info("Coin package {} deleted successfully", packageId);
+
+            // Broadcast package deletion to all subscribers
+            Map<String, Object> deletedPackage = new HashMap<>();
+            deletedPackage.put("id", packageId);
+            broadcastCoinPackageUpdate("deleted", deletedPackage);
+
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("Validation error deleting coin package: {}", e.getMessage());
@@ -341,25 +357,31 @@ public class AdminCoinController {
             HttpServletRequest httpRequest) {
         try {
             UUID adminId = getCurrentUserId(httpRequest);
-            String userId = (String) transferData.get("userId");
+            String userIdentifier = (String) transferData.get("userIdentifier"); // username or email
             Object amountObj = transferData.get("amount");
             String type = (String) transferData.get("type");
             String reason = (String) transferData.get("reason");
 
             log.info("Admin {} processing coin {} for user {}, amount: {}, reason: {}",
-                    adminId, type, userId, amountObj, reason);
+                    adminId, type, userIdentifier, amountObj, reason);
 
             // Validate input
-            if (userId == null || amountObj == null || type == null || reason == null) {
+            if (userIdentifier == null || amountObj == null || type == null || reason == null) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Missing required fields"));
+                        .body(Map.of("error",
+                                "Missing required fields: userIdentifier, amount, type, and reason are required"));
             }
 
             BigDecimal amount;
-            if (amountObj instanceof Number) {
-                amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
-            } else {
-                amount = new BigDecimal(amountObj.toString());
+            try {
+                if (amountObj instanceof Number) {
+                    amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+                } else {
+                    amount = new BigDecimal(amountObj.toString());
+                }
+            } catch (NumberFormatException e) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Invalid amount format"));
             }
 
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -367,43 +389,81 @@ public class AdminCoinController {
                         .body(Map.of("error", "Amount must be positive"));
             }
 
-            // Find user
-            User user = userRepository.findById(UUID.fromString(userId))
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+            // Find user by username or email
+            User user = userRepository.findByUsernameOrEmail(userIdentifier, userIdentifier)
+                    .orElseThrow(() -> new RuntimeException("User not found with identifier: " + userIdentifier));
+
+            BigDecimal balanceBefore = user.getCoinBalance();
+            BigDecimal balanceAfter;
+            CoinTransaction.TransactionType transactionType;
 
             // Process transfer
             if ("transfer".equals(type)) {
                 // Add coins
                 user.addCoins(amount);
-                log.info("Added {} coins to user {}", amount, userId);
+                balanceAfter = user.getCoinBalance();
+                transactionType = CoinTransaction.TransactionType.BONUS;
+                log.info("Added {} coins to user {} ({}), new balance: {}", amount, user.getUsername(), user.getEmail(),
+                        balanceAfter);
             } else if ("withdraw".equals(type)) {
                 // Remove coins
                 if (!user.hasEnoughCoins(amount)) {
                     return ResponseEntity.badRequest()
-                            .body(Map.of("error", "User does not have enough coins"));
+                            .body(Map.of("error",
+                                    "User does not have enough coins. Current balance: " + balanceBefore));
                 }
                 user.subtractCoins(amount);
-                log.info("Removed {} coins from user {}", amount, userId);
+                balanceAfter = user.getCoinBalance();
+                transactionType = CoinTransaction.TransactionType.PENALTY;
+                log.info("Removed {} coins from user {} ({}), new balance: {}", amount, user.getUsername(),
+                        user.getEmail(), balanceAfter);
             } else {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Invalid transfer type"));
+                        .body(Map.of("error", "Invalid transfer type. Must be 'transfer' or 'withdraw'"));
             }
 
-            // Update timestamp and save
+            // Update timestamp and save user
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
-            // TODO: Create transaction log entry
+            // Create transaction log entry
+            CoinTransaction transaction = CoinTransaction.builder()
+                    .user(user)
+                    .transactionType(transactionType)
+                    .amount(amount)
+                    .balanceBefore(balanceBefore)
+                    .balanceAfter(balanceAfter)
+                    .description("Admin " + type + ": " + reason)
+                    .referenceType(CoinTransaction.ReferenceType.SYSTEM)
+                    .referenceId(adminId) // Use admin ID as reference
+                    .status(CoinTransaction.Status.COMPLETED)
+                    .build();
+
+            coinTransactionRepository.save(transaction);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Coin " + type + " completed successfully");
-            response.put("newBalance", user.getCoinBalance());
+            response.put("newBalance", balanceAfter);
+            response.put("transactionId", transaction.getId().toString());
+            response.put("balanceBefore", balanceBefore);
+            response.put("amount", amount);
+            response.put("user", Map.of(
+                    "id", user.getId().toString(),
+                    "username", user.getUsername(),
+                    "email", user.getEmail()));
 
-            log.info("Coin {} completed for user {}, new balance: {}",
-                    type, userId, user.getCoinBalance());
+            log.info("Coin {} completed for user {} ({}), transaction ID: {}, new balance: {}",
+                    type, user.getUsername(), user.getEmail(), transaction.getId(), balanceAfter);
+
+            // Broadcast balance update to the affected user
+            broadcastCoinBalanceUpdate(user.getId(), balanceAfter);
 
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error in coin transfer: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         } catch (RuntimeException e) {
             log.error("User not found or validation error: {}", e.getMessage());
             return ResponseEntity.badRequest()
@@ -411,8 +471,38 @@ public class AdminCoinController {
         } catch (Exception e) {
             log.error("Error processing coin transfer", e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Internal server error"));
+                    .body(Map.of("error", "Internal server error: " + e.getMessage()));
         }
+    }
+
+    // Broadcast coin balance update to specific user
+    private void broadcastCoinBalanceUpdate(UUID userId, BigDecimal newBalance) {
+        CoinController.broadcastCoinBalanceUpdate(userId, newBalance);
+    }
+
+    // Broadcast coin package updates to all subscribers
+    private void broadcastCoinPackageUpdate(String action, Map<String, Object> packageData) {
+        List<SseEmitter> deadEmitters = new ArrayList<>();
+
+        for (SseEmitter emitter : coinPackageEmitters) {
+            try {
+                Map<String, Object> update = new HashMap<>();
+                update.put("type", "package_update");
+                update.put("action", action);
+                update.put("package", packageData);
+                update.put("timestamp", LocalDateTime.now());
+
+                emitter.send(SseEmitter.event()
+                        .name("package_update")
+                        .data(update));
+            } catch (IOException e) {
+                deadEmitters.add(emitter);
+            }
+        }
+
+        // Remove dead emitters
+        coinPackageEmitters.removeAll(deadEmitters);
+        log.info("Broadcasted package {} to {} subscribers", action, coinPackageEmitters.size());
     }
 
     private UUID getCurrentUserId(HttpServletRequest request) {
@@ -429,15 +519,14 @@ public class AdminCoinController {
         map.put("id", coinPackage.getId().toString());
         map.put("name", coinPackage.getName());
         map.put("coins", coinPackage.getTotalCoins()); // Include bonus coins
-        map.put("price", coinPackage.getPriceUsd().doubleValue()); // Convert to USD
-        map.put("currency", "USD");
-        map.put("description", ""); // Add description field if needed
+        map.put("price", coinPackage.getPriceThb().doubleValue()); // THB price
+        map.put("currency", "THB");
+        map.put("description", coinPackage.getDescription());
         map.put("isActive", coinPackage.getIsActive());
         map.put("createdAt", coinPackage.getCreatedAt());
         map.put("updatedAt", coinPackage.getCreatedAt()); // No updatedAt field in entity yet
         map.put("coinAmount", coinPackage.getCoinAmount());
         map.put("bonusCoins", coinPackage.getBonusCoins());
-        map.put("priceThb", coinPackage.getPriceThb().doubleValue());
         return map;
     }
 }

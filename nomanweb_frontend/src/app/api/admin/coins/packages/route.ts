@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { broadcastCoinPackageUpdate } from '@/lib/broadcast';
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,7 +77,21 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
-    return NextResponse.json(result);
+    
+    console.log('🎯 About to broadcast PACKAGE_CREATED:', result);
+    // Broadcast the new package to all connected clients (use result.package, not result)
+    broadcastCoinPackageUpdate('PACKAGE_CREATED', { package: result.package || result });
+    console.log('✅ Broadcast PACKAGE_CREATED completed');
+    
+    // Add debug info to response
+    return NextResponse.json({
+      ...result,
+      __debug: {
+        broadcastSent: true,
+        route: 'packages/route.ts',
+        timestamp: Date.now()
+      }
+    });
   } catch (error) {
     console.error('Error in admin coin package creation API:', error);
     return NextResponse.json(
@@ -128,7 +143,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const result = await response.json();
-    return NextResponse.json(result);
+    
+    console.log('🎯 About to broadcast PACKAGE_UPDATED:', result);
+    // Broadcast the updated package to all connected clients (use result.package, not result)
+    broadcastCoinPackageUpdate('PACKAGE_UPDATED', { package: result.package || result });
+    console.log('✅ Broadcast PACKAGE_UPDATED completed');
+    
+    // Add debug info to response
+    return NextResponse.json({
+      ...result,
+      __debug: {
+        broadcastSent: true,
+        route: 'packages/route.ts',
+        timestamp: Date.now()
+      }
+    });
   } catch (error) {
     console.error('Error in admin coin package update API:', error);
     return NextResponse.json(
@@ -178,6 +207,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    console.log('🎯 About to broadcast PACKAGE_DELETED for ID:', packageId);
+    // Broadcast the package deletion to all connected clients
+    broadcastCoinPackageUpdate('PACKAGE_DELETED', { packageId: packageId });
+    console.log('✅ Broadcast PACKAGE_DELETED completed');
+    
     return NextResponse.json({ message: 'Package deleted successfully' });
   } catch (error) {
     console.error('Error in admin coin package deletion API:', error);

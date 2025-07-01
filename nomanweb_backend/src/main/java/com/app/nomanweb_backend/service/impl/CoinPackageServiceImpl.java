@@ -44,7 +44,7 @@ public class CoinPackageServiceImpl implements CoinPackageService {
 
     @Override
     public CoinPackage createPackage(String name, Integer coinAmount, BigDecimal priceThb,
-            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive) {
+            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive, String description) {
         log.info("Creating new coin package: {}", name);
 
         // Validate name uniqueness
@@ -67,6 +67,7 @@ public class CoinPackageServiceImpl implements CoinPackageService {
                 .bonusCoins(bonusCoins != null ? bonusCoins : 0)
                 .serviceFeePercentage(serviceFeePercentage != null ? serviceFeePercentage : BigDecimal.ZERO)
                 .isActive(isActive != null ? isActive : true)
+                .description(description)
                 .build();
 
         CoinPackage saved = coinPackageRepository.save(coinPackage);
@@ -76,7 +77,7 @@ public class CoinPackageServiceImpl implements CoinPackageService {
 
     @Override
     public CoinPackage updatePackage(UUID id, String name, Integer coinAmount, BigDecimal priceThb,
-            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive) {
+            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive, String description) {
         log.info("Updating coin package: {}", id);
 
         CoinPackage existingPackage = coinPackageRepository.findById(id)
@@ -102,6 +103,7 @@ public class CoinPackageServiceImpl implements CoinPackageService {
         existingPackage.setBonusCoins(bonusCoins != null ? bonusCoins : 0);
         existingPackage.setServiceFeePercentage(serviceFeePercentage != null ? serviceFeePercentage : BigDecimal.ZERO);
         existingPackage.setIsActive(isActive != null ? isActive : true);
+        existingPackage.setDescription(description);
 
         CoinPackage updated = coinPackageRepository.save(existingPackage);
         log.info("Updated coin package: {}", updated.getId());

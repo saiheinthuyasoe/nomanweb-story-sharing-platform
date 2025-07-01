@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { chaptersApi } from '@/lib/api/chapters';
 import CursorTrackingPlugin from './plugins/CursorTrackingPlugin';
+import TypingDetectionPlugin from './plugins/TypingDetectionPlugin';
 import RealtimeContentPlugin from './plugins/RealtimeContentPlugin';
 
 // Theme configuration for Lexical
@@ -85,12 +86,15 @@ interface LexicalEditorProps {
   onChange?: (content: string, wordCount: number, characterCount: number) => void;
   onCursorChange?: (position: number, selectionStart: number, selectionEnd: number) => void;
   onAutoSave?: (content: string) => void;
+  onTypingStart?: () => void;
+  onTypingEnd?: () => void;
   placeholder?: string;
   className?: string;
   autoSaveInterval?: number;
   isDarkMode?: boolean;
   chapterId?: string;
   registerContentUpdateCallback?: (callback: (content: string) => void) => () => void;
+  sendContentUpdate?: (content: string, position: number, length: number, operation: string) => void;
 }
 
 // Inner component that has access to the editor context
@@ -99,19 +103,25 @@ function EditorContent({
   onChange,
   onCursorChange,
   onAutoSave,
+  onTypingStart,
+  onTypingEnd,
   autoSaveInterval,
   chapterId,
   isDarkMode = false,
   registerContentUpdateCallback,
+  sendContentUpdate,
 }: {
   value?: string;
   onChange?: (content: string, wordCount: number, characterCount: number) => void;
   onCursorChange?: (position: number, selectionStart: number, selectionEnd: number) => void;
   onAutoSave?: (content: string) => void;
+  onTypingStart?: () => void;
+  onTypingEnd?: () => void;
   autoSaveInterval: number;
   chapterId?: string;
   isDarkMode?: boolean;
   registerContentUpdateCallback?: (callback: (content: string) => void) => () => void;
+  sendContentUpdate?: (content: string, position: number, length: number, operation: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [wordCount, setWordCount] = useState(0);
@@ -146,6 +156,12 @@ function EditorContent({
       
       // Always call onChange even for formatting changes
       onChange?.(htmlContent, words, characters);
+      
+      // Send real-time content update for immediate typing indicators (like test page)
+      if (sendContentUpdate) {
+        console.log('LexicalEditor - Sending real-time content update for typing indicators');
+        sendContentUpdate(htmlContent, 0, htmlContent.length, 'replace');
+      }
       
       // Also trigger very fast auto-save for editor changes
       if (onAutoSave && htmlContent.trim()) {
@@ -200,6 +216,11 @@ function EditorContent({
       <ImagePlugin />
       <InitialContentPlugin value={value} />
       {onCursorChange && <CursorTrackingPlugin onCursorChange={onCursorChange} />}
+      <TypingDetectionPlugin 
+        onTypingStart={onTypingStart}
+        onTypingEnd={onTypingEnd}
+        sendContentUpdate={sendContentUpdate}
+      />
       {onAutoSave && (
         <AutoSavePlugin 
           onAutoSave={performAutoSave} 
@@ -254,12 +275,15 @@ export default function LexicalEditor({
   onChange,
   onCursorChange,
   onAutoSave,
+  onTypingStart,
+  onTypingEnd,
   placeholder = 'Start writing your content...',
   className,
   autoSaveInterval = 30000,
   isDarkMode = false,
   chapterId,
   registerContentUpdateCallback,
+  sendContentUpdate,
 }: LexicalEditorProps) {
   return (
     <div className={cn('lexical-editor-container', className, isDarkMode && 'dark')} data-lexical-editor="true">
@@ -316,10 +340,13 @@ export default function LexicalEditor({
               onChange={onChange}
               onCursorChange={onCursorChange}
               onAutoSave={onAutoSave}
+              onTypingStart={onTypingStart}
+              onTypingEnd={onTypingEnd}
               autoSaveInterval={autoSaveInterval}
               chapterId={chapterId}
               isDarkMode={isDarkMode}
               registerContentUpdateCallback={registerContentUpdateCallback}
+              sendContentUpdate={sendContentUpdate}
             />
           </div>
         </div>

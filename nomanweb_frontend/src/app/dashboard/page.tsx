@@ -170,10 +170,10 @@ export default function WriterDashboard() {
               color="blue"
             />
             <QuickAction
-              href="/dashboard/income"
+              href="/dashboard/monetization"
               icon={Target}
-              title="Detailed Analytics"
-              description="View comprehensive performance metrics"
+              title="Monetization"
+              description="Track earnings, gifts, and manage coins"
               color="purple"
             />
           </div>

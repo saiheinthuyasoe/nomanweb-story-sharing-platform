@@ -9,35 +9,35 @@ import java.util.UUID;
 
 public interface CoinPackageService {
 
-    // Get all packages
-    List<CoinPackage> getAllPackages();
+        // Get all packages
+        List<CoinPackage> getAllPackages();
 
-    // Get all active packages
-    List<CoinPackage> getActivePackages();
+        // Get all active packages
+        List<CoinPackage> getActivePackages();
 
-    // Get package by ID
-    Optional<CoinPackage> getPackageById(UUID id);
+        // Get package by ID
+        Optional<CoinPackage> getPackageById(UUID id);
 
-    // Create new package
-    CoinPackage createPackage(String name, Integer coinAmount, BigDecimal priceThb,
-            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive);
+        // Create new package
+        CoinPackage createPackage(String name, Integer coinAmount, BigDecimal priceThb,
+                        Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive, String description);
 
-    // Update existing package
-    CoinPackage updatePackage(UUID id, String name, Integer coinAmount, BigDecimal priceThb,
-            Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive);
+        // Update existing package
+        CoinPackage updatePackage(UUID id, String name, Integer coinAmount, BigDecimal priceThb,
+                        Integer bonusCoins, BigDecimal serviceFeePercentage, Boolean isActive, String description);
 
-    // Delete package
-    void deletePackage(UUID id);
+        // Delete package
+        void deletePackage(UUID id);
 
-    // Toggle package active status
-    CoinPackage togglePackageStatus(UUID id);
+        // Toggle package active status
+        CoinPackage togglePackageStatus(UUID id);
 
-    // Validate package name uniqueness
-    boolean isPackageNameUnique(String name, UUID excludeId);
+        // Validate package name uniqueness
+        boolean isPackageNameUnique(String name, UUID excludeId);
 
-    // Get packages by price range
-    List<CoinPackage> getPackagesByPriceRange(BigDecimal minPrice, BigDecimal maxPrice);
+        // Get packages by price range
+        List<CoinPackage> getPackagesByPriceRange(BigDecimal minPrice, BigDecimal maxPrice);
 
-    // Get package statistics
-    long getActivePackageCount();
+        // Get package statistics
+        long getActivePackageCount();
 }

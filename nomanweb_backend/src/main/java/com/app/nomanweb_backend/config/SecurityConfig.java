@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/coins/packages").permitAll()
 
                         // Admin authentication endpoints - public access for login/register
                         .requestMatchers("/api/admin/auth/login", "/api/admin/auth/register",

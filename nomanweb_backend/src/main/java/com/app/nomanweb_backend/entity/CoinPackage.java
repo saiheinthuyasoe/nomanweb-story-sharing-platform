@@ -39,6 +39,9 @@ public class CoinPackage {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -48,8 +51,8 @@ public class CoinPackage {
         return coinAmount + (bonusCoins != null ? bonusCoins : 0);
     }
 
-    // Helper method to convert to USD (assuming 1 USD = 35 THB for now)
-    public BigDecimal getPriceUsd() {
-        return priceThb.divide(BigDecimal.valueOf(35), 2, BigDecimal.ROUND_HALF_UP);
+    // Getter for price (THB only)
+    public BigDecimal getPrice() {
+        return priceThb;
     }
 }

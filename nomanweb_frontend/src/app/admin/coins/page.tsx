@@ -28,6 +28,8 @@ interface Transaction {
   date: string;
   description?: string;
   reference?: string;
+  balanceBefore?: number;
+  balanceAfter?: number;
 }
 
 interface CoinPackage {
@@ -69,7 +71,7 @@ export default function CoinManagementPage() {
     name: '',
     coins: '',
     price: '',
-    currency: 'USD',
+    currency: 'THB',
     description: '',
     isActive: true
   });
@@ -81,8 +83,7 @@ export default function CoinManagementPage() {
 
   // Coin transfer state
   const [transferForm, setTransferForm] = useState({
-    userId: '',
-    username: '',
+    userIdentifier: '',
     amount: '',
     type: 'transfer' as 'transfer' | 'withdraw',
     reason: ''
@@ -138,7 +139,9 @@ export default function CoinManagementPage() {
             status: 'completed',
             date: '2024-01-20T10:30:00Z',
             description: 'Coin package purchase',
-            reference: 'TXN001'
+            reference: 'TXN001',
+            balanceBefore: 1000,
+            balanceAfter: 1100
           },
           {
             id: '2',
@@ -148,7 +151,9 @@ export default function CoinManagementPage() {
             status: 'completed',
             date: '2024-01-19T15:45:00Z',
             description: 'Admin transfer',
-            reference: 'TXN002'
+            reference: 'TXN002',
+            balanceBefore: 1000,
+            balanceAfter: 1050
           },
           {
             id: '3',
@@ -158,7 +163,9 @@ export default function CoinManagementPage() {
             status: 'pending',
             date: '2024-01-18T09:15:00Z',
             description: 'User withdrawal request',
-            reference: 'TXN003'
+            reference: 'TXN003',
+            balanceBefore: 1000,
+            balanceAfter: 975
           }
         ]);
       }
@@ -218,8 +225,8 @@ export default function CoinManagementPage() {
             id: '1',
             name: 'Starter Pack',
             coins: 100, 
-            price: 9.99,
-            currency: 'USD',
+            price: 350,
+            currency: 'THB',
             description: 'Perfect for new readers',
             isActive: true,
             createdAt: '2024-01-01T00:00:00Z',
@@ -229,8 +236,8 @@ export default function CoinManagementPage() {
             id: '2',
             name: 'Premium Pack',
             coins: 575, // 500 + 75 bonus
-            price: 39.99,
-            currency: 'USD',
+            price: 1400,
+            currency: 'THB',
             description: 'Best value for regular readers',
             isActive: true,
             createdAt: '2024-01-01T00:00:00Z',
@@ -240,8 +247,8 @@ export default function CoinManagementPage() {
             id: '3',
             name: 'Ultimate Pack',
             coins: 1200, // 1000 + 200 bonus
-            price: 69.99,
-            currency: 'USD',
+            price: 2450,
+            currency: 'THB',
             description: 'For the most dedicated readers',
             isActive: true,
             createdAt: '2024-01-01T00:00:00Z',
@@ -258,14 +265,26 @@ export default function CoinManagementPage() {
 
   // Transfer functions
   const handleTransfer = async () => {
-    if (!transferForm.userId || !transferForm.amount || !transferForm.reason) {
-      alert('Please fill in all required fields');
+    if (!transferForm.userIdentifier || !transferForm.amount || !transferForm.reason) {
+      alert('Please fill in all required fields: User Identifier, Amount, and Reason');
+      return;
+    }
+
+    // Validate amount
+    const amount = parseFloat(transferForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid positive amount');
       return;
     }
 
     setTransferLoading(true);
     try {
       const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('Admin token not found. Please login again.');
+        return;
+      }
+
       const response = await fetch('/api/admin/coins/transfer', {
         method: 'POST',
         headers: {
@@ -273,34 +292,46 @@ export default function CoinManagementPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: transferForm.userId,
-          amount: parseFloat(transferForm.amount),
+          userIdentifier: transferForm.userIdentifier,
+          amount: amount,
           type: transferForm.type,
           reason: transferForm.reason
         }),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        alert(`Coins ${transferForm.type === 'transfer' ? 'transferred' : 'withdrawn'} successfully!`);
+        const action = transferForm.type === 'transfer' ? 'transferred' : 'withdrawn';
+        const message = `✅ Coins ${action} successfully!\n\n` +
+                       `User: ${result.user?.username || result.userIdentifier}\n` +
+                       `Email: ${result.user?.email || 'N/A'}\n` +
+                       `Amount: ${amount} coins\n` +
+                       `New Balance: ${result.newBalance} coins\n` +
+                       `Transaction ID: ${result.transactionId}`;
+        
+        alert(message);
+        
+        // Reset form
         setTransferForm({
-          userId: '',
-          username: '',
+          userIdentifier: '',
           amount: '',
           type: 'transfer',
           reason: ''
         });
+        
         // Refresh transactions if on that tab
         if (activeTab === 'transactions') {
           fetchTransactions();
           fetchTransactionStats();
         }
       } else {
-        const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to process transfer'}`);
+        const errorMessage = result.error || 'Failed to process transfer';
+        alert(`❌ Error: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error processing transfer:', error);
-      alert('Failed to process transfer');
+      alert('❌ Network error: Failed to process transfer. Please try again.');
     } finally {
       setTransferLoading(false);
     }
@@ -310,12 +341,14 @@ export default function CoinManagementPage() {
     switch (type) {
       case 'purchase':
         return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
-      case 'withdrawal':
-        return <ArrowDownIcon className="w-4 h-4 text-red-600" />;
-      case 'transfer_in':
+      case 'earning':
         return <ArrowUpIcon className="w-4 h-4 text-blue-600" />;
-      case 'transfer_out':
-        return <ArrowDownIcon className="w-4 h-4 text-orange-600" />;
+      case 'refund':
+        return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
+      case 'bonus':
+        return <ArrowUpIcon className="w-4 h-4 text-purple-600" />;
+      case 'penalty':
+        return <ArrowDownIcon className="w-4 h-4 text-red-600" />;
       default:
         return <CurrencyDollarIcon className="w-4 h-4 text-gray-600" />;
     }
@@ -346,8 +379,8 @@ export default function CoinManagementPage() {
     });
   };
 
-  const formatCurrency = (amount: number, currency = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number, currency = 'THB') => {
+    return new Intl.NumberFormat('th-TH', {
       style: 'currency',
       currency: currency
     }).format(amount);
@@ -374,7 +407,7 @@ export default function CoinManagementPage() {
         ? `/api/admin/coins/packages/${editingPackage.id}` 
         : '/api/admin/coins/packages';
 
-      const requestBody = {
+      const requestBody: any = {
         name: packageForm.name,
         coins: parseInt(packageForm.coins),
         price: parseFloat(packageForm.price),
@@ -413,7 +446,7 @@ export default function CoinManagementPage() {
           name: '',
           coins: '',
           price: '',
-          currency: 'USD',
+          currency: 'THB',
           description: '',
           isActive: true
         });
@@ -484,7 +517,7 @@ export default function CoinManagementPage() {
       name: '',
       coins: '',
       price: '',
-      currency: 'USD',
+      currency: 'THB',
       description: '',
       isActive: true
     });
@@ -598,11 +631,10 @@ export default function CoinManagementPage() {
                 >
                   <option value="">All Types</option>
                   <option value="purchase">Purchase</option>
-                  <option value="withdrawal">Withdrawal</option>
-                  <option value="transfer_in">Transfer In</option>
-                  <option value="transfer_out">Transfer Out</option>
-                  <option value="bonus">Bonus</option>
+                  <option value="earning">Earning</option>
                   <option value="refund">Refund</option>
+                  <option value="bonus">Bonus</option>
+                  <option value="penalty">Penalty</option>
                 </select>
               </div>
 
@@ -671,6 +703,7 @@ export default function CoinManagementPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -679,13 +712,13 @@ export default function CoinManagementPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center">
+                      <td colSpan={7} className="px-6 py-4 text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                       </td>
                     </tr>
                   ) : transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">No transactions found</td>
+                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">No transactions found</td>
                     </tr>
                   ) : (
                     transactions.map((transaction) => (
@@ -694,6 +727,7 @@ export default function CoinManagementPage() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{transaction.user.username}</div>
                             <div className="text-sm text-gray-500">{transaction.user.email}</div>
+                            <div className="text-xs text-gray-400">ID: {transaction.user.id}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -702,8 +736,21 @@ export default function CoinManagementPage() {
                             <span className="ml-2 text-sm text-gray-900 capitalize">{transaction.type.replace('_', ' ')}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {transaction.amount} coins
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {transaction.amount} coins
+                          </div>
+                          {transaction.description && (
+                            <div className="text-xs text-gray-500 truncate max-w-32" title={transaction.description}>
+                              {transaction.description}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            <div className="text-xs text-gray-500">Before: {transaction.balanceBefore || 'N/A'}</div>
+                            <div className="text-xs text-gray-500">After: {transaction.balanceAfter || 'N/A'}</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(transaction.status)}
@@ -786,10 +833,7 @@ export default function CoinManagementPage() {
                       <span className="text-gray-600">Price:</span>
                       <span className="font-medium">{formatCurrency(pkg.price, pkg.currency)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Value:</span>
-                      <span className="font-medium">{(pkg.coins / pkg.price).toFixed(1)} coins/$</span>
-                    </div>
+                    
                   </div>
                   
                   {pkg.description && (
@@ -822,87 +866,156 @@ export default function CoinManagementPage() {
       {/* Coin Transfer Tab */}
       {activeTab === 'transfer' && (
         <div className="space-y-6">
+          {/* Transfer Form */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Coin Transfer & Withdrawal</h2>
+            <div className="flex items-center mb-6">
+              <div className="flex-shrink-0">
+                <ArrowUpIcon className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <h2 className="text-xl font-semibold text-gray-900">Coin Transfer & Withdrawal</h2>
+                <p className="text-sm text-gray-600">Transfer coins to users or withdraw coins from user accounts</p>
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">User ID *</label>
-                <input
-                  type="text"
-                  placeholder="Enter user ID"
-                  value={transferForm.userId}
-                  onChange={(e) => setTransferForm(prev => ({ ...prev, userId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* User Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">User Information</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    User Identifier <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter username or email (e.g., john_doe or john@example.com)"
+                    value={transferForm.userIdentifier}
+                    onChange={(e) => setTransferForm(prev => ({ ...prev, userIdentifier: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter the user's username or email address</p>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Username (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="Enter username to verify"
-                  value={transferForm.username}
-                  onChange={(e) => setTransferForm(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+              {/* Transaction Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Transaction Details</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Enter coin amount"
+                      value={transferForm.amount}
+                      onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 text-sm">🪙</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Enter the number of coins to transfer</p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
-                <input
-                  type="number"
-                  placeholder="Enter coin amount"
-                  value={transferForm.amount}
-                  onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Transaction Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={transferForm.type}
+                    onChange={(e) => setTransferForm(prev => ({ ...prev, type: e.target.value as 'transfer' | 'withdraw' }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="transfer">➕ Transfer Coins (Add to User)</option>
+                    <option value="withdraw">➖ Withdraw Coins (Remove from User)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {transferForm.type === 'transfer' 
+                      ? 'Add coins to user account (BONUS transaction type)'
+                      : 'Remove coins from user account (PENALTY transaction type)'
+                    }
+                  </p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type *</label>
-                <select
-                  value={transferForm.type}
-                  onChange={(e) => setTransferForm(prev => ({ ...prev, type: e.target.value as 'transfer' | 'withdraw' }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="transfer">Transfer Coins (Add)</option>
-                  <option value="withdraw">Withdraw Coins (Remove)</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reason *</label>
-                <textarea
-                  placeholder="Enter reason for this transaction"
-                  value={transferForm.reason}
-                  onChange={(e) => setTransferForm(prev => ({ ...prev, reason: e.target.value }))}
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter detailed reason for this transaction (e.g., 'Compensation for service issue', 'Bonus for loyal user', 'Penalty for violation')"
+                    value={transferForm.reason}
+                    onChange={(e) => setTransferForm(prev => ({ ...prev, reason: e.target.value }))}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This will be recorded in the transaction log</p>
+                </div>
               </div>
             </div>
 
-            <div className="mt-6 flex gap-4">
+            {/* Action Buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleTransfer}
                 disabled={transferLoading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className={`flex-1 px-6 py-3 rounded-lg font-medium flex items-center justify-center ${
+                  transferForm.type === 'transfer'
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {transferLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
                 ) : (
-                  <ArrowUpIcon className="w-4 h-4 mr-2" />
+                  <>
+                    {transferForm.type === 'transfer' ? (
+                      <ArrowUpIcon className="w-4 h-4 mr-2" />
+                    ) : (
+                      <ArrowDownIcon className="w-4 h-4 mr-2" />
+                    )}
+                    {transferForm.type === 'transfer' ? 'Transfer Coins' : 'Withdraw Coins'}
+                  </>
                 )}
-                {transferForm.type === 'transfer' ? 'Transfer Coins' : 'Withdraw Coins'}
               </button>
               
               <button
-                onClick={() => setTransferForm({ userId: '', username: '', amount: '', type: 'transfer', reason: '' })}
-                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700"
+                onClick={() => setTransferForm({ userIdentifier: '', amount: '', type: 'transfer', reason: '' })}
+                className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium"
               >
                 Clear Form
               </button>
+            </div>
+
+            {/* Information Panel */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">Important Information</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>All transactions are logged with admin ID for audit purposes</li>
+                      <li>Transfer creates a BONUS transaction type</li>
+                      <li>Withdrawal creates a PENALTY transaction type</li>
+                      <li>User balance is automatically updated</li>
+                      <li>Transaction history is preserved in the database</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -940,14 +1053,14 @@ export default function CoinManagementPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (THB) *</label>
                   <input
                     type="number"
                     step="0.01"
                     value={packageForm.price}
                     onChange={(e) => setPackageForm(prev => ({ ...prev, price: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="9.99"
+                    placeholder="350"
                   />
                 </div>
               </div>
@@ -959,10 +1072,7 @@ export default function CoinManagementPage() {
                   onChange={(e) => setPackageForm(prev => ({ ...prev, currency: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
+                  <option value="THB">THB (Thai Baht)</option>
                 </select>
               </div>
 

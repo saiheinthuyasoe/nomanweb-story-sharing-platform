@@ -8,7 +8,6 @@ import {
   BarChart3, 
   BookOpen, 
   DollarSign, 
-  Gift, 
   Bell,
   ChevronRight,
   User,
@@ -19,8 +18,7 @@ import {
 const sidebarItems = [
   { id: 'statistics', label: 'Statistics Centre', icon: BarChart3, href: '/dashboard' },
   { id: 'stories', label: 'Stories', icon: BookOpen, href: '/dashboard/my-stories' },
-  { id: 'income', label: 'Income', icon: DollarSign, href: '/dashboard/income' },
-  { id: 'gift', label: 'Gift', icon: Gift, href: '/dashboard/gifts' },
+  { id: 'monetization', label: 'Monetization', icon: DollarSign, href: '/dashboard/monetization' },
   { id: 'alert', label: 'Alert', icon: Bell, href: '/dashboard/alerts' },
 ];
 
@@ -58,8 +56,7 @@ export default function DashboardLayout({
   const getActiveTab = () => {
     if (pathname === '/dashboard') return 'statistics';
     if (pathname.includes('/my-stories')) return 'stories';
-    if (pathname.includes('/income')) return 'income';
-    if (pathname.includes('/gifts')) return 'gift';
+    if (pathname.includes('/monetization')) return 'monetization';
     if (pathname.includes('/alerts')) return 'alert';
     return 'statistics';
   };

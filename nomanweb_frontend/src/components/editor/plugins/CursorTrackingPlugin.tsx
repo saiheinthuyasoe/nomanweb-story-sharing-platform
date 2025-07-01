@@ -42,7 +42,7 @@ export default function CursorTrackingPlugin({ onCursorChange }: CursorTrackingP
               clearTimeout(debounceTimeoutRef.current);
             }
             
-            // Debounce cursor updates to prevent too many messages
+            // Much faster debounce for responsive typing indicators
             debounceTimeoutRef.current = setTimeout(() => {
               console.log('CursorTrackingPlugin: Sending cursor update:', {
                 position: cursorPosition,
@@ -57,7 +57,7 @@ export default function CursorTrackingPlugin({ onCursorChange }: CursorTrackingP
               lastCursorPositionRef.current = cursorPosition;
               lastSelectionStartRef.current = selectionStart;
               lastSelectionEndRef.current = selectionEnd;
-            }, 50); // Very fast debounce for responsive cursor tracking
+            }, 10); // Super fast - 10ms delay for immediate response
           }
         }
       });

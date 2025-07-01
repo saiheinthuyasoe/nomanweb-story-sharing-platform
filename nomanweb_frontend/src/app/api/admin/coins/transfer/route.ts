@@ -14,14 +14,6 @@ export async function POST(request: NextRequest) {
     const adminToken = authHeader.substring(7);
     const transferData = await request.json();
 
-    // Validate required fields
-    if (!transferData.userId || !transferData.amount || !transferData.reason) {
-      return NextResponse.json(
-        { error: 'Missing required fields: userId, amount, and reason are required' },
-        { status: 400 }
-      );
-    }
-
     // Forward request to backend
     const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/transfer`;
     const response = await fetch(backendUrl, {
