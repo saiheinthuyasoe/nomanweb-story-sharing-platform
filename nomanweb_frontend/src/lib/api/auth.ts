@@ -61,6 +61,16 @@ const authApi = {
     return response.data;
   },
 
+  refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
+    const response = await apiClient.post(`/auth/refresh`, { refreshToken });
+    return response.data;
+  },
+
+  logout: async (refreshToken: string): Promise<void> => {
+    const response = await apiClient.post(`/auth/logout`, { refreshToken });
+    return response.data;
+  },
+
   // OAuth methods
   googleLogin: async (idToken: string): Promise<AuthResponse> => {
     const response = await apiClient.post(`/oauth/google`, { idToken });

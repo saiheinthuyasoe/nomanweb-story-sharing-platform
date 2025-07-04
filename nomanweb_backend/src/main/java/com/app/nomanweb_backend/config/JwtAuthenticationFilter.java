@@ -42,6 +42,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             final String jwt = authHeader.substring(7);
 
+            // Check if token is expired first
+            if (jwtUtil.isTokenExpired(jwt)) {
+                log.debug("JWT token is expired for request: {}", request.getRequestURI());
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Access token expired\"}");
+                return;
+            }
+
             if (jwtUtil.validateToken(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UUID userId = jwtUtil.getUserIdFromToken(jwt);
                 String email = jwtUtil.getEmailFromToken(jwt);
@@ -59,10 +68,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     log.debug("User {} authenticated via JWT", email);
+                } else {
+                    log.debug("User {} not found or inactive", email);
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter()
+                            .write("{\"error\":\"Unauthorized\",\"message\":\"User not found or inactive\"}");
+                    return;
                 }
             }
         } catch (Exception e) {
             log.error("JWT authentication failed: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Invalid token\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -79,6 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/auth/reset-password") ||
                 path.equals("/api/auth/verify-email") ||
                 path.equals("/api/auth/resend-verification") ||
+                path.equals("/api/test/public") ||
                 path.startsWith("/api/oauth/") ||
                 path.startsWith("/api/public/") ||
                 path.startsWith("/actuator/health") ||

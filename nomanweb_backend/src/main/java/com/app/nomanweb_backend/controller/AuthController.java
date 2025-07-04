@@ -142,13 +142,33 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refreshToken(@RequestBody Map<String, String> request) {
+    public ResponseEntity<LoginResponse> refreshToken(@RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
         try {
             String refreshToken = request.get("refreshToken");
-            LoginResponse response = authService.refreshToken(refreshToken);
+            String clientIp = getClientIp(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            LoginResponse response = authService.refreshToken(refreshToken, clientIp, userAgent);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            String clientIp = getClientIp(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            authService.logout(refreshToken, clientIp, userAgent);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            // Even if logout fails, we return success to avoid information leakage
+            return ResponseEntity.ok().build();
         }
     }
 

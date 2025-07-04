@@ -14,8 +14,9 @@ interface AuthContextType {
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
-  setAuthData: (token: string, user: User) => void;
+  setAuthData: (token: string, refreshToken: string, user: User) => void;
   refreshUser: () => Promise<void>;
+  updateTokens: (token: string, refreshToken: string) => void;
 }
 
 interface RegisterData {
@@ -27,6 +28,20 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Global event system for token refresh notifications
+export const tokenRefreshEvents = {
+  listeners: new Set<(token: string, refreshToken: string) => void>(),
+  
+  subscribe: (callback: (token: string, refreshToken: string) => void) => {
+    tokenRefreshEvents.listeners.add(callback);
+    return () => tokenRefreshEvents.listeners.delete(callback);
+  },
+  
+  notify: (token: string, refreshToken: string) => {
+    tokenRefreshEvents.listeners.forEach(callback => callback(token, refreshToken));
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     checkAuth();
+    
+    // Subscribe to token refresh events
+    const unsubscribe = tokenRefreshEvents.subscribe((token, refreshToken) => {
+      console.log('🔄 AuthContext received token refresh notification');
+      updateTokens(token, refreshToken);
+    });
+    
+    return unsubscribe;
   }, []);
 
   const checkAuth = async () => {
@@ -46,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Auth check failed:', error);
       Cookies.remove('token');
+      Cookies.remove('refreshToken');
     } finally {
       setLoading(false);
     }
@@ -54,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await authApi.login({ email, password });
-      Cookies.set('token', response.token, { expires: 7 });
+      Cookies.set('token', response.token, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
+      Cookies.set('refreshToken', response.refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
       setUser(response.user);
       toast.success('Login successful!');
       router.push('/dashboard');
@@ -69,8 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authApi.register(userData);
       
       // Check if tokens are provided (email verified) or not (needs verification)
-      if (response.token) {
-        Cookies.set('token', response.token, { expires: 7 });
+      if (response.token && response.refreshToken) {
+        Cookies.set('token', response.token, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
+        Cookies.set('refreshToken', response.refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
         setUser(response.user);
         toast.success('Registration successful!');
         router.push('/dashboard');
@@ -85,20 +111,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    Cookies.remove('token');
-    setUser(null);
-    toast.success('Logged out successfully');
-    router.push('/');
+  const logout = async () => {
+    try {
+      const refreshToken = Cookies.get('refreshToken');
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      Cookies.remove('token');
+      Cookies.remove('refreshToken');
+      setUser(null);
+      toast.success('Logged out successfully');
+      router.push('/');
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
     setUser(prev => prev ? { ...prev, ...userData } : null);
   };
 
-  const setAuthData = (token: string, user: User) => {
-    Cookies.set('token', token, { expires: 7 });
+  const setAuthData = (token: string, refreshToken: string, user: User) => {
+    Cookies.set('token', token, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
+    Cookies.set('refreshToken', refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
     setUser(user);
+  };
+
+  const updateTokens = (token: string, refreshToken: string) => {
+    console.log('🔄 Updating tokens in AuthContext');
+    Cookies.set('token', token, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
+    Cookies.set('refreshToken', refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
   };
 
   const refreshUser = async () => {
@@ -122,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateUser,
     setAuthData,
     refreshUser,
+    updateTokens,
   };
 
   return (

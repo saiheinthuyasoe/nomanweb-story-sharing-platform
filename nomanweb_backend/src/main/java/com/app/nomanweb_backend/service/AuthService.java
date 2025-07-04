@@ -5,6 +5,7 @@ import com.app.nomanweb_backend.dto.auth.LoginResponse;
 import com.app.nomanweb_backend.dto.auth.RegisterRequest;
 import com.app.nomanweb_backend.entity.EmailVerificationToken;
 import com.app.nomanweb_backend.entity.PasswordResetAttempt;
+import com.app.nomanweb_backend.entity.RefreshToken;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.EmailVerificationTokenRepository;
 import com.app.nomanweb_backend.repository.PasswordResetAttemptRepository;
@@ -32,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${app.email.verification.expiry:48}")
     private int emailVerificationExpiryHours;
@@ -62,15 +64,15 @@ public class AuthService {
         userRepository.save(user);
 
         // Generate tokens
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        RefreshToken refreshToken = refreshTokenService.createRefreshTokenForLogin(user);
 
         log.info("User {} logged in successfully", user.getEmail());
 
         return LoginResponse.builder()
                 .user(user)
-                .token(token)
-                .refreshToken(refreshToken)
+                .token(accessToken)
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
 
@@ -331,21 +333,43 @@ public class AuthService {
         resetPassword(token, newPassword, "unknown", "unknown");
     }
 
-    public LoginResponse refreshToken(String refreshToken) {
-        if (!jwtUtil.validateToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
+    public LoginResponse refreshToken(String refreshTokenValue, String clientIp, String userAgent) {
+        // Validate and rotate refresh token
+        RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshTokenValue, clientIp, userAgent);
+
+        if (newRefreshToken == null) {
+            throw new RuntimeException("Invalid or expired refresh token");
         }
 
-        UUID userId = jwtUtil.getUserIdFromToken(refreshToken);
-        User user = getCurrentUser(userId);
+        User user = newRefreshToken.getUser();
 
-        String newToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+        // Generate new access token
+        String newAccessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+
+        log.info("Tokens refreshed successfully for user: {}", user.getEmail());
 
         return LoginResponse.builder()
                 .user(user)
-                .token(newToken)
-                .refreshToken(newRefreshToken)
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken.getToken())
                 .build();
+    }
+
+    // Overloaded method for backward compatibility
+    public LoginResponse refreshToken(String refreshToken) {
+        return refreshToken(refreshToken, "unknown", "unknown");
+    }
+
+    public void logout(String refreshTokenValue, String clientIp, String userAgent) {
+        try {
+            refreshTokenService.revokeRefreshToken(refreshTokenValue, clientIp, userAgent);
+            log.info("User logged out successfully");
+        } catch (Exception e) {
+            log.warn("Error during logout: {}", e.getMessage());
+        }
+    }
+
+    public void logout(String refreshToken) {
+        logout(refreshToken, "unknown", "unknown");
     }
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHydrated } from '@/hooks/useHydrated';
 import { 
   Search, 
   Menu, 
@@ -20,7 +21,8 @@ import {
   History,
   BookmarkIcon,
   Library,
-  Users
+  Users,
+  LogIn
 } from 'lucide-react';
 import { ActiveCollaborators } from '@/components/collaboration/ActiveCollaborators';
 
@@ -28,14 +30,15 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const isHydrated = useHydrated();
   
   // Check if on chapter edit page
-  const isChapterEditPage = pathname.includes('/chapters/') && pathname.includes('/edit');
+  const isChapterEditPage = pathname?.includes('/chapters/') && pathname?.includes('/edit');
   // Extract chapter ID from URL like /stories/[storyId]/chapters/[chapterNumber]/edit
   const getChapterIdFromPath = () => {
     if (!isChapterEditPage) return null;
-    const pathParts = pathname.split('/');
-    const storyIndex = pathParts.findIndex(part => part === 'stories');
+    const pathParts = pathname?.split('/') || [];
+    const storyIndex = pathParts.findIndex((part: string) => part === 'stories');
     if (storyIndex !== -1 && pathParts[storyIndex + 1] && pathParts[storyIndex + 3]) {
       // For now, we can't get the actual chapter ID from URL since it's story/chapter number
       // We'll need to get it from the edit page component context
@@ -133,14 +136,41 @@ export default function Navbar() {
   };
 
   const isActive = (path: string) => {
+    if (!isHydrated || !pathname) return false;
     return pathname === path;
   };
+
+  // Don't render until hydrated to prevent hydration mismatches
+  if (!isHydrated) {
+    return (
+      <nav className="navbar-fixed">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-15">
+            {/* Placeholder content during SSR */}
+            <div className="flex items-center flex-shrink-0">
+              <div className="relative w-20 h-15 sm:w-20 sm:h-20 md:w-25 md:h-25 lg:w-30 lg:h-30">
+                <Image
+                  src="/logo.png"
+                  alt="NoManWeb Logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-base sm:text-lg font-bold text-white">NOMANWEB</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <>
       <nav className="navbar-fixed">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
+          <div className="flex items-center justify-between h-15">
             
             {/* Left Section - Logo */}
             <div className="flex items-center flex-shrink-0">
@@ -190,14 +220,14 @@ export default function Navbar() {
 
             {/* Center Section - Mobile Search */}
             <div className="flex-1 mx-1 sm:mx-2 lg:hidden max-w-xs">
-              <form onSubmit={handleSearch} className="flex items-center bg-white/20 rounded-md sm:rounded-lg">
-                <Search className="h-3 w-3 sm:h-4 sm:w-4 text-white ml-2" />
+              <form onSubmit={handleSearch} className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm">
+                <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 ml-2" />
                 <input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent text-white placeholder-white/70 px-1 sm:px-2 py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
+                  className="bg-transparent text-gray-900 placeholder-gray-500 px-1 sm:px-2 py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
                 />
               </form>
             </div>
@@ -208,19 +238,19 @@ export default function Navbar() {
               {/* Desktop Search */}
               <div className="hidden lg:block relative" ref={searchRef}>
                 {isSearchOpen ? (
-                  <form onSubmit={handleSearch} className="flex items-center bg-white/20 rounded-lg">
+                  <form onSubmit={handleSearch} className="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm">
                     <input
                       id="search-input"
                       type="text"
                       placeholder="Search stories..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-transparent text-white placeholder-white/70 px-4 py-2 w-64 focus:outline-none"
+                      className="bg-transparent text-gray-900 placeholder-gray-500 px-4 py-2 w-64 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setIsSearchOpen(false)}
-                      className="p-2 text-white hover:bg-white/20 rounded-r-lg transition-colors"
+                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-r-lg transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -228,7 +258,7 @@ export default function Navbar() {
                 ) : (
                   <button
                     onClick={toggleSearch}
-                    className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth"
+                    className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                     title="Search"
                   >
                     <Search className="h-5 w-5" />
@@ -242,14 +272,14 @@ export default function Navbar() {
                   {/* Library */}
                   <Link 
                     href="/library"
-                    className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth"
+                    className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                     title="Library"
                   >
                     <Library className="h-5 w-5" />
                   </Link>
 
                   {/* Notifications */}
-                  <button className="p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth relative">
+                  <button className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative">
                     <Bell className="h-5 w-5" />
                     {/* Notification badge could be added here */}
                   </button>
@@ -258,7 +288,7 @@ export default function Navbar() {
                   <div className="relative" ref={userDropdownRef}>
                     <button
                       onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                      className="flex items-center space-x-2 bg-white/20 text-white rounded-lg px-3 py-2 hover:bg-white/30 transition-all-smooth"
+                      className="flex items-center space-x-2 bg-white/10 text-white rounded-lg px-3 py-2 hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                     >
                       <div className="w-8 h-8 bg-white/30 rounded-full flex items-center justify-center">
                         {user.profileImageUrl ? (
@@ -350,9 +380,10 @@ export default function Navbar() {
                 <div className="hidden lg:flex items-center space-x-3">
                   <Link
                     href="/login"
-                    className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all-smooth font-medium"
+                    className="px-4 py-2 rounded-lg font-medium btn-navbar-purple flex items-center space-x-2"
                   >
-                    Login
+                    <LogIn className="h-4 w-4" />
+                    <span>Login</span>
                   </Link>
                 </div>
               )}
@@ -360,13 +391,13 @@ export default function Navbar() {
               {/* Mobile: Notification & Menu Button */}
               <div className="lg:hidden flex items-center space-x-1 flex-shrink-0">
                 {user && (
-                  <button className="p-1.5 sm:p-2 bg-white/20 text-white rounded-md sm:rounded-lg hover:bg-white/30 transition-all-smooth relative">
+                  <button className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative">
                     <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 )}
                 <button
                   onClick={toggleMobileMenu}
-                  className="p-1.5 sm:p-2 bg-white/20 text-white rounded-md sm:rounded-lg hover:bg-white/30 transition-all-smooth"
+                  className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                   aria-label="Toggle mobile menu"
                 >
                   <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -524,14 +555,19 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition-all-smooth ${
+      className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition-all-smooth ${
         active
-          ? 'bg-white/30 text-white'
-          : 'text-white/90 hover:text-white hover:bg-white/20'
+          ? 'text-white'
+          : 'text-white/90 hover:text-white'
       }`}
     >
       {Icon && <Icon className="h-4 w-4" />}
-      <span>{children}</span>
+      <span className="relative">
+        {children}
+        {active && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-white rounded-full active-tab-indicator"></div>
+        )}
+      </span>
     </Link>
   );
 }
@@ -554,14 +590,19 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth ${
+      className={`relative flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth ${
         active
-          ? 'bg-white/30 text-white'
-          : 'text-white/90 hover:text-white hover:bg-white/20'
+          ? 'text-white'
+          : 'text-white/90 hover:text-white'
       }`}
     >
       {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5" />}
-      <span className="text-sm sm:text-base">{children}</span>
+      <span className="relative text-sm sm:text-base">
+        {children}
+        {active && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-10 h-0.5 bg-white rounded-full active-tab-indicator"></div>
+        )}
+      </span>
     </Link>
   );
 }

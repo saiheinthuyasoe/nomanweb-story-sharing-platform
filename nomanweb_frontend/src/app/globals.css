@@ -5,9 +5,9 @@
 /* Custom NoManWeb Theme Colors */
 :root {
   /* Primary gradient colors */
-  --nomanweb-primary: #2C3E50;
+  --nomanweb-primary: #9400f7;
   --nomanweb-secondary: #4CA1AF;
-  --nomanweb-gradient: linear-gradient(90deg, rgba(44, 62, 80, 1) 33%, rgba(76, 161, 175, 1) 100%);
+  --nomanweb-gradient: #9400f7;
   
   /* Additional theme colors */
   --nomanweb-light: #f8fafc;
@@ -25,7 +25,7 @@
 
 /* Custom gradient utility */
 .bg-nomanweb-gradient {
-  background: var(--nomanweb-gradient);
+  background: #9400f7;
 }
 
 .text-nomanweb-primary {
@@ -51,14 +51,55 @@
   left: 0;
   right: 0;
   z-index: 50;
-  background: var(--nomanweb-gradient);
-  backdrop-filter: blur(10px);
+  background: #9400f7;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  height: 60px;
+}
+
+/* Active tab indicator styles */
+.navbar-fixed .active-tab-indicator {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+/* Navbar purple button styles */
+.btn-navbar-purple {
+  background: #9400f7;
+  color: white;
+  border: 1px solid #9400f7;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(148, 0, 247, 0.2);
+}
+
+.btn-navbar-purple:hover {
+  background: #7a00d1;
+  border-color: #7a00d1;
+  box-shadow: 0 4px 8px rgba(148, 0, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-navbar-purple:active {
+  background: #6a00b8;
+  transform: translateY(0);
+}
+
+.btn-navbar-purple-outline {
+  background: transparent;
+  color: #9400f7;
+  border: 1px solid #9400f7;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-navbar-purple-outline:hover {
+  background: #9400f7;
+  color: white;
+  box-shadow: 0 2px 4px rgba(148, 0, 247, 0.2);
+  transform: translateY(-1px);
 }
 
 /* Body padding for fixed navbar - only apply when navbar is present */
 .main-content:not(.admin-content) {
-  padding-top: 80px; /* Account for fixed navbar height */
+  padding-top: 60px; /* Account for fixed navbar height */
 }
 
 /* Admin content should not have navbar padding */
@@ -86,7 +127,7 @@
 
 /* Button gradients */
 .btn-gradient {
-  background: var(--nomanweb-gradient);
+  background: #9400f7;
   color: white;
   border: none;
   transition: all 0.3s ease;
@@ -469,7 +510,7 @@
   }
   
   .main-content:not(.admin-content) {
-    padding-top: 56px; /* h-14 */
+    padding-top: 60px;
   }
 }
 
@@ -479,19 +520,19 @@
   }
   
   .main-content:not(.admin-content) {
-    padding-top: 64px; /* h-16 */
+    padding-top: 60px;
   }
 }
 
 @media (min-width: 769px) and (max-width: 1023px) {
   .main-content:not(.admin-content) {
-    padding-top: 64px; /* h-16 */
+    padding-top: 60px;
   }
 }
 
 @media (min-width: 1024px) {
   .main-content:not(.admin-content) {
-    padding-top: 80px; /* h-20 */
+    padding-top: 60px;
   }
 }
 

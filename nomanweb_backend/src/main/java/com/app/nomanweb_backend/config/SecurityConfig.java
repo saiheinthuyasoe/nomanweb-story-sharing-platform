@@ -29,6 +29,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final GlobalExceptionHandler globalExceptionHandler;
 
     @Bean
@@ -46,6 +47,8 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(authz -> authz
                         // WebSocket endpoints for real-time collaboration
                         .requestMatchers("/ws/**").permitAll()
@@ -61,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/coins/packages").permitAll()
+                        .requestMatchers("/api/test/public").permitAll()
 
                         // Admin authentication endpoints - public access for login/register
                         .requestMatchers("/api/admin/auth/login", "/api/admin/auth/register",
@@ -90,6 +94,9 @@ public class SecurityConfig {
 
                         // User endpoints - all require authentication
                         .requestMatchers("/api/users/**").authenticated()
+
+                        // Test endpoints
+                        .requestMatchers("/api/test/auth").authenticated()
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

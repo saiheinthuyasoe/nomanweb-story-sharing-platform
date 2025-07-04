@@ -107,4 +107,53 @@ public class JwtUtil {
             return false;
         }
     }
+
+    public boolean validateRefreshToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public UUID getUserIdFromRefreshToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return UUID.fromString(claims.getSubject());
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+    }
+
+    public Date getExpirationDateFromRefreshToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return claims.getExpiration();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+    }
+
+    public boolean isRefreshTokenExpired(String token) {
+        try {
+            Date expiration = getExpirationDateFromRefreshToken(token);
+            return expiration.before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
+    }
 }
