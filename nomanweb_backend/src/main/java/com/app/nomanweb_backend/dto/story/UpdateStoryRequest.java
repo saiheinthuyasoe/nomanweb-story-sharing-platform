@@ -29,7 +29,7 @@ public class UpdateStoryRequest {
 
     private Story.PricingType pricingType;
 
-    private Story.ContentStatus contentStatus;
+    private Story.BookStatus bookStatus;
 
     private List<String> tags;
 

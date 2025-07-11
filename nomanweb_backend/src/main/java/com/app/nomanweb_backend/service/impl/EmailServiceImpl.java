@@ -141,6 +141,65 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendEmailChangeNotification(User user, String oldEmail) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(oldEmail);
+            message.setFrom(fromEmail);
+            message.setSubject("NoManWeb - Email Address Changed");
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "Your NoManWeb account email address has been successfully changed from %s to %s.\n\n" +
+                            "If you didn't make this change, please contact our support team immediately.\n\n" +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
+                    oldEmail,
+                    user.getEmail());
+
+            message.setText(emailBody);
+            mailSender.send(message);
+
+            log.info("Email change notification sent to old email: {}", oldEmail);
+        } catch (Exception e) {
+            log.error("Failed to send email change notification to: {}", oldEmail, e);
+        }
+    }
+
+    @Override
+    public void sendEmailChangeVerificationEmail(User user, String newEmail, String verificationToken) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(newEmail);
+            message.setFrom(fromEmail);
+            message.setSubject("NoManWeb - Verify Your New Email Address");
+
+            String verificationUrl = frontendUrl + "/verify-email-change?token=" + verificationToken;
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "You requested to change your NoManWeb account email address to this email.\n\n" +
+                            "Please click the link below to verify this email address:\n\n" +
+                            "%s\n\n" +
+                            "This link will expire in 24 hours.\n\n" +
+                            "If you didn't request this change, please ignore this email and your email address will remain unchanged.\n\n"
+                            +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
+                    verificationUrl);
+
+            message.setText(emailBody);
+            mailSender.send(message);
+
+            log.info("Email change verification email sent to: {}", newEmail);
+        } catch (Exception e) {
+            log.error("Failed to send email change verification email to: {}", newEmail, e);
+            throw new RuntimeException("Failed to send email change verification email");
+        }
+    }
+
+    @Override
     public void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
             String role, String invitationUrl, String customMessage) {
         try {

@@ -5,6 +5,8 @@ import { Upload, X, Loader2, Link, Image as ImageIcon, Camera, Plus, Edit3, Tras
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/api/client';
+import { ImageCropModal } from './ImageCropModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface StoryCoverUploadProps {
   storyId: string;
@@ -41,12 +43,15 @@ export function StoryCoverUpload({
   maxFileSize = 10, // 10MB
   placeholder = 'Upload story cover'
 }: StoryCoverUploadProps) {
+  const queryClient = useQueryClient();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [mode, setMode] = useState<UploadMode>('choose');
   const [urlInput, setUrlInput] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedImageForCrop, setSelectedImageForCrop] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback((file: File): string | null => {
@@ -75,13 +80,15 @@ export function StoryCoverUpload({
       const formData = new FormData();
       formData.append('file', file);
       
-      // Always use the generic image endpoint for story covers
-      const endpoint = '/upload/image';
-      formData.append('folder', 'story_covers');
+      let endpoint: string;
       
-      // Only add storyId if it's not a new story
+      // Use story-cover endpoint for existing stories, generic endpoint for new stories
       if (storyId && storyId !== 'new') {
+        endpoint = '/upload/story-cover';
         formData.append('storyId', storyId);
+      } else {
+        endpoint = '/upload/image';
+        formData.append('folder', 'story_covers');
       }
 
       const progressInterval = setInterval(() => {
@@ -100,11 +107,20 @@ export function StoryCoverUpload({
       const result = response.data;
 
       if (result.success && result.imageUrl) {
+        console.log('✅ Upload successful, imageUrl:', result.imageUrl);
         toast.success('Story cover uploaded successfully!');
         onChange?.(result.imageUrl);
+        
+        // If this is an existing story, invalidate the story query to refresh the data
+        if (storyId && storyId !== 'new') {
+          console.log('🔄 Invalidating story query for:', storyId);
+          queryClient.invalidateQueries({ queryKey: ['story', storyId] });
+        }
+        
         setShowModal(false);
         setMode('choose');
       } else {
+        console.error('❌ Upload failed, result:', result);
         throw new Error(result.message || 'Upload failed');
       }
 
@@ -116,7 +132,41 @@ export function StoryCoverUpload({
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [storyId, onChange, validateFile]);
+  }, [storyId, onChange, validateFile, queryClient]);
+
+  const handleFileForCrop = useCallback((file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    // Create URL for the selected file to show in crop modal
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImageForCrop(imageUrl);
+    setShowCropModal(true);
+    setShowModal(false);
+  }, [validateFile]);
+
+  const handleCroppedImage = useCallback(async (croppedFile: File) => {
+    setShowCropModal(false);
+    // Clean up the object URL
+    if (selectedImageForCrop) {
+      URL.revokeObjectURL(selectedImageForCrop);
+      setSelectedImageForCrop('');
+    }
+    // Upload the cropped file
+    await uploadFile(croppedFile);
+  }, [selectedImageForCrop, uploadFile]);
+
+  const handleCropModalClose = useCallback(() => {
+    setShowCropModal(false);
+    // Clean up the object URL
+    if (selectedImageForCrop) {
+      URL.revokeObjectURL(selectedImageForCrop);
+      setSelectedImageForCrop('');
+    }
+  }, [selectedImageForCrop]);
 
   const handleUrlSubmit = useCallback(() => {
     if (!urlInput.trim()) {
@@ -160,17 +210,18 @@ export function StoryCoverUpload({
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      uploadFile(files[0]);
+      handleFileForCrop(files[0]);
     }
-  }, [disabled, mode, uploadFile]);
+  }, [disabled, mode, handleFileForCrop]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      uploadFile(files[0]);
+      handleFileForCrop(files[0]);
     }
+    // Reset input value so same file can be selected again
     e.target.value = '';
-  }, [uploadFile]);
+  }, [handleFileForCrop]);
 
   const handleRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -424,7 +475,7 @@ export function StoryCoverUpload({
             
             <div className="space-y-2 text-sm text-gray-500">
               <p>Supports: {acceptedFileTypes.map(type => type.split('/')[1]).join(', ').toUpperCase()}</p>
-              <p>Max size: {maxFileSize}MB • Recommended: 800×1200px (3:4 ratio)</p>
+              <p>Max size: {maxFileSize}MB • Recommended: 600×900px (2:3 ratio)</p>
             </div>
           </div>
         )}
@@ -525,6 +576,16 @@ export function StoryCoverUpload({
           </div>
         </div>
       )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={handleCropModalClose}
+        onCrop={handleCroppedImage}
+        imageSrc={selectedImageForCrop}
+        aspectRatio={2 / 3} // Book cover aspect ratio (600x900 pixels)
+        title="Crop Story Cover"
+      />
     </div>
   );
 } 

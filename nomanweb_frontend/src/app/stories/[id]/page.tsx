@@ -8,7 +8,8 @@ import {
   useStory, 
   usePublishStory, 
   useUnpublishStory, 
-  useDeleteStory 
+  useDeleteStory,
+  useIncrementStoryView
 } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -20,6 +21,10 @@ import {
   useToggleBookmark 
 } from '@/hooks/useReadingLists';
 import { useChaptersByStory } from '@/hooks/useChapters';
+import { useChapterAccessBatch, useChapterAccess } from '@/hooks/useChapterAccess';
+import { usePurchaseChapter } from '@/hooks/useChapterPurchase';
+import { useCoinBalance } from '@/hooks/useCoinBalance';
+import { usePurchaseBook, useBookAccess } from '@/hooks/useBookPurchase';
 import { 
   useStoryComments, 
   useCreateComment,
@@ -43,7 +48,8 @@ import {
   ChevronDownIcon,
   CheckCircleIcon,
   BookmarkIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { 
   HeartIcon as HeartIconSolid,
@@ -53,6 +59,8 @@ import {
 } from '@heroicons/react/24/solid';
 import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
+import ChapterPurchaseModal from '@/components/monetization/ChapterPurchaseModal';
+import BookPurchaseModal from '@/components/monetization/BookPurchaseModal';
 import { 
   BookOpen, 
   Heart, 
@@ -133,6 +141,7 @@ export default function StoryReaderView() {
   const { mutate: publishStory, isPending: isPublishing } = usePublishStory();
   const { mutate: unpublishStory, isPending: isUnpublishing } = useUnpublishStory();
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
+  const { mutate: incrementStoryView } = useIncrementStoryView();
   
   // Reaction hooks with real-time updates
   const { 
@@ -155,6 +164,13 @@ export default function StoryReaderView() {
   const [editContent, setEditContent] = useState('');
   const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [selectedChapterForPurchase, setSelectedChapterForPurchase] = useState<{
+    id: string;
+    title: string;
+    coinPrice: number;
+  } | null>(null);
+  const [showBookPurchaseModal, setShowBookPurchaseModal] = useState(false);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -191,6 +207,24 @@ export default function StoryReaderView() {
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
+  
+  // Chapter access and purchase hooks
+  const chapterIds = storyChapters.map((chapter: any) => chapter.id);
+  const { data: chapterAccess = {} } = useChapterAccessBatch(chapterIds, !!user && !isAuthor);
+  const { mutate: purchaseChapter, isPending: isPurchasing } = usePurchaseChapter();
+  const { data: coinBalance = 0 } = useCoinBalance(!!user);
+  
+  // Book access and purchase hooks
+  const { data: hasBookAccess = false } = useBookAccess(storyId, !!user && !isAuthor);
+  const { mutate: purchaseBook, isPending: isPurchasingBook } = usePurchaseBook();
+
+  // Track story view when component mounts and story is loaded
+  useEffect(() => {
+    if (story && !isAuthor) {
+      // Only track view if user is not the author
+      incrementStoryView(storyId);
+    }
+  }, [story, isAuthor, storyId, incrementStoryView]);
 
   if (isLoading) {
     return <StoryDetailSkeleton />;
@@ -390,8 +424,37 @@ export default function StoryReaderView() {
     toggleCommentLike(commentId);
   };
 
-  const getContentStatus = (status: string) => {
-    return status === 'COMPLETED' ? 'Completed' : 'Ongoing';
+  const handleChapterClick = (chapter: any) => {
+    const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
+    const hasAccess = chapterAccess[chapter.id] || chapter.isFree;
+    
+    if (isPaidChapter && !hasAccess) {
+      setSelectedChapterForPurchase({
+        id: chapter.id,
+        title: chapter.title,
+        coinPrice: chapter.coinPrice,
+      });
+      setShowPurchaseModal(true);
+    } else {
+      router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}`);
+    }
+  };
+
+  const handlePurchaseComplete = () => {
+    setShowPurchaseModal(false);
+    setSelectedChapterForPurchase(null);
+  };
+
+  const handleBookPurchase = () => {
+    setShowBookPurchaseModal(true);
+  };
+
+  const handleBookPurchaseComplete = () => {
+    setShowBookPurchaseModal(false);
+  };
+
+  const getBookStatus = (bookStatus: string) => {
+    return bookStatus === 'COMPLETED' ? 'Completed' : 'Ongoing';
   };
 
   const formatNumber = (num: number) => {
@@ -514,7 +577,7 @@ export default function StoryReaderView() {
                       ? 'bg-green-100 text-green-700' 
                       : 'bg-yellow-100 text-yellow-700'
                   }`}>
-                    {getContentStatus(story.status)}
+                    {getBookStatus(story.bookStatus)}
                   </div>
                   <div className="text-xs text-gray-500">Status</div>
                 </div>
@@ -557,6 +620,26 @@ export default function StoryReaderView() {
                   <BookOpen className="h-5 w-5" />
                   <span>Read</span>
                 </button>
+                
+                {/* Buy Whole Book Button */}
+                {story.pricingType === 'WHOLE_BOOK' && !isAuthor && !hasBookAccess && (
+                  <button
+                    onClick={handleBookPurchase}
+                    disabled={isPurchasingBook}
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    <ShoppingBagIcon className="h-5 w-5" />
+                    <span>{isPurchasingBook ? 'Purchasing...' : `Buy Book (${story.bookPrice || 0} coins)`}</span>
+                  </button>
+                )}
+                
+                {/* Book Already Purchased Badge */}
+                {story.pricingType === 'WHOLE_BOOK' && !isAuthor && hasBookAccess && (
+                  <div className="bg-green-100 text-green-800 px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                    <CheckCircleIcon className="h-5 w-5" />
+                    <span>Book Purchased</span>
+                  </div>
+                )}
                 {/* Library Dropdown Button */}
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -732,34 +815,87 @@ export default function StoryReaderView() {
                     <p className="text-gray-600">This story doesn't have any chapters published yet.</p>
                   </div>
                 ) : (
-                  storyChapters.map((chapter: any) => (
-                    <div
-                      key={chapter.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 mb-1">
-                            Chapter {chapter.chapterNumber}: {chapter.title}
-                          </h4>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Eye className="h-4 w-4" />
-                            <span>{formatNumber(chapter.views)}</span>
+                  storyChapters.map((chapter: any) => {
+                    const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
+                    const hasAccess = chapterAccess[chapter.id] || chapter.isFree;
+                    const canAccess = hasAccess || chapter.isFree;
+                    
+                    return (
+                      <div
+                        key={chapter.id}
+                        className={`border rounded-lg p-4 transition-all duration-200 cursor-pointer ${
+                          canAccess 
+                            ? 'border-gray-200 hover:bg-gray-50 hover:border-blue-300' 
+                            : 'border-red-200 bg-red-50 cursor-not-allowed'
+                        }`}
+                        onClick={() => handleChapterClick(chapter)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              {/* Lock Icon beside title for paid chapters */}
+                              {isPaidChapter && !canAccess && (
+                                <LockClosedIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
+                              )}
+                              <h4 className={`font-medium ${
+                                canAccess ? 'text-gray-900' : 'text-gray-600'
+                              }`}>
+                                Chapter {chapter.chapterNumber}: {chapter.title}
+                              </h4>
+                              {/* Premium Badge */}
+                              {isPaidChapter && (
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                                  canAccess 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {canAccess ? 'OWNED' : 'PREMIUM'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
+                            </p>
+                            {isPaidChapter && (
+                              <div className="flex items-center space-x-2">
+                                {canAccess ? (
+                                  <div className="flex items-center space-x-1">
+                                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                                    <span className="text-sm font-medium text-green-600">
+                                      Purchased
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center space-x-1">
+                                    <ShoppingBagIcon className="w-4 h-4 text-red-600" />
+                                    <span className="text-sm font-medium text-red-600">
+                                      {chapter.coinPrice} coins required
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Heart className="h-4 w-4" />
-                            <span>{formatNumber(chapter.likes)}</span>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            {!canAccess && (
+                              <div className="flex items-center space-x-1 text-red-500">
+                                <LockClosedIcon className="w-4 h-4" />
+                                <span className="font-medium">Locked</span>
+                              </div>
+                            )}
+                            <div className="flex items-center space-x-1">
+                              <EyeIcon className="w-4 h-4" />
+                              <span>{formatNumber(chapter.views)}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <HeartIcon className="w-4 h-4" />
+                              <span>{formatNumber(chapter.likes)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
@@ -1004,6 +1140,32 @@ export default function StoryReaderView() {
         </div>
         */}
       </div>
+
+      {/* Chapter Purchase Modal */}
+      {selectedChapterForPurchase && (
+        <ChapterPurchaseModal
+          isOpen={showPurchaseModal}
+          onClose={() => {
+            setShowPurchaseModal(false);
+            setSelectedChapterForPurchase(null);
+          }}
+          chapterId={selectedChapterForPurchase.id}
+          chapterTitle={selectedChapterForPurchase.title}
+          coinPrice={selectedChapterForPurchase.coinPrice}
+          onPurchaseComplete={handlePurchaseComplete}
+        />
+      )}
+
+      {/* Book Purchase Modal */}
+      <BookPurchaseModal
+        isOpen={showBookPurchaseModal}
+        onClose={() => setShowBookPurchaseModal(false)}
+        storyId={storyId}
+        storyTitle={story.title}
+        bookPrice={story.bookPrice || 0}
+        totalChapters={story.totalChapters}
+        onPurchaseComplete={handleBookPurchaseComplete}
+      />
     </div>
   );
 }

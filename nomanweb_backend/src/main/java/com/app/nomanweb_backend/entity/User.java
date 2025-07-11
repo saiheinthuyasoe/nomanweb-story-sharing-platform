@@ -2,6 +2,7 @@ package com.app.nomanweb_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -54,6 +55,9 @@ public class User {
 
     @Column(name = "profile_image_url")
     private String profileImageUrl;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
@@ -172,5 +176,24 @@ public class User {
 
     public String getDisplayNameOrUsername() {
         return displayName != null && !displayName.trim().isEmpty() ? displayName : username;
+    }
+
+    /**
+     * Determines if the user can use OAuth endpoints (no password required for
+     * sensitive operations).
+     * This is true only for users who have OAuth accounts but no password hash.
+     */
+    public boolean canUseOAuthEndpoints() {
+        return (googleId != null || lineUserId != null) && passwordHash == null;
+    }
+
+    /**
+     * JSON property that indicates if the user can use OAuth endpoints.
+     * This is included in API responses to help the frontend determine which
+     * endpoints to use.
+     */
+    @JsonProperty("canUseOAuthEndpoints")
+    public boolean getCanUseOAuthEndpoints() {
+        return canUseOAuthEndpoints();
     }
 }

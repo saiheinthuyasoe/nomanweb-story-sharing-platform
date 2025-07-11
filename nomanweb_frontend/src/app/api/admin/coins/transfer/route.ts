@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { broadcastCoinTransferUpdate } from '@/lib/broadcast';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,21 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await response.json();
+    
+    // Broadcast the transfer update to all connected clients
+    if (result.success) {
+      broadcastCoinTransferUpdate('TRANSFER_COMPLETED', {
+        transferId: result.transactionId,
+        user: result.user,
+        amount: result.amount,
+        transferType: transferData.type, // Changed from 'type' to 'transferType' to avoid conflict
+        reason: transferData.reason,
+        newBalance: result.newBalance,
+        balanceBefore: result.balanceBefore,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error in admin coin transfer API:', error);

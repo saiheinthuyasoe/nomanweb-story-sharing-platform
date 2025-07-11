@@ -168,14 +168,7 @@ const AdminLoginPage = () => {
         </form>
 
         {/* Footer */}
-        <div className="mt-8 text-center space-y-4">
-          <div className="text-sm text-gray-600">
-            <p>Have an admin invitation?</p>
-            <Link href="/admin/register" className="text-red-600 hover:text-red-700 font-medium">
-              Complete Registration
-            </Link>
-          </div>
-          
+        <div className="mt-8 text-center">
           <div className="border-t pt-4">
             <Link 
               href="/login" 

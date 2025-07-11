@@ -55,10 +55,26 @@ apiClient.interceptors.response.use(
   async (error: any) => {
     const originalRequest = error.config;
     
-    console.log('🚨 API Error:', error.response?.status, error.response?.data);
+    console.log('🚨 API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      url: originalRequest?.url,
+      method: originalRequest?.method
+    });
+    
+    // Handle rate limiting (429)
+    if (error.response?.status === 429) {
+      console.log('⏰ Rate limit exceeded:', error.response?.data);
+      // Don't retry rate limited requests
+      return Promise.reject(error);
+    }
     
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       console.log(`🔄 ${error.response?.status} Error detected, attempting token refresh...`);
+      
+      // Check if this is a token-related error or a permission error
+      const errorMessage = error.response?.data?.message || '';
+      const isTokenExpired = errorMessage.includes('expired') || errorMessage.includes('Invalid token');
       
       if (isRefreshing) {
         console.log('⏳ Already refreshing, waiting for token...');
@@ -121,13 +137,15 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         console.error('❌ Token refresh failed:', refreshError);
         
-        // Refresh failed, clear tokens and redirect to login
-        Cookies.remove('token');
-        Cookies.remove('refreshToken');
-        
-        if (typeof window !== 'undefined') {
-          console.log('🔄 Redirecting to login...');
-          window.location.href = '/login';
+        // Only clear tokens and redirect if it's a token-related error
+        if (isTokenExpired) {
+          Cookies.remove('token');
+          Cookies.remove('refreshToken');
+          
+          if (typeof window !== 'undefined') {
+            console.log('🔄 Redirecting to login due to token expiration...');
+            window.location.href = '/login';
+          }
         }
         
         return Promise.reject(refreshError);

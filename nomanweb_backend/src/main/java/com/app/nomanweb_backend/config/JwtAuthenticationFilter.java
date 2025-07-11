@@ -35,12 +35,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No Authorization header or invalid format for request: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String jwt = authHeader.substring(7);
+            log.debug("Processing JWT for request: {}", request.getRequestURI());
 
             // Check if token is expired first
             if (jwtUtil.isTokenExpired(jwt)) {
@@ -56,6 +58,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = jwtUtil.getEmailFromToken(jwt);
                 String role = jwtUtil.getRoleFromToken(jwt);
 
+                log.debug("JWT validation successful for user: {} (email: {})", userId, email);
+
                 // Verify user still exists and is active (or is admin)
                 User user = userRepository.findById(userId).orElse(null);
                 if (user != null && (user.isActive() || "ADMIN".equals(user.getRole().toString()))) {
@@ -67,18 +71,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("User {} authenticated via JWT", email);
+                    log.debug("User {} authenticated via JWT for request: {}", email, request.getRequestURI());
                 } else {
-                    log.debug("User {} not found or inactive", email);
+                    log.warn("User {} not found or inactive for request: {}", email, request.getRequestURI());
+                    if (user == null) {
+                        log.warn("User not found in database for ID: {}", userId);
+                    } else {
+                        log.warn("User is inactive: active={}, role={}", user.isActive(), user.getRole());
+                    }
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter()
                             .write("{\"error\":\"Unauthorized\",\"message\":\"User not found or inactive\"}");
                     return;
                 }
+            } else {
+                log.debug("JWT validation failed or authentication already exists for request: {}",
+                        request.getRequestURI());
             }
         } catch (Exception e) {
-            log.error("JWT authentication failed: {}", e.getMessage());
+            log.error("JWT authentication failed for request {}: {}", request.getRequestURI(), e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Invalid token\"}");
@@ -99,6 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/auth/reset-password") ||
                 path.equals("/api/auth/verify-email") ||
                 path.equals("/api/auth/resend-verification") ||
+                path.equals("/api/auth/refresh") ||
                 path.equals("/api/test/public") ||
                 path.startsWith("/api/oauth/") ||
                 path.startsWith("/api/public/") ||

@@ -114,6 +114,34 @@ public class MonetizationController {
         return ResponseEntity.ok(canAccess);
     }
 
+    @PostMapping("/books/purchase")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Purchase a whole book")
+    public ResponseEntity<GiftTransactionResponse> purchaseBook(
+            @Valid @RequestBody PurchaseBookRequest request,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        GiftTransactionResponse response = monetizationService.purchaseBook(currentUser, request);
+
+        log.info("User {} purchased book {}", currentUser.getId(), request.getStoryId());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/books/access/{storyId}")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Check if user can access a book")
+    public ResponseEntity<Boolean> canAccessBook(
+            @PathVariable String storyId,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        boolean canAccess = monetizationService.canAccessBook(currentUser, java.util.UUID.fromString(storyId));
+
+        return ResponseEntity.ok(canAccess);
+    }
+
     @GetMapping("/purchases/history")
     @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Get purchase history")

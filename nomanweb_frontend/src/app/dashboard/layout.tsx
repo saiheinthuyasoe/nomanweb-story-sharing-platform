@@ -32,8 +32,21 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
+    console.log('🔍 Dashboard layout auth check:', { loading, user: user ? 'present' : 'null' });
+    
+    // Check if we have tokens in cookies even if user state is not set yet
+    const token = document.cookie.includes('token=');
+    const refreshToken = document.cookie.includes('refreshToken=');
+    
+    console.log('🔍 Cookie check:', { hasToken: token, hasRefreshToken: refreshToken });
+    
+    if (!loading && !user && !token) {
+      console.log('🚨 No user and no token found, redirecting to login');
       router.push('/login');
+    } else if (!loading && !user && token) {
+      console.log('⚠️ User state not set but token exists, waiting for auth to complete...');
+      // Don't redirect immediately if we have tokens but user state isn't set yet
+      // This can happen during OAuth flow
     }
   }, [user, loading, router]);
 

@@ -11,6 +11,7 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.service.StoryService;
+import com.app.nomanweb_backend.service.ViewMigrationService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class AdminController {
         private final ChapterRepository chapterRepository;
         private final UserRepository userRepository;
         private final ProfileImageDownloadService profileImageDownloadService;
+        private final ViewMigrationService viewMigrationService;
 
         // Dashboard Statistics
         @GetMapping("/dashboard/stats")
@@ -792,6 +794,23 @@ public class AdminController {
                         log.error("Error checking OAuth profile images: {}", e.getMessage(), e);
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                         .body(Map.of("error", "Failed to check OAuth images: " + e.getMessage()));
+                }
+        }
+
+        @PostMapping("/migrate-views")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> migrateViews() {
+                try {
+                        ViewMigrationService.MigrationResult result = viewMigrationService.migrateExistingViews();
+                        return ResponseEntity.ok(Map.of(
+                                        "success", true,
+                                        "chaptersMigrated", result.getChaptersMigrated(),
+                                        "storiesMigrated", result.getStoriesMigrated(),
+                                        "message", result.getMessage()));
+                } catch (Exception e) {
+                        log.error("Error during view migration: {}", e.getMessage(), e);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(Map.of("error", "Migration failed: " + e.getMessage()));
                 }
         }
 

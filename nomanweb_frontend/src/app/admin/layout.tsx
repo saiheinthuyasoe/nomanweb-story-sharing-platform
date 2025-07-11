@@ -40,11 +40,6 @@ const adminNavItems = [
     icon: CurrencyDollarIcon
   },
   {
-    name: 'Admin Invitations',
-    href: '/admin/invitations',
-    icon: DocumentTextIcon
-  },
-  {
     name: 'Content Reports',
     href: '/admin/reports',
     icon: DocumentTextIcon
@@ -74,8 +69,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     const checkAdminAuth = async () => {
-      // Allow access to login and register pages without authentication
-      if (pathname === '/admin/login' || pathname === '/admin/register') {
+      // Allow access to login page without authentication
+      if (pathname === '/admin/login') {
         setIsLoading(false);
         return;
       }
@@ -128,7 +123,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Add effect to listen for storage changes (when login happens in same tab)
   useEffect(() => {
     const handleStorageChange = async () => {
-      if (pathname === '/admin/login' || pathname === '/admin/register') {
+      if (pathname === '/admin/login') {
         return;
       }
 
@@ -204,8 +199,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // Allow access to login and register pages without admin user
-  if (!adminUser && pathname !== '/admin/login' && pathname !== '/admin/register') {
+  // Allow access to login page without admin user
+  if (!adminUser && pathname !== '/admin/login') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
@@ -219,8 +214,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // For login and register pages, render without sidebar
-  if (pathname === '/admin/login' || pathname === '/admin/register') {
+  // For login page, render without sidebar
+  if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 

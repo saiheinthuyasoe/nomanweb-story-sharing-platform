@@ -100,12 +100,22 @@ export default function LineCallbackPage() {
         const response = await authApi.lineLogin(accessToken);
         
         console.log('Backend response:', response);
+        console.log('🔐 LINE OAuth response fields:', {
+          hasToken: !!response.token,
+          hasRefreshToken: !!response.refreshToken,
+          hasUser: !!response.user
+        });
         
         // Set authentication data
-        setAuthData(response.token, response.user);
+        setAuthData(response.token, response.refreshToken, response.user);
         
         toast.success('LINE sign-in successful!');
-        router.push('/dashboard');
+        
+        // Add a small delay to ensure state is updated before navigation
+        setTimeout(() => {
+          console.log('🚀 Navigating to dashboard after LINE callback');
+          router.push('/dashboard');
+        }, 100);
         
       } catch (error: any) {
         console.error('LINE OAuth callback error:', error);

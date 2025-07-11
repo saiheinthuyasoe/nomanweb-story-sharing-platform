@@ -24,6 +24,8 @@ export function StoryForm({
   const { data: categories } = useCategories();
   const [tagInput, setTagInput] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>(story?.tags || []);
+  const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
+  const [editingTagValue, setEditingTagValue] = useState('');
 
   const {
     register,
@@ -38,7 +40,7 @@ export function StoryForm({
       description: story?.description || '',
       categoryId: story?.category?.id || '',
       pricingType: story?.pricingType || 'FREE',
-      contentStatus: story?.contentStatus || 'ONGOING',
+      bookStatus: story?.bookStatus || 'ONGOING',
       coverImageUrl: story?.coverImageUrl || '',
       tags: story?.tags || [],
       bookPrice: story?.bookPrice || undefined,
@@ -48,6 +50,11 @@ export function StoryForm({
 
   const watchedCoverImage = watch('coverImageUrl');
   const watchedPricingType = watch('pricingType');
+  
+  // Debug logging for cover image
+  useEffect(() => {
+    console.log('🖼️ StoryForm: watchedCoverImage changed to:', watchedCoverImage);
+  }, [watchedCoverImage]);
 
   useEffect(() => {
     setValue('tags', selectedTags);
@@ -56,15 +63,53 @@ export function StoryForm({
   const handleAddTag = () => {
     const tag = tagInput.trim().toLowerCase();
     if (tag && !selectedTags.includes(tag) && selectedTags.length < 10) {
-      setSelectedTags([...selectedTags, tag]);
+      const newTags = [...selectedTags, tag];
+      setSelectedTags(newTags);
       setTagInput('');
     } else if (selectedTags.length >= 10) {
       toast.error('Maximum 10 tags allowed');
+    } else if (selectedTags.includes(tag)) {
+      toast.error('Tag already exists');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+    const newTags = selectedTags.filter(tag => tag !== tagToRemove);
+    setSelectedTags(newTags);
+  };
+
+  const handleEditTag = (index: number) => {
+    setEditingTagIndex(index);
+    setEditingTagValue(selectedTags[index]);
+  };
+
+  const handleSaveTagEdit = () => {
+    if (editingTagIndex !== null) {
+      const newTag = editingTagValue.trim().toLowerCase();
+      if (newTag && !selectedTags.includes(newTag)) {
+        const newTags = [...selectedTags];
+        newTags[editingTagIndex] = newTag;
+        setSelectedTags(newTags);
+        setEditingTagIndex(null);
+        setEditingTagValue('');
+      } else if (selectedTags.includes(newTag)) {
+        toast.error('Tag already exists');
+      }
+    }
+  };
+
+  const handleCancelTagEdit = () => {
+    setEditingTagIndex(null);
+    setEditingTagValue('');
+  };
+
+  const handleEditTagKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTagEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelTagEdit();
+    }
   };
 
   const handleTagInputKeyPress = (e: React.KeyboardEvent) => {
@@ -75,6 +120,7 @@ export function StoryForm({
   };
 
   const handleCoverImageChange = (url: string) => {
+    console.log('🖼️ StoryForm: handleCoverImageChange called with URL:', url);
     setValue('coverImageUrl', url);
   };
 
@@ -189,14 +235,14 @@ export function StoryForm({
             </select>
           </div>
 
-          {/* Content Status */}
+          {/* Book Status */}
           <div>
-            <label htmlFor="contentStatus" className="block text-sm font-medium text-gray-700 mb-2">
-              Content Status
+            <label htmlFor="bookStatus" className="block text-sm font-medium text-gray-700 mb-2">
+              Book Status
             </label>
             <select
-              id="contentStatus"
-              {...register('contentStatus')}
+              id="bookStatus"
+              {...register('bookStatus')}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="ONGOING">Ongoing</option>
@@ -332,26 +378,77 @@ export function StoryForm({
             {/* Selected Tags */}
             {selectedTags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                {selectedTags.map((tag, index) => (
+                  <div
+                    key={`${tag}-${index}`}
+                    className="inline-flex items-center"
                   >
-                    #{tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-2 text-blue-600 hover:text-blue-800"
-                    >
-                      <XMarkIcon className="w-4 h-4" />
-                    </button>
-                  </span>
+                    {editingTagIndex === index ? (
+                      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 border border-yellow-300">
+                        <span className="mr-1">#</span>
+                        <input
+                          type="text"
+                          value={editingTagValue}
+                          onChange={(e) => setEditingTagValue(e.target.value)}
+                          onKeyPress={handleEditTagKeyPress}
+                          onBlur={handleSaveTagEdit}
+                          className="bg-transparent border-none outline-none text-sm w-16 min-w-0"
+                          maxLength={30}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveTagEdit}
+                          className="ml-1 text-green-600 hover:text-green-800 rounded-full p-0.5"
+                          title="Save changes"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelTagEdit}
+                          className="ml-1 text-red-600 hover:text-red-800 rounded-full p-0.5"
+                          title="Cancel editing"
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 group">
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => handleEditTag(index)}
+                          className="ml-2 text-blue-600 hover:text-blue-800 rounded-full p-0.5 transition-colors duration-200"
+                          title={`Edit ${tag} tag`}
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 text-blue-600 hover:text-red-600 hover:bg-red-100 rounded-full p-0.5 transition-colors duration-200"
+                          title={`Remove ${tag} tag`}
+                        >
+                          <XMarkIcon className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
             
             <p className="text-xs text-gray-500">
               {selectedTags.length}/10 tags used. Tags help readers discover your story.
+              <br />
+              <span className="text-blue-600">
+                Click the edit icon to modify tags, or the × icon to remove them.
+              </span>
             </p>
           </div>
         </div>

@@ -24,6 +24,7 @@ import { chaptersApi } from '@/lib/api/chapters';
 import CursorTrackingPlugin from './plugins/CursorTrackingPlugin';
 import TypingDetectionPlugin from './plugins/TypingDetectionPlugin';
 import RealtimeContentPlugin from './plugins/RealtimeContentPlugin';
+import ListAlignmentPlugin from './plugins/ListAlignmentPlugin';
 
 // Theme configuration for Lexical
 const lexicalTheme = {
@@ -228,6 +229,7 @@ function EditorContent({
         />
       )}
       <FloatingTextToolbarPlugin />
+      <ListAlignmentPlugin />
       <RealtimeContentPlugin registerContentUpdateCallback={registerContentUpdateCallback} />
       
       {/* Real-time stats display under the editor */}

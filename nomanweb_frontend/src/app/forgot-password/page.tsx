@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useForgotPassword } from '@/hooks/useApi';
 import toast from 'react-hot-toast';
+import { handleApiError } from '@/lib/utils/errorHandling';
 
 interface ForgotPasswordForm {
   email: string;
@@ -26,9 +27,9 @@ export default function ForgotPasswordPage() {
       setIsSuccess(true);
       toast.success('Password reset email sent! Please check your inbox.');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Forgot password error:', error);
-      toast.error('Failed to send password reset email. Please try again.');
+      handleApiError(error, 'Failed to send password reset email. Please try again.');
     },
   });
 

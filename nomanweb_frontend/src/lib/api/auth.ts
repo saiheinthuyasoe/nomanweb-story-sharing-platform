@@ -56,8 +56,38 @@ const authApi = {
     return response.data;
   },
 
-  resendVerification: async (): Promise<void> => {
-    const response = await apiClient.post(`/auth/resend-verification`);
+  resendVerification: async (email: string): Promise<void> => {
+    const response = await apiClient.post(`/auth/resend-verification`, { email });
+    return response.data;
+  },
+
+  changeEmail: async (data: { currentPassword: string; newEmail: string }): Promise<void> => {
+    const response = await apiClient.post(`/auth/change-email`, data);
+    return response.data;
+  },
+
+  changeEmailOAuth: async (data: { newEmail: string }): Promise<void> => {
+    const response = await apiClient.post(`/auth/change-email-oauth`, data);
+    return response.data;
+  },
+
+  changeUsername: async (data: { currentPassword: string; newUsername: string }): Promise<void> => {
+    const response = await apiClient.post(`/auth/change-username`, data);
+    return response.data;
+  },
+
+  changeUsernameOAuth: async (data: { newUsername: string }): Promise<void> => {
+    const response = await apiClient.post(`/auth/change-username-oauth`, data);
+    return response.data;
+  },
+
+  verifyEmailChange: async (token: string): Promise<void> => {
+    const response = await apiClient.post(`/auth/verify-email-change`, { token });
+    return response.data;
+  },
+
+  resendEmailChangeVerification: async (newEmail: string): Promise<void> => {
+    const response = await apiClient.post(`/auth/resend-email-change-verification`, { newEmail });
     return response.data;
   },
 

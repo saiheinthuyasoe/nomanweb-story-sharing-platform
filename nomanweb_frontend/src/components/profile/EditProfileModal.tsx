@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, User, Mail, Edit3, Save } from 'lucide-react';
+import { X, User, Mail, Edit3, Save, Settings } from 'lucide-react';
 import { User as UserType } from '@/types/user';
 import { authApi } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
+import EmailChangeModal from './EmailChangeModal';
+import UsernameChangeModal from './UsernameChangeModal';
 
 interface EditProfileModalProps {
   user: UserType;
@@ -15,6 +17,8 @@ interface EditProfileModalProps {
 
 export default function EditProfileModal({ user, isOpen, onClose, onSave }: EditProfileModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isEmailChangeModalOpen, setIsEmailChangeModalOpen] = useState(false);
+  const [isUsernameChangeModalOpen, setIsUsernameChangeModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     displayName: user.displayName || '',
     bio: user.bio || '',
@@ -99,19 +103,35 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
           <div className="space-y-3 pt-4 border-t">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username (cannot be changed)
+                Username
               </label>
-              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600">
-                @{user.username}
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                <span className="text-gray-600">@{user.username}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsUsernameChangeModalOpen(true)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Change
+                </button>
               </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email (cannot be changed)
+                Email Address
               </label>
-              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600">
-                {user.email}
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                <span className="text-gray-600">{user.email}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsEmailChangeModalOpen(true)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Change
+                </button>
               </div>
             </div>
           </div>
@@ -145,6 +165,32 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
           </div>
         </form>
       </div>
+
+      {/* Email Change Modal */}
+      <EmailChangeModal
+        user={user}
+        isOpen={isEmailChangeModalOpen}
+        onClose={() => setIsEmailChangeModalOpen(false)}
+        onEmailChanged={(newEmail) => {
+          // Update the user object with new email
+          const updatedUser = { ...user, email: newEmail };
+          onSave(updatedUser);
+          setIsEmailChangeModalOpen(false);
+        }}
+      />
+
+      {/* Username Change Modal */}
+      <UsernameChangeModal
+        user={user}
+        isOpen={isUsernameChangeModalOpen}
+        onClose={() => setIsUsernameChangeModalOpen(false)}
+        onUsernameChanged={(newUsername) => {
+          // Update the user object with new username
+          const updatedUser = { ...user, username: newUsername };
+          onSave(updatedUser);
+          setIsUsernameChangeModalOpen(false);
+        }}
+      />
     </div>
   );
 } 

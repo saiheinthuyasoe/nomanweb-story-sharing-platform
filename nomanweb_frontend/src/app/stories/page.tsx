@@ -14,7 +14,7 @@ export default function StoriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [pricingType, setPricingType] = useState('');
-  const [contentStatus, setContentStatus] = useState('');
+  const [bookStatus, setBookStatus] = useState('');
   const [sortBy, setSortBy] = useState('');
 
   // Get search query from URL parameters
@@ -40,7 +40,7 @@ export default function StoriesPage() {
     sortBy,
     categoryId: selectedCategory || undefined,
           pricingType: pricingType || undefined,
-    contentStatus: contentStatus || undefined,
+    bookStatus: bookStatus || undefined,
   });
 
   // Use search results if there's a search query, otherwise use regular stories
@@ -69,7 +69,7 @@ export default function StoriesPage() {
     setSearchQuery('');
     setSelectedCategory('');
     setPricingType('');
-    setContentStatus('');
+    setBookStatus('');
     setSortBy('');
     router.push('/stories');
   };
@@ -195,15 +195,15 @@ export default function StoriesPage() {
               </select>
             </div>
 
-            {/* Content Status - disabled during search */}
+            {/* Book Status - disabled during search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content Status
+                Book Status
               </label>
               <select
-                value={contentStatus}
+                value={bookStatus}
                 onChange={(e) => {
-                  setContentStatus(e.target.value);
+                  setBookStatus(e.target.value);
                   setPage(0);
                 }}
                 disabled={!!urlSearchQuery}

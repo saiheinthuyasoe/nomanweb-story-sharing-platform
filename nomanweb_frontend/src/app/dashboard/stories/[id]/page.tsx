@@ -127,16 +127,27 @@ export default function StoryDetailPage() {
                   </div>
                 )}
                 
-                {/* Status Badge */}
-                <div className="absolute top-4 left-4">
+                {/* Status Badges */}
+                <div className="absolute top-4 left-4 space-y-2">
                   <span className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
-                    story.status === 'PUBLISHED' 
+                    story.publishStatus === 'PUBLISHED' 
                       ? 'bg-green-500/90 text-white' 
-                      : story.status === 'DRAFT'
+                      : story.publishStatus === 'DRAFT'
                       ? 'bg-yellow-500/90 text-white'
-                      : 'bg-gray-500/90 text-white'
+                      : story.publishStatus === 'COMPLETED'
+                      ? 'bg-blue-500/90 text-white'
+                      : 'bg-red-500/90 text-white'
                   }`}>
-                    {story.status}
+                    {story.publishStatus}
+                  </span>
+                  
+                  {/* Book Status Badge */}
+                  <span className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
+                    story.bookStatus === 'ONGOING' 
+                      ? 'bg-blue-500/90 text-white' 
+                      : 'bg-purple-500/90 text-white'
+                  }`}>
+                    {story.bookStatus}
                   </span>
                 </div>
 
@@ -293,7 +304,7 @@ export default function StoryDetailPage() {
                         <span>Edit Story</span>
                       </Link>
 
-                      {story.status === 'DRAFT' ? (
+                      {story.publishStatus === 'DRAFT' ? (
                         <button
                           onClick={handlePublish}
                           disabled={isPublishing}
@@ -342,6 +353,16 @@ export default function StoryDetailPage() {
             <span>Story Details</span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <DetailCard
+              title="Publish Status"
+              value={story.publishStatus}
+              color={story.publishStatus === 'PUBLISHED' ? 'green' : story.publishStatus === 'DRAFT' ? 'yellow' : story.publishStatus === 'COMPLETED' ? 'blue' : 'red'}
+            />
+            <DetailCard
+              title="Book Status"
+              value={story.bookStatus}
+              color={story.bookStatus === 'ONGOING' ? 'green' : 'blue'}
+            />
             <DetailCard
               title="Pricing Type"
               value={story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 

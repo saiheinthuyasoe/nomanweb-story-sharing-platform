@@ -4,6 +4,7 @@ export interface User {
   username: string;
   displayName?: string;
   profileImageUrl?: string;
+  coverImageUrl?: string;
   bio?: string;
   role: 'user' | 'admin';
   status: 'active' | 'suspended' | 'banned';
@@ -15,6 +16,8 @@ export interface User {
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
+  // Flag to indicate if user can use OAuth endpoints (no password required)
+  canUseOAuthEndpoints?: boolean;
 }
 
 export interface AuthResponse {

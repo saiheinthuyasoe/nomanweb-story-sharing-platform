@@ -471,7 +471,7 @@ export const usePermanentlyDeleteChapter = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (chapterId: string) => chaptersApi.permanentlyDelete(chapterId),
+    mutationFn: (chapterId: string) => chaptersApi.permanentlyDeleteChapter(chapterId),
     onSuccess: (_, chapterId) => {
       // Invalidate all chapter queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["chapters"] });

@@ -26,6 +26,25 @@ export const useMyStories = (params: { page?: number; size?: number } = {}) => {
   });
 };
 
+export const useMyStoriesIncludingDeleted = (params: { page?: number; size?: number } = {}) => {
+  return useQuery({
+    queryKey: ['my-stories-all', params],
+    queryFn: () => {
+      console.log('📚 Fetching all stories including deleted with params:', params);
+      return storiesApi.getMyStoriesIncludingDeleted(params);
+    },
+    onSuccess: (data) => {
+      console.log('📚 Successfully fetched all stories including deleted:', {
+        totalStories: data.content?.length || 0,
+        deletedStories: data.content?.filter(s => s.isDeleted).length || 0
+      });
+    },
+    onError: (error) => {
+      console.error('❌ Failed to fetch all stories including deleted:', error);
+    }
+  });
+};
+
 export const useStoriesByAuthor = (
   authorId: string, 
   params: { page?: number; size?: number } = {}
@@ -121,10 +140,75 @@ export const useDeleteStory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stories'] });
       queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      toast.success('Story deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
+      toast.success('Story moved to trash successfully!');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete story');
+    },
+  });
+};
+
+export const useMoveStoryToTrash = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      console.log('🔄 Moving story to trash:', id);
+      return storiesApi.moveStoryToTrash(id);
+    },
+    onSuccess: (data, storyId) => {
+      console.log('✅ Story moved to trash successfully:', storyId);
+      console.log('🔄 Invalidating queries...');
+      
+      // Invalidate all relevant queries
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
+      
+      // Force refetch the trash data
+      queryClient.refetchQueries({ queryKey: ['my-stories-all'] });
+      
+      console.log('✅ Queries invalidated and refetched');
+      toast.success('Story moved to trash successfully!');
+    },
+    onError: (error: any, storyId) => {
+      console.error('❌ Failed to move story to trash:', storyId, error);
+      toast.error(error.response?.data?.message || 'Failed to move story to trash');
+    },
+  });
+};
+
+export const useRestoreStoryFromTrash = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => storiesApi.restoreStoryFromTrash(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
+      toast.success('Story restored successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to restore story');
+    },
+  });
+};
+
+export const usePermanentlyDeleteStory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => storiesApi.permanentlyDeleteStory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
+      toast.success('Story permanently deleted!');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to permanently delete story');
     },
   });
 };

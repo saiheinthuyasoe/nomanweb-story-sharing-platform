@@ -14,6 +14,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import com.app.nomanweb_backend.entity.GiftTransaction;
+import com.app.nomanweb_backend.entity.ChapterPurchase;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,8 +59,9 @@ public class Story {
     private Category category;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "publish_status")
     @Builder.Default
-    private Status status = Status.DRAFT;
+    private PublishStatus publishStatus = PublishStatus.DRAFT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "pricing_type")
@@ -66,9 +69,9 @@ public class Story {
     private PricingType pricingType = PricingType.FREE;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "content_status")
+    @Column(name = "book_status")
     @Builder.Default
-    private ContentStatus contentStatus = ContentStatus.ONGOING;
+    private BookStatus bookStatus = BookStatus.ONGOING;
 
     @Column(name = "total_chapters")
     @Builder.Default
@@ -124,6 +127,13 @@ public class Story {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted = false;
+
     // Relationships
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -145,16 +155,26 @@ public class Story {
     @Builder.Default
     private List<ReadingList> readingLists = new ArrayList<>();
 
+    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<GiftTransaction> giftTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<ChapterPurchase> chapterPurchases = new ArrayList<>();
+
     // Enums
-    public enum Status {
-        DRAFT, PUBLISHED, COMPLETED, SUSPENDED
+    public enum PublishStatus {
+        DRAFT, PUBLISHED, COMPLETED, PENDING
     }
 
     public enum PricingType {
         FREE, PAID_PER_CHAPTER, WHOLE_BOOK
     }
 
-    public enum ContentStatus {
+    public enum BookStatus {
         ONGOING, COMPLETED
     }
 
@@ -192,7 +212,7 @@ public class Story {
     }
 
     public boolean isPublished() {
-        return this.status == Status.PUBLISHED;
+        return this.publishStatus == PublishStatus.PUBLISHED;
     }
 
     public boolean isApproved() {
@@ -213,5 +233,20 @@ public class Story {
 
     public boolean isPaid() {
         return this.pricingType == PricingType.PAID_PER_CHAPTER || this.pricingType == PricingType.WHOLE_BOOK;
+    }
+
+    // Trash management helper methods
+    public void moveToTrash() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restoreFromTrash() {
+        this.isDeleted = false;
+        this.deletedAt = null;
+    }
+
+    public boolean isInTrash() {
+        return this.isDeleted != null && this.isDeleted;
     }
 }

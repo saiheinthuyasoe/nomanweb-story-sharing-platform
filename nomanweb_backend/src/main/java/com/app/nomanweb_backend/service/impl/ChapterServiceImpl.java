@@ -8,8 +8,10 @@ import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CoinTransactionRepository;
+import com.app.nomanweb_backend.repository.ChapterPurchaseRepository;
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.CollaborationService;
+import com.app.nomanweb_backend.service.ViewTrackingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,7 +39,9 @@ public class ChapterServiceImpl implements ChapterService {
     private final StoryRepository storyRepository;
     private final UserRepository userRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final CollaborationService collaborationService;
+    private final ViewTrackingService viewTrackingService;
 
     private static final int WORDS_PER_MINUTE = 200; // Average reading speed
 
@@ -60,8 +64,8 @@ public class ChapterServiceImpl implements ChapterService {
                     .orElse(0) + 1;
         }
 
-        // Validate chapter number doesn't exist
-        if (chapterRepository.existsByStoryAndChapterNumber(story, chapterNumber)) {
+        // Validate chapter number doesn't exist (only for non-deleted)
+        if (chapterRepository.countByStoryAndChapterNumberAndNotDeleted(story, chapterNumber) > 0) {
             throw new IllegalArgumentException("Chapter number " + chapterNumber + " already exists");
         }
 
@@ -185,8 +189,11 @@ public class ChapterServiceImpl implements ChapterService {
             chapter.setIsFree(request.getIsFree());
         }
         if (request.getChapterNumber() != null && !request.getChapterNumber().equals(chapter.getChapterNumber())) {
-            // Validate that the new chapter number doesn't already exist
-            if (chapterRepository.existsByStoryAndChapterNumber(chapter.getStory(), request.getChapterNumber())) {
+            // Validate that the new chapter number doesn't already exist (only for
+            // non-deleted)
+            // Exclude the current chapter being updated to allow keeping the same number
+            if (chapterRepository.countByStoryAndChapterNumberAndNotDeletedExcluding(chapter.getStory(),
+                    request.getChapterNumber(), chapter.getId()) > 0) {
                 throw new IllegalArgumentException(
                         "Chapter number " + request.getChapterNumber() + " already exists in this story");
             }
@@ -426,6 +433,10 @@ public class ChapterServiceImpl implements ChapterService {
 
     @Override
     public void incrementChapterViews(UUID chapterId) {
+        // This method is now deprecated in favor of trackChapterView
+        // Keeping it for backward compatibility but it should not be used
+        log.warn("incrementChapterViews is deprecated. Use ViewTrackingService.trackChapterView instead.");
+
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
@@ -508,11 +519,32 @@ public class ChapterServiceImpl implements ChapterService {
     @Override
     @Transactional(readOnly = true)
     public boolean hasUserPurchasedChapter(UUID chapterId, UUID userId) {
+        log.info("Checking if user {} has purchased chapter {}", userId, chapterId);
+
         // Check if user has a successful coin transaction for this chapter
-        return coinTransactionRepository.existsByUserIdAndReferenceIdAndReferenceTypeAndTransactionTypeAndStatus(
-                userId, chapterId, com.app.nomanweb_backend.entity.CoinTransaction.ReferenceType.CHAPTER,
-                com.app.nomanweb_backend.entity.CoinTransaction.TransactionType.PURCHASE,
-                com.app.nomanweb_backend.entity.CoinTransaction.Status.COMPLETED);
+        boolean hasPurchased = coinTransactionRepository
+                .existsByUserIdAndReferenceIdAndReferenceTypeAndTransactionTypeAndStatus(
+                        userId, chapterId, com.app.nomanweb_backend.entity.CoinTransaction.ReferenceType.CHAPTER,
+                        com.app.nomanweb_backend.entity.CoinTransaction.TransactionType.PURCHASE,
+                        com.app.nomanweb_backend.entity.CoinTransaction.Status.COMPLETED);
+
+        log.info("User {} purchase check for chapter {}: {}", userId, chapterId, hasPurchased);
+
+        // Also check ChapterPurchase table as fallback
+        if (!hasPurchased) {
+            Chapter chapter = chapterRepository.findById(chapterId).orElse(null);
+            if (chapter != null) {
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null) {
+                    boolean hasChapterPurchase = chapterPurchaseRepository.existsByUserAndChapter(user, chapter);
+                    log.info("ChapterPurchase fallback check for user {} and chapter {}: {}", userId, chapterId,
+                            hasChapterPurchase);
+                    return hasChapterPurchase;
+                }
+            }
+        }
+
+        return hasPurchased;
     }
 
     @Override

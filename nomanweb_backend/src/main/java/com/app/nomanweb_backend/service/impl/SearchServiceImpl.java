@@ -225,7 +225,7 @@ public class SearchServiceImpl implements SearchService {
 
         // Use database for popular stories - order by views/likes
         Pageable pageable = PageRequest.of(page, size);
-        return storyRepository.findPopularStories(Story.Status.PUBLISHED, pageable).getContent();
+        return storyRepository.findPopularStories(Story.PublishStatus.PUBLISHED, pageable).getContent();
     }
 
     @Override
@@ -234,7 +234,8 @@ public class SearchServiceImpl implements SearchService {
 
         // Use database for recent stories - order by created date
         Pageable pageable = PageRequest.of(page, size);
-        return storyRepository.findByStatusOrderByCreatedAtDesc(Story.Status.PUBLISHED, pageable).getContent();
+        return storyRepository.findByPublishStatusOrderByCreatedAtDesc(Story.PublishStatus.PUBLISHED, pageable)
+                .getContent();
     }
 
     @Override
@@ -243,7 +244,8 @@ public class SearchServiceImpl implements SearchService {
 
         // Use database for featured stories - filter by featured flag
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return storyRepository.findByIsFeaturedTrueAndStatus(Story.Status.PUBLISHED, pageable).getContent();
+        return storyRepository.findByIsFeaturedTrueAndPublishStatus(Story.PublishStatus.PUBLISHED, pageable)
+                .getContent();
     }
 
     @Override
@@ -473,7 +475,7 @@ public class SearchServiceImpl implements SearchService {
         document.put("category_name", story.getCategory() != null ? story.getCategory().getName() : "");
         document.put("tags", story.getTags() != null ? story.getTags() : new ArrayList<>());
         document.put("pricing_type", story.getPricingType().toString());
-        document.put("status", story.getStatus().toString());
+        document.put("status", story.getPublishStatus().toString());
         document.put("total_views", story.getTotalViews() != null ? story.getTotalViews() : 0L);
         document.put("total_likes", story.getTotalLikes() != null ? story.getTotalLikes() : 0L);
         document.put("created_at", story.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC));
@@ -541,7 +543,7 @@ public class SearchServiceImpl implements SearchService {
     private List<Story> searchStoriesFromDatabase(String query, int page, int size) {
         // Fallback database search
         Pageable pageable = PageRequest.of(page, size);
-        return storyRepository.searchByTitleOrDescription(query, Story.Status.PUBLISHED, pageable).getContent();
+        return storyRepository.searchByTitleOrDescription(query, Story.PublishStatus.PUBLISHED, pageable).getContent();
     }
 
     private List<User> searchUsersFromDatabase(String query, int page, int size) {

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { apiClient } from '@/lib/api/client';
 import { preloadImage, isImageCached, markImageAsCached, getCachedImageResult, shouldAttemptOAuthImageLoad } from '@/lib/imageLoader';
+import { ImageCropModal } from './ImageCropModal';
 
 interface ProfileImageUploadProps {
   value?: string;
@@ -54,6 +55,8 @@ export function ProfileImageUpload({
   const [mode, setMode] = useState<UploadMode>('choose');
   const [urlInput, setUrlInput] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const config = sizeConfig[size];
@@ -77,12 +80,21 @@ export function ProfileImageUpload({
       return;
     }
 
+    // Create a preview URL for cropping
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setShowCropModal(true);
+    setShowModal(false);
+    setMode('choose');
+  }, [validateFile]);
+
+  const handleCropComplete = useCallback(async (croppedFile: File) => {
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', croppedFile);
 
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -102,8 +114,8 @@ export function ProfileImageUpload({
       if (result.success && result.imageUrl) {
         toast.success('Profile image uploaded successfully!');
         onChange?.(result.imageUrl);
-        setShowModal(false);
-        setMode('choose');
+        setShowCropModal(false);
+        setImageToCrop('');
       } else {
         throw new Error(result.message || 'Upload failed');
       }
@@ -116,7 +128,7 @@ export function ProfileImageUpload({
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [onChange, validateFile]);
+  }, [onChange]);
 
   const handleUrlSubmit = useCallback(() => {
     if (!urlInput.trim()) {
@@ -189,6 +201,15 @@ export function ProfileImageUpload({
     setShowModal(false);
     setMode('choose');
     setUrlInput('');
+  };
+
+  const closeCropModal = () => {
+    setShowCropModal(false);
+    setImageToCrop('');
+    // Clean up the object URL to prevent memory leaks
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+    }
   };
 
   // Main profile image display component
@@ -284,17 +305,19 @@ export function ProfileImageUpload({
               </div>
             )}
 
-            {/* Simple circular image display - only show if successfully preloaded */}
+            {/* Profile image display - only show if successfully preloaded */}
             {!imageError && value && imageLoaded && (
-              <img 
-                src={value} 
-                alt="Profile"
-                className={`${config.container} object-cover border-2 border-gray-200 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300`}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                loading="eager"
-                crossOrigin="anonymous"
-              />
+              <div className={`${config.container} border-2 border-gray-200 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden`}>
+                <img 
+                  src={value} 
+                  alt="Profile"
+                  className="w-full h-full object-cover object-center"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  loading="eager"
+                  crossOrigin="anonymous"
+                />
+              </div>
             )}
 
             {/* Edit button overlay - positioned outside the image */}
@@ -508,7 +531,7 @@ export function ProfileImageUpload({
             
             <div className="space-y-2 text-sm text-gray-500">
               <p>Supports: {acceptedFileTypes.map(type => type.split('/')[1]).join(', ').toUpperCase()}</p>
-              <p>Max size: {maxFileSize}MB • Recommended: Square image (500×500px)</p>
+              <p>Max size: {maxFileSize}MB • Will be cropped to square format</p>
             </div>
           </div>
         )}
@@ -552,7 +575,7 @@ export function ProfileImageUpload({
               <img
                 src={urlInput}
                 alt="URL Preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
@@ -609,6 +632,16 @@ export function ProfileImageUpload({
           </div>
         </div>
       )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={closeCropModal}
+        onCrop={handleCropComplete}
+        imageSrc={imageToCrop}
+        aspectRatio={1} // 1:1 aspect ratio for profile images
+        title="Crop Profile Picture"
+      />
     </div>
   );
 } 

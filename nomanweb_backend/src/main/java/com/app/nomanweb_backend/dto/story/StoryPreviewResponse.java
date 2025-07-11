@@ -23,9 +23,9 @@ public class StoryPreviewResponse {
     // Category information (minimal)
     private CategoryInfo category;
 
-    private Story.Status status;
+    private Story.PublishStatus publishStatus;
     private Story.PricingType pricingType;
-    private Story.ContentStatus contentStatus;
+    private Story.BookStatus bookStatus;
     private Story.ModerationStatus moderationStatus;
 
     // Key statistics
@@ -38,6 +38,10 @@ public class StoryPreviewResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime publishedAt;
+
+    // Trash management
+    private Boolean isDeleted;
+    private LocalDateTime deletedAt;
 
     @Data
     @Builder

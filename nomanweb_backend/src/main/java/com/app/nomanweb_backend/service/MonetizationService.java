@@ -27,6 +27,11 @@ public interface MonetizationService {
 
     Page<GiftTransactionResponse> getPurchaseHistory(User user, Pageable pageable);
 
+    // Book Purchase System
+    boolean canAccessBook(User user, UUID storyId);
+
+    GiftTransactionResponse purchaseBook(User user, PurchaseBookRequest request);
+
     // Coin Management
     void addCoins(User user, BigDecimal amount, String description);
 

@@ -8,6 +8,7 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.service.ViewTrackingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,7 @@ public class ReadingProgressController {
     private final StoryRepository storyRepository;
     private final ChapterRepository chapterRepository;
     private final UserRepository userRepository;
+    private final ViewTrackingService viewTrackingService;
 
     @PostMapping("/chapter/{chapterId}/update")
     public ResponseEntity<?> updateReadingProgress(@PathVariable UUID chapterId,
@@ -98,15 +100,10 @@ public class ReadingProgressController {
 
             readingProgressRepository.save(progress);
 
-            // Increment chapter views if this is the first time reading (progress was 0)
+            // Track view if this is the first time reading (progress was 0)
             if (existingProgress.isEmpty() ||
                     existingProgress.get().getProgressPercentage().compareTo(BigDecimal.ZERO) == 0) {
-                chapter.incrementViews();
-                chapterRepository.save(chapter);
-
-                // Also increment story views
-                story.incrementViews();
-                storyRepository.save(story);
+                viewTrackingService.trackChapterView(chapterId, user.getId());
             }
 
             Map<String, Object> response = new HashMap<>();

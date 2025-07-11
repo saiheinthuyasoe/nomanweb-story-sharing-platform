@@ -113,4 +113,19 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
         // Find chapters in trash older than specified date (for cleanup)
         @Query("SELECT c FROM Chapter c WHERE c.isDeleted = true AND c.deletedAt < :cutoffDate")
         List<Chapter> findTrashOlderThan(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+        // Count non-deleted chapters by story and chapter number
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND c.isDeleted = false")
+        long countByStoryAndChapterNumberAndNotDeleted(@Param("story") Story story,
+                        @Param("chapterNumber") Integer chapterNumber);
+
+        // Count non-deleted chapters by story and chapter number, excluding a specific
+        // chapter (for updates)
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND c.isDeleted = false AND c.id != :excludeChapterId")
+        long countByStoryAndChapterNumberAndNotDeletedExcluding(@Param("story") Story story,
+                        @Param("chapterNumber") Integer chapterNumber,
+                        @Param("excludeChapterId") UUID excludeChapterId);
+
+        // Find chapters with views greater than specified value
+        List<Chapter> findByViewsGreaterThan(Long views);
 }

@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import { authApi } from '@/lib/api/auth';
 import { User } from '@/types/user';
 import toast from 'react-hot-toast';
+import { handleApiError } from '@/lib/utils/errorHandling';
 
 interface AuthContextType {
   user: User | null;
@@ -62,9 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const token = Cookies.get('token');
+      const refreshToken = Cookies.get('refreshToken');
+      
+      console.log('🔍 AuthContext checkAuth:', { 
+        hasToken: !!token, 
+        hasRefreshToken: !!refreshToken,
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'null'
+      });
+      
       if (token) {
         const userData = await authApi.getProfile();
+        console.log('✅ User profile loaded:', userData);
         setUser(userData);
+      } else {
+        console.log('❌ No token found in cookies');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -84,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success('Login successful!');
       router.push('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      handleApiError(error, 'Login failed');
       throw error;
     }
   };
@@ -106,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/verify-email-pending?email=' + encodeURIComponent(userData.email));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      handleApiError(error, 'Registration failed');
       throw error;
     }
   };
@@ -133,9 +145,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const setAuthData = (token: string, refreshToken: string, user: User) => {
+    console.log('🔐 Setting auth data:', {
+      token: token ? token.substring(0, 20) + '...' : 'null',
+      refreshToken: refreshToken ? refreshToken.substring(0, 20) + '...' : 'null',
+      user: user ? { id: user.id, email: user.email, username: user.username } : 'null'
+    });
+    
     Cookies.set('token', token, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
     Cookies.set('refreshToken', refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
     setUser(user);
+    
+    console.log('✅ Auth data set successfully');
   };
 
   const updateTokens = (token: string, refreshToken: string) => {

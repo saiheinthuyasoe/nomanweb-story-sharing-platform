@@ -30,9 +30,9 @@ export interface Story {
   coverImageUrl?: string;
   author: AuthorInfo;
   category?: CategoryInfo;
-  status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
+  publishStatus: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
   pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
-  contentStatus: 'ONGOING' | 'COMPLETED';
+  bookStatus: 'ONGOING' | 'COMPLETED';
   moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
   totalViews: number;
@@ -55,9 +55,9 @@ export interface StoryPreview {
   coverImageUrl?: string;
   author: AuthorInfo;
   category?: CategoryInfo;
-  status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
+  publishStatus: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
   pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
-  contentStatus: 'ONGOING' | 'COMPLETED';
+  bookStatus: 'ONGOING' | 'COMPLETED';
   moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   totalChapters: number;
   totalViews: number;
@@ -66,6 +66,8 @@ export interface StoryPreview {
   tags: string[];
   createdAt: string;
   publishedAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface CreateStoryRequest {
@@ -73,7 +75,7 @@ export interface CreateStoryRequest {
   description?: string;
   categoryId?: string;
   pricingType?: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
-  contentStatus?: 'ONGOING' | 'COMPLETED';
+  bookStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
   bookPrice?: number;
@@ -85,7 +87,7 @@ export interface UpdateStoryRequest {
   description?: string;
   categoryId?: string;
   pricingType?: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
-  contentStatus?: 'ONGOING' | 'COMPLETED';
+  bookStatus?: 'ONGOING' | 'COMPLETED';
   tags?: string[];
   coverImageUrl?: string;
   bookPrice?: number;

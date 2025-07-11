@@ -12,6 +12,10 @@ public interface EmailService {
 
     void sendPasswordChangeNotification(User user);
 
+    void sendEmailChangeNotification(User user, String oldEmail);
+
+    void sendEmailChangeVerificationEmail(User user, String newEmail, String verificationToken);
+
     void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
             String role, String invitationUrl, String customMessage);
 }

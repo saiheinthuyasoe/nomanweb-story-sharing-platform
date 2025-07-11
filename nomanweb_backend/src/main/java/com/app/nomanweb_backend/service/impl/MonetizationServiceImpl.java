@@ -27,6 +27,7 @@ public class MonetizationServiceImpl implements MonetizationService {
     private final GiftRepository giftRepository;
     private final GiftTransactionRepository giftTransactionRepository;
     private final ChapterPurchaseRepository chapterPurchaseRepository;
+    private final BookPurchaseRepository bookPurchaseRepository;
     private final CoinTransactionRepository coinTransactionRepository;
     private final UserRepository userRepository;
     private final ChapterRepository chapterRepository;
@@ -173,7 +174,10 @@ public class MonetizationServiceImpl implements MonetizationService {
         }
 
         // Deduct coins from user
-        deductCoins(user, chapter.getCoinPrice(), "Chapter purchase: " + chapter.getTitle());
+        log.info("Deducting {} coins from user {} for chapter purchase: {}",
+                chapter.getCoinPrice(), user.getId(), chapter.getId());
+        deductCoins(user, chapter.getCoinPrice(), "Chapter purchase: " + chapter.getTitle(),
+                chapter.getId(), CoinTransaction.ReferenceType.CHAPTER);
 
         // Add earnings to author (70% of chapter price)
         BigDecimal authorEarnings = chapter.getCoinPrice().multiply(new BigDecimal("0.70"));
@@ -233,6 +237,95 @@ public class MonetizationServiceImpl implements MonetizationService {
     }
 
     @Override
+    public boolean canAccessBook(User user, UUID storyId) {
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        // Free stories are always accessible
+        if (story.getPricingType() == Story.PricingType.FREE) {
+            return true;
+        }
+
+        // Check if user is the author
+        if (story.getAuthor().getId().equals(user.getId())) {
+            return true;
+        }
+
+        // For WHOLE_BOOK pricing, check if user has purchased the book
+        if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
+            return bookPurchaseRepository.existsByUserAndStory(user, story);
+        }
+
+        // For PAID_PER_CHAPTER pricing, book access is not applicable
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public GiftTransactionResponse purchaseBook(User user, PurchaseBookRequest request) {
+        Story story = storyRepository.findById(request.getStoryId())
+                .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        // Check if story is available for whole book purchase
+        if (story.getPricingType() != Story.PricingType.WHOLE_BOOK) {
+            throw new RuntimeException("Story is not available for whole book purchase");
+        }
+
+        // Check if user is the author
+        if (story.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("Authors can read their own stories for free");
+        }
+
+        // Check if already purchased
+        if (bookPurchaseRepository.existsByUserAndStory(user, story)) {
+            throw new RuntimeException("Book already purchased");
+        }
+
+        // Check if user has enough coins
+        if (!user.hasEnoughCoins(story.getBookPrice())) {
+            throw new RuntimeException("Insufficient coins");
+        }
+
+        // Deduct coins from user
+        deductCoins(user, story.getBookPrice(), "Book purchase: " + story.getTitle(),
+                story.getId(), CoinTransaction.ReferenceType.STORY);
+
+        // Add earnings to author (70% of book price)
+        BigDecimal authorEarnings = story.getBookPrice().multiply(new BigDecimal("0.70"));
+        addCoins(story.getAuthor(), authorEarnings, "Book sale: " + story.getTitle());
+
+        // Create purchase record
+        BookPurchase purchase = BookPurchase.builder()
+                .user(user)
+                .story(story)
+                .coinsSpent(story.getBookPrice())
+                .build();
+
+        bookPurchaseRepository.save(purchase);
+
+        // Send notification to author
+        try {
+            notificationService.createNotification(
+                    story.getAuthor().getId(),
+                    Notification.NotificationType.SYSTEM,
+                    "Book Purchased",
+                    user.getDisplayNameOrUsername() + " purchased your book: " + story.getTitle(),
+                    Notification.RelatedType.STORY,
+                    story.getId());
+        } catch (Exception e) {
+            log.warn("Failed to send book purchase notification", e);
+        }
+
+        // Return response (reusing GiftTransactionResponse for consistency)
+        return GiftTransactionResponse.builder()
+                .id(purchase.getId())
+                .totalCoins(purchase.getCoinsSpent())
+                .createdAt(purchase.getPurchasedAt())
+                .story(convertToStorySummary(story))
+                .build();
+    }
+
+    @Override
     @Transactional
     public void addCoins(User user, BigDecimal amount, String description) {
         BigDecimal balanceBefore = user.getCoinBalance();
@@ -256,6 +349,12 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Override
     @Transactional
     public void deductCoins(User user, BigDecimal amount, String description) {
+        deductCoins(user, amount, description, null, null);
+    }
+
+    @Transactional
+    public void deductCoins(User user, BigDecimal amount, String description, UUID referenceId,
+            CoinTransaction.ReferenceType referenceType) {
         BigDecimal balanceBefore = user.getCoinBalance();
         user.subtractCoins(amount);
         userRepository.save(user);
@@ -268,10 +367,14 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .balanceBefore(balanceBefore)
                 .balanceAfter(user.getCoinBalance())
                 .description(description)
+                .referenceId(referenceId)
+                .referenceType(referenceType)
                 .status(CoinTransaction.Status.COMPLETED)
                 .build();
 
-        coinTransactionRepository.save(transaction);
+        transaction = coinTransactionRepository.save(transaction);
+        log.info("Created CoinTransaction: id={}, userId={}, referenceId={}, referenceType={}, amount={}",
+                transaction.getId(), user.getId(), referenceId, referenceType, amount);
     }
 
     @Override

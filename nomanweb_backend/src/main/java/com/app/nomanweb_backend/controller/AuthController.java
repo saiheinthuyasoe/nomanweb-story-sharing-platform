@@ -3,6 +3,10 @@ package com.app.nomanweb_backend.controller;
 import com.app.nomanweb_backend.dto.auth.LoginRequest;
 import com.app.nomanweb_backend.dto.auth.LoginResponse;
 import com.app.nomanweb_backend.dto.auth.RegisterRequest;
+import com.app.nomanweb_backend.dto.auth.EmailChangeRequest;
+import com.app.nomanweb_backend.dto.auth.OAuthEmailChangeRequest;
+import com.app.nomanweb_backend.dto.auth.UsernameChangeRequest;
+import com.app.nomanweb_backend.dto.auth.OAuthUsernameChangeRequest;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.AuthService;
 import com.app.nomanweb_backend.service.RateLimitService;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -202,6 +207,157 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-email")
+    public ResponseEntity<Map<String, String>> changeEmail(@Valid @RequestBody EmailChangeRequest request,
+            HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Check rate limit
+        if (!rateLimitService.isAllowed(clientIp, RateLimitService.RateLimitType.EMAIL_CHANGE)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many email change requests. Please try again later."));
+        }
+
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            authService.changeEmail(userId, request.getCurrentPassword(), request.getNewEmail(), clientIp, userAgent);
+            return ResponseEntity.ok(Map.of("message", "Email change verification sent to new email address"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-email-oauth")
+    public ResponseEntity<Map<String, String>> changeEmailOAuth(@Valid @RequestBody OAuthEmailChangeRequest request,
+            HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Check rate limit
+        if (!rateLimitService.isAllowed(clientIp, RateLimitService.RateLimitType.EMAIL_CHANGE)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many email change requests. Please try again later."));
+        }
+
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            authService.changeEmailOAuth(userId, request.getNewEmail(), clientIp, userAgent);
+            return ResponseEntity.ok(Map.of("message", "Email change verification sent to new email address"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-email-change")
+    public ResponseEntity<Map<String, String>> verifyEmailChange(@RequestBody Map<String, String> request) {
+        try {
+            String token = request.get("token");
+            authService.verifyEmailChange(token);
+            return ResponseEntity.ok(Map.of("message", "Email changed successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/resend-email-change-verification")
+    public ResponseEntity<Map<String, String>> resendEmailChangeVerification(@RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+
+        // Check rate limit
+        if (!rateLimitService.isAllowed(clientIp, RateLimitService.RateLimitType.EMAIL_CHANGE)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many requests. Please try again later."));
+        }
+
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            String newEmail = request.get("newEmail");
+            authService.resendEmailChangeVerification(userId, newEmail);
+            return ResponseEntity.ok(Map.of("message", "Email change verification resent"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-username")
+    public ResponseEntity<Map<String, String>> changeUsername(@Valid @RequestBody UsernameChangeRequest request,
+            HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Check rate limit
+        if (!rateLimitService.isAllowed(clientIp, RateLimitService.RateLimitType.USERNAME_CHANGE)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many username change requests. Please try again later."));
+        }
+
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            authService.changeUsername(userId, request.getCurrentPassword(), request.getNewUsername(), clientIp,
+                    userAgent);
+            return ResponseEntity.ok(Map.of("message", "Username changed successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-username-oauth")
+    public ResponseEntity<Map<String, String>> changeUsernameOAuth(
+            @Valid @RequestBody OAuthUsernameChangeRequest request,
+            HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Check rate limit
+        if (!rateLimitService.isAllowed(clientIp, RateLimitService.RateLimitType.USERNAME_CHANGE)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "Too many username change requests. Please try again later."));
+        }
+
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            authService.changeUsernameOAuth(userId, request.getNewUsername(), clientIp, userAgent);
+            return ResponseEntity.ok(Map.of("message", "Username changed successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/debug-user")
+    public ResponseEntity<Map<String, Object>> debugUser(HttpServletRequest request) {
+        try {
+            UUID userId = getUserIdFromRequest(request);
+            User user = authService.getCurrentUser(userId);
+
+            Map<String, Object> debugInfo = new HashMap<>();
+            debugInfo.put("userId", user.getId().toString());
+            debugInfo.put("email", user.getEmail());
+            debugInfo.put("username", user.getUsername());
+            debugInfo.put("role", user.getRole().toString());
+            debugInfo.put("status", user.getStatus().toString());
+            debugInfo.put("isActive", user.isActive());
+            debugInfo.put("emailVerified", user.getEmailVerified());
+            debugInfo.put("googleId", user.getGoogleId());
+            debugInfo.put("lineUserId", user.getLineUserId());
+            debugInfo.put("lastLoginAt", user.getLastLoginAt());
+            debugInfo.put("createdAt", user.getCreatedAt());
+
+            return ResponseEntity.ok(debugInfo);
+        } catch (RuntimeException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 

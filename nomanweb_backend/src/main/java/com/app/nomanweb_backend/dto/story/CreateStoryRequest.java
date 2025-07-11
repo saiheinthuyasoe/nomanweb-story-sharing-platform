@@ -32,7 +32,7 @@ public class CreateStoryRequest {
     private Story.PricingType pricingType = Story.PricingType.FREE;
 
     @Builder.Default
-    private Story.ContentStatus contentStatus = Story.ContentStatus.ONGOING;
+    private Story.BookStatus bookStatus = Story.BookStatus.ONGOING;
 
     private List<String> tags;
 

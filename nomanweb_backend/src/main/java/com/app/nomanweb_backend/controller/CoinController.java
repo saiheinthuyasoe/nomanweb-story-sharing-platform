@@ -43,6 +43,7 @@ public class CoinController {
 
             // Store emitter for this user
             coinBalanceEmitters.put(userId, emitter);
+            log.info("✅ User {} connected to SSE balance updates. Total connections: {}", userId, coinBalanceEmitters.size());
 
             // Send initial connection message
             emitter.send(SseEmitter.event()
@@ -77,6 +78,9 @@ public class CoinController {
     // AdminCoinController)
     public static void broadcastCoinBalanceUpdate(UUID userId, BigDecimal newBalance) {
         SseEmitter emitter = coinBalanceEmitters.get(userId);
+        log.info("Attempting to broadcast balance update to user {}: {}", userId, newBalance);
+        log.info("Active SSE connections: {}", coinBalanceEmitters.keySet());
+        
         if (emitter != null) {
             try {
                 Map<String, Object> update = new HashMap<>();
@@ -89,11 +93,13 @@ public class CoinController {
                         .name("balance_update")
                         .data(update));
 
-                log.info("Broadcasted balance update to user {}: {}", userId, newBalance);
+                log.info("✅ Successfully broadcasted balance update to user {}: {}", userId, newBalance);
             } catch (IOException e) {
-                log.error("Error broadcasting balance update to user: {}", userId, e);
+                log.error("❌ Error broadcasting balance update to user: {}", userId, e);
                 coinBalanceEmitters.remove(userId);
             }
+        } else {
+            log.warn("⚠️ No SSE emitter found for user: {}. User may not be connected to SSE endpoint.", userId);
         }
     }
 

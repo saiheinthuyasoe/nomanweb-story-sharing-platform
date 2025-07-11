@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { authApi } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
+import { handleApiError } from '@/lib/utils/errorHandling';
 
 interface ResendForm {
   email: string;
@@ -14,6 +15,25 @@ interface ResendForm {
 export default function ResendVerificationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [canResend, setCanResend] = useState(true);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (cooldownTime > 0) {
+      interval = setInterval(() => {
+        setCooldownTime((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [cooldownTime]);
 
   const {
     register,
@@ -23,13 +43,22 @@ export default function ResendVerificationPage() {
   } = useForm<ResendForm>();
 
   const onSubmit = async (data: ResendForm) => {
+    if (!canResend) {
+      toast.error(`Please wait ${cooldownTime} seconds before resending`);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await authApi.resendVerification();
+      await authApi.resendVerification(data.email);
       setEmailSent(true);
       toast.success('Verification email sent successfully!');
+      
+      // Start cooldown timer (60 seconds)
+      setCooldownTime(60);
+      setCanResend(false);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to send verification email');
+      handleApiError(error, 'Failed to send verification email');
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +132,7 @@ export default function ResendVerificationPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !canResend}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
@@ -111,6 +140,8 @@ export default function ResendVerificationPage() {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Sending...
               </div>
+            ) : !canResend ? (
+              `Send Verification Email (${cooldownTime}s)`
             ) : (
               'Send Verification Email'
             )}

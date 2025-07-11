@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Coins, Lock, CreditCard } from 'lucide-react';
+import { usePurchaseChapter } from '@/hooks/useChapterPurchase';
+import { useCoinBalance } from '@/hooks/useCoinBalance';
 
 interface ChapterPurchaseModalProps {
   isOpen: boolean;
@@ -21,64 +23,24 @@ export default function ChapterPurchaseModal({
   coinPrice,
   onPurchaseComplete,
 }: ChapterPurchaseModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [coinBalance, setCoinBalance] = useState(0);
+  const { data: coinBalance = 0 } = useCoinBalance(isOpen);
+  const { mutate: purchaseChapter, isPending: loading } = usePurchaseChapter();
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchCoinBalance();
-    }
-  }, [isOpen]);
-
-  const fetchCoinBalance = async () => {
-    try {
-      const response = await fetch('/api/monetization/balance', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const balance = await response.json();
-        setCoinBalance(balance);
-      }
-    } catch (error) {
-      console.error('Error fetching coin balance:', error);
-    }
-  };
-
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     if (coinPrice > coinBalance) {
       alert('Insufficient coins');
       return;
     }
 
-    setLoading(true);
-    try {
-      const response = await fetch('/api/monetization/chapters/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    purchaseChapter(
+      { chapterId },
+      {
+        onSuccess: () => {
+          onPurchaseComplete?.();
+          onClose();
         },
-        body: JSON.stringify({
-          chapterId,
-        }),
-      });
-
-      if (response.ok) {
-        alert('Chapter purchased successfully!');
-        onPurchaseComplete?.();
-        onClose();
-      } else {
-        const error = await response.text();
-        alert(`Failed to purchase chapter: ${error}`);
       }
-    } catch (error) {
-      console.error('Error purchasing chapter:', error);
-      alert('Failed to purchase chapter');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const canAfford = coinPrice <= coinBalance;

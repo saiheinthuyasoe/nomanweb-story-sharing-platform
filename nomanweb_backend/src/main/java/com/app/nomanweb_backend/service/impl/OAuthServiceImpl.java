@@ -7,6 +7,7 @@ import com.app.nomanweb_backend.service.FirebaseService;
 import com.app.nomanweb_backend.service.LineOAuthService;
 import com.app.nomanweb_backend.service.OAuthService;
 import com.app.nomanweb_backend.service.ProfileImageDownloadService;
+import com.app.nomanweb_backend.service.RefreshTokenService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import com.google.firebase.auth.FirebaseToken;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final ProfileImageDownloadService profileImageDownloadService;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public LoginResponse authenticateWithGoogle(String idToken) {
@@ -102,16 +104,16 @@ public class OAuthServiceImpl implements OAuthService {
 
             user = userRepository.save(user);
 
-            // Generate JWT tokens
+            // Generate JWT tokens - use RefreshTokenService to properly store refresh token
             String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+            var refreshTokenEntity = refreshTokenService.createRefreshTokenForLogin(user);
 
             log.info("Google OAuth successful for user: {}", user.getEmail());
 
             return LoginResponse.builder()
                     .user(user)
                     .token(token)
-                    .refreshToken(refreshToken)
+                    .refreshToken(refreshTokenEntity.getToken())
                     .build();
 
         } catch (Exception e) {
@@ -148,10 +150,7 @@ public class OAuthServiceImpl implements OAuthService {
                     }
                 }
             } else {
-                // Create new user (LINE doesn't provide email, so we'll need to collect it
-                // later)
-                String tempEmail = generateUsernameFromLineId(lineUserId) + "@line.temp";
-
+                // Create new user (LINE doesn't provide email)
                 String cloudinaryImageUrl = null;
                 if (pictureUrl != null) {
                     // Download and store the image in Cloudinary
@@ -159,31 +158,31 @@ public class OAuthServiceImpl implements OAuthService {
                 }
 
                 user = User.builder()
-                        .email(tempEmail) // Set temporary email to satisfy validation
+                        .email(generateUsernameFromLineId(lineUserId) + "@line.temp") // Temporary email
                         .username(generateUsernameFromLineId(lineUserId))
                         .displayName(displayName)
                         .lineUserId(lineUserId)
                         .profileImageUrl(cloudinaryImageUrl)
                         .role(User.Role.USER)
                         .status(User.Status.ACTIVE)
-                        .emailVerified(false) // Will need to collect email separately
+                        .emailVerified(false) // LINE doesn't provide email verification
                         .lastLoginAt(LocalDateTime.now())
                         .build();
             }
 
             user = userRepository.save(user);
 
-            // Generate JWT tokens - handle case where email might be null
+            // Generate JWT tokens - use RefreshTokenService to properly store refresh token
             String userEmail = user.getEmail() != null ? user.getEmail() : user.getUsername() + "@line.temp";
             String token = jwtUtil.generateToken(user.getId(), userEmail, user.getRole().name());
-            String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+            var refreshTokenEntity = refreshTokenService.createRefreshTokenForLogin(user);
 
             log.info("LINE OAuth successful for user: {}", user.getLineUserId());
 
             return LoginResponse.builder()
                     .user(user)
                     .token(token)
-                    .refreshToken(refreshToken)
+                    .refreshToken(refreshTokenEntity.getToken())
                     .build();
 
         } catch (Exception e) {
@@ -245,31 +244,28 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     private String generateUsernameFromEmail(String email) {
-        String baseUsername = email.substring(0, email.indexOf('@'));
-        String username = baseUsername.replaceAll("[^a-zA-Z0-9_]", "_");
-
-        // Ensure uniqueness
-        String finalUsername = username;
+        String baseUsername = email.split("@")[0];
+        String username = baseUsername;
         int counter = 1;
-        while (userRepository.existsByUsername(finalUsername)) {
-            finalUsername = username + "_" + counter;
+
+        while (userRepository.existsByUsername(username)) {
+            username = baseUsername + counter;
             counter++;
         }
 
-        return finalUsername;
+        return username;
     }
 
     private String generateUsernameFromLineId(String lineUserId) {
-        String baseUsername = "line_" + lineUserId.substring(0, Math.min(lineUserId.length(), 10));
-
-        // Ensure uniqueness
-        String finalUsername = baseUsername;
+        String baseUsername = "line_" + lineUserId.substring(0, Math.min(8, lineUserId.length()));
+        String username = baseUsername;
         int counter = 1;
-        while (userRepository.existsByUsername(finalUsername)) {
-            finalUsername = baseUsername + "_" + counter;
+
+        while (userRepository.existsByUsername(username)) {
+            username = baseUsername + counter;
             counter++;
         }
 
-        return finalUsername;
+        return username;
     }
 }

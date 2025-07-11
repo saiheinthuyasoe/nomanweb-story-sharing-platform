@@ -17,7 +17,8 @@ export default function EditStoryPage() {
   const handleSubmit = (data: UpdateStoryRequest) => {
     updateStory({ id: storyId, data }, {
       onSuccess: (updatedStory) => {
-        router.push(`/dashboard/stories/${updatedStory.id}`);
+        // Don't redirect, just show success message
+        // The form will stay on the edit page
       }
     });
   };

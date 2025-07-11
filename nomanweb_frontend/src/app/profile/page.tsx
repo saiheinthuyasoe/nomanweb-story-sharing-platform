@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { authApi } from '@/lib/api/auth';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import { ProfileImageUpload } from '@/components/upload/ProfileImageUpload';
+import CoverImageUpload from '@/components/upload/CoverImageUpload';
 import { 
   Mail, 
   MapPin, 
@@ -37,28 +39,66 @@ export default function ProfilePage() {
   };
 
   const handleProfileImageChange = async (imageUrl: string) => {
-    // Update user profile image locally
-    updateUser({ ...user, profileImageUrl: imageUrl });
-    toast.success('Profile image updated successfully!');
-    
-    // Refresh user data from server to ensure persistence
     try {
-      await refreshUser();
+      // Update user profile image on the backend
+      const updatedUser = await authApi.updateProfile({
+        profileImageUrl: imageUrl,
+      });
+      
+      // Update user data in context
+      updateUser(updatedUser);
+      toast.success('Profile image updated successfully!');
     } catch (error) {
-      console.error('Failed to refresh user data:', error);
+      console.error('Failed to update profile image:', error);
+      toast.error('Failed to update profile image. Please try again.');
     }
   };
 
   const handleProfileImageRemove = async () => {
-    // Remove profile image
-    updateUser({ ...user, profileImageUrl: null });
-    toast.success('Profile image removed');
-    
-    // Refresh user data from server to ensure persistence
     try {
-      await refreshUser();
+      // Remove profile image on the backend
+      const updatedUser = await authApi.updateProfile({
+        profileImageUrl: null,
+      });
+      
+      // Update user data in context
+      updateUser(updatedUser);
+      toast.success('Profile image removed');
     } catch (error) {
-      console.error('Failed to refresh user data:', error);
+      console.error('Failed to remove profile image:', error);
+      toast.error('Failed to remove profile image. Please try again.');
+    }
+  };
+
+  const handleCoverImageChange = async (imageUrl: string) => {
+    try {
+      // Update user cover image on the backend
+      const updatedUser = await authApi.updateProfile({
+        coverImageUrl: imageUrl,
+      });
+      
+      // Update user data in context
+      updateUser(updatedUser);
+      toast.success('Cover image updated successfully!');
+    } catch (error) {
+      console.error('Failed to update cover image:', error);
+      toast.error('Failed to update cover image. Please try again.');
+    }
+  };
+
+  const handleCoverImageRemove = async () => {
+    try {
+      // Remove cover image on the backend
+      const updatedUser = await authApi.updateProfile({
+        coverImageUrl: null,
+      });
+      
+      // Update user data in context
+      updateUser(updatedUser);
+      toast.success('Cover image removed');
+    } catch (error) {
+      console.error('Failed to remove cover image:', error);
+      toast.error('Failed to remove cover image. Please try again.');
     }
   };
 
@@ -103,17 +143,37 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header Section */}
       <div className="relative">
-        {/* Cover Image - Decorative Gradient */}
-        <div className="h-64 sm:h-80 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/20"></div>
+        {/* Cover Image */}
+        <div className="h-64 sm:h-80 relative overflow-hidden">
+          {user.coverImageUrl ? (
+            <img 
+              src={user.coverImageUrl} 
+              alt="Profile cover"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+              <div className="absolute inset-0 bg-black/20"></div>
+              
+              {/* Decorative Pattern Overlay */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0" 
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+                    backgroundSize: '40px 40px'
+                  }} 
+                />
+              </div>
+            </div>
+          )}
           
-          {/* Decorative Pattern Overlay */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" 
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundSize: '40px 40px'
-              }} 
+          {/* Cover Image Upload Overlay */}
+          <div className="absolute top-4 right-4">
+            <CoverImageUpload
+              value={user.coverImageUrl || undefined}
+              onChange={handleCoverImageChange}
+              onRemove={handleCoverImageRemove}
+              className="w-32 h-20"
             />
           </div>
         </div>

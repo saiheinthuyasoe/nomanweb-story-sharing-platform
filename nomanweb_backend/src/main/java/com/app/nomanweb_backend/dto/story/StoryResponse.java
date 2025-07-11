@@ -24,9 +24,9 @@ public class StoryResponse {
     // Category information
     private CategoryInfo category;
 
-    private Story.Status status;
+    private Story.PublishStatus publishStatus;
     private Story.PricingType pricingType;
-    private Story.ContentStatus contentStatus;
+    private Story.BookStatus bookStatus;
     private Story.ModerationStatus moderationStatus;
 
     // Statistics

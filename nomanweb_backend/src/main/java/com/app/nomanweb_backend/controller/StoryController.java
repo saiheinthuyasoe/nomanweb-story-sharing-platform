@@ -5,6 +5,7 @@ import com.app.nomanweb_backend.dto.story.UpdateStoryRequest;
 import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.dto.story.StoryPreviewResponse;
 import com.app.nomanweb_backend.service.StoryService;
+import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +30,7 @@ public class StoryController {
 
     private final StoryService storyService;
     private final JwtUtil jwtUtil;
+    private final ViewTrackingService viewTrackingService;
 
     @PostMapping
     public ResponseEntity<StoryResponse> createStory(
@@ -51,11 +54,11 @@ public class StoryController {
         try {
             StoryResponse story = storyService.getStoryById(id);
 
-            // Only increment view count if explicitly requested and user is not the author
+            // Track view if explicitly requested and user is not the author
             if (incrementView) {
                 UUID currentUserId = getCurrentUserIdOptional(httpRequest);
                 if (currentUserId == null || !story.getAuthor().getId().equals(currentUserId)) {
-                    storyService.incrementViews(id);
+                    viewTrackingService.trackStoryView(id, currentUserId);
                 }
             }
 
@@ -95,24 +98,157 @@ public class StoryController {
         }
     }
 
+    // Trash management endpoints
+
+    // Move story to trash
+    @PostMapping("/{id}/trash")
+    public ResponseEntity<Void> moveStoryToTrash(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            log.info("🔄 Received request to move story to trash: {}", id);
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            log.info("🔄 Moving story {} to trash by author: {}", id, authorId);
+
+            storyService.moveStoryToTrash(id, authorId);
+
+            log.info("✅ Successfully moved story {} to trash", id);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("❌ Error moving story to trash {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Restore story from trash
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreStoryFromTrash(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            storyService.restoreStoryFromTrash(id, authorId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Error restoring story from trash {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Permanently delete story
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Void> permanentlyDeleteStory(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            storyService.permanentlyDeleteStory(id, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.error("Error permanently deleting story {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Get stories in trash by author
+    @GetMapping("/author/{authorId}/trash")
+    public ResponseEntity<List<StoryPreviewResponse>> getTrashByAuthor(
+            @PathVariable UUID authorId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID currentUserId = getUserIdFromRequest(httpRequest);
+            if (!currentUserId.equals(authorId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            List<StoryPreviewResponse> trashStories = storyService.getTrashByAuthor(authorId);
+            return ResponseEntity.ok(trashStories);
+        } catch (RuntimeException e) {
+            log.error("Error getting trash stories: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Bulk move to trash
+    @PostMapping("/bulk/trash")
+    public ResponseEntity<Void> bulkMoveToTrash(
+            @RequestBody List<UUID> storyIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            storyService.bulkMoveToTrash(storyIds, authorId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Error bulk moving stories to trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Bulk restore from trash
+    @PostMapping("/bulk/restore")
+    public ResponseEntity<Void> bulkRestoreFromTrash(
+            @RequestBody List<UUID> storyIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            storyService.bulkRestoreFromTrash(storyIds, authorId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Error bulk restoring stories from trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Bulk permanently delete
+    @DeleteMapping("/bulk/permanent")
+    public ResponseEntity<Void> bulkPermanentlyDelete(
+            @RequestBody List<UUID> storyIds,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            storyService.bulkPermanentlyDelete(storyIds, authorId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.error("Error bulk permanently deleting stories: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Empty trash for author
+    @DeleteMapping("/author/{authorId}/trash")
+    public ResponseEntity<Void> emptyTrash(
+            @PathVariable UUID authorId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID currentUserId = getUserIdFromRequest(httpRequest);
+            if (!currentUserId.equals(authorId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            storyService.emptyTrash(authorId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.error("Error emptying trash: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping
     public ResponseEntity<Page<StoryPreviewResponse>> getStories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String publishStatus,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String pricingType,
-            @RequestParam(required = false) String contentStatus,
+            @RequestParam(required = false) String bookStatus,
             @RequestParam(required = false) UUID authorId) {
         try {
             Page<StoryPreviewResponse> stories;
 
             // If filters are provided, use filtered search
-            if (status != null || categoryId != null || pricingType != null || contentStatus != null
+            if (publishStatus != null || categoryId != null || pricingType != null || bookStatus != null
                     || authorId != null) {
                 stories = storyService.getStoriesWithFilters(
-                        status, categoryId, pricingType, contentStatus, authorId, sortBy, page, size);
+                        publishStatus, categoryId, pricingType, bookStatus, authorId, sortBy, page, size);
             } else {
                 stories = storyService.getPublishedStories(page, size, sortBy);
             }
@@ -135,6 +271,27 @@ public class StoryController {
             return ResponseEntity.ok(stories);
         } catch (RuntimeException e) {
             log.error("Error getting user stories: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/my-stories/all")
+    public ResponseEntity<Page<StoryPreviewResponse>> getMyStoriesIncludingDeleted(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            log.info("📚 Fetching all stories including deleted for author: {}", authorId);
+
+            Page<StoryPreviewResponse> stories = storyService.getMyStoriesIncludingDeleted(authorId, page, size);
+
+            log.info("📚 Returned {} stories for author {} (including deleted)",
+                    stories.getTotalElements(), authorId);
+
+            return ResponseEntity.ok(stories);
+        } catch (RuntimeException e) {
+            log.error("❌ Error getting my stories including deleted: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -247,7 +404,7 @@ public class StoryController {
             // If no valid token, check if story is public
             try {
                 StoryResponse story = storyService.getStoryById(id);
-                boolean isPublic = "PUBLISHED".equals(story.getStatus().toString());
+                boolean isPublic = "PUBLISHED".equals(story.getPublishStatus().toString());
                 return ResponseEntity.ok(isPublic);
             } catch (RuntimeException ex) {
                 return ResponseEntity.notFound().build();
@@ -263,14 +420,14 @@ public class StoryController {
             UUID currentUserId = getCurrentUserIdOptional(httpRequest);
             StoryResponse story = storyService.getStoryById(id);
 
-            // Only increment view count if user is not the author
+            // Only track view if user is not the author
             if (currentUserId == null || !story.getAuthor().getId().equals(currentUserId)) {
-                storyService.incrementViews(id);
+                viewTrackingService.trackStoryView(id, currentUserId);
             }
 
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
-            log.error("Error incrementing story view {}: {}", id, e.getMessage());
+            log.error("Error tracking story view {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

@@ -15,7 +15,9 @@ import {
   useBulkRestoreFromTrash,
   useBulkPermanentlyDelete,
   useEmptyTrash,
+  useUpdateChapter,
 } from "@/hooks/useChapters";
+import { useChapterAccessBatch } from "@/hooks/useChapterAccess";
 import { formatDistanceToNow } from "date-fns";
 import {
   EyeIcon,
@@ -29,6 +31,7 @@ import {
   PlusIcon,
   CloudArrowUpIcon,
   Cog6ToothIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -74,7 +77,6 @@ export default function ChapterManagement({
   const { mutate: bulkMoveToTrash, isPending: isBulkMovingToTrash } = useBulkMoveToTrash();
   const { mutate: bulkRestoreFromTrash, isPending: isBulkRestoring } = useBulkRestoreFromTrash();
   const { mutate: bulkPermanentlyDelete, isPending: isBulkPermanentlyDeleting } = useBulkPermanentlyDelete();
-  const { mutate: emptyTrash, isPending: isEmptyingTrash } = useEmptyTrash();
 
   const [activeTab, setActiveTab] = useState<"published" | "draft" | "all" | "trash">(
     "all"
@@ -89,34 +91,37 @@ export default function ChapterManagement({
   const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState<string | null>(null);
   const [showBulkRestoreConfirm, setShowBulkRestoreConfirm] = useState(false);
   const [showBulkPermanentDeleteConfirm, setShowBulkPermanentDeleteConfirm] = useState(false);
-  const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
+
+  // Get chapter access for non-authors
+  const visibleChapters = chapters.filter(
+    (chapter) => chapter.status === "PUBLISHED"
+  );
+  const chapterIds = visibleChapters.map(chapter => chapter.id);
+  const { data: chapterAccess = {} } = useChapterAccessBatch(chapterIds, !isAuthor);
 
   if (!isAuthor) {
     // For non-authors, show only published chapters
-    const publishedChapters = chapters.filter(
-      (chapter) => chapter.status === "PUBLISHED"
-    );
-
     return (
       <div className="card-elevated p-6">
         <h3 className="text-lg font-semibold text-nomanweb-primary mb-6 flex items-center space-x-2">
           <DocumentTextIcon className="w-5 h-5" />
-          <span>Chapters ({publishedChapters.length})</span>
+          <span>Chapters ({visibleChapters.length})</span>
         </h3>
 
-        {publishedChapters.length === 0 ? (
+        {visibleChapters.length === 0 ? (
           <div className="text-center py-8">
             <DocumentTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No published chapters yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {publishedChapters.map((chapter) => (
+            {visibleChapters.map((chapter) => (
               <PublicChapterCard
                 key={chapter.id}
                 chapter={chapter}
                 storyId={storyId}
                 story={story}
+                hasAccess={chapterAccess[chapter.id] || false}
               />
             ))}
           </div>
@@ -245,10 +250,7 @@ export default function ChapterManagement({
     }
   };
 
-  const handleEmptyTrash = () => {
-    emptyTrash(storyId);
-    setShowEmptyTrashConfirm(false);
-  };
+
 
   return (
     <div key={refreshKey} className="card-elevated p-6">
@@ -415,21 +417,7 @@ export default function ChapterManagement({
         </div>
       )}
 
-      {/* Empty Trash Button */}
-      {activeTab === "trash" && trashChapters.length > 0 && (
-        <div className="mb-4">
-          <button
-            onClick={() => setShowEmptyTrashConfirm(true)}
-            disabled={isEmptyingTrash}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50"
-          >
-            <TrashIcon className="w-4 h-4" />
-            <span>
-              {isEmptyingTrash ? "Emptying trash..." : "Empty Trash"}
-            </span>
-          </button>
-        </div>
-      )}
+
 
       {/* Chapter List */}
       <div className="space-y-3">
@@ -676,34 +664,7 @@ export default function ChapterManagement({
       )}
 
       {/* Empty Trash Confirmation Modal */}
-      {showEmptyTrashConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="card-elevated p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-red-600 mb-4">
-              Empty Trash
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to empty the trash? All {trashChapters.length} chapters in trash will be permanently deleted and cannot be recovered.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowEmptyTrashConfirm(false)}
-                disabled={isEmptyingTrash}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEmptyTrash}
-                disabled={isEmptyingTrash}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {isEmptyingTrash ? "Emptying..." : "Empty Trash"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Bulk Upload Modal */}
       {showBulkUpload && (
@@ -839,6 +800,43 @@ function ChapterContent({
   isPermanentlyDeleting?: boolean;
   isTrashView?: boolean;
 }) {
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [tempCoinPrice, setTempCoinPrice] = useState(chapter.coinPrice || 0);
+  const [tempIsFree, setTempIsFree] = useState(chapter.isFree);
+  const { mutate: updateChapter, isPending: isUpdatingPrice } = useUpdateChapter();
+
+  const handlePriceEdit = () => {
+    setIsEditingPrice(true);
+    setTempCoinPrice(chapter.coinPrice || 0);
+    setTempIsFree(chapter.isFree);
+  };
+
+  const handlePriceSave = () => {
+    updateChapter({
+      id: chapter.id,
+      data: {
+        coinPrice: tempIsFree ? 0 : tempCoinPrice,
+        isFree: tempIsFree,
+      },
+    }, {
+      onSuccess: () => {
+        setIsEditingPrice(false);
+        toast.success("Chapter pricing updated successfully");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to update pricing");
+      },
+    });
+  };
+
+  const handlePriceCancel = () => {
+    setIsEditingPrice(false);
+    setTempCoinPrice(chapter.coinPrice || 0);
+    setTempIsFree(chapter.isFree);
+  };
+
+  const canEditPricing = story?.pricingType === "PAID_PER_CHAPTER" && !isTrashView;
+
   return (
     <div className="flex items-start justify-between">
       <div className="flex-1 min-w-0">
@@ -856,32 +854,88 @@ function ChapterContent({
           >
             {chapter.status}
           </span>
-          {/* Pricing Badge */}
-          {story?.pricingType === "FREE" ? (
-            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-              Free
-            </span>
-          ) : story?.pricingType === "WHOLE_BOOK" ? (
-            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-              Included in book ({story.bookPrice || 0} coins)
-            </span>
-          ) : story?.pricingType === "PAID_PER_CHAPTER" ? (
-            chapter.isFree ? (
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+          
+          {/* Pricing Badge/Editor */}
+          {canEditPricing && isEditingPrice ? (
+            <div className="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded-lg">
+              <input
+                type="checkbox"
+                id={`free-${chapter.id}`}
+                checked={tempIsFree}
+                onChange={(e) => setTempIsFree(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor={`free-${chapter.id}`} className="text-xs font-medium text-gray-700">
                 Free
-              </span>
-            ) : (
-              <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
-                {chapter.coinPrice} coins
-              </span>
-            )
+              </label>
+              {!tempIsFree && (
+                <>
+                  <input
+                    type="number"
+                    value={tempCoinPrice}
+                    onChange={(e) => setTempCoinPrice(Number(e.target.value))}
+                    min="0"
+                    step="1"
+                    className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-600">coins</span>
+                </>
+              )}
+              <button
+                onClick={handlePriceSave}
+                disabled={isUpdatingPrice}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                onClick={handlePriceCancel}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
           ) : (
-            // Fallback for when story data is not available
-            !chapter.isFree && (
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                {chapter.coinPrice} coins
-              </span>
-            )
+            <div className="flex items-center space-x-2">
+              {/* Pricing Badge */}
+              {story?.pricingType === "FREE" ? (
+                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                  Free
+                </span>
+              ) : story?.pricingType === "WHOLE_BOOK" ? (
+                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  Included in book ({story.bookPrice || 0} coins)
+                </span>
+              ) : story?.pricingType === "PAID_PER_CHAPTER" ? (
+                chapter.isFree ? (
+                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                    Free
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                    {chapter.coinPrice} coins
+                  </span>
+                )
+              ) : (
+                // Fallback for when story data is not available
+                !chapter.isFree && (
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    {chapter.coinPrice} coins
+                  </span>
+                )
+              )}
+              
+              {/* Edit Price Button */}
+              {canEditPricing && (
+                <button
+                  onClick={handlePriceEdit}
+                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  title="Edit pricing"
+                >
+                  <Cog6ToothIcon className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -992,6 +1046,7 @@ function PublicChapterCard({
   chapter,
   storyId,
   story,
+  hasAccess,
 }: {
   chapter: ChapterPreview;
   storyId: string;
@@ -999,11 +1054,25 @@ function PublicChapterCard({
     pricingType: "FREE" | "PAID_PER_CHAPTER" | "WHOLE_BOOK";
     bookPrice?: number;
   };
+  hasAccess: boolean;
 }) {
+  const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
+  const canAccess = hasAccess || chapter.isFree;
+
   return (
     <Link
-      href={`/stories/${storyId}/chapters/${chapter.chapterNumber}`}
-      className="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white hover:border-nomanweb-primary/30"
+      href={canAccess ? `/stories/${storyId}/chapters/${chapter.chapterNumber}` : '#'}
+      className={`block border border-gray-200 rounded-lg p-4 transition-shadow bg-white ${
+        canAccess 
+          ? 'hover:shadow-md hover:border-nomanweb-primary/30' 
+          : 'opacity-75 cursor-not-allowed'
+      }`}
+      onClick={(e) => {
+        if (!canAccess) {
+          e.preventDefault();
+          // This will be handled by the parent component
+        }
+      }}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -1012,6 +1081,10 @@ function PublicChapterCard({
             <span className="text-sm font-medium text-gray-500">
               Chapter {chapter.chapterNumber}
             </span>
+            {/* Lock Icon for Paid Chapters */}
+            {isPaidChapter && !canAccess && (
+              <LockClosedIcon className="w-4 h-4 text-red-500" />
+            )}
             {/* Pricing Badge */}
             {story?.pricingType === "FREE" ? (
               <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
@@ -1027,15 +1100,23 @@ function PublicChapterCard({
                   Free
                 </span>
               ) : (
-                <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
-                  {chapter.coinPrice} coins
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  canAccess 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {canAccess ? 'Purchased' : `${chapter.coinPrice} coins`}
                 </span>
               )
             ) : (
               // Fallback for when story data is not available
               !chapter.isFree && (
-                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                  {chapter.coinPrice} coins
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  canAccess 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {canAccess ? 'Purchased' : `${chapter.coinPrice} coins`}
                 </span>
               )
             )}

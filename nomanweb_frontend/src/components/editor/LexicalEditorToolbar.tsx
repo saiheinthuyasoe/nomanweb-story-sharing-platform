@@ -39,10 +39,27 @@ import { InsertImageButton } from './plugins/ImagePlugin';
 const LowPriority = 1;
 
 function Divider() {
-  // Check if we're in dark mode by looking at parent container
-  const toolbar = document.querySelector('[data-lexical-toolbar="true"]');
-  const container = toolbar?.closest('.dark');
-  const isDarkMode = !!container;
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in dark mode by looking at parent container
+    const checkDarkMode = () => {
+      const toolbar = document.querySelector('[data-lexical-toolbar="true"]');
+      const container = toolbar?.closest('.dark');
+      setIsDarkMode(!!container);
+    };
+
+    checkDarkMode();
+    
+    // Set up mutation observer to watch for dark mode changes
+    const observer = new MutationObserver(checkDarkMode);
+    const container = document.querySelector('.lexical-editor-container');
+    if (container) {
+      observer.observe(container, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => observer.disconnect();
+  }, []);
   
   return <div className={cn(
     'w-px h-6 mx-1',

@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 const LowPriority = 1;
 
 function positionToolbar(toolbar: HTMLDivElement, rect: DOMRect | null) {
+  if (typeof window === 'undefined') return;
+  
   if (rect === null) {
     toolbar.style.opacity = '0';
     toolbar.style.top = '-1000px';
@@ -41,11 +43,18 @@ export default function FloatingTextToolbar({ editor }: FloatingTextToolbarProps
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const [isCode, setIsCode] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const updateToolbar = useCallback(() => {
+    if (!isMounted) return;
+    
     const selection = $getSelection();
     const toolbarElem = toolbarRef.current;
-    const nativeSelection = window.getSelection();
+    const nativeSelection = typeof window !== 'undefined' ? window.getSelection() : null;
 
     if (toolbarElem === null) {
       return;
@@ -89,6 +98,8 @@ export default function FloatingTextToolbar({ editor }: FloatingTextToolbarProps
   }, [editor]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     return mergeRegister(
       editor.registerUpdateListener(({ editorState }: any) => {
         editorState.read(() => {
@@ -105,17 +116,23 @@ export default function FloatingTextToolbar({ editor }: FloatingTextToolbarProps
         LowPriority
       )
     );
-  }, [editor, updateToolbar]);
+  }, [editor, updateToolbar, isMounted]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    
     editor.getEditorState().read(() => {
       updateToolbar();
     });
-  }, [editor, updateToolbar]);
+  }, [editor, updateToolbar, isMounted]);
 
   const formatText = (format: string) => {
     editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div

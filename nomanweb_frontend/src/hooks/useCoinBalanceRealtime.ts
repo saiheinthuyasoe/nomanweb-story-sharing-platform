@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import Cookies from 'js-cookie';
 
 interface CoinBalanceUpdate {
   type: 'balance_update';
@@ -9,17 +10,27 @@ interface CoinBalanceUpdate {
 }
 
 export function useCoinBalanceRealtime() {
+  console.log('🎯 useCoinBalanceRealtime hook initialized');
   const { user, updateUser } = useAuth();
+  console.log('🔍 AuthContext user:', user);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    console.log('🔄 useCoinBalanceRealtime hook triggered');
+    console.log('👤 Current user:', user);
+    
+    if (!user) {
+      console.log('❌ No user found, skipping balance SSE connection');
+      return;
+    }
+
+    console.log('🔗 Setting up balance SSE connection for user:', user.id);
 
     const connectToSSE = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = Cookies.get('token');
         if (!token) {
-          console.log('No token found, skipping SSE connection');
+          console.log('❌ No token found in cookies, skipping SSE connection');
           return;
         }
 
@@ -33,8 +44,8 @@ export function useCoinBalanceRealtime() {
         abortControllerRef.current = abortController;
 
         // Connect to backend SSE endpoint with authentication
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const response = await fetch(`${backendUrl}/api/coins/sse/balance-updates`, {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+        const response = await fetch(`${backendUrl}/coins/sse/balance-updates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'text/event-stream',
@@ -44,10 +55,11 @@ export function useCoinBalanceRealtime() {
         });
 
         if (!response.ok) {
+          console.error(`❌ SSE connection failed: ${response.status} ${response.statusText}`);
           throw new Error(`SSE connection failed: ${response.status}`);
         }
 
-        console.log('✅ Connected to coin balance updates SSE');
+        console.log('✅ Connected to coin balance updates SSE (Backend)');
 
         const reader = response.body?.getReader();
         if (!reader) {
@@ -84,10 +96,12 @@ export function useCoinBalanceRealtime() {
                   } else if (eventType === 'balance_update') {
                     const update: CoinBalanceUpdate = JSON.parse(data);
                     console.log('📨 Received balance update:', update);
+                    console.log('🔍 Current user ID:', user.id, '(type:', typeof user.id, ')');
+                    console.log('🔍 Update user ID:', update.userId, '(type:', typeof update.userId, ')');
                     
                     // Only update if this is for the current user
-                    if (update.userId === user.id) {
-                      console.log('✅ Updating balance for current user:', update.newBalance);
+                    if (update.userId === user.id || update.userId === String(user.id)) {
+                      console.log('✅ Updating balance for current user from', user.coinBalance, 'to', update.newBalance);
                       
                       // Update user's coin balance in context
                       updateUser({ coinBalance: update.newBalance });
@@ -95,7 +109,10 @@ export function useCoinBalanceRealtime() {
                       // Show a notification
                       console.log(`💰 Balance updated: ${update.newBalance} coins`);
                     } else {
-                      console.log('❌ Balance update for different user:', update.userId);
+                      console.log('❌ Balance update for different user:', update.userId, 'vs', user.id);
+                      console.log('🔍 Comparison results:');
+                      console.log('  - update.userId === user.id:', update.userId === user.id);
+                      console.log('  - update.userId === String(user.id):', update.userId === String(user.id));
                     }
                   }
                 } catch (error) {

@@ -235,4 +235,38 @@ export const chaptersApi = {
     });
     return response.data;
   },
+
+  // Trash management
+  async moveToTrash(chapterId: string): Promise<void> {
+    await apiClient.post(`/chapters/${chapterId}/trash`);
+  },
+
+  async restoreFromTrash(chapterId: string): Promise<void> {
+    await apiClient.post(`/chapters/${chapterId}/restore`);
+  },
+
+  async permanentlyDeleteChapter(chapterId: string): Promise<void> {
+    await apiClient.delete(`/chapters/${chapterId}/permanent`);
+  },
+
+  async getTrashByStory(storyId: string): Promise<ChapterPreview[]> {
+    const response = await apiClient.get(`/chapters/story/${storyId}/trash`);
+    return response.data;
+  },
+
+  async bulkMoveToTrash(chapterIds: string[]): Promise<void> {
+    await apiClient.post(`/chapters/bulk/trash`, chapterIds);
+  },
+
+  async bulkRestoreFromTrash(chapterIds: string[]): Promise<void> {
+    await apiClient.post(`/chapters/bulk/restore`, chapterIds);
+  },
+
+  async bulkPermanentlyDelete(chapterIds: string[]): Promise<void> {
+    await apiClient.delete(`/chapters/bulk/permanent`, { data: chapterIds });
+  },
+
+  async emptyTrash(storyId: string): Promise<void> {
+    await apiClient.delete(`/chapters/story/${storyId}/trash`);
+  },
 };

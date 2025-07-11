@@ -2,6 +2,7 @@ package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.dto.chapter.*;
 import com.app.nomanweb_backend.service.ChapterService;
+import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ public class ChapterController {
 
     private final ChapterService chapterService;
     private final JwtUtil jwtUtil;
+    private final ViewTrackingService viewTrackingService;
 
     // Create a new chapter
     @PostMapping
@@ -70,10 +72,8 @@ public class ChapterController {
             UUID currentUserId = getCurrentUserIdOptional(httpRequest);
             ChapterResponse chapter = chapterService.getChapterById(chapterId, currentUserId);
 
-            // Increment view count (async in real implementation)
-            if (currentUserId != null) {
-                chapterService.incrementChapterViews(chapterId);
-            }
+            // Track view using the new view tracking service
+            viewTrackingService.trackChapterView(chapterId, currentUserId);
 
             return ResponseEntity.ok(chapter);
         } catch (IllegalArgumentException e) {
@@ -98,10 +98,8 @@ public class ChapterController {
 
             ChapterResponse chapter = chapterService.getChapterByStoryAndNumber(storyId, chapterNumber, currentUserId);
 
-            // Increment view count (async in real implementation)
-            if (currentUserId != null) {
-                chapterService.incrementChapterViews(chapter.getId());
-            }
+            // Track view using the new view tracking service
+            viewTrackingService.trackChapterView(chapter.getId(), currentUserId);
 
             log.info("Successfully returning chapter: {}", chapter.getId());
             return ResponseEntity.ok(chapter);

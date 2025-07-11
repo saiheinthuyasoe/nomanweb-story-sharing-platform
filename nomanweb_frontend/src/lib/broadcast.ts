@@ -1,15 +1,22 @@
 // Store active SSE connections
 const connections = new Set<ReadableStreamDefaultController>();
 
+// Store active SSE connections for coin transfers
+const transferConnections = new Set<ReadableStreamDefaultController>();
+
 // Global type declaration for development mode
 declare global {
   var __sseConnections: Set<ReadableStreamDefaultController> | undefined;
+  var __sseTransferConnections: Set<ReadableStreamDefaultController> | undefined;
 }
 
 // Global storage fallback for development mode
 if (typeof global !== 'undefined') {
   if (!global.__sseConnections) {
     global.__sseConnections = new Set<ReadableStreamDefaultController>();
+  }
+  if (!global.__sseTransferConnections) {
+    global.__sseTransferConnections = new Set<ReadableStreamDefaultController>();
   }
 }
 
@@ -21,8 +28,20 @@ function getConnections() {
   return connections;
 }
 
+function getTransferConnections() {
+  // Use global storage in development to persist across module reloads
+  if (typeof global !== 'undefined' && global.__sseTransferConnections) {
+    return global.__sseTransferConnections;
+  }
+  return transferConnections;
+}
+
 export function getConnectionCount() {
   return getConnections().size;
+}
+
+export function getTransferConnectionCount() {
+  return getTransferConnections().size;
 }
 
 export function addConnection(controller: ReadableStreamDefaultController) {
@@ -35,6 +54,18 @@ export function removeConnection(controller: ReadableStreamDefaultController) {
   const conns = getConnections();
   conns.delete(controller);
   console.log(`❌ SSE connection removed. Total connections: ${conns.size}`);
+}
+
+export function addTransferConnection(controller: ReadableStreamDefaultController) {
+  const conns = getTransferConnections();
+  conns.add(controller);
+  console.log(`🔗 Transfer SSE connection added. Total transfer connections: ${conns.size}`);
+}
+
+export function removeTransferConnection(controller: ReadableStreamDefaultController) {
+  const conns = getTransferConnections();
+  conns.delete(controller);
+  console.log(`❌ Transfer SSE connection removed. Total transfer connections: ${conns.size}`);
 }
 
 // Transform backend package data to frontend format
@@ -94,4 +125,35 @@ export function broadcastCoinPackageUpdate(type: string, data: any) {
   });
   
   console.log(`📊 Active connections after broadcast: ${conns.size}, Messages sent: ${sentCount}`);
-} 
+}
+
+// Helper function to broadcast coin transfer updates to all connected clients
+export function broadcastCoinTransferUpdate(type: string, data: any) {
+  const conns = getTransferConnections();
+  
+  const message = JSON.stringify({ type, ...data, timestamp: Date.now() });
+  
+  console.log(`🚀 Broadcasting transfer ${type} to ${conns.size} connections`);
+  console.log(`📤 Transfer data:`, data);
+  console.log(`📤 Message content:`, message);
+  
+  if (conns.size === 0) {
+    console.warn('⚠️ No transfer SSE connections available to broadcast to');
+  }
+  
+  let sentCount = 0;
+  conns.forEach((controller) => {
+    try {
+      controller.enqueue(`data: ${message}\n\n`);
+      sentCount++;
+      console.log(`✅ Transfer message sent to connection ${sentCount}`);
+    } catch (error) {
+      console.error('❌ Error sending transfer SSE message:', error);
+      conns.delete(controller);
+    }
+  });
+  
+  console.log(`📊 Active transfer connections after broadcast: ${conns.size}, Messages sent: ${sentCount}`);
+}
+
+ 

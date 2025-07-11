@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMyStories, useDeleteStory } from '@/hooks/useStories';
+import { useMyStories, useMyStoriesIncludingDeleted, useDeleteStory, useMoveStoryToTrash, useRestoreStoryFromTrash, usePermanentlyDeleteStory } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
 import { StoryPreview } from '@/types/story';
 
@@ -39,8 +39,16 @@ export default function MyStoriesPage() {
     page: 0, 
     size: 1000 // Large number to get all stories
   });
+
+  const { data: allStoriesPage, isLoading: isLoadingAll } = useMyStoriesIncludingDeleted({ 
+    page: 0, 
+    size: 1000 // Large number to get all stories
+  });
   
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
+  const { mutate: moveToTrash, isPending: isMovingToTrash } = useMoveStoryToTrash();
+  const { mutate: restoreFromTrash, isPending: isRestoring } = useRestoreStoryFromTrash();
+  const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } = usePermanentlyDeleteStory();
 
   const handleCreateNew = () => {
     router.push('/stories/create');
@@ -61,20 +69,36 @@ export default function MyStoriesPage() {
   };
 
   const handleDelete = (storyId: string) => {
-    if (window.confirm('Are you sure you want to delete this story? This action cannot be undone.')) {
-      deleteStory(storyId);
+    console.log('🗑️ User clicked move to trash for story:', storyId);
+    if (window.confirm('Are you sure you want to move this story to trash? You can restore it later.')) {
+      console.log('🗑️ User confirmed move to trash for story:', storyId);
+      moveToTrash(storyId);
+      setOpenDropdown(null);
+    } else {
+      console.log('🗑️ User cancelled move to trash for story:', storyId);
+    }
+  };
+
+  const handleRestore = (storyId: string) => {
+    restoreFromTrash(storyId);
+    setOpenDropdown(null);
+  };
+
+  const handlePermanentlyDelete = (storyId: string) => {
+    if (window.confirm('Are you sure you want to permanently delete this story? This action cannot be undone.')) {
+      permanentlyDelete(storyId);
       setOpenDropdown(null);
     }
   };
 
-  const getContentStatusBadge = (contentStatus: 'ONGOING' | 'COMPLETED') => {
-    // Map content status from database
+  const getBookStatusBadge = (bookStatus: 'ONGOING' | 'COMPLETED') => {
+    // Map book status from database
     const statusConfig = {
       ONGOING: { text: 'Ongoing', className: 'bg-yellow-100 text-yellow-700' },
       COMPLETED: { text: 'Completed', className: 'bg-green-100 text-green-700' }
     };
     
-    const config = statusConfig[contentStatus] || statusConfig.ONGOING;
+    const config = statusConfig[bookStatus] || statusConfig.ONGOING;
     return (
       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
         {config.text}
@@ -131,25 +155,37 @@ export default function MyStoriesPage() {
     return num.toString();
   };
 
-  // Removed mock moderation status - now using real data from API
+  // Use different data sources based on active tab
+  const stories = activeTab === 'trash' 
+    ? (allStoriesPage?.content || []).filter(story => story.isDeleted)
+    : (storiesPage?.content || []);
 
-  const stories = storiesPage?.content || [];
   const filteredStories = stories.filter(story => {
     switch (activeTab) {
       case 'stories':
-        return story.status === 'PUBLISHED' || story.status === 'COMPLETED';
+        return story.publishStatus === 'PUBLISHED' || story.publishStatus === 'COMPLETED';
       case 'drafts':
-        return story.status === 'DRAFT';
+        return story.publishStatus === 'DRAFT';
       case 'trash':
-        return story.status === 'SUSPENDED';
+        return story.isDeleted;
       default:
         return true;
     }
   });
 
+  // Debug logging for trash tab
+  if (activeTab === 'trash') {
+    console.log('🗑️ Trash tab debug:', {
+      allStoriesCount: allStoriesPage?.content?.length || 0,
+      deletedStoriesCount: stories.length,
+      filteredStoriesCount: filteredStories.length,
+      allStories: allStoriesPage?.content?.map(s => ({ id: s.id, title: s.title, isDeleted: s.isDeleted })) || []
+    });
+  }
+
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  if (isLoading) {
+  if (isLoading || (activeTab === 'trash' && isLoadingAll)) {
     return (
       <div className="min-h-screen bg-gray-50 overflow-y-auto">
         <div className="p-8">
@@ -161,7 +197,7 @@ export default function MyStoriesPage() {
     );
   }
 
-  if (error) {
+  if (error || (activeTab === 'trash' && allStoriesPage === undefined)) {
     return (
       <div className="min-h-screen bg-gray-50 overflow-y-auto">
         <div className="p-8">
@@ -196,9 +232,9 @@ export default function MyStoriesPage() {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {[
-                { id: 'stories', label: 'Stories', count: stories.filter(s => s.status === 'PUBLISHED' || s.status === 'COMPLETED').length },
-                { id: 'drafts', label: 'Drafts', count: stories.filter(s => s.status === 'DRAFT').length },
-                { id: 'trash', label: 'Trash', count: stories.filter(s => s.status === 'SUSPENDED').length }
+                { id: 'stories', label: 'Stories', count: (storiesPage?.content || []).filter(s => s.publishStatus === 'PUBLISHED' || s.publishStatus === 'COMPLETED').length },
+                { id: 'drafts', label: 'Drafts', count: (storiesPage?.content || []).filter(s => s.publishStatus === 'DRAFT').length },
+                { id: 'trash', label: 'Trash', count: (allStoriesPage?.content || []).filter(s => s.isDeleted).length }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -245,7 +281,7 @@ export default function MyStoriesPage() {
                            <p className="text-gray-500 mb-6">
                              {activeTab === 'stories' ? 'Start writing and publish your first story.' :
                               activeTab === 'drafts' ? 'Create a new story to start writing.' :
-                              'Deleted stories will appear here.'}
+                              'Stories moved to trash will appear here.'}
                            </p>
                            {activeTab !== 'trash' && (
                              <button
@@ -265,7 +301,7 @@ export default function MyStoriesPage() {
                                <div className="ant-table-column-title">Story</div>
                              </th>
                              <th className="ant-table-cell" style={{ width: '96px' }}>
-                               <div className="ant-table-column-title">Content Status</div>
+                               <div className="ant-table-column-title">Book Status</div>
                              </th>
                              <th className="ant-table-cell" style={{ width: '96px' }}>
                                <div className="ant-table-column-title">Status</div>
@@ -352,14 +388,14 @@ export default function MyStoriesPage() {
                                  </div>
                                </td>
 
-                               {/* Content Status Column */}
+                               {/* Book Status Column */}
                                <td className="ant-table-cell">
-                                 {getContentStatusBadge(story.contentStatus)}
+                                 {getBookStatusBadge(story.bookStatus)}
                                </td>
 
                                {/* Publication Status Column */}
                                <td className="ant-table-cell">
-                                 {getPublicationStatusBadge(story.status as StoryStatus)}
+                                 {getPublicationStatusBadge(story.publishStatus as StoryStatus)}
                                </td>
 
                                {/* Moderation Status Column */}
@@ -448,18 +484,50 @@ export default function MyStoriesPage() {
                                              
                                              <hr className="my-1 border-gray-100" />
                                              
-                                             <button
-                                               onClick={(e) => {
-                                                 e.preventDefault();
-                                                 e.stopPropagation();
-                                                 setOpenDropdown(null);
-                                                 handleDelete(story.id);
-                                               }}
-                                               className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                                             >
-                                               <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
-                                               <span>Delete</span>
-                                             </button>
+                                             {activeTab === 'trash' ? (
+                                               <>
+                                                 <button
+                                                   onClick={(e) => {
+                                                     e.preventDefault();
+                                                     e.stopPropagation();
+                                                     setOpenDropdown(null);
+                                                     handleRestore(story.id);
+                                                   }}
+                                                   className="flex items-center w-full px-3 py-2 text-sm text-green-600 hover:bg-green-50 transition-colors text-left"
+                                                 >
+                                                   <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                   <span>Restore</span>
+                                                 </button>
+                                                 
+                                                 <hr className="my-1 border-gray-100" />
+                                                 
+                                                 <button
+                                                   onClick={(e) => {
+                                                     e.preventDefault();
+                                                     e.stopPropagation();
+                                                     setOpenDropdown(null);
+                                                     handlePermanentlyDelete(story.id);
+                                                   }}
+                                                   className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                                                 >
+                                                   <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                   <span>Delete Permanently</span>
+                                                 </button>
+                                               </>
+                                             ) : (
+                                               <button
+                                                 onClick={(e) => {
+                                                   e.preventDefault();
+                                                   e.stopPropagation();
+                                                   setOpenDropdown(null);
+                                                   handleDelete(story.id);
+                                                 }}
+                                                 className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                                               >
+                                                 <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                 <span>Move to Trash</span>
+                                               </button>
+                                             )}
                                            </div>
                                          </div>
                                        </>

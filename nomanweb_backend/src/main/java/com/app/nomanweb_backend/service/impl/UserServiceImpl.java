@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
         stats.put("userId", user.getId().toString());
 
         // Story and chapter counts
-        long writtenBooks = storyRepository.countByAuthorIdAndStatus(userId, "PUBLISHED");
+        long writtenBooks = storyRepository.countByAuthorIdAndPublishStatus(userId, "PUBLISHED");
         stats.put("writtenBooks", writtenBooks);
 
         // Follower counts

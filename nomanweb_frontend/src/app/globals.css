@@ -307,6 +307,208 @@
   list-style-type: disc;
 }
 
+/* Enhanced List Alignment - Better approach for center/right alignment */
+.editor-list-ol[style*="text-align: center"],
+.editor-list-ul[style*="text-align: center"],
+.editor-list-ol[style*="text-align:center"],
+.editor-list-ul[style*="text-align:center"],
+.editor-list-ol[data-lexical-text-align="center"],
+.editor-list-ul[data-lexical-text-align="center"] {
+  padding-left: 0;
+  padding-right: 0;
+  list-style-position: inside;
+  text-align: center;
+  /* Ensure proper spacing for multi-line content */
+  line-height: 1.6;
+}
+
+.editor-list-ol[style*="text-align: right"],
+.editor-list-ul[style*="text-align: right"],
+.editor-list-ol[style*="text-align:right"],
+.editor-list-ul[style*="text-align:right"],
+.editor-list-ol[data-lexical-text-align="right"],
+.editor-list-ul[data-lexical-text-align="right"] {
+  padding-left: 0;
+  padding-right: 1.5rem;
+  list-style-position: inside;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.editor-list-ol[style*="text-align: left"],
+.editor-list-ul[style*="text-align: left"],
+.editor-list-ol[style*="text-align:left"],
+.editor-list-ul[style*="text-align:left"],
+.editor-list-ol[data-lexical-text-align="left"],
+.editor-list-ul[data-lexical-text-align="left"] {
+  padding-left: 1.5rem;
+  padding-right: 0;
+  list-style-position: outside;
+  text-align: left;
+}
+
+/* Handle list items within aligned lists - Better spacing */
+.editor-list-ol[style*="text-align: center"] .editor-listitem,
+.editor-list-ul[style*="text-align: center"] .editor-listitem,
+.editor-list-ol[style*="text-align:center"] .editor-listitem,
+.editor-list-ul[style*="text-align:center"] .editor-listitem {
+  text-align: center;
+  /* Prevent weird spacing with multi-line content */
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.editor-list-ol[style*="text-align: right"] .editor-listitem,
+.editor-list-ul[style*="text-align: right"] .editor-listitem,
+.editor-list-ol[style*="text-align:right"] .editor-listitem,
+.editor-list-ul[style*="text-align:right"] .editor-listitem {
+  text-align: right;
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.editor-list-ol[style*="text-align: left"] .editor-listitem,
+.editor-list-ul[style*="text-align: left"] .editor-listitem,
+.editor-list-ol[style*="text-align:left"] .editor-listitem,
+.editor-list-ul[style*="text-align:left"] .editor-listitem {
+  text-align: left;
+  display: block;
+  margin: 0.5rem 0;
+}
+
+/* Handle nested lists with alignment */
+.editor-list-ol .editor-list-ol[style*="text-align: center"],
+.editor-list-ul .editor-list-ul[style*="text-align: center"],
+.editor-list-ol .editor-list-ol[style*="text-align:center"],
+.editor-list-ul .editor-list-ul[style*="text-align:center"] {
+  padding-left: 0;
+  padding-right: 0;
+  list-style-position: inside;
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+.editor-list-ol .editor-list-ol[style*="text-align: right"],
+.editor-list-ul .editor-list-ul[style*="text-align: right"],
+.editor-list-ol .editor-list-ol[style*="text-align:right"],
+.editor-list-ul .editor-list-ul[style*="text-align:right"] {
+  padding-left: 0;
+  padding-right: 1.5rem;
+  list-style-position: inside;
+  text-align: right;
+  margin: 0.5rem 0;
+}
+
+/* Force list markers to align with content when center aligned */
+.editor-list-ol[style*="text-align: center"] li::marker,
+.editor-list-ul[style*="text-align: center"] li::marker,
+.editor-list-ol[style*="text-align:center"] li::marker,
+.editor-list-ul[style*="text-align:center"] li::marker {
+  text-align: center;
+}
+
+/* Ensure list items maintain alignment */
+.editor-listitem[style*="text-align: center"],
+.editor-listitem[style*="text-align:center"] {
+  text-align: center !important;
+}
+
+.editor-listitem[style*="text-align: right"],
+.editor-listitem[style*="text-align:right"] {
+  text-align: right !important;
+}
+
+.editor-listitem[style*="text-align: left"],
+.editor-listitem[style*="text-align:left"] {
+  text-align: left !important;
+}
+
+/* Additional rules for Lexical's specific rendering */
+.lexical-content-editable ol[style*="text-align: center"],
+.lexical-content-editable ul[style*="text-align: center"],
+.lexical-content-editable ol[style*="text-align:center"],
+.lexical-content-editable ul[style*="text-align:center"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  list-style-position: inside !important;
+  text-align: center !important;
+  line-height: 1.6 !important;
+}
+
+.lexical-content-editable ol[style*="text-align: right"],
+.lexical-content-editable ul[style*="text-align: right"],
+.lexical-content-editable ol[style*="text-align:right"],
+.lexical-content-editable ul[style*="text-align:right"] {
+  padding-left: 0 !important;
+  padding-right: 1.5rem !important;
+  list-style-position: inside !important;
+  text-align: right !important;
+  line-height: 1.6 !important;
+}
+
+.lexical-content-editable ol[style*="text-align: left"],
+.lexical-content-editable ul[style*="text-align: left"],
+.lexical-content-editable ol[style*="text-align:left"],
+.lexical-content-editable ul[style*="text-align:left"] {
+  padding-left: 1.5rem !important;
+  padding-right: 0 !important;
+  list-style-position: outside !important;
+  text-align: left !important;
+}
+
+/* Handle list items within aligned lists in Lexical */
+.lexical-content-editable ol[style*="text-align: center"] li,
+.lexical-content-editable ul[style*="text-align: center"] li,
+.lexical-content-editable ol[style*="text-align:center"] li,
+.lexical-content-editable ul[style*="text-align:center"] li {
+  text-align: center !important;
+  display: block !important;
+  margin: 0.5rem 0 !important;
+}
+
+.lexical-content-editable ol[style*="text-align: right"] li,
+.lexical-content-editable ul[style*="text-align: right"] li,
+.lexical-content-editable ol[style*="text-align:right"] li,
+.lexical-content-editable ul[style*="text-align:right"] li {
+  text-align: right !important;
+  display: block !important;
+  margin: 0.5rem 0 !important;
+}
+
+.lexical-content-editable ol[style*="text-align: left"] li,
+.lexical-content-editable ul[style*="text-align: left"] li,
+.lexical-content-editable ol[style*="text-align:left"] li,
+.lexical-content-editable ul[style*="text-align:left"] li {
+  text-align: left !important;
+  display: block !important;
+  margin: 0.5rem 0 !important;
+}
+
+/* Prevent blank bullets and weird spacing */
+.lexical-content-editable ol[style*="text-align: center"] li:empty,
+.lexical-content-editable ul[style*="text-align: center"] li:empty,
+.lexical-content-editable ol[style*="text-align:center"] li:empty,
+.lexical-content-editable ul[style*="text-align:center"] li:empty {
+  display: none !important;
+}
+
+/* Better paragraph handling within list items */
+.lexical-content-editable ol[style*="text-align: center"] li p,
+.lexical-content-editable ul[style*="text-align: center"] li p,
+.lexical-content-editable ol[style*="text-align:center"] li p,
+.lexical-content-editable ul[style*="text-align:center"] li p {
+  margin: 0.25rem 0 !important;
+  display: inline !important;
+}
+
+.lexical-content-editable ol[style*="text-align: right"] li p,
+.lexical-content-editable ul[style*="text-align: right"] li p,
+.lexical-content-editable ol[style*="text-align:right"] li p,
+.lexical-content-editable ul[style*="text-align:right"] li p {
+  margin: 0.25rem 0 !important;
+  display: inline !important;
+}
+
 .editor-listitem {
   margin: 0.25rem 0;
   line-height: 1.6;

@@ -6,10 +6,7 @@ import { useRouter } from 'next/navigation';
 import { LexicalEditor } from '@/components/editor';
 import { Save, Settings, Clock, Coins } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useLiveblocksCollaboration } from '@/hooks/useLiveblocksCollaboration';
-import { useCursorPosition } from '@/hooks/useCursorPosition';
 import { useAuth } from '@/contexts/AuthContext';
-import { LiveblocksActiveCollaborators } from '@/components/collaboration/LiveblocksActiveCollaborators';
 
 interface ChapterFormData {
   storyId: string;
@@ -34,7 +31,7 @@ interface ChapterFormProps {
     pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
     bookPrice?: number;
   };
-  useLiveblocks?: boolean; // New prop to enable Liveblocks collaboration
+  onTypingStart?: () => void; // Callback when user starts typing in editor
 }
 
 export function ChapterForm({
@@ -47,7 +44,7 @@ export function ChapterForm({
   isEditing = false,
   maxChapterNumber = 0,
   story,
-  useLiveblocks = false
+  onTypingStart
 }: ChapterFormProps) {
   const [content, setContent] = useState(initialData?.content || '');
   const [wordCount, setWordCount] = useState(0);
@@ -60,95 +57,34 @@ export function ChapterForm({
   // Auth context
   const { user } = useAuth();
 
-  // Cursor position tracking for enhanced collaboration
-  const { textareaRef, cursorPosition, updateCursorPosition, calculateCursorPosition } = useCursorPosition();
-
-  // Real-time collaboration - only use Liveblocks when enabled
-  const liveblocksCollaboration = useLiveblocks ? useLiveblocksCollaboration(chapterId || '') : null;
-  
-  const { sendContentUpdate, sendCursorPosition, sendSelectionRange, registerContentUpdateCallback, isConnected, collaborators, storage } = 
-    liveblocksCollaboration || { 
-      sendContentUpdate: () => {}, 
-      sendCursorPosition: () => {}, 
-      sendSelectionRange: () => {}, 
-      registerContentUpdateCallback: () => () => {}, 
-      isConnected: false, 
-      collaborators: [],
-      storage: null
-    };
-
-  // Calculate remote cursor positions for visualization
-  const remoteCursors = collaborators
-    .filter(collaborator => collaborator.cursorPosition !== undefined)
-    .map(collaborator => {
-      const remotePosition = calculateCursorPosition(content, collaborator.cursorPosition!);
-      
-      if (!textareaRef.current) return null;
-      
-      const textareaRect = textareaRef.current.getBoundingClientRect();
-      const relativeX = remotePosition.x - textareaRect.left;
-      const relativeY = remotePosition.y - textareaRect.top;
-      
-      return {
-        ...collaborator,
-        position: { x: relativeX, y: relativeY }
-      };
-    })
-    .filter(Boolean);
-
-  console.log(`ChapterForm: ${useLiveblocks ? 'Liveblocks' : 'No collaboration'} status:`, {
-    chapterId,
-    isConnected,
-    hasSendContentUpdate: !!sendContentUpdate,
-    hasRegisterCallback: !!registerContentUpdateCallback,
-    collaboratorsCount: collaborators.length,
-    remoteCursorsCount: remoteCursors.length,
-    mode: useLiveblocks ? 'Liveblocks' : 'None',
-    typingUsers: collaborators.filter(c => c.isTyping).length,
-    collaborators: collaborators.map(c => ({
-      userId: c.userId,
-      displayName: c.displayName,
-      isTyping: c.isTyping
-    }))
-  });
+  // Ref to track if editor is focused
+  const editorFocusRef = useRef(false);
 
   // Ref to track the latest content
   const latestContentRef = useRef(initialData?.content || '');
   const previousContentRef = useRef(initialData?.content || '');
   const router = useRouter();
 
-  // Handle cursor position changes for real-time collaboration
-  const handleCursorChange = useCallback((position: number, selectionStart: number, selectionEnd: number) => {
-    if (chapterId && useLiveblocks) {
-      // Update local cursor position for visualization
-      updateCursorPosition(content, position);
-      
-      // Send cursor position to other collaborators
-      sendCursorPosition(position);
-      
-      // Send selection range if text is selected
-      if (selectionStart !== selectionEnd) {
-        sendSelectionRange(selectionStart, selectionEnd);
-      }
-    }
-  }, [chapterId, useLiveblocks, sendCursorPosition, sendSelectionRange, updateCursorPosition, content]);
-
-  // Handle immediate typing detection for responsive feedback
+  // Handle typing detection for parent callback
   const handleTypingStart = useCallback(() => {
-    if (chapterId && user && useLiveblocks) {
-      console.log('ChapterForm: Typing started - updating presence');
-      // Use sendCursorPosition to trigger typing status (it handles typing indicators)
-      const currentPosition = cursorPosition.column || 0;
-      sendCursorPosition(currentPosition);
-    }
-  }, [chapterId, user, useLiveblocks, sendCursorPosition, cursorPosition]);
+    // Call parent's onTypingStart callback if provided
+    onTypingStart?.();
+  }, [onTypingStart]);
 
-  const handleTypingEnd = useCallback(() => {
-    if (chapterId && user && useLiveblocks) {
-      console.log('ChapterForm: Typing ended - presence will auto-clear');
-      // Typing status will automatically clear after timeout in the hook
-    }
-  }, [chapterId, user, useLiveblocks]);
+  // Handle editor focus events
+  const handleEditorFocus = useCallback(() => {
+    editorFocusRef.current = true;
+  }, []);
+
+  const handleEditorBlur = useCallback(() => {
+    // Small delay to prevent immediate blur when clicking between editor elements
+    setTimeout(() => {
+      const editorElement = document.querySelector('[data-lexical-editor="true"]');
+      if (!editorElement?.matches(':focus-within')) {
+        editorFocusRef.current = false;
+      }
+    }, 100);
+  }, []);
 
   const {
     register,
@@ -246,37 +182,8 @@ export function ChapterForm({
     if (chapterId && newContent) {
       const previousContent = previousContentRef.current;
       
-      // Only send update if content actually changed
-      if (newContent !== previousContent) {
-        console.log('ChapterForm: Content changed, scheduling real-time update:', {
-          previousLength: previousContent.length,
-          newLength: newContent.length,
-          chapterId
-        });
-        
-        // Debounce content updates to prevent too many messages
-        clearTimeout((window as any).contentUpdateTimeout);
-        (window as any).contentUpdateTimeout = setTimeout(() => {
-          console.log('ChapterForm: Sending real-time content update:', {
-            contentLength: newContent.length,
-            chapterId,
-            isConnected,
-            hasSendContentUpdate: !!sendContentUpdate
-          });
-          
-          // For now, send the full content as a replacement
-          // This is simpler and more reliable than trying to calculate diffs
-          if (sendContentUpdate && isConnected) {
-            sendContentUpdate(newContent, 0, newContent.length, 'replace');
-            console.log('ChapterForm: Real-time content update sent successfully');
-          } else {
-            console.log('ChapterForm: Cannot send real-time update - WebSocket not connected or function not available');
-          }
-          
-          // Update previous content ref
-          previousContentRef.current = newContent;
-        }, 300); // 300ms debounce for more responsive collaboration
-      }
+      // Update previous content ref
+      previousContentRef.current = newContent;
     }
     
     // Fast auto-save for content changes (works for both create and edit modes)
@@ -309,7 +216,7 @@ export function ChapterForm({
         }
       }, 500); // Very fast - 500ms delay
     }
-  }, [setValue, onAutoSave, isEditing, chapterId, watchedValues, sendContentUpdate]);
+  }, [setValue, onAutoSave, isEditing, chapterId, watchedValues]);
 
   // Auto-save functionality
   const handleAutoSave = useCallback(async (autoSaveContent: string) => {
@@ -798,6 +705,10 @@ export function ChapterForm({
             })}
             placeholder="Enter your chapter title..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+            onFocus={() => {
+              // When title is focused, clear the editor focus flag
+              editorFocusRef.current = false;
+            }}
           />
           {errors.title && (
             <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
@@ -811,169 +722,28 @@ export function ChapterForm({
               Chapter Content
             </label>
             
-            {/* Collaboration Status Bar */}
-            <div className="flex items-center space-x-3">
-              {/* Connection Status */}
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-xs text-gray-500">
-                  {isConnected ? 'Connected' : 'Disconnected'}
-                </span>
-              </div>
-              
-              {/* Active Collaborators */}
-              {collaborators.length > 0 && (
-                <div className="flex items-center space-x-1">
-                  <span className="text-xs text-gray-500">Collaborators:</span>
-                  <div className="flex -space-x-1">
-                    {collaborators.slice(0, 3).map((collaborator) => (
-                      <div
-                        key={collaborator.userId}
-                        className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white"
-                        style={{ backgroundColor: collaborator.color }}
-                        title={`${collaborator.displayName} ${collaborator.isTyping ? '(typing...)' : ''}`}
-                      >
-                        {collaborator.displayName.charAt(0).toUpperCase()}
-                      </div>
-                    ))}
-                    {collaborators.length > 3 && (
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-500 flex items-center justify-center text-xs font-bold text-white">
-                        +{collaborators.length - 3}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Typing Indicators */}
-              {collaborators.filter(c => c.isTyping).length > 0 && (
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-500">
-                    {collaborators.filter(c => c.isTyping).length} typing...
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
           
-          {/* Editor Container with Cursor Overlay */}
+          {/* Editor Container */}
           <div className="relative">
             <LexicalEditor
               value={content}
               onChange={handleContentChange}
-              onCursorChange={handleCursorChange}
               placeholder="Start writing your chapter..."
               isDarkMode={isDarkMode}
               autoSaveInterval={10000}
               className="min-h-[500px]"
               chapterId={chapterId}
-              registerContentUpdateCallback={registerContentUpdateCallback}
-              sendContentUpdate={useLiveblocks ? sendContentUpdate : undefined}
               onTypingStart={handleTypingStart}
-              onTypingEnd={handleTypingEnd}
+              onCursorChange={(position, selectionStart, selectionEnd) => {
+                // Track when user is actively working in the editor
+                editorFocusRef.current = true;
+              }}
             />
-            
-            {/* Remote Cursors Overlay for Rich Text Editor */}
-            {useLiveblocks && remoteCursors.length > 0 && (
-              <div className="absolute inset-0 pointer-events-none z-10">
-                {remoteCursors.map((collaborator) => {
-                  if (!collaborator || !collaborator.position) return null;
-                  
-                  return (
-                    <div key={`cursor-${collaborator.userId}`}>
-                      {/* Cursor indicator */}
-                      <div
-                        className={`absolute w-0.5 h-5 ${collaborator.isTyping ? 'animate-pulse' : ''}`}
-                        style={{
-                          backgroundColor: collaborator.color,
-                          left: `${collaborator.position.x}px`,
-                          top: `${collaborator.position.y}px`,
-                          zIndex: 15,
-                          boxShadow: collaborator.isTyping ? `0 0 8px ${collaborator.color}` : 'none',
-                        }}
-                      >
-                        {/* Cursor label */}
-                        <div
-                          className={`absolute -top-6 left-0 px-2 py-1 rounded text-xs font-medium text-white whitespace-nowrap shadow-sm ${
-                            collaborator.isTyping ? 'animate-bounce' : ''
-                          }`}
-                          style={{ backgroundColor: collaborator.color }}
-                        >
-                          {collaborator.displayName}
-                          {collaborator.isTyping && (
-                            <span className="ml-1">⌨️</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Typing indicator dot */}
-                      {collaborator.isTyping && (
-                        <div
-                          className="absolute w-3 h-3 rounded-full animate-ping"
-                          style={{
-                            backgroundColor: collaborator.color,
-                            left: `${collaborator.position.x - 6}px`,
-                            top: `${collaborator.position.y - 6}px`,
-                            zIndex: 20,
-                          }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
           
           {errors.content && (
             <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
-          )}
-          
-          {/* Collaboration Activity Log */}
-          {useLiveblocks && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="text-xs text-blue-700 space-y-1">
-                <p>✨ <strong>Real-time sync:</strong> {content.length > 0 ? `${content.length} characters synced` : 'No content yet'}</p>
-                <p>👥 <strong>Active users:</strong> {collaborators.length + 1} (including you)</p>
-                <p>⌨️ <strong>Typing status:</strong> {collaborators.filter(c => c.isTyping).length} users typing</p>
-                <p>🖱️ <strong>Active cursors:</strong> {collaborators.filter(c => c.cursorPosition !== undefined).length} cursors visible</p>
-                <p>💾 <strong>Storage state:</strong> {storage ? 'Liveblocks loaded' : 'Loading...'}</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Debug info - remove in production */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-2 text-xs text-gray-500">
-              <p>Debug Info:</p>
-              <p>Mode: {useLiveblocks ? 'Liveblocks' : 'No collaboration'}</p>
-              <p>Collaborators: {collaborators.length + (user ? 1 : 0)} (including you)</p>
-              <p>Others: {collaborators.length}</p>
-              <p>Current User: {user?.id}</p>
-              <p>Connected: {isConnected ? 'Yes' : 'No'}</p>
-              <p>Chapter ID: {chapterId}</p>
-              <p>Typing Users: {collaborators.filter(c => c.isTyping).length}</p>
-              <p>Typing Status: {collaborators.filter(c => c.isTyping).map(c => c.displayName).join(', ') || 'None'}</p>
-              {useLiveblocks && liveblocksCollaboration?.storage && (
-                <p>Storage Content Length: {liveblocksCollaboration.storage.content?.length || 0}</p>
-              )}
-              
-              {/* Manual typing test button */}
-              {useLiveblocks && (
-                <div className="mt-2">
-                  <button
-                    onClick={() => {
-                      console.log('Manual typing test - calling sendContentUpdate');
-                      sendContentUpdate('Test typing indicator', 0, 20, 'replace');
-                    }}
-                    className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                  >
-                    Test Typing Indicator
-                  </button>
-                </div>
-              )}
-            </div>
           )}
         </div>
 

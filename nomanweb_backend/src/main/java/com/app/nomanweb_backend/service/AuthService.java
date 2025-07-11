@@ -4,11 +4,11 @@ import com.app.nomanweb_backend.dto.auth.LoginRequest;
 import com.app.nomanweb_backend.dto.auth.LoginResponse;
 import com.app.nomanweb_backend.dto.auth.RegisterRequest;
 import com.app.nomanweb_backend.entity.EmailVerificationToken;
-import com.app.nomanweb_backend.entity.PasswordResetAttempt;
+import com.app.nomanweb_backend.entity.EmailChangeToken;
 import com.app.nomanweb_backend.entity.RefreshToken;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.EmailVerificationTokenRepository;
-import com.app.nomanweb_backend.repository.PasswordResetAttemptRepository;
+import com.app.nomanweb_backend.repository.EmailChangeTokenRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
-    private final PasswordResetAttemptRepository passwordResetAttemptRepository;
+    private final EmailChangeTokenRepository emailChangeTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
@@ -38,8 +38,8 @@ public class AuthService {
     @Value("${app.email.verification.expiry:48}")
     private int emailVerificationExpiryHours;
 
-    @Value("${security.rate-limit.password-reset.attempts:5}")
-    private int maxPasswordResetAttemptsPerHour;
+    @Value("${app.email.change.expiry:24}")
+    private int emailChangeExpiryHours;
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmailOrUsername(request.getEmail(), request.getEmail())
@@ -53,8 +53,8 @@ public class AuthService {
             throw new RuntimeException("Account is not active");
         }
 
-        // Check if email is verified
-        if (!user.getEmailVerified()) {
+        // Check if email is verified (skip for OAuth users)
+        if (!user.getEmailVerified() && !user.canUseOAuthEndpoints()) {
             throw new RuntimeException(
                     "Please verify your email address before logging in. Check your inbox for the verification link.");
         }
@@ -184,6 +184,9 @@ public class AuthService {
         if (updateData.getProfileImageUrl() != null) {
             user.setProfileImageUrl(updateData.getProfileImageUrl());
         }
+        if (updateData.getCoverImageUrl() != null) {
+            user.setCoverImageUrl(updateData.getCoverImageUrl());
+        }
 
         return userRepository.save(user);
     }
@@ -206,43 +209,10 @@ public class AuthService {
     }
 
     public void forgotPassword(String email, String ipAddress, String userAgent) {
-        // Log the password reset attempt
-        PasswordResetAttempt attempt = PasswordResetAttempt.builder()
-                .email(email)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .tokenGenerated(false)
-                .success(false)
-                .build();
-
         try {
             // Check if user exists
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Check for too many recent attempts from this email
-            LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
-            long recentAttempts = passwordResetAttemptRepository.countByEmailAndCreatedAtAfter(email, oneHourAgo);
-
-            if (recentAttempts >= maxPasswordResetAttemptsPerHour) {
-                log.warn("Too many password reset attempts for email: {} from IP: {}", email, ipAddress);
-                attempt.setTokenGenerated(false);
-                passwordResetAttemptRepository.save(attempt);
-                throw new RuntimeException("Too many password reset attempts. Please try again later.");
-            }
-
-            // Check for too many recent attempts from this IP
-            long recentIpAttempts = passwordResetAttemptRepository.countByIpAddressAndCreatedAtAfter(ipAddress,
-                    oneHourAgo);
-
-            if (recentIpAttempts >= maxPasswordResetAttemptsPerHour * 2) { // Allow more attempts per IP for shared
-                                                                           // networks
-                log.warn("Too many password reset attempts from IP: {}", ipAddress);
-                attempt.setTokenGenerated(false);
-                passwordResetAttemptRepository.save(attempt);
-                throw new RuntimeException(
-                        "Too many password reset attempts from this location. Please try again later.");
-            }
 
             // Generate reset token
             String resetToken = UUID.randomUUID().toString();
@@ -253,32 +223,19 @@ public class AuthService {
             // Send password reset email
             emailService.sendPasswordResetEmail(user, resetToken);
 
-            // Mark attempt as successful with token generated
-            attempt.setTokenGenerated(true);
-            passwordResetAttemptRepository.save(attempt);
-
             log.info("Password reset email sent to: {} from IP: {}", user.getEmail(), ipAddress);
 
         } catch (RuntimeException e) {
-            // Save failed attempt
-            attempt.setTokenGenerated(false);
-            passwordResetAttemptRepository.save(attempt);
-
             // For security, we don't reveal if the email exists or not
             // Always return success to prevent email enumeration
             log.warn("Password reset attempt failed for email: {} from IP: {} - {}", email, ipAddress, e.getMessage());
 
-            // Re-throw only for rate limiting, not for user not found
-            if (e.getMessage().contains("Too many")) {
-                throw e;
-            }
+            // Re-throw the exception
+            throw e;
         }
     }
 
     public void resetPassword(String token, String newPassword, String ipAddress, String userAgent) {
-        // Find the original attempt that generated this token
-        PasswordResetAttempt attempt = null;
-
         try {
             User user = userRepository.findByPasswordResetToken(token)
                     .orElseThrow(() -> new RuntimeException("Invalid reset token"));
@@ -287,13 +244,6 @@ public class AuthService {
                 throw new RuntimeException("Reset token has expired");
             }
 
-            // Find the most recent attempt for this email that generated a token
-            attempt = passwordResetAttemptRepository.findByEmailOrderByCreatedAtDesc(user.getEmail())
-                    .stream()
-                    .filter(a -> a.getTokenGenerated() && !a.getSuccess())
-                    .findFirst()
-                    .orElse(null);
-
             // Update password
             user.setPasswordHash(passwordEncoder.encode(newPassword));
             user.setPasswordResetToken(null);
@@ -301,24 +251,12 @@ public class AuthService {
             user.setLastPasswordChange(LocalDateTime.now());
             userRepository.save(user);
 
-            // Mark the attempt as successful
-            if (attempt != null) {
-                attempt.setSuccess(true);
-                passwordResetAttemptRepository.save(attempt);
-            }
-
             // Send notification email
             emailService.sendPasswordChangeNotification(user);
 
             log.info("Password reset successfully for user: {} from IP: {}", user.getEmail(), ipAddress);
 
         } catch (RuntimeException e) {
-            // If we found an attempt, we can mark it as failed
-            if (attempt != null) {
-                attempt.setSuccess(false);
-                passwordResetAttemptRepository.save(attempt);
-            }
-
             log.warn("Password reset failed for token from IP: {} - {}", ipAddress, e.getMessage());
             throw e;
         }
@@ -371,5 +309,190 @@ public class AuthService {
 
     public void logout(String refreshToken) {
         logout(refreshToken, "unknown", "unknown");
+    }
+
+    public void changeEmail(UUID userId, String currentPassword, String newEmail, String ipAddress, String userAgent) {
+        User user = getCurrentUser(userId);
+
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Check if new email is different from current email
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new RuntimeException("New email must be different from current email");
+        }
+
+        // Check if new email is already in use
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new RuntimeException("Email address is already in use");
+        }
+
+        // Delete any existing unused email change tokens for this user
+        emailChangeTokenRepository.deleteAllByUser(user);
+
+        // Generate email change token
+        String changeToken = generateEmailChangeToken(user, newEmail);
+
+        // Send verification email to new email address
+        emailService.sendEmailChangeVerificationEmail(user, newEmail, changeToken);
+
+        log.info("Email change verification sent to: {} for user: {} from IP: {}", newEmail, user.getEmail(),
+                ipAddress);
+    }
+
+    public void changeEmailOAuth(UUID userId, String newEmail, String ipAddress, String userAgent) {
+        User user = getCurrentUser(userId);
+
+        // Check if user is OAuth user (no password hash)
+        if (user.getPasswordHash() != null) {
+            throw new RuntimeException(
+                    "This endpoint is only for OAuth users. Please use the regular email change endpoint.");
+        }
+
+        // Check if new email is different from current email
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new RuntimeException("New email must be different from current email");
+        }
+
+        // Check if new email is already in use
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new RuntimeException("Email address is already in use");
+        }
+
+        // Delete any existing unused email change tokens for this user
+        emailChangeTokenRepository.deleteAllByUser(user);
+
+        // Generate email change token
+        String changeToken = generateEmailChangeToken(user, newEmail);
+
+        // Send verification email to new email address
+        emailService.sendEmailChangeVerificationEmail(user, newEmail, changeToken);
+
+        log.info("OAuth email change verification sent to: {} for user: {} from IP: {}", newEmail, user.getEmail(),
+                ipAddress);
+    }
+
+    public void verifyEmailChange(String token) {
+        EmailChangeToken changeToken = emailChangeTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid email change token"));
+
+        if (!changeToken.isValid()) {
+            throw new RuntimeException("Email change token has expired or already been used");
+        }
+
+        User user = changeToken.getUser();
+        String oldEmail = user.getEmail();
+        String newEmail = changeToken.getNewEmail();
+
+        // Update user email
+        user.setEmail(newEmail);
+        user.setEmailVerified(true); // New email is verified by this process
+        userRepository.save(user);
+
+        // Mark token as used
+        changeToken.setUsed(true);
+        changeToken.setUsedAt(LocalDateTime.now());
+        emailChangeTokenRepository.save(changeToken);
+
+        // Send notification to old email
+        try {
+            emailService.sendEmailChangeNotification(user, oldEmail);
+        } catch (Exception e) {
+            log.warn("Failed to send email change notification to old email: {}", oldEmail, e);
+        }
+
+        log.info("Email changed successfully for user: {} from {} to {}", user.getUsername(), oldEmail, newEmail);
+    }
+
+    public void resendEmailChangeVerification(UUID userId, String newEmail) {
+        User user = getCurrentUser(userId);
+
+        // Check if there's a pending email change for this user and email
+        EmailChangeToken existingToken = emailChangeTokenRepository.findByUserAndNewEmail(user, newEmail)
+                .orElseThrow(() -> new RuntimeException("No pending email change found for this email"));
+
+        if (!existingToken.isValid()) {
+            // Delete expired token and create new one
+            emailChangeTokenRepository.delete(existingToken);
+            String newToken = generateEmailChangeToken(user, newEmail);
+            emailService.sendEmailChangeVerificationEmail(user, newEmail, newToken);
+        } else {
+            // Resend with existing token
+            emailService.sendEmailChangeVerificationEmail(user, newEmail, existingToken.getToken());
+        }
+
+        log.info("Email change verification resent to: {} for user: {}", newEmail, user.getEmail());
+    }
+
+    private String generateEmailChangeToken(User user, String newEmail) {
+        String token = UUID.randomUUID().toString();
+
+        EmailChangeToken changeToken = EmailChangeToken.builder()
+                .user(user)
+                .token(token)
+                .newEmail(newEmail)
+                .expiresAt(LocalDateTime.now().plusHours(emailChangeExpiryHours))
+                .build();
+
+        emailChangeTokenRepository.save(changeToken);
+        return token;
+    }
+
+    public void changeUsername(UUID userId, String currentPassword, String newUsername, String ipAddress,
+            String userAgent) {
+        User user = getCurrentUser(userId);
+
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Check if new username is different from current username
+        if (newUsername.equalsIgnoreCase(user.getUsername())) {
+            throw new RuntimeException("New username must be different from current username");
+        }
+
+        // Check if new username is already in use
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new RuntimeException("Username is already taken");
+        }
+
+        // Update username
+        String oldUsername = user.getUsername();
+        user.setUsername(newUsername);
+        userRepository.save(user);
+
+        log.info("Username changed successfully for user: {} from {} to {} from IP: {}", user.getEmail(), oldUsername,
+                newUsername, ipAddress);
+    }
+
+    public void changeUsernameOAuth(UUID userId, String newUsername, String ipAddress, String userAgent) {
+        User user = getCurrentUser(userId);
+
+        // Check if user is OAuth user (no password hash)
+        if (user.getPasswordHash() != null) {
+            throw new RuntimeException(
+                    "This endpoint is only for OAuth users. Please use the regular username change endpoint.");
+        }
+
+        // Check if new username is different from current username
+        if (newUsername.equalsIgnoreCase(user.getUsername())) {
+            throw new RuntimeException("New username must be different from current username");
+        }
+
+        // Check if new username is already in use
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new RuntimeException("Username is already taken");
+        }
+
+        // Update username
+        String oldUsername = user.getUsername();
+        user.setUsername(newUsername);
+        userRepository.save(user);
+
+        log.info("OAuth username changed successfully for user: {} from {} to {} from IP: {}", user.getEmail(),
+                oldUsername, newUsername, ipAddress);
     }
 }

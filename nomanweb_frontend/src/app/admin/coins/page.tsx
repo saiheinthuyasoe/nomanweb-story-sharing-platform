@@ -13,6 +13,7 @@ import {
   CalendarIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import { useCoinTransfersRealtime } from '@/hooks/useCoinTransfersRealtime';
 
 // Types
 interface Transaction {
@@ -89,6 +90,8 @@ export default function CoinManagementPage() {
     reason: ''
   });
   const [transferLoading, setTransferLoading] = useState(false);
+  const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
+  const [transferConnectionStatus, setTransferConnectionStatus] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'transactions') {
@@ -104,6 +107,16 @@ export default function CoinManagementPage() {
       fetchTransactions();
     }
   }, [transactionFilters]);
+
+  // Set up real-time updates for coin transfers
+  useCoinTransfersRealtime({
+    onTransferCompleted: (transfer) => {
+      setRecentTransfers(prev => [transfer, ...prev.slice(0, 9)]); // Keep only last 10 transfers
+    },
+    onConnectionChange: (connected) => {
+      setTransferConnectionStatus(connected);
+    }
+  });
 
   // Transaction functions
   const fetchTransactions = async () => {
@@ -1017,6 +1030,74 @@ export default function CoinManagementPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Recent Transfers - Real-time Updates */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <h3 className="text-lg font-medium text-gray-900">Recent Transfers</h3>
+                <div className="ml-3 flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-2 ${transferConnectionStatus ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className={`text-sm ${transferConnectionStatus ? 'text-green-600' : 'text-red-600'}`}>
+                    {transferConnectionStatus ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+              </div>
+              <span className="text-sm text-gray-500">Live Updates</span>
+            </div>
+            
+            {recentTransfers.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <ArrowUpIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p>No recent transfers yet</p>
+                <p className="text-sm">Transfer updates will appear here in real-time</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentTransfers.map((transfer, index) => (
+                                     <div
+                     key={transfer.transferId}
+                     className={`p-4 rounded-lg border-l-4 ${
+                       transfer.transferType === 'transfer' 
+                         ? 'border-l-green-500 bg-green-50' 
+                         : 'border-l-red-500 bg-red-50'
+                     } ${index === 0 ? 'animate-pulse' : ''}`}
+                   >
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center">
+                         {transfer.transferType === 'transfer' ? (
+                           <ArrowUpIcon className="h-5 w-5 text-green-600 mr-2" />
+                         ) : (
+                           <ArrowDownIcon className="h-5 w-5 text-red-600 mr-2" />
+                         )}
+                         <div>
+                           <p className="font-medium text-gray-900">
+                             {transfer.transferType === 'transfer' ? 'Transferred' : 'Withdrawn'} {transfer.amount} coins
+                           </p>
+                           <p className="text-sm text-gray-600">
+                             {transfer.transferType === 'transfer' ? 'to' : 'from'} {transfer.user.username} ({transfer.user.email})
+                           </p>
+                         </div>
+                       </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">
+                          {new Date(transfer.timestamp).toLocaleTimeString()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Balance: {transfer.newBalance.toLocaleString()} coins
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Reason:</span> {transfer.reason}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

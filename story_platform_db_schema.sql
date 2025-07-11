@@ -9,6 +9,7 @@
         display_name VARCHAR(100),
         password_hash VARCHAR(255), -- NULL for OAuth users
         profile_image_url TEXT,
+        cover_image_url TEXT,
         bio TEXT,
         role ENUM('user', 'admin') DEFAULT 'user',
         status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
@@ -33,20 +34,9 @@
         INDEX idx_users_reset_token (password_reset_token)
     );
 
--- Password Reset Attempts (Security tracking)
-CREATE TABLE password_reset_attempts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL,
-    ip_address VARCHAR(45), -- Support IPv6
-    user_agent TEXT,
-    token_generated BOOLEAN DEFAULT FALSE,
-    success BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_reset_attempts_email (email),
-    INDEX idx_reset_attempts_ip (ip_address),
-    INDEX idx_reset_attempts_created (created_at)
-);
+-- Password Reset Attempts table removed
+-- Rate limiting is now handled by Bucket4j in-memory like login/register
+-- This provides better performance and consistency across all authentication flows
 
 -- Email Verification Tokens
 CREATE TABLE email_verification_tokens (
@@ -62,6 +52,24 @@ CREATE TABLE email_verification_tokens (
     INDEX idx_verification_token (token),
     INDEX idx_verification_user (user_id),
     INDEX idx_verification_expires (expires_at)
+);
+
+-- Email Change Tokens
+CREATE TABLE email_change_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    new_email VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMP NULL,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_email_change_token (token),
+    INDEX idx_email_change_user (user_id),
+    INDEX idx_email_change_expires (expires_at),
+    INDEX idx_email_change_used (used)
 );
 
 -- User Relationships (Follow/Unfollow)
@@ -483,7 +491,7 @@ INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('max_chapter_word_count', '10000', 'Maximum words per chapter'),
 ('max_story_chapters', '1000', 'Maximum chapters per story'),
 ('password_reset_token_expiry_hours', '24', 'Password reset token validity in hours'),
-('max_password_reset_attempts_per_hour', '5', 'Maximum password reset attempts per IP per hour'),
+-- Removed: max_password_reset_attempts_per_hour - now handled by Bucket4j rate limiting
 ('email_verification_token_expiry_hours', '48', 'Email verification token validity in hours'),
 ('password_min_length', '8', 'Minimum password length requirement'),
 ('require_password_change_days', '90', 'Days after which password change is recommended');

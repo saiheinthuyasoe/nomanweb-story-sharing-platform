@@ -66,14 +66,25 @@ export default function LoginPage() {
   };
 
   const handleGoogleSuccess = (response: any) => {
-    // Google OAuth success - need to set token and user in AuthContext
-    if (response.token && response.user) {
-      // Set token and user in AuthContext
-      setAuthData(response.token, response.user);
+    console.log('🔐 Google OAuth response:', response);
+    // Google OAuth success - need to set token, refreshToken and user in AuthContext
+    if (response.token && response.refreshToken && response.user) {
+      // Set token, refreshToken and user in AuthContext
+      setAuthData(response.token, response.refreshToken, response.user);
       
       toast.success('Google login successful!');
-      router.push('/dashboard');
+      
+      // Add a small delay to ensure state is updated before navigation
+      setTimeout(() => {
+        console.log('🚀 Navigating to dashboard after Google OAuth');
+        router.push('/dashboard');
+      }, 100);
     } else {
+      console.error('❌ Google OAuth response missing required fields:', {
+        hasToken: !!response.token,
+        hasRefreshToken: !!response.refreshToken,
+        hasUser: !!response.user
+      });
       toast.error('Google login failed - invalid response');
     }
   };
@@ -83,14 +94,25 @@ export default function LoginPage() {
   };
 
   const handleLineSuccess = (response: any) => {
-    // LINE OAuth success - need to set token and user in AuthContext
-    if (response.token && response.user) {
-      // Set token and user in AuthContext
-      setAuthData(response.token, response.user);
+    console.log('🔐 LINE OAuth response:', response);
+    // LINE OAuth success - need to set token, refreshToken and user in AuthContext
+    if (response.token && response.refreshToken && response.user) {
+      // Set token, refreshToken and user in AuthContext
+      setAuthData(response.token, response.refreshToken, response.user);
       
       toast.success('LINE login successful!');
-      router.push('/dashboard');
+      
+      // Add a small delay to ensure state is updated before navigation
+      setTimeout(() => {
+        console.log('🚀 Navigating to dashboard after LINE OAuth');
+        router.push('/dashboard');
+      }, 100);
     } else {
+      console.error('❌ LINE OAuth response missing required fields:', {
+        hasToken: !!response.token,
+        hasRefreshToken: !!response.refreshToken,
+        hasUser: !!response.user
+      });
       toast.error('LINE login failed - invalid response');
     }
   };
