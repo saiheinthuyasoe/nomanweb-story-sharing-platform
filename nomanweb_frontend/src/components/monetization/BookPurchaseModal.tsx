@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { X, Coins, Lock, CreditCard, BookOpen } from 'lucide-react';
 import { usePurchaseBook } from '@/hooks/useBookPurchase';
 import { useCoinBalance } from '@/hooks/useCoinBalance';
+import { PurchaseBenefitDisplay } from '@/components/purchase/PurchaseBenefitDisplay';
 
 interface BookPurchaseModalProps {
   isOpen: boolean;
@@ -98,6 +99,15 @@ export default function BookPurchaseModal({
           </div>
 
           {/* Purchase Info */}
+          <div className="mb-6">
+            <PurchaseBenefitDisplay
+              itemType="story"
+              itemTitle={storyTitle}
+              currentPricingType="WHOLE_BOOK"
+              showCompact={true}
+            />
+          </div>
+
           <div className="mb-6 p-4 border rounded-lg">
             <h4 className="font-medium mb-2">What you'll get:</h4>
             <ul className="text-sm text-gray-600 space-y-1">

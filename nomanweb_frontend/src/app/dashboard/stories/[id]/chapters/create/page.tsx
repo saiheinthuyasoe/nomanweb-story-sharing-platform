@@ -44,7 +44,7 @@ export default function CreateChapterPage() {
 
     createChapter(chapterData, {
       onSuccess: (newChapter) => {
-        router.push(`/stories/${storyId}/chapters/${newChapter.chapterNumber}`);
+        router.push(`/stories/${storyId}/chapters/${newChapter.chapterNumber}/read`);
       }
     });
   };

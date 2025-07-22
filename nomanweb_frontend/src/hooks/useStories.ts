@@ -1,19 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { storiesApi, categoriesApi, GetStoriesParams, SearchStoriesParams } from '@/lib/api/stories';
-import { CreateStoryRequest, UpdateStoryRequest, Story, StoryPreview } from '@/types/story';
-import { toast } from 'react-hot-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  storiesApi,
+  categoriesApi,
+  GetStoriesParams,
+  SearchStoriesParams,
+} from "@/lib/api/stories";
+import {
+  CreateStoryRequest,
+  UpdateStoryRequest,
+  Story,
+  StoryPreview,
+} from "@/types/story";
+import { toast } from "react-hot-toast";
 
 // Story queries
 export const useStories = (params: GetStoriesParams = {}) => {
   return useQuery({
-    queryKey: ['stories', params],
+    queryKey: ["stories", params],
     queryFn: () => storiesApi.getStories(params),
   });
 };
 
 export const useStory = (id: string, enabled = true) => {
   return useQuery({
-    queryKey: ['story', id],
+    queryKey: ["story", id],
     queryFn: () => storiesApi.getStory(id),
     enabled: enabled && !!id,
   });
@@ -21,47 +31,52 @@ export const useStory = (id: string, enabled = true) => {
 
 export const useMyStories = (params: { page?: number; size?: number } = {}) => {
   return useQuery({
-    queryKey: ['my-stories', params],
+    queryKey: ["my-stories", params],
     queryFn: () => storiesApi.getMyStories(params),
   });
 };
 
-export const useMyStoriesIncludingDeleted = (params: { page?: number; size?: number } = {}) => {
+export const useMyStoriesIncludingDeleted = (
+  params: { page?: number; size?: number } = {}
+) => {
   return useQuery({
-    queryKey: ['my-stories-all', params],
+    queryKey: ["my-stories-all", params],
     queryFn: () => {
-      console.log('📚 Fetching all stories including deleted with params:', params);
+      console.log(
+        "📚 Fetching all stories including deleted with params:",
+        params
+      );
       return storiesApi.getMyStoriesIncludingDeleted(params);
     },
     onSuccess: (data) => {
-      console.log('📚 Successfully fetched all stories including deleted:', {
+      console.log("📚 Successfully fetched all stories including deleted:", {
         totalStories: data.content?.length || 0,
-        deletedStories: data.content?.filter(s => s.isDeleted).length || 0
+        deletedStories: data.content?.filter((s) => s.isDeleted).length || 0,
       });
     },
     onError: (error) => {
-      console.error('❌ Failed to fetch all stories including deleted:', error);
-    }
+      console.error("❌ Failed to fetch all stories including deleted:", error);
+    },
   });
 };
 
 export const useStoriesByAuthor = (
-  authorId: string, 
+  authorId: string,
   params: { page?: number; size?: number } = {}
 ) => {
   return useQuery({
-    queryKey: ['stories-by-author', authorId, params],
+    queryKey: ["stories-by-author", authorId, params],
     queryFn: () => storiesApi.getStoriesByAuthor(authorId, params),
     enabled: !!authorId,
   });
 };
 
 export const useStoriesByCategory = (
-  categoryId: string, 
+  categoryId: string,
   params: { page?: number; size?: number } = {}
 ) => {
   return useQuery({
-    queryKey: ['stories-by-category', categoryId, params],
+    queryKey: ["stories-by-category", categoryId, params],
     queryFn: () => storiesApi.getStoriesByCategory(categoryId, params),
     enabled: !!categoryId,
   });
@@ -69,29 +84,33 @@ export const useStoriesByCategory = (
 
 export const useSearchStories = (params: SearchStoriesParams) => {
   return useQuery({
-    queryKey: ['search-stories', params],
+    queryKey: ["search-stories", params],
     queryFn: () => storiesApi.searchStories(params),
     enabled: !!params.query,
   });
 };
 
-export const useTrendingStories = (params: { page?: number; size?: number } = {}) => {
+export const useTrendingStories = (
+  params: { page?: number; size?: number } = {}
+) => {
   return useQuery({
-    queryKey: ['trending-stories', params],
+    queryKey: ["trending-stories", params],
     queryFn: () => storiesApi.getTrendingStories(params),
   });
 };
 
-export const useFeaturedStories = (params: { page?: number; size?: number } = {}) => {
+export const useFeaturedStories = (
+  params: { page?: number; size?: number } = {}
+) => {
   return useQuery({
-    queryKey: ['featured-stories', params],
+    queryKey: ["featured-stories", params],
     queryFn: () => storiesApi.getFeaturedStories(params),
   });
 };
 
 export const useCanAccessStory = (id: string) => {
   return useQuery({
-    queryKey: ['can-access-story', id],
+    queryKey: ["can-access-story", id],
     queryFn: () => storiesApi.canUserAccessStory(id),
     enabled: !!id,
   });
@@ -104,12 +123,12 @@ export const useCreateStory = () => {
   return useMutation({
     mutationFn: (data: CreateStoryRequest) => storiesApi.createStory(data),
     onSuccess: (newStory) => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      toast.success('Story created successfully!');
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      toast.success("Story created successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create story');
+      toast.error(error.response?.data?.message || "Failed to create story");
     },
   });
 };
@@ -118,16 +137,16 @@ export const useUpdateStory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateStoryRequest }) => 
+    mutationFn: ({ id, data }: { id: string; data: UpdateStoryRequest }) =>
       storiesApi.updateStory(id, data),
     onSuccess: (updatedStory, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['story', id] });
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      toast.success('Story updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ["story", id] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      toast.success("Story updated successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update story');
+      toast.error(error.response?.data?.message || "Failed to update story");
     },
   });
 };
@@ -138,13 +157,13 @@ export const useDeleteStory = () => {
   return useMutation({
     mutationFn: (id: string) => storiesApi.deleteStory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
-      toast.success('Story moved to trash successfully!');
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories-all"] });
+      toast.success("Story moved to trash successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete story');
+      toast.error(error.response?.data?.message || "Failed to delete story");
     },
   });
 };
@@ -154,27 +173,49 @@ export const useMoveStoryToTrash = () => {
 
   return useMutation({
     mutationFn: (id: string) => {
-      console.log('🔄 Moving story to trash:', id);
+      console.log("🔄 Moving story to trash:", id);
       return storiesApi.moveStoryToTrash(id);
     },
     onSuccess: (data, storyId) => {
-      console.log('✅ Story moved to trash successfully:', storyId);
-      console.log('🔄 Invalidating queries...');
-      
+      console.log("✅ Story moved to trash successfully:", storyId);
+      console.log("🔄 Invalidating queries...");
+
       // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories-all"] });
+
       // Force refetch the trash data
-      queryClient.refetchQueries({ queryKey: ['my-stories-all'] });
-      
-      console.log('✅ Queries invalidated and refetched');
-      toast.success('Story moved to trash successfully!');
+      queryClient.refetchQueries({ queryKey: ["my-stories-all"] });
+
+      console.log("✅ Queries invalidated and refetched");
+      toast.success("Story moved to trash successfully!");
     },
     onError: (error: any, storyId) => {
-      console.error('❌ Failed to move story to trash:', storyId, error);
-      toast.error(error.response?.data?.message || 'Failed to move story to trash');
+      console.error("❌ Failed to move story to trash:", storyId, error);
+      
+      // Check if this is a purchase protection violation
+      const errorData = error.response?.data as any;
+      if (errorData?.error === 'PURCHASE_PROTECTION_VIOLATION') {
+        console.log("🚨 Purchase protection violation detected:", errorData);
+        
+        // Dispatch a custom event for the UI to handle the refund modal
+        window.dispatchEvent(new CustomEvent('purchase-protection-violation', {
+          detail: {
+            storyId: errorData.storyId,
+            storyTitle: errorData.storyTitle,
+            totalPurchases: errorData.totalPurchases,
+            refundAmount: errorData.refundAmount,
+            message: errorData.message
+          }
+        }));
+        
+        toast.error(`Cannot delete story: ${errorData.totalPurchases} purchases found. Refunds required.`);
+      } else {
+        toast.error(
+          errorData?.message || "Failed to move story to trash"
+        );
+      }
     },
   });
 };
@@ -185,13 +226,13 @@ export const useRestoreStoryFromTrash = () => {
   return useMutation({
     mutationFn: (id: string) => storiesApi.restoreStoryFromTrash(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
-      toast.success('Story restored successfully!');
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories-all"] });
+      toast.success("Story restored successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to restore story');
+      toast.error(error.response?.data?.message || "Failed to restore story");
     },
   });
 };
@@ -202,13 +243,15 @@ export const usePermanentlyDeleteStory = () => {
   return useMutation({
     mutationFn: (id: string) => storiesApi.permanentlyDeleteStory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories-all'] });
-      toast.success('Story permanently deleted!');
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories-all"] });
+      toast.success("Story permanently deleted!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to permanently delete story');
+      toast.error(
+        error.response?.data?.message || "Failed to permanently delete story"
+      );
     },
   });
 };
@@ -219,13 +262,13 @@ export const usePublishStory = () => {
   return useMutation({
     mutationFn: (id: string) => storiesApi.publishStory(id),
     onSuccess: (publishedStory) => {
-      queryClient.invalidateQueries({ queryKey: ['story', publishedStory.id] });
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      toast.success('Story published successfully!');
+      queryClient.invalidateQueries({ queryKey: ["story", publishedStory.id] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      toast.success("Story published successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to publish story');
+      toast.error(error.response?.data?.message || "Failed to publish story");
     },
   });
 };
@@ -236,28 +279,48 @@ export const useUnpublishStory = () => {
   return useMutation({
     mutationFn: (id: string) => storiesApi.unpublishStory(id),
     onSuccess: (unpublishedStory) => {
-      queryClient.invalidateQueries({ queryKey: ['story', unpublishedStory.id] });
-      queryClient.invalidateQueries({ queryKey: ['stories'] });
-      queryClient.invalidateQueries({ queryKey: ['my-stories'] });
-      toast.success('Story unpublished successfully!');
+      queryClient.invalidateQueries({
+        queryKey: ["story", unpublishedStory.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      
+      // Add these new invalidations:
+      // Invalidate book access cache
+      queryClient.invalidateQueries({
+        queryKey: ["bookAccess", unpublishedStory.id],
+      });
+      
+      // Invalidate all chapter access caches for this story's chapters
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access"],
+        predicate: (query) => {
+          return query.queryKey[0] === "chapter-access";
+        },
+      });
+      
+      // Invalidate batch chapter access queries
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access-batch"],
+      });
+
+      toast.success("Story unpublished successfully!");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to unpublish story');
-    },
+    // ... existing code ...
   });
 };
 
 // Category hooks
 export const useCategories = () => {
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: () => categoriesApi.getCategories(),
   });
 };
 
 export const useCategory = (id: string) => {
   return useQuery({
-    queryKey: ['category', id],
+    queryKey: ["category", id],
     queryFn: () => categoriesApi.getCategory(id),
     enabled: !!id,
   });
@@ -269,4 +332,4 @@ export const useIncrementStoryView = () => {
     mutationFn: (id: string) => storiesApi.incrementStoryView(id),
     // Don't show toast notifications for view tracking
   });
-}; 
+};

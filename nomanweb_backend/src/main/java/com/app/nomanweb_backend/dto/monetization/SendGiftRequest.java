@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -16,8 +17,10 @@ import java.util.UUID;
 @Builder
 public class SendGiftRequest {
 
-    @NotNull(message = "Gift ID is required")
-    private UUID giftId;
+    private String giftId; // Can be UUID for predefined gifts or string for emoji/custom gifts
+
+    @Positive(message = "Custom amount must be positive")
+    private BigDecimal customAmount; // For custom coin amounts
 
     @NotNull(message = "Recipient ID is required")
     private UUID recipientId;

@@ -20,6 +20,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/chapters")
@@ -339,7 +341,7 @@ public class ChapterController {
     }
 
     @PostMapping("/{chapterId}/unpublish")
-    public ResponseEntity<ChapterResponse> unpublishChapter(
+    public ResponseEntity<?> unpublishChapter(
             @PathVariable UUID chapterId,
             HttpServletRequest httpRequest) {
         try {
@@ -348,10 +350,32 @@ public class ChapterController {
             return ResponseEntity.ok(chapter);
         } catch (IllegalArgumentException e) {
             log.error("Error unpublishing chapter: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+
+            // Return structured error response for purchase protection
+            if (e.getMessage().contains("Cannot unpublish chapter with existing purchases")) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "PURCHASE_PROTECTION_VIOLATION");
+                errorResponse.put("message", e.getMessage());
+                errorResponse.put("chapterId", chapterId.toString());
+                errorResponse.put("requiresRefunds", true);
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+            }
+
+            // Return generic error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "VALIDATION_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             log.error("Unexpected error unpublishing chapter", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "INTERNAL_SERVER_ERROR");
+            errorResponse.put("message", "An unexpected error occurred");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -434,7 +458,7 @@ public class ChapterController {
 
     // Move chapter to trash
     @PostMapping("/{chapterId}/trash")
-    public ResponseEntity<Void> moveChapterToTrash(
+    public ResponseEntity<?> moveChapterToTrash(
             @PathVariable UUID chapterId,
             HttpServletRequest httpRequest) {
         try {
@@ -443,10 +467,32 @@ public class ChapterController {
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             log.error("Error moving chapter to trash: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+
+            // Return structured error response for purchase protection
+            if (e.getMessage().contains("Cannot move chapter to trash with existing purchases")) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "PURCHASE_PROTECTION_VIOLATION");
+                errorResponse.put("message", e.getMessage());
+                errorResponse.put("chapterId", chapterId.toString());
+                errorResponse.put("requiresRefunds", true);
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+            }
+
+            // Return generic error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "VALIDATION_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             log.error("Unexpected error moving chapter to trash", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "INTERNAL_SERVER_ERROR");
+            errorResponse.put("message", "An unexpected error occurred");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -532,10 +578,46 @@ public class ChapterController {
             chapterService.bulkRestoreFromTrash(chapterIds, authorId);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
-            log.error("Error bulk restoring chapters from trash: {}", e.getMessage());
+            log.error("Error bulk publishing chapters: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Unexpected error bulk restoring chapters from trash", e);
+            log.error("Unexpected error bulk publishing chapters", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Bulk publish chapters by story
+    @PostMapping("/story/{storyId}/bulk/publish")
+    public ResponseEntity<Void> bulkPublishChaptersByStory(
+            @PathVariable UUID storyId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkPublishChaptersByStory(storyId, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk publishing chapters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk publishing chapters", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Bulk unpublish chapters by story
+    @PostMapping("/story/{storyId}/bulk/unpublish")
+    public ResponseEntity<Void> bulkUnpublishChaptersByStory(
+            @PathVariable UUID storyId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.bulkUnpublishChaptersByStory(storyId, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error bulk unpublishing chapters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error bulk unpublishing chapters", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

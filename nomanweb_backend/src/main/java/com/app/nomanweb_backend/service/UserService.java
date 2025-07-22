@@ -26,4 +26,7 @@ public interface UserService {
 
     // Get user profile information
     Map<String, Object> getUserProfile(UUID userId);
+
+    // Search users by email, username, or display name
+    Page<Map<String, Object>> searchUsers(String query, Pageable pageable);
 }

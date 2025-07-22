@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useChapters";
 import { useChapterAccessBatch } from "@/hooks/useChapterAccess";
 import { formatDistanceToNow } from "date-fns";
+import { ProtectedActionButton } from "@/components/protection/ProtectedActionButton";
 import {
   EyeIcon,
   HeartIcon,
@@ -36,7 +37,8 @@ import {
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import BulkChapterUpload from "./BulkChapterUpload";
-import { QuickCreateChapter } from './QuickCreateChapter';
+import { QuickCreateChapter } from "./QuickCreateChapter";
+import { refundApi } from "@/lib/api/refunds";
 
 interface ChapterManagementProps {
   storyId: string;
@@ -70,34 +72,51 @@ export default function ChapterManagement({
     useBulkDeleteChapters();
 
   // Trash hooks
-  const { mutate: moveToTrash, isPending: isMovingToTrash } = useMoveChapterToTrash();
-  const { mutate: restoreFromTrash, isPending: isRestoring } = useRestoreChapterFromTrash();
-  const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } = usePermanentlyDeleteChapter();
-  const { data: trashChapters = [], isLoading: isLoadingTrash } = useTrashByStory(storyId, isAuthor);
-  const { mutate: bulkMoveToTrash, isPending: isBulkMovingToTrash } = useBulkMoveToTrash();
-  const { mutate: bulkRestoreFromTrash, isPending: isBulkRestoring } = useBulkRestoreFromTrash();
-  const { mutate: bulkPermanentlyDelete, isPending: isBulkPermanentlyDeleting } = useBulkPermanentlyDelete();
+  const { mutate: moveToTrash, isPending: isMovingToTrash } =
+    useMoveChapterToTrash();
+  const { mutate: restoreFromTrash, isPending: isRestoring } =
+    useRestoreChapterFromTrash();
+  const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } =
+    usePermanentlyDeleteChapter();
+  const { data: trashChapters = [], isLoading: isLoadingTrash } =
+    useTrashByStory(storyId, isAuthor);
+  const { mutate: bulkMoveToTrash, isPending: isBulkMovingToTrash } =
+    useBulkMoveToTrash();
+  const { mutate: bulkRestoreFromTrash, isPending: isBulkRestoring } =
+    useBulkRestoreFromTrash();
+  const {
+    mutate: bulkPermanentlyDelete,
+    isPending: isBulkPermanentlyDeleting,
+  } = useBulkPermanentlyDelete();
 
-  const [activeTab, setActiveTab] = useState<"published" | "draft" | "all" | "trash">(
-    "all"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "published" | "draft" | "all" | "trash"
+  >("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [selectedChapters, setSelectedChapters] = useState<Set<string>>(
     new Set()
   );
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-  const [showRestoreConfirm, setShowRestoreConfirm] = useState<string | null>(null);
-  const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState<string | null>(null);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState<string | null>(
+    null
+  );
+  const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState<
+    string | null
+  >(null);
   const [showBulkRestoreConfirm, setShowBulkRestoreConfirm] = useState(false);
-  const [showBulkPermanentDeleteConfirm, setShowBulkPermanentDeleteConfirm] = useState(false);
+  const [showBulkPermanentDeleteConfirm, setShowBulkPermanentDeleteConfirm] =
+    useState(false);
 
   // Get chapter access for non-authors
   const visibleChapters = chapters.filter(
     (chapter) => chapter.status === "PUBLISHED"
   );
-  const chapterIds = visibleChapters.map(chapter => chapter.id);
-  const { data: chapterAccess = {} } = useChapterAccessBatch(chapterIds, !isAuthor);
+  const chapterIds = visibleChapters.map((chapter) => chapter.id);
+  const { data: chapterAccess = {} } = useChapterAccessBatch(
+    chapterIds,
+    !isAuthor
+  );
 
   if (!isAuthor) {
     // For non-authors, show only published chapters
@@ -181,12 +200,18 @@ export default function ChapterManagement({
     publishChapter(chapterId);
   };
 
-  const handleUnpublish = (chapterId: string) => {
-    unpublishChapter(chapterId);
+  const handleUnpublish = async (chapterId: string) => {
+    console.log(`🔍 Attempting to unpublish chapter: ${chapterId}`);
+    console.log(`📊 Story pricing type: ${story?.pricingType}`);
+    // This function should only be called by ProtectedActionButton when protection allows it
+    await unpublishChapter(chapterId);
   };
 
-  const handleDelete = (chapterId: string) => {
-    deleteChapter(chapterId);
+  const handleDelete = async (chapterId: string) => {
+    console.log(`🔍 Attempting to delete chapter: ${chapterId}`);
+    console.log(`📊 Story pricing type: ${story?.pricingType}`);
+    // This function should only be called by ProtectedActionButton when protection allows it
+    await deleteChapter(chapterId);
     setDeleteConfirm(null);
   };
 
@@ -250,7 +275,23 @@ export default function ChapterManagement({
     }
   };
 
-
+  // Test chapter protection status
+  const testChapterProtection = async (chapterId: string) => {
+    try {
+      console.log('🧪 Testing chapter protection for:', chapterId);
+      const hasPurchases = await refundApi.getChapterProtectionStatus(chapterId);
+      console.log('🧪 Chapter protection test result:', hasPurchases);
+      
+      if (hasPurchases) {
+        toast.success(`Chapter ${chapterId} has purchases - protection should be active`);
+      } else {
+        toast.info(`Chapter ${chapterId} has no purchases - no protection needed`);
+      }
+    } catch (error) {
+      console.error('🧪 Chapter protection test failed:', error);
+      toast.error('Chapter protection test failed');
+    }
+  };
 
   return (
     <div key={refreshKey} className="card-elevated p-6">
@@ -373,7 +414,7 @@ export default function ChapterManagement({
             <div className="flex items-center space-x-2">
               {activeTab === "trash" ? (
                 <>
-            <button
+                  <button
                     onClick={() => setShowBulkRestoreConfirm(true)}
                     disabled={isBulkRestoring}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50"
@@ -388,12 +429,12 @@ export default function ChapterManagement({
                   <button
                     onClick={() => setShowBulkPermanentDeleteConfirm(true)}
                     disabled={isBulkPermanentlyDeleting}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50"
-            >
-              <TrashIcon className="w-4 h-4" />
-              <span>
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    <span>
                       {isBulkPermanentlyDeleting
-                  ? "Deleting..."
+                        ? "Deleting..."
                         : `Delete Forever ${selectedChapters.size} chapters`}
                     </span>
                   </button>
@@ -409,15 +450,13 @@ export default function ChapterManagement({
                     {isBulkMovingToTrash
                       ? "Moving to trash..."
                       : `Move ${selectedChapters.size} chapters to trash`}
-              </span>
-            </button>
+                  </span>
+                </button>
               )}
             </div>
           )}
         </div>
       )}
-
-
 
       {/* Chapter List */}
       <div className="space-y-3">
@@ -477,7 +516,8 @@ export default function ChapterManagement({
               Move Chapter to Trash
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to move this chapter to trash? You can restore it later from the trash.
+              Are you sure you want to move this chapter to trash? You can
+              restore it later from the trash.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -503,36 +543,48 @@ export default function ChapterManagement({
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="card-elevated p-6 max-w-md w-full">
-            <h3 className={`text-lg font-semibold mb-4 ${
-              activeTab === "trash" ? "text-red-600" : "text-nomanweb-primary"
-            }`}>
-              {activeTab === "trash" 
-                ? "Permanently Delete Multiple Chapters" 
+            <h3
+              className={`text-lg font-semibold mb-4 ${
+                activeTab === "trash" ? "text-red-600" : "text-nomanweb-primary"
+              }`}
+            >
+              {activeTab === "trash"
+                ? "Permanently Delete Multiple Chapters"
                 : "Move Multiple Chapters to Trash"}
             </h3>
             <p className="text-gray-600 mb-6">
               {activeTab === "trash"
                 ? `Are you sure you want to permanently delete ${selectedChapters.size} chapters? This action cannot be undone and the chapters will be lost forever.`
-                : `Are you sure you want to move ${selectedChapters.size} chapters to trash? You can restore them later from the trash.`
-              }
+                : `Are you sure you want to move ${selectedChapters.size} chapters to trash? You can restore them later from the trash.`}
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowBulkDeleteConfirm(false)}
-                disabled={activeTab === "trash" ? isBulkPermanentlyDeleting : isBulkMovingToTrash}
+                disabled={
+                  activeTab === "trash"
+                    ? isBulkPermanentlyDeleting
+                    : isBulkMovingToTrash
+                }
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkDelete}
-                disabled={activeTab === "trash" ? isBulkPermanentlyDeleting : isBulkMovingToTrash}
+                disabled={
+                  activeTab === "trash"
+                    ? isBulkPermanentlyDeleting
+                    : isBulkMovingToTrash
+                }
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {activeTab === "trash"
-                  ? (isBulkPermanentlyDeleting ? "Deleting..." : `Delete ${selectedChapters.size} chapters forever`)
-                  : (isBulkMovingToTrash ? "Moving to trash..." : `Move ${selectedChapters.size} chapters to trash`)
-                }
+                  ? isBulkPermanentlyDeleting
+                    ? "Deleting..."
+                    : `Delete ${selectedChapters.size} chapters forever`
+                  : isBulkMovingToTrash
+                  ? "Moving to trash..."
+                  : `Move ${selectedChapters.size} chapters to trash`}
               </button>
             </div>
           </div>
@@ -577,7 +629,8 @@ export default function ChapterManagement({
               Permanently Delete Chapter
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to permanently delete this chapter? This action cannot be undone and the chapter will be lost forever.
+              Are you sure you want to permanently delete this chapter? This
+              action cannot be undone and the chapter will be lost forever.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -588,7 +641,9 @@ export default function ChapterManagement({
                 Cancel
               </button>
               <button
-                onClick={() => handlePermanentDelete(showPermanentDeleteConfirm)}
+                onClick={() =>
+                  handlePermanentDelete(showPermanentDeleteConfirm)
+                }
                 disabled={isPermanentlyDeleting}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
@@ -607,7 +662,8 @@ export default function ChapterManagement({
               Restore Multiple Chapters
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to restore {selectedChapters.size} chapters from trash?
+              Are you sure you want to restore {selectedChapters.size} chapters
+              from trash?
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -639,7 +695,9 @@ export default function ChapterManagement({
               Permanently Delete Multiple Chapters
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to permanently delete {selectedChapters.size} chapters? This action cannot be undone and the chapters will be lost forever.
+              Are you sure you want to permanently delete{" "}
+              {selectedChapters.size} chapters? This action cannot be undone and
+              the chapters will be lost forever.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -665,23 +723,22 @@ export default function ChapterManagement({
 
       {/* Empty Trash Confirmation Modal */}
 
-
       {/* Bulk Upload Modal */}
       {showBulkUpload && (
         <BulkChapterUpload
           storyId={storyId}
           onSuccess={async () => {
-            console.log('📱 ChapterManagement onSuccess called');
+            console.log("📱 ChapterManagement onSuccess called");
             setShowBulkUpload(false);
             // Keep polling for 5 more seconds to ensure we catch any delayed updates
             setTimeout(() => setIsUploading(false), 5000);
             toast.success("Chapters uploaded successfully!");
             // Force complete re-render by changing the refresh key
-            setRefreshKey(prev => prev + 1);
+            setRefreshKey((prev) => prev + 1);
             // The BulkChapterUpload component already cleared cache, just refetch
-            console.log('🔄 Refetching chapters in ChapterManagement...');
+            console.log("🔄 Refetching chapters in ChapterManagement...");
             await refetch();
-            console.log('✅ ChapterManagement refetch complete');
+            console.log("✅ ChapterManagement refetch complete");
           }}
           onClose={() => {
             setShowBulkUpload(false);
@@ -803,7 +860,8 @@ function ChapterContent({
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [tempCoinPrice, setTempCoinPrice] = useState(chapter.coinPrice || 0);
   const [tempIsFree, setTempIsFree] = useState(chapter.isFree);
-  const { mutate: updateChapter, isPending: isUpdatingPrice } = useUpdateChapter();
+  const { mutate: updateChapter, isPending: isUpdatingPrice } =
+    useUpdateChapter();
 
   const handlePriceEdit = () => {
     setIsEditingPrice(true);
@@ -812,21 +870,26 @@ function ChapterContent({
   };
 
   const handlePriceSave = () => {
-    updateChapter({
-      id: chapter.id,
-      data: {
-        coinPrice: tempIsFree ? 0 : tempCoinPrice,
-        isFree: tempIsFree,
+    updateChapter(
+      {
+        id: chapter.id,
+        data: {
+          coinPrice: tempIsFree ? 0 : tempCoinPrice,
+          isFree: tempIsFree,
+        },
       },
-    }, {
-      onSuccess: () => {
-        setIsEditingPrice(false);
-        toast.success("Chapter pricing updated successfully");
-      },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || "Failed to update pricing");
-      },
-    });
+      {
+        onSuccess: () => {
+          setIsEditingPrice(false);
+          toast.success("Chapter pricing updated successfully");
+        },
+        onError: (error: any) => {
+          toast.error(
+            error.response?.data?.message || "Failed to update pricing"
+          );
+        },
+      }
+    );
   };
 
   const handlePriceCancel = () => {
@@ -835,7 +898,8 @@ function ChapterContent({
     setTempIsFree(chapter.isFree);
   };
 
-  const canEditPricing = story?.pricingType === "PAID_PER_CHAPTER" && !isTrashView;
+  const canEditPricing =
+    story?.pricingType === "PAID_PER_CHAPTER" && !isTrashView;
 
   return (
     <div className="flex items-start justify-between">
@@ -854,7 +918,7 @@ function ChapterContent({
           >
             {chapter.status}
           </span>
-          
+
           {/* Pricing Badge/Editor */}
           {canEditPricing && isEditingPrice ? (
             <div className="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded-lg">
@@ -865,7 +929,10 @@ function ChapterContent({
                 onChange={(e) => setTempIsFree(e.target.checked)}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label htmlFor={`free-${chapter.id}`} className="text-xs font-medium text-gray-700">
+              <label
+                htmlFor={`free-${chapter.id}`}
+                className="text-xs font-medium text-gray-700"
+              >
                 Free
               </label>
               {!tempIsFree && (
@@ -924,7 +991,7 @@ function ChapterContent({
                   </span>
                 )
               )}
-              
+
               {/* Edit Price Button */}
               {canEditPricing && (
                 <button
@@ -982,7 +1049,7 @@ function ChapterContent({
             >
               <ArchiveBoxIcon className="w-4 h-4" />
             </button>
-            
+
             {/* Permanently Delete */}
             <button
               onClick={onDelete}
@@ -995,45 +1062,66 @@ function ChapterContent({
           </>
         ) : (
           <>
-        {/* Edit */}
-        <Link
-          href={`/stories/${storyId}/chapters/${chapter.chapterNumber}/edit`}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Edit Chapter"
-        >
-          <PencilIcon className="w-4 h-4" />
-        </Link>
+            {/* Edit */}
+            <Link
+              href={`/stories/${storyId}/chapters/${chapter.chapterNumber}/edit`}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Edit Chapter"
+            >
+              <PencilIcon className="w-4 h-4" />
+            </Link>
 
-        {/* Publish/Unpublish */}
-        {chapter.status === "DRAFT" ? (
-          <button
-            onClick={() => onPublish(chapter.id)}
-            disabled={isPublishing}
-            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-            title="Publish Chapter"
-          >
-            <GlobeAltIcon className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => onUnpublish(chapter.id)}
-            disabled={isUnpublishing}
-            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
-            title="Unpublish Chapter"
-          >
-            <ArchiveBoxIcon className="w-4 h-4" />
-          </button>
-        )}
+            {/* Publish/Unpublish */}
+            {chapter.status === "DRAFT" ? (
+              <button
+                onClick={() => onPublish(chapter.id)}
+                disabled={isPublishing}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Publish Chapter"
+              >
+                <GlobeAltIcon className="w-4 h-4" />
+              </button>
+            ) : (
+              <ProtectedActionButton
+                itemId={chapter.id}
+                itemType="chapter"
+                itemTitle={chapter.title}
+                actionType="unpublish"
+                currentPublishStatus={chapter.status}
+                currentPricingType={story?.pricingType}
+                onAction={() => onUnpublish(chapter.id)}
+                className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
+                disabled={isUnpublishing}
+                variant="outline"
+              >
+                <ArchiveBoxIcon className="w-4 h-4" />
+              </ProtectedActionButton>
+            )}
 
             {/* Move to Trash */}
-        <button
-          onClick={onDelete}
-          disabled={isDeleting}
-          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-              title="Move to Trash"
-        >
-          <TrashIcon className="w-4 h-4" />
-        </button>
+            <ProtectedActionButton
+              itemId={chapter.id}
+              itemType="chapter"
+              itemTitle={chapter.title}
+              actionType="delete"
+              currentPublishStatus={chapter.status}
+              currentPricingType={story?.pricingType}
+              onAction={onDelete}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              disabled={isDeleting}
+              variant="outline"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </ProtectedActionButton>
+
+            {/* Test Protection Button */}
+            <button
+              onClick={() => testChapterProtection(chapter.id)}
+              className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+              title="Test Chapter Protection"
+            >
+              <span className="text-xs">🧪</span>
+            </button>
           </>
         )}
       </div>
@@ -1061,11 +1149,15 @@ function PublicChapterCard({
 
   return (
     <Link
-      href={canAccess ? `/stories/${storyId}/chapters/${chapter.chapterNumber}` : '#'}
+      href={
+        canAccess
+          ? `/stories/${storyId}/chapters/${chapter.chapterNumber}/read`
+          : "#"
+      }
       className={`block border border-gray-200 rounded-lg p-4 transition-shadow bg-white ${
-        canAccess 
-          ? 'hover:shadow-md hover:border-nomanweb-primary/30' 
-          : 'opacity-75 cursor-not-allowed'
+        canAccess
+          ? "hover:shadow-md hover:border-nomanweb-primary/30"
+          : "opacity-75 cursor-not-allowed"
       }`}
       onClick={(e) => {
         if (!canAccess) {
@@ -1100,23 +1192,27 @@ function PublicChapterCard({
                   Free
                 </span>
               ) : (
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  canAccess 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {canAccess ? 'Purchased' : `${chapter.coinPrice} coins`}
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    canAccess
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {canAccess ? "Purchased" : `${chapter.coinPrice} coins`}
                 </span>
               )
             ) : (
               // Fallback for when story data is not available
               !chapter.isFree && (
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  canAccess 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {canAccess ? 'Purchased' : `${chapter.coinPrice} coins`}
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    canAccess
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {canAccess ? "Purchased" : `${chapter.coinPrice} coins`}
                 </span>
               )
             )}

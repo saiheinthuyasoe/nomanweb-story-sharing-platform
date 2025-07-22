@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Chapter {
 
     @Id
@@ -106,6 +108,31 @@ public class Chapter {
     @Builder.Default
     private List<ReadingProgress> readingProgress = new ArrayList<>();
 
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<ChapterView> chapterViews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<ChapterPurchase> chapterPurchases = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<RefundTransaction> refundTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<GiftTransaction> giftTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<Collaboration> collaborations = new ArrayList<>();
+
     // Enums
     public enum Status {
         DRAFT, PUBLISHED
@@ -160,6 +187,11 @@ public class Chapter {
 
     // Trash management helper methods
     public void moveToTrash() {
+        // Auto-unpublish if published
+        if (this.status == Status.PUBLISHED) {
+            this.status = Status.DRAFT;
+        }
+
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }

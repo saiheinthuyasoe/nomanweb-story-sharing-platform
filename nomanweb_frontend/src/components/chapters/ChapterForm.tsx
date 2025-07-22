@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { LexicalEditor } from '@/components/editor';
-import { Save, Settings, Clock, Coins } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { LexicalEditor } from "@/components/editor";
+import { Save, Settings, Clock, Coins } from "lucide-react";
+import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChapterFormData {
   storyId: string;
@@ -28,7 +28,7 @@ interface ChapterFormProps {
   isEditing?: boolean;
   maxChapterNumber?: number;
   story?: {
-    pricingType: 'FREE' | 'PAID_PER_CHAPTER' | 'WHOLE_BOOK';
+    pricingType: "FREE" | "PAID_PER_CHAPTER" | "WHOLE_BOOK";
     bookPrice?: number;
   };
   onTypingStart?: () => void; // Callback when user starts typing in editor
@@ -44,9 +44,10 @@ export function ChapterForm({
   isEditing = false,
   maxChapterNumber = 0,
   story,
-  onTypingStart
+  onTypingStart,
 }: ChapterFormProps) {
-  const [content, setContent] = useState(initialData?.content || '');
+
+  const [content, setContent] = useState(initialData?.content || "");
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -54,33 +55,32 @@ export function ChapterForm({
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Auth context
-  const { user } = useAuth();
-
   // Ref to track if editor is focused
-  const editorFocusRef = useRef(false);
+  const editorFocusRef = React.useRef(false);
 
   // Ref to track the latest content
-  const latestContentRef = useRef(initialData?.content || '');
-  const previousContentRef = useRef(initialData?.content || '');
+  const latestContentRef = React.useRef(initialData?.content || "");
+  const previousContentRef = React.useRef(initialData?.content || "");
   const router = useRouter();
 
   // Handle typing detection for parent callback
-  const handleTypingStart = useCallback(() => {
+  const handleTypingStart = React.useCallback(() => {
     // Call parent's onTypingStart callback if provided
     onTypingStart?.();
   }, [onTypingStart]);
 
   // Handle editor focus events
-  const handleEditorFocus = useCallback(() => {
+  const handleEditorFocus = React.useCallback(() => {
     editorFocusRef.current = true;
   }, []);
 
-  const handleEditorBlur = useCallback(() => {
+  const handleEditorBlur = React.useCallback(() => {
     // Small delay to prevent immediate blur when clicking between editor elements
     setTimeout(() => {
-      const editorElement = document.querySelector('[data-lexical-editor="true"]');
-      if (!editorElement?.matches(':focus-within')) {
+      const editorElement = document.querySelector(
+        '[data-lexical-editor="true"]'
+      );
+      if (!editorElement?.matches(":focus-within")) {
         editorFocusRef.current = false;
       }
     }, 100);
@@ -91,17 +91,17 @@ export function ChapterForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isDirty }
+    formState: { errors, isDirty },
   } = useForm<ChapterFormData>({
     defaultValues: {
       storyId,
-      title: initialData?.title || '',
-      content: initialData?.content || '',
+      title: initialData?.title || "",
+      content: initialData?.content || "",
       coinPrice: initialData?.coinPrice || 0,
       isFree: initialData?.isFree ?? true,
       isDraft: initialData?.isDraft ?? true,
-      chapterNumber: initialData?.chapterNumber || (maxChapterNumber + 1),
-    }
+      chapterNumber: initialData?.chapterNumber || maxChapterNumber + 1,
+    },
   });
 
   const watchedValues = watch();
@@ -109,29 +109,29 @@ export function ChapterForm({
   // Update all form values when initialData changes (for editing)
   useEffect(() => {
     if (initialData && isEditing) {
-      console.log('ChapterForm - Updating form values for editing:', {
+      console.log("ChapterForm - Updating form values for editing:", {
         title: initialData.title,
         chapterNumber: initialData.chapterNumber,
         coinPrice: initialData.coinPrice,
         isFree: initialData.isFree,
-        isDraft: initialData.isDraft
+        isDraft: initialData.isDraft,
       });
-      
+
       // Update all form fields with initial data
       if (initialData.title !== undefined) {
-        setValue('title', initialData.title);
+        setValue("title", initialData.title);
       }
       if (initialData.chapterNumber !== undefined) {
-        setValue('chapterNumber', initialData.chapterNumber);
+        setValue("chapterNumber", initialData.chapterNumber);
       }
       if (initialData.coinPrice !== undefined) {
-        setValue('coinPrice', initialData.coinPrice);
+        setValue("coinPrice", initialData.coinPrice);
       }
       if (initialData.isFree !== undefined) {
-        setValue('isFree', initialData.isFree);
+        setValue("isFree", initialData.isFree);
       }
       if (initialData.isDraft !== undefined) {
-        setValue('isDraft', initialData.isDraft);
+        setValue("isDraft", initialData.isDraft);
       }
     }
   }, [initialData, isEditing, setValue]);
@@ -141,18 +141,24 @@ export function ChapterForm({
     if (initialData?.content && initialData.content !== content) {
       setContent(initialData.content);
       // Calculate initial word and character counts
-      const words = initialData.content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      const words = initialData.content
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word.length > 0).length;
       const characters = initialData.content.length;
       setWordCount(words);
       setCharacterCount(characters);
-      setValue('content', initialData.content);
+      setValue("content", initialData.content);
     }
   }, [initialData?.content, content, setValue]);
 
   // Initialize counts if content is already present
   useEffect(() => {
     if (content && wordCount === 0 && characterCount === 0) {
-      const words = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      const words = content
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word.length > 0).length;
       const characters = content.length;
       setWordCount(words);
       setCharacterCount(characters);
@@ -160,87 +166,96 @@ export function ChapterForm({
   }, [content, wordCount, characterCount]);
 
   // Handle content changes from the Lexical editor
-  const handleContentChange = useCallback((newContent: string, words: number, characters: number) => {
-    console.log('ChapterForm - handleContentChange called:', {
-      contentLength: newContent?.length || 0,
-      words,
-      characters,
-      contentPreview: newContent?.substring(0, 100) + '...'
-    });
-    
-    setContent(newContent);
-    setWordCount(words);
-    setCharacterCount(characters);
-    
-    // Update the ref with latest content
-    latestContentRef.current = newContent;
-    
-    // Immediately update the form state to ensure sync
-    setValue('content', newContent, { shouldDirty: true, shouldValidate: true });
-    
-    // Real-time collaboration: Send content update to other collaborators
-    if (chapterId && newContent) {
-      const previousContent = previousContentRef.current;
-      
-      // Update previous content ref
-      previousContentRef.current = newContent;
-    }
-    
-    // Fast auto-save for content changes (works for both create and edit modes)
-    if (onAutoSave && newContent && newContent.trim()) {
-      // Clear any existing timeout
-      clearTimeout((window as any).contentChangeAutoSaveTimeout);
-      
-      // Much faster auto-save - 500ms delay
-      (window as any).contentChangeAutoSaveTimeout = setTimeout(async () => {
-        try {
-          const formData = {
-            ...watchedValues,
-            content: newContent,
-            isDraft: true,
-            isAutoSave: true
-          };
-          
-          console.log('Fast content change auto-save triggered...');
-          await onAutoSave(formData);
-          
-          // Show subtle feedback for fast saves (more subtle for create mode)
-          if (isEditing) {
-          toast.success('Auto-saved', { 
-            duration: 1000,
-            style: { fontSize: '12px', opacity: 0.8 }
-          });
+  const handleContentChange = React.useCallback(
+    (newContent: string, words: number, characters: number) => {
+      console.log("ChapterForm - handleContentChange called:", {
+        contentLength: newContent?.length || 0,
+        words,
+        characters,
+        contentPreview: newContent?.substring(0, 100) + "...",
+      });
+
+      setContent(newContent);
+      setWordCount(words);
+      setCharacterCount(characters);
+
+      // Update the ref with latest content
+      latestContentRef.current = newContent;
+
+      // Immediately update the form state to ensure sync
+      setValue("content", newContent, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+
+      // Real-time collaboration: Send content update to other collaborators
+      if (chapterId && newContent) {
+        const previousContent = previousContentRef.current;
+
+        // Update previous content ref
+        previousContentRef.current = newContent;
+      }
+
+      // Fast auto-save for content changes (works for both create and edit modes)
+      if (onAutoSave && newContent && newContent.trim()) {
+        // Clear any existing timeout
+        clearTimeout((window as any).contentChangeAutoSaveTimeout);
+
+        // Much faster auto-save - 500ms delay
+        (window as any).contentChangeAutoSaveTimeout = setTimeout(async () => {
+          try {
+            const formData = {
+              ...watchedValues,
+              content: newContent,
+              isDraft: true,
+              isAutoSave: true,
+            };
+
+            console.log("Fast content change auto-save triggered...");
+            await onAutoSave(formData);
+
+            // Show subtle feedback for fast saves (more subtle for create mode)
+            if (isEditing) {
+              toast.success("Auto-saved", {
+                duration: 1000,
+                style: { fontSize: "12px", opacity: 0.8 },
+              });
+            }
+          } catch (error) {
+            console.error("Fast auto-save failed:", error);
           }
-        } catch (error) {
-          console.error('Fast auto-save failed:', error);
-        }
-      }, 500); // Very fast - 500ms delay
-    }
-  }, [setValue, onAutoSave, isEditing, chapterId, watchedValues]);
+        }, 500); // Very fast - 500ms delay
+      }
+    },
+    [setValue, onAutoSave, isEditing, chapterId, watchedValues]
+  );
 
   // Auto-save functionality
-  const handleAutoSave = useCallback(async (autoSaveContent: string) => {
-    // Remove the isDirty dependency since editor formatting might not update form state immediately
-    if (!onAutoSave) return;
+  const handleAutoSave = React.useCallback(
+    async (autoSaveContent: string) => {
+      // Remove the isDirty dependency since editor formatting might not update form state immediately
+      if (!onAutoSave) return;
 
-    // Check if there's actual content to save
-    if (!autoSaveContent || !autoSaveContent.trim()) return;
+      // Check if there's actual content to save
+      if (!autoSaveContent || !autoSaveContent.trim()) return;
 
-    try {
-      const formData = {
-        ...watchedValues,
-        content: autoSaveContent,
-        isAutoSave: true
-      };
-      
-      await onAutoSave(formData);
-      setLastAutoSave(new Date());
-      toast.success('Auto-saved', { duration: 2000 });
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      toast.error('Auto-save failed');
-    }
-  }, [onAutoSave, watchedValues]);
+      try {
+        const formData = {
+          ...watchedValues,
+          content: autoSaveContent,
+          isAutoSave: true,
+        };
+
+        await onAutoSave(formData);
+        setLastAutoSave(new Date());
+        toast.success("Auto-saved", { duration: 2000 });
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        toast.error("Auto-save failed");
+      }
+    },
+    [onAutoSave, watchedValues]
+  );
 
   // Auto-save on page leave/refresh functionality
   useEffect(() => {
@@ -250,36 +265,41 @@ export function ChapterForm({
     const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
       // Check if there are unsaved changes and form hasn't been successfully submitted
       // Remove isDirty dependency for more reliable detection of editor changes
-      if (!isSubmitted && latestContentRef.current && latestContentRef.current.trim()) {
+      if (
+        !isSubmitted &&
+        latestContentRef.current &&
+        latestContentRef.current.trim()
+      ) {
         // Try to save as draft automatically (silently)
         try {
           const formData = {
             ...watchedValues,
             content: latestContentRef.current,
             isDraft: true, // Force save as draft
-            isAutoSave: true
+            isAutoSave: true,
           };
-          
-          console.log('Auto-saving draft on page leave...');
-          
+
+          console.log("Auto-saving draft on page leave...");
+
           // For create mode, just use the onAutoSave callback (localStorage save)
           // For edit mode, use sendBeacon for reliable auto-save on page unload
           if (isEditing && chapterId) {
-          const data = JSON.stringify(formData);
+            const data = JSON.stringify(formData);
             if (navigator.sendBeacon) {
-            // This is more reliable for page unload scenarios
-            const token = document.cookie.split('; ')
-              .find(row => row.startsWith('token='))
-              ?.split('=')[1];
-            
-            if (token) {
-              navigator.sendBeacon(
-                `/api/chapters/${chapterId}/auto-save`,
-                new Blob([data], { type: 'application/json' })
-              );
-            }
-          } else {
-            // Fallback to regular async call
+              // This is more reliable for page unload scenarios
+              const token = document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("token="))
+                ?.split("=")[1];
+
+              if (token) {
+                navigator.sendBeacon(
+                  `/api/chapters/${chapterId}/auto-save`,
+                  new Blob([data], { type: "application/json" })
+                );
+              }
+            } else {
+              // Fallback to regular async call
               await onAutoSave(formData);
             }
           } else {
@@ -287,9 +307,9 @@ export function ChapterForm({
             await onAutoSave(formData);
           }
         } catch (error) {
-          console.error('Failed to auto-save on page leave:', error);
+          console.error("Failed to auto-save on page leave:", error);
         }
-        
+
         // Don't show browser warning - let auto-save handle it silently
         // Remove the e.preventDefault() and return value to avoid the warning
       }
@@ -297,161 +317,184 @@ export function ChapterForm({
 
     const handleRouteChange = async () => {
       // Same logic for route changes
-      if (!isSubmitted && latestContentRef.current && latestContentRef.current.trim()) {
+      if (
+        !isSubmitted &&
+        latestContentRef.current &&
+        latestContentRef.current.trim()
+      ) {
         try {
           const formData = {
             ...watchedValues,
             content: latestContentRef.current,
             isDraft: true,
-            isAutoSave: true
+            isAutoSave: true,
           };
-          
-          console.log('Auto-saving draft on route change...');
+
+          console.log("Auto-saving draft on route change...");
           await onAutoSave(formData);
-          
+
           // Show notification
-          toast.success('Changes auto-saved as draft', { 
+          toast.success("Changes auto-saved as draft", {
             duration: 2000,
-            style: { fontSize: '14px' }
+            style: { fontSize: "14px" },
           });
         } catch (error) {
-          console.error('Failed to auto-save on route change:', error);
-          toast.error('Failed to auto-save changes', {
+          console.error("Failed to auto-save on route change:", error);
+          toast.error("Failed to auto-save changes", {
             duration: 2000,
-            style: { fontSize: '14px' }
+            style: { fontSize: "14px" },
           });
         }
       }
     };
 
     // Add event listeners
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     // Also handle visibility change (when user switches tabs or minimizes)
     const handleVisibilityChange = async () => {
-      if (document.hidden && !isSubmitted && latestContentRef.current && latestContentRef.current.trim()) {
+      if (
+        document.hidden &&
+        !isSubmitted &&
+        latestContentRef.current &&
+        latestContentRef.current.trim()
+      ) {
         try {
           const formData = {
             ...watchedValues,
             content: latestContentRef.current,
             isDraft: true,
-            isAutoSave: true
+            isAutoSave: true,
           };
-          
-          console.log('Fast auto-save on visibility change...');
+
+          console.log("Fast auto-save on visibility change...");
           await onAutoSave(formData);
-          
+
           // Quick notification
-          toast.success('Auto-saved', { 
+          toast.success("Auto-saved", {
             duration: 1000,
-            style: { fontSize: '13px', opacity: 0.9 }
+            style: { fontSize: "13px", opacity: 0.9 },
           });
         } catch (error) {
-          console.error('Failed to auto-save on visibility change:', error);
+          console.error("Failed to auto-save on visibility change:", error);
         }
       }
     };
 
-    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Handle navigation by detecting clicks on links and back/forward buttons
     const handleNavigationAttempt = async (e: Event) => {
       // Check if it's a navigation link click
       const target = e.target as HTMLElement;
-      
+
       // Exclude editor toolbar buttons and editor-related elements
-      const isEditorElement = target.closest('[data-lexical-editor]') ||
-                             target.closest('[data-lexical-toolbar]') ||
-                             target.closest('[data-lexical-button]') ||
-                             target.closest('.lexical-toolbar') ||
-                             target.closest('.floating-text-toolbar') ||
-                             target.closest('[role="toolbar"]') ||
-                             target.closest('[data-testid*="editor"]') ||
-                             target.closest('.editor-') ||
-                             target.classList.contains('editor-') ||
-                             target.hasAttribute('data-lexical-button');
-      
+      const isEditorElement =
+        target.closest("[data-lexical-editor]") ||
+        target.closest("[data-lexical-toolbar]") ||
+        target.closest("[data-lexical-button]") ||
+        target.closest(".lexical-toolbar") ||
+        target.closest(".floating-text-toolbar") ||
+        target.closest('[role="toolbar"]') ||
+        target.closest('[data-testid*="editor"]') ||
+        target.closest(".editor-") ||
+        target.classList.contains("editor-") ||
+        target.hasAttribute("data-lexical-button");
+
       // Exclude chapter form buttons (Save Draft, Publish, etc.)
-      const isFormButton = target.closest('form') && target.tagName === 'BUTTON';
-      
+      const isFormButton =
+        target.closest("form") && target.tagName === "BUTTON";
+
       // Only detect actual navigation elements
-      const isNavigation = !isEditorElement && !isFormButton && (
-        target.closest('a[href]') || 
-        (target.closest('button[type="button"]') && 
-         (target.textContent?.includes('Back') || 
-          target.textContent?.includes('Cancel') ||
-          target.closest('[role="navigation"]')))
-      );
-      
-      if (isNavigation && !isSubmitted && latestContentRef.current && latestContentRef.current.trim()) {
+      const isNavigation =
+        !isEditorElement &&
+        !isFormButton &&
+        (target.closest("a[href]") ||
+          (target.closest('button[type="button"]') &&
+            (target.textContent?.includes("Back") ||
+              target.textContent?.includes("Cancel") ||
+              target.closest('[role="navigation"]'))));
+
+      if (
+        isNavigation &&
+        !isSubmitted &&
+        latestContentRef.current &&
+        latestContentRef.current.trim()
+      ) {
         // Immediate auto-save on navigation - no delay for safety
         try {
           const formData = {
             ...watchedValues,
             content: latestContentRef.current,
             isDraft: true,
-            isAutoSave: true
+            isAutoSave: true,
           };
-          
-          console.log('Immediate auto-save on navigation...');
+
+          console.log("Immediate auto-save on navigation...");
           await onAutoSave(formData);
-          
+
           // Show confirmation
-          toast.success('Changes auto-saved as draft', { 
+          toast.success("Changes auto-saved as draft", {
             duration: 1500,
-            style: { fontSize: '14px' }
+            style: { fontSize: "14px" },
           });
         } catch (error) {
-          console.error('Failed to auto-save on navigation:', error);
-          toast.error('Failed to auto-save changes', {
+          console.error("Failed to auto-save on navigation:", error);
+          toast.error("Failed to auto-save changes", {
             duration: 1500,
-            style: { fontSize: '14px' }
+            style: { fontSize: "14px" },
           });
         }
       }
     };
 
     // Listen for clicks that might trigger navigation
-    document.addEventListener('click', handleNavigationAttempt, true);
-    
+    document.addEventListener("click", handleNavigationAttempt, true);
+
     // Handle browser back/forward buttons
     const handlePopState = async () => {
       await handleRouteChange();
     };
-    
-    window.addEventListener('popstate', handlePopState);
+
+    window.addEventListener("popstate", handlePopState);
 
     // Periodic auto-save as backup (much more frequent)
     const periodicAutoSave = setInterval(async () => {
-      if (!isSubmitted && latestContentRef.current && latestContentRef.current.trim() && isEditing && chapterId) {
+      if (
+        !isSubmitted &&
+        latestContentRef.current &&
+        latestContentRef.current.trim() &&
+        isEditing &&
+        chapterId
+      ) {
         try {
           const formData = {
             ...watchedValues,
             content: latestContentRef.current,
             isDraft: true,
-            isAutoSave: true
+            isAutoSave: true,
           };
-          
-          console.log('Frequent periodic auto-save triggered...');
+
+          console.log("Frequent periodic auto-save triggered...");
           await onAutoSave(formData);
-          
+
           // Very subtle notification for frequent saves
-          toast.success('Auto-saved', { 
+          toast.success("Auto-saved", {
             duration: 800,
-            style: { fontSize: '11px', opacity: 0.6 }
+            style: { fontSize: "11px", opacity: 0.6 },
           });
         } catch (error) {
-          console.error('Periodic auto-save failed:', error);
+          console.error("Periodic auto-save failed:", error);
         }
       }
     }, 30000); // Every 30 seconds instead of 2 minutes
 
     // Cleanup
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('click', handleNavigationAttempt, true);
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("click", handleNavigationAttempt, true);
+      window.removeEventListener("popstate", handlePopState);
       clearInterval(periodicAutoSave);
     };
   }, [isSubmitted, isEditing, chapterId, onAutoSave, watchedValues]);
@@ -461,50 +504,52 @@ export function ChapterForm({
     try {
       // Use the latest content from the ref to ensure we have the most current content
       const latestContent = latestContentRef.current;
-      
+
       const submissionData = {
         ...data,
         content: latestContent, // Use the latest content from ref
-        storyId
+        storyId,
       };
-      
-      console.log('ChapterForm - Submitting data:', {
+
+      console.log("ChapterForm - Submitting data:", {
         title: submissionData.title,
         contentLength: submissionData.content?.length || 0,
-        contentPreview: submissionData.content?.substring(0, 100) + '...',
+        contentPreview: submissionData.content?.substring(0, 100) + "...",
         coinPrice: submissionData.coinPrice,
         isFree: submissionData.isFree,
         isDraft: submissionData.isDraft,
         storyId: submissionData.storyId,
         contentFromState: content?.length || 0,
         contentFromForm: data.content?.length || 0,
-        contentFromRef: latestContent?.length || 0
+        contentFromRef: latestContent?.length || 0,
       });
-      
+
       // Ensure we have content
       if (!submissionData.content || !submissionData.content.trim()) {
-        toast.error('Chapter content cannot be empty');
+        toast.error("Chapter content cannot be empty");
         return;
       }
-      
+
       await onSubmit(submissionData);
-      console.log('ChapterForm - Submit successful');
+      console.log("ChapterForm - Submit successful");
       setIsSubmitted(true); // Mark as successfully submitted
-      toast.success(isEditing ? 'Chapter updated!' : 'Chapter created!');
+      toast.success(isEditing ? "Chapter updated!" : "Chapter created!");
     } catch (error) {
-      console.error('ChapterForm - Submit failed:', error);
-      toast.error(isEditing ? 'Failed to update chapter' : 'Failed to create chapter');
+      console.error("ChapterForm - Submit failed:", error);
+      toast.error(
+        isEditing ? "Failed to update chapter" : "Failed to create chapter"
+      );
     }
   };
 
   // Publish/Unpublish handlers
   const handlePublish = () => {
-    setValue('isDraft', false);
+    setValue("isDraft", false);
     handleSubmit(onFormSubmit)();
   };
 
   const handleSaveDraft = () => {
-    setValue('isDraft', true);
+    setValue("isDraft", true);
     handleSubmit(onFormSubmit)();
   };
 
@@ -523,12 +568,10 @@ export function ChapterForm({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">
-              {isEditing ? 'Edit Chapter' : 'Create Chapter'}
+              {isEditing ? "Edit Chapter" : "Create Chapter"}
             </h1>
-            
-         
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {lastAutoSave && (
               <div className="flex items-center text-sm text-gray-500">
@@ -536,7 +579,7 @@ export function ChapterForm({
                 Auto-saved {lastAutoSave.toLocaleTimeString()}
               </div>
             )}
-            
+
             <button
               type="button"
               onClick={() => setShowSettings(!showSettings)}
@@ -553,7 +596,7 @@ export function ChapterForm({
         {showSettings && (
           <div className="bg-gray-50 rounded-lg p-4 space-y-4">
             <h3 className="font-medium text-gray-900">Chapter Settings</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Chapter Number */}
               <div>
@@ -564,18 +607,25 @@ export function ChapterForm({
                   type="number"
                   min="1"
                   step="1"
-                  defaultValue={initialData?.chapterNumber || (maxChapterNumber + 1)}
-                  {...register('chapterNumber', { 
-                    required: 'Chapter number is required',
-                    min: { value: 1, message: 'Chapter number must be positive' },
+                  defaultValue={
+                    initialData?.chapterNumber || maxChapterNumber + 1
+                  }
+                  {...register("chapterNumber", {
+                    required: "Chapter number is required",
+                    min: {
+                      value: 1,
+                      message: "Chapter number must be positive",
+                    },
                     valueAsNumber: true,
-                    setValueAs: (value: string) => parseInt(value) || 1
+                    setValueAs: (value: string) => parseInt(value) || 1,
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter chapter number"
                 />
                 {errors.chapterNumber && (
-                  <p className="mt-1 text-sm text-red-600">{errors.chapterNumber.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.chapterNumber.message}
+                  </p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
                   Current value: {watchedValues.chapterNumber}
@@ -588,7 +638,7 @@ export function ChapterForm({
                   <Coins size={16} className="inline mr-1" />
                   Chapter Price
                 </label>
-                {story?.pricingType === 'PAID_PER_CHAPTER' ? (
+                {story?.pricingType === "PAID_PER_CHAPTER" ? (
                   // Allow setting price for PAID_PER_CHAPTER
                   <>
                     <input
@@ -597,31 +647,38 @@ export function ChapterForm({
                       step="any"
                       disabled={watchedValues.isFree}
                       defaultValue={initialData?.coinPrice || 0}
-                      {...register('coinPrice', { 
-                        min: { value: 0, message: 'Price cannot be negative' },
-                        valueAsNumber: true
+                      {...register("coinPrice", {
+                        min: { value: 0, message: "Price cannot be negative" },
+                        valueAsNumber: true,
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                       placeholder="Enter chapter price"
                     />
                     {errors.coinPrice && (
-                      <p className="mt-1 text-sm text-red-600">{errors.coinPrice.message}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.coinPrice.message}
+                      </p>
                     )}
                     <p className="mt-1 text-xs text-gray-500">
                       Current value: {watchedValues.coinPrice || 0} coins
                     </p>
                   </>
-                ) : story?.pricingType === 'WHOLE_BOOK' ? (
+                ) : story?.pricingType === "WHOLE_BOOK" ? (
                   // Show book price for WHOLE_BOOK
                   <>
                     <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-blue-50 text-blue-900">
                       Included in book price
                     </div>
                     <p className="mt-1 text-xs text-blue-600">
-                      Readers pay {story.bookPrice || 0} coins for the entire book
+                      Readers pay {story.bookPrice || 0} coins for the entire
+                      book
                     </p>
-                    <input type="hidden" {...register('coinPrice', { valueAsNumber: true })} value="0" />
-                    <input type="hidden" {...register('isFree')} value="" />
+                    <input
+                      type="hidden"
+                      {...register("coinPrice", { valueAsNumber: true })}
+                      value="0"
+                    />
+                    <input type="hidden" {...register("isFree")} value="" />
                   </>
                 ) : (
                   // FREE stories
@@ -632,18 +689,22 @@ export function ChapterForm({
                     <p className="mt-1 text-xs text-green-600">
                       This story is free for all readers
                     </p>
-                    <input type="hidden" {...register('coinPrice', { valueAsNumber: true })} value="0" />
-                    <input type="hidden" {...register('isFree')} value="on" />
+                    <input
+                      type="hidden"
+                      {...register("coinPrice", { valueAsNumber: true })}
+                      value="0"
+                    />
+                    <input type="hidden" {...register("isFree")} value="on" />
                   </>
                 )}
               </div>
 
               {/* Free Toggle - Only for PAID_PER_CHAPTER */}
-              {story?.pricingType === 'PAID_PER_CHAPTER' && (
+              {story?.pricingType === "PAID_PER_CHAPTER" && (
                 <div className="flex items-center">
                   <input
                     type="checkbox"
-                    {...register('isFree')}
+                    {...register("isFree")}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label className="ml-2 text-sm text-gray-700">
@@ -656,23 +717,50 @@ export function ChapterForm({
             {/* Story Pricing Information */}
             {story && (
               <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">📖 Story Pricing Information</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  📖 Story Pricing Information
+                </h4>
                 <div className="text-xs text-gray-700 space-y-1">
-                  {story.pricingType === 'FREE' && (
-                    <p>• This is a <span className="font-medium text-green-700">FREE</span> story - all chapters are free to read</p>
+                  {story.pricingType === "FREE" && (
+                    <p>
+                      • This is a{" "}
+                      <span className="font-medium text-green-700">FREE</span>{" "}
+                      story - all chapters are free to read
+                    </p>
                   )}
-                  {story.pricingType === 'WHOLE_BOOK' && (
+                  {story.pricingType === "WHOLE_BOOK" && (
                     <>
-                      <p>• This is a <span className="font-medium text-blue-700">WHOLE BOOK</span> story</p>
-                      <p>• Readers pay <span className="font-medium">{story.bookPrice || 0} coins</span> once to access all chapters</p>
+                      <p>
+                        • This is a{" "}
+                        <span className="font-medium text-blue-700">
+                          WHOLE BOOK
+                        </span>{" "}
+                        story
+                      </p>
+                      <p>
+                        • Readers pay{" "}
+                        <span className="font-medium">
+                          {story.bookPrice || 0} coins
+                        </span>{" "}
+                        once to access all chapters
+                      </p>
                       <p>• Individual chapter prices are not applicable</p>
                     </>
                   )}
-                  {story.pricingType === 'PAID_PER_CHAPTER' && (
+                  {story.pricingType === "PAID_PER_CHAPTER" && (
                     <>
-                      <p>• This is a <span className="font-medium text-purple-700">PAID PER CHAPTER</span> story</p>
+                      <p>
+                        • This is a{" "}
+                        <span className="font-medium text-purple-700">
+                          PAID PER CHAPTER
+                        </span>{" "}
+                        story
+                      </p>
                       <p>• You can set individual prices for each chapter</p>
-                      <p>• Readers pay separately for each chapter they want to read</p>
+                      <p>
+                        • Readers pay separately for each chapter they want to
+                        read
+                      </p>
                     </>
                   )}
                 </div>
@@ -686,7 +774,7 @@ export function ChapterForm({
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                {isDarkMode ? "Light Mode" : "Dark Mode"}
               </button>
             </div>
           </div>
@@ -699,9 +787,9 @@ export function ChapterForm({
           </label>
           <input
             type="text"
-            {...register('title', { 
-              required: 'Chapter title is required',
-              maxLength: { value: 255, message: 'Title too long' }
+            {...register("title", {
+              required: "Chapter title is required",
+              maxLength: { value: 255, message: "Title too long" },
             })}
             placeholder="Enter your chapter title..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
@@ -721,9 +809,8 @@ export function ChapterForm({
             <label className="block text-sm font-medium text-gray-700">
               Chapter Content
             </label>
-            
           </div>
-          
+
           {/* Editor Container */}
           <div className="relative">
             <LexicalEditor
@@ -741,9 +828,11 @@ export function ChapterForm({
               }}
             />
           </div>
-          
+
           {errors.content && (
-            <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.content.message}
+            </p>
           )}
         </div>
 
@@ -759,7 +848,7 @@ export function ChapterForm({
               <Save size={16} className="mr-2" />
               Save Draft
             </button>
-            
+
             <button
               type="button"
               onClick={handlePublish}
@@ -771,15 +860,15 @@ export function ChapterForm({
               ) : (
                 <Save size={16} className="mr-2" />
               )}
-              {isEditing ? 'Update & Publish' : 'Publish Chapter'}
+              {isEditing ? "Update & Publish" : "Publish Chapter"}
             </button>
           </div>
 
           <div className="text-sm text-gray-500">
-            {isDirty ? 'You have unsaved changes' : 'All changes saved'}
+            {isDirty ? "You have unsaved changes" : "All changes saved"}
           </div>
         </div>
       </form>
     </div>
   );
-} 
+}

@@ -35,4 +35,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
     long countUsersCreatedAfter(@Param("startDate") java.time.LocalDateTime startDate);
+
+    // Search users by username, display name, or email
+    @Query("SELECT u FROM User u WHERE u.status = 'ACTIVE' AND (LOWER(u.username) LIKE LOWER(:query) OR LOWER(u.displayName) LIKE LOWER(:query) OR LOWER(u.email) LIKE LOWER(:query))")
+    java.util.List<User> findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+            @Param("query") String query);
 }

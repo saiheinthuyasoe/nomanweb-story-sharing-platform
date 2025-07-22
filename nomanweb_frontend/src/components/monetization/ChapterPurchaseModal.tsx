@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { X, Coins, Lock, CreditCard } from 'lucide-react';
 import { usePurchaseChapter } from '@/hooks/useChapterPurchase';
 import { useCoinBalance } from '@/hooks/useCoinBalance';
+import { PurchaseBenefitDisplay } from '@/components/purchase/PurchaseBenefitDisplay';
 
 interface ChapterPurchaseModalProps {
   isOpen: boolean;
@@ -93,6 +94,15 @@ export default function ChapterPurchaseModal({
           </div>
 
           {/* Purchase Info */}
+          <div className="mb-6">
+            <PurchaseBenefitDisplay
+              itemType="chapter"
+              itemTitle={chapterTitle}
+              currentPricingType="PAID_PER_CHAPTER"
+              showCompact={true}
+            />
+          </div>
+
           <div className="mb-6 p-4 border rounded-lg">
             <h4 className="font-medium mb-2">What you'll get:</h4>
             <ul className="text-sm text-gray-600 space-y-1">

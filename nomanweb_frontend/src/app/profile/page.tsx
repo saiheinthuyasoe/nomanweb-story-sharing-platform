@@ -8,6 +8,7 @@ import { authApi } from '@/lib/api/auth';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import { ProfileImageUpload } from '@/components/upload/ProfileImageUpload';
 import CoverImageUpload from '@/components/upload/CoverImageUpload';
+import FollowerFollowingList from '@/components/profile/FollowerFollowingList';
 import { 
   Mail, 
   MapPin, 
@@ -32,6 +33,16 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
   const [booksTab, setBooksTab] = useState<'written' | 'read'>('written');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const handleUserFollowed = (userId: string) => {
+    // Refresh user profile data when a user is followed
+    refreshUser();
+  };
+
+  const handleUserUnfollowed = (userId: string) => {
+    // Refresh user profile data when a user is unfollowed
+    refreshUser();
+  };
 
   const handleProfileUpdate = (updatedUser: any) => {
     // Update user data in context
@@ -375,6 +386,15 @@ export default function ProfilePage() {
       <div className="px-4 sm:px-6 lg:px-8 mt-8 mb-8">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+            {/* Header */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Followers & Following</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage your connections and discover new users
+              </p>
+            </div>
+
+            {/* Tab Navigation */}
             <div className="flex items-center space-x-4 mb-6">
               <button 
                 onClick={() => setActiveTab('followers')}
@@ -398,43 +418,17 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Followers/Following List */}
+            {/* Tab Content */}
+            <div>
               {activeTab === 'followers' && (
                 <div>
                   {followers?.content && followers.content.length > 0 ? (
-                    <>
-                      {followers.content.map((follower) => (
-                        <div key={follower.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                              {follower.profileImageUrl ? (
-                                <Image
-                                  src={follower.profileImageUrl}
-                                  alt={follower.displayName || follower.username}
-                                  width={48}
-                                  height={48}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-lg font-semibold text-gray-600">
-                                  {(follower.displayName || follower.username).charAt(0).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900">
-                                {follower.displayName || follower.username}
-                              </div>
-                              <div className="text-sm text-gray-500">@{follower.username}</div>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(follower.followedAt), { addSuffix: true })}
-                          </div>
-                        </div>
-                      ))}
-                    </>
+                    <FollowerFollowingList
+                      users={followers.content}
+                      type="followers"
+                      onUserFollowed={handleUserFollowed}
+                      onUserUnfollowed={handleUserUnfollowed}
+                    />
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -447,38 +441,12 @@ export default function ProfilePage() {
               {activeTab === 'following' && (
                 <div>
                   {following?.content && following.content.length > 0 ? (
-                    <>
-                      {following.content.map((followingUser) => (
-                        <div key={followingUser.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                              {followingUser.profileImageUrl ? (
-                                <Image
-                                  src={followingUser.profileImageUrl}
-                                  alt={followingUser.displayName || followingUser.username}
-                                  width={48}
-                                  height={48}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-lg font-semibold text-gray-600">
-                                  {(followingUser.displayName || followingUser.username).charAt(0).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900">
-                                {followingUser.displayName || followingUser.username}
-                              </div>
-                              <div className="text-sm text-gray-500">@{followingUser.username}</div>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(followingUser.followedAt), { addSuffix: true })}
-                          </div>
-                        </div>
-                      ))}
-                    </>
+                    <FollowerFollowingList
+                      users={following.content}
+                      type="following"
+                      onUserFollowed={handleUserFollowed}
+                      onUserUnfollowed={handleUserUnfollowed}
+                    />
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <UserPlus className="h-12 w-12 mx-auto mb-4 text-gray-400" />

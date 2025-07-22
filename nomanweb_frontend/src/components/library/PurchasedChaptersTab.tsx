@@ -118,7 +118,7 @@ export default function PurchasedChaptersTab({ sortBy }: PurchasedChaptersTabPro
               </div>
               
               <Link 
-                href={`/stories/${chapter.story.id}/chapters/${chapter.chapterNumber}`}
+                href={`/stories/${chapter.story.id}/chapters/${chapter.chapterNumber}/read`}
                 className="block hover:text-blue-600 transition-colors"
               >
                 <h3 className="font-medium text-gray-900 mb-1 truncate">
@@ -142,7 +142,7 @@ export default function PurchasedChaptersTab({ sortBy }: PurchasedChaptersTabPro
             {/* Action Button */}
             <div className="flex-shrink-0">
               <Link
-                href={`/stories/${chapter.story.id}/chapters/${chapter.chapterNumber}`}
+                href={`/stories/${chapter.story.id}/chapters/${chapter.chapterNumber}/read`}
                 className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <EyeIcon className="w-4 h-4 mr-1" />

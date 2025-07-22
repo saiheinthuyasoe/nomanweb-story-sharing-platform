@@ -1,5 +1,14 @@
 import { apiClient } from './client';
 
+export interface Gift {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string;
+  coinCost: number;
+  isActive: boolean;
+}
+
 export interface PurchaseChapterRequest {
   chapterId: string;
 }
@@ -12,10 +21,12 @@ export interface PurchaseResponse {
   id: string;
   totalCoins: number;
   createdAt: string;
+  chaptersAtPurchase?: number; // For book purchases
   story?: {
     id: string;
     title: string;
     coverImageUrl?: string;
+    pricingType?: string; // Current pricing type of the story
   };
   chapter?: {
     id: string;
@@ -96,6 +107,25 @@ export const monetizationApi = {
   // Coin balance
   async getCoinBalance(): Promise<number> {
     const response = await apiClient.get('/monetization/balance');
+    return response.data;
+  },
+
+  // Gifts
+  async sendGift(request: {
+    giftId: string;
+    recipientId: string;
+    storyId?: string;
+    chapterId?: string;
+    quantity: number;
+    message?: string;
+    customAmount?: number;
+  }): Promise<any> {
+    const response = await apiClient.post('/monetization/gifts/send', request);
+    return response.data;
+  },
+
+  async getGifts(): Promise<Gift[]> {
+    const response = await apiClient.get('/monetization/gifts');
     return response.data;
   }
 };

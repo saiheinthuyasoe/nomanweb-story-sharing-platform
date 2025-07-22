@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { monetizationApi } from "@/lib/api/monetization";
 
 interface PurchasedChapter {
   id: string;
@@ -21,24 +22,14 @@ interface PurchasedChapter {
 
 export const usePurchasedChapters = (enabled: boolean = true) => {
   const { user } = useAuth();
-  
+
   return useQuery({
-    queryKey: ['purchased-chapters'],
+    queryKey: ["purchased-chapters"],
     queryFn: async (): Promise<PurchasedChapter[]> => {
-      const response = await fetch('/api/monetization/purchases/history?size=100', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch purchased chapters');
-      }
-      
-      const data = await response.json();
+      const data = await monetizationApi.getPurchaseHistory(0, 100);
       return data.content || [];
     },
     enabled: enabled && !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time refund updates
   });
-}; 
+};

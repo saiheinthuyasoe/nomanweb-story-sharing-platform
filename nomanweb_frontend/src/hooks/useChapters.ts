@@ -384,6 +384,15 @@ export const useUnpublishChapter = () => {
       toast.success("Chapter unpublished successfully!");
     },
     onError: (error: any) => {
+      console.error("Chapter unpublish error:", error);
+      
+      // Check if this is a purchase protection error
+      if (error.response?.status === 409 && error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION") {
+        console.log("Purchase protection violation detected");
+        // Don't show error toast - let ProtectedActionButton handle it
+        return;
+      }
+      
       toast.error(
         error.response?.data?.message || "Failed to unpublish chapter"
       );
@@ -438,6 +447,15 @@ export const useMoveChapterToTrash = () => {
       toast.success("Chapter moved to trash");
     },
     onError: (error: any) => {
+      console.error("Chapter move to trash error:", error);
+      
+      // Check if this is a purchase protection error
+      if (error.response?.status === 409 && error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION") {
+        console.log("Purchase protection violation detected");
+        // Don't show error toast - let ProtectedActionButton handle it
+        return;
+      }
+      
       toast.error(
         error.response?.data?.message || "Failed to move chapter to trash"
       );
@@ -471,7 +489,8 @@ export const usePermanentlyDeleteChapter = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (chapterId: string) => chaptersApi.permanentlyDeleteChapter(chapterId),
+    mutationFn: (chapterId: string) =>
+      chaptersApi.permanentlyDeleteChapter(chapterId),
     onSuccess: (_, chapterId) => {
       // Invalidate all chapter queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["chapters"] });
@@ -506,7 +525,7 @@ export const useBulkMoveToTrash = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (chapterIds: string[]) => 
+    mutationFn: (chapterIds: string[]) =>
       chaptersApi.bulkMoveToTrash(chapterIds),
     onSuccess: () => {
       // Invalidate all chapter queries to refresh the data
@@ -529,7 +548,7 @@ export const useBulkRestoreFromTrash = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (chapterIds: string[]) => 
+    mutationFn: (chapterIds: string[]) =>
       chaptersApi.bulkRestoreFromTrash(chapterIds),
     onSuccess: () => {
       // Invalidate all chapter queries to refresh the data
@@ -552,7 +571,7 @@ export const useBulkPermanentlyDelete = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (chapterIds: string[]) => 
+    mutationFn: (chapterIds: string[]) =>
       chaptersApi.bulkPermanentlyDelete(chapterIds),
     onSuccess: () => {
       // Invalidate all chapter queries to refresh the data
@@ -586,9 +605,7 @@ export const useEmptyTrash = () => {
       toast.success("Trash emptied successfully");
     },
     onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to empty trash"
-      );
+      toast.error(error.response?.data?.message || "Failed to empty trash");
     },
   });
 };

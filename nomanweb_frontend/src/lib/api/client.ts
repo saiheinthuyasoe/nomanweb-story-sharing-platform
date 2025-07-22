@@ -16,6 +16,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in requests
 });
 
 // Flag to prevent multiple simultaneous refresh attempts
@@ -37,10 +38,15 @@ function onTokenRefreshed(token: string) {
 apiClient.interceptors.request.use(
   (config: any) => {
     const token = Cookies.get('token');
+    console.log('🔍 All cookies:', document.cookie);
+    console.log('🔍 Token from cookie:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+    
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Adding token to request:', token.substring(0, 20) + '...');
+      console.log('🔑 Adding Authorization header to request:', config.url);
+    } else {
+      console.warn('❌ No token found in cookies for request:', config.url);
     }
     return config;
   },

@@ -128,4 +128,10 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
         // Find chapters with views greater than specified value
         List<Chapter> findByViewsGreaterThan(Long views);
+
+        // Count chapters by story, status, and created before a specific date
+        @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.status = :status AND c.createdAt <= :date AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        long countByStoryAndStatusAndCreatedAtBefore(@Param("story") Story story, 
+                @Param("status") Chapter.Status status, 
+                @Param("date") LocalDateTime date);
 }

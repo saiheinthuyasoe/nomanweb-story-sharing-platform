@@ -51,6 +51,7 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'stories' | 'users'>('stories');
   
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -128,7 +129,7 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/stories?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}&type=${searchType}`);
       setIsSearchOpen(false);
       setSearchQuery('');
       closeMobileMenu();
@@ -191,6 +192,9 @@ export default function Navbar() {
                 <NavLink href="/" active={isActive('/')} icon={Home}>
                   Home
                 </NavLink>
+                <NavLink href="/search" active={isActive('/search')} icon={Search}>
+                  Search
+                </NavLink>
                 <NavLink href="/stories" active={isActive('/stories')} icon={BookOpen}>
                   Browse
                 </NavLink>
@@ -224,11 +228,19 @@ export default function Navbar() {
                 <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 ml-2" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search stories & users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent text-gray-900 placeholder-gray-500 px-1 sm:px-2 py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
                 />
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as 'stories' | 'users')}
+                  className="bg-transparent text-gray-900 px-1 sm:px-2 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border-l border-gray-200"
+                >
+                  <option value="stories">Stories</option>
+                  <option value="users">Users</option>
+                </select>
               </form>
             </div>
 
@@ -242,18 +254,34 @@ export default function Navbar() {
                     <input
                       id="search-input"
                       type="text"
-                      placeholder="Search stories..."
+                      placeholder="Search stories and users..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="bg-transparent text-gray-900 placeholder-gray-500 px-4 py-2 w-64 focus:outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setIsSearchOpen(false)}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-r-lg transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center border-l border-gray-200">
+                      <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value as 'stories' | 'users')}
+                        className="bg-transparent text-gray-900 px-3 py-2 text-sm focus:outline-none border-r border-gray-200"
+                      >
+                        <option value="stories">Stories</option>
+                        <option value="users">Users</option>
+                      </select>
+                      <button
+                        type="submit"
+                        className="p-2 text-gray-500 hover:bg-gray-100 transition-colors"
+                      >
+                        <Search className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(false)}
+                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-r-lg transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </form>
                 ) : (
                   <button
@@ -483,6 +511,9 @@ export default function Navbar() {
             <div className="space-y-1.5 sm:space-y-2 px-3 sm:px-4">
               <MobileNavLink href="/" active={isActive('/')} icon={Home} onClick={closeMobileMenu}>
                 Home
+              </MobileNavLink>
+              <MobileNavLink href="/search" active={isActive('/search')} icon={Search} onClick={closeMobileMenu}>
+                Search
               </MobileNavLink>
               <MobileNavLink href="/dashboard/my-stories" active={isActive('/dashboard/my-stories')} icon={BookOpen} onClick={closeMobileMenu}>
                 Browse

@@ -4,6 +4,7 @@ import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.UserFollow;
 import com.app.nomanweb_backend.repository.*;
 import com.app.nomanweb_backend.service.UserService;
+import com.app.nomanweb_backend.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private final ChapterRepository chapterRepository;
     private final ReadingProgressRepository readingProgressRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final SearchService searchService;
 
     @Override
     @Transactional(readOnly = true)
@@ -176,6 +178,62 @@ public class UserServiceImpl implements UserService {
         profile.put("stats", getUserStats(userId));
 
         return profile;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Map<String, Object>> searchUsers(String query, Pageable pageable) {
+        try {
+            // Use the search service to find users
+            List<User> users = searchService.searchUsers(query, pageable.getPageNumber(), pageable.getPageSize());
+
+            List<Map<String, Object>> searchResults = users.stream()
+                    .map(user -> {
+                        Map<String, Object> userData = new HashMap<>();
+                        userData.put("id", user.getId().toString());
+                        userData.put("username", user.getUsername());
+                        userData.put("displayName", user.getDisplayName());
+                        userData.put("profileImageUrl", user.getProfileImageUrl());
+                        userData.put("email", user.getEmail());
+                        return userData;
+                    })
+                    .collect(Collectors.toList());
+
+            // For now, we'll return a simple page. In a real implementation,
+            // you might want to get the total count from the search service
+            return new PageImpl<>(searchResults, pageable, searchResults.size());
+        } catch (Exception e) {
+            log.error("Error searching users with query: {}", query, e);
+            // Fallback to database search if search service fails
+            return searchUsersFromDatabase(query, pageable);
+        }
+    }
+
+    private Page<Map<String, Object>> searchUsersFromDatabase(String query, Pageable pageable) {
+        // Simple database search as fallback
+        String searchQuery = "%" + query.toLowerCase() + "%";
+        List<User> users = userRepository
+                .findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                        searchQuery);
+
+        // Apply pagination manually since the repository method doesn't support it
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), users.size());
+        List<User> paginatedUsers = users.subList(start, end);
+
+        List<Map<String, Object>> searchResults = paginatedUsers.stream()
+                .map(user -> {
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("id", user.getId().toString());
+                    userData.put("username", user.getUsername());
+                    userData.put("displayName", user.getDisplayName());
+                    userData.put("profileImageUrl", user.getProfileImageUrl());
+                    userData.put("email", user.getEmail());
+                    return userData;
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(searchResults, pageable, users.size());
     }
 
     private long getTotalViewsForUser(UUID userId) {

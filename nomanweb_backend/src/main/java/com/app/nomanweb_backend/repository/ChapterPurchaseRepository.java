@@ -55,4 +55,15 @@ public interface ChapterPurchaseRepository extends JpaRepository<ChapterPurchase
     // Top earning chapters
     @Query("SELECT cp.chapter, SUM(cp.coinsSpent) as totalRevenue FROM ChapterPurchase cp GROUP BY cp.chapter ORDER BY totalRevenue DESC")
     List<Object[]> findTopEarningChapters(Pageable pageable);
+
+    // Find all chapter purchases by user for a specific story
+    List<ChapterPurchase> findByUserAndStory(User user, Story story);
+
+    // Find all active chapter purchases for a story (not refunded)
+    @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.story = :story AND cp.isRefunded = false ORDER BY cp.purchasedAt DESC")
+    List<ChapterPurchase> findActiveByStoryOrderByPurchasedAtDesc(@Param("story") Story story);
+
+    // Find all active chapter purchases for a chapter (not refunded)
+    @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.chapter = :chapter AND cp.isRefunded = false ORDER BY cp.purchasedAt DESC")
+    List<ChapterPurchase> findActiveByChapterOrderByPurchasedAtDesc(@Param("chapter") Chapter chapter);
 }

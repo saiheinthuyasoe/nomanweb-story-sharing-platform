@@ -44,9 +44,25 @@ public class ChapterPurchase {
     @Column(name = "purchased_at", nullable = false, updatable = false)
     private LocalDateTime purchasedAt;
 
-    // Helper method
+    @Column(name = "is_refunded")
+    @Builder.Default
+    private Boolean isRefunded = false;
+
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
+
+    // Helper methods
     public BigDecimal getAuthorEarnings() {
         // Authors get 70% of chapter purchase (30% platform fee)
         return coinsSpent.multiply(new BigDecimal("0.70"));
+    }
+
+    public void markAsRefunded() {
+        this.isRefunded = true;
+        this.refundedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return !Boolean.TRUE.equals(this.isRefunded);
     }
 }

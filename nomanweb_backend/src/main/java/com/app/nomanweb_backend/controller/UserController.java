@@ -3,6 +3,7 @@ package com.app.nomanweb_backend.controller;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.UserFollow;
 import com.app.nomanweb_backend.service.UserService;
+import com.app.nomanweb_backend.service.SearchService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final SearchService searchService;
 
     // Get current user's statistics
     @GetMapping("/me/stats")
@@ -137,6 +139,22 @@ public class UserController {
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             log.error("Error getting user profile for user {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Search users by email, username, or display name
+    @GetMapping("/search")
+    public ResponseEntity<Page<Map<String, Object>>> searchUsers(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Map<String, Object>> searchResults = userService.searchUsers(q, pageable);
+            return ResponseEntity.ok(searchResults);
+        } catch (Exception e) {
+            log.error("Error searching users with query: {}", q, e);
             return ResponseEntity.internalServerError().build();
         }
     }

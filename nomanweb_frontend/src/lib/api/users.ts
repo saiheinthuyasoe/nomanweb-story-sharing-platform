@@ -38,6 +38,14 @@ export interface FollowerUser {
   followedAt: string;
 }
 
+export interface SearchUser {
+  id: string;
+  username: string;
+  displayName?: string;
+  profileImageUrl?: string;
+  email?: string;
+}
+
 const usersApi = {
   // Get user profile by ID (for viewing other users)
   getUserProfile: async (userId: string): Promise<UserProfile> => {
@@ -90,6 +98,16 @@ const usersApi = {
   isFollowing: async (userId: string): Promise<boolean> => {
     const response = await apiClient.get(`/users/${userId}/is-following`);
     return response.data.isFollowing;
+  },
+
+  // Search users by email, username, or display name
+  searchUsers: async (query: string, page = 0, size = 20): Promise<{
+    content: SearchUser[];
+    totalElements: number;
+    totalPages: number;
+  }> => {
+    const response = await apiClient.get(`/users/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`);
+    return response.data;
   },
 };
 

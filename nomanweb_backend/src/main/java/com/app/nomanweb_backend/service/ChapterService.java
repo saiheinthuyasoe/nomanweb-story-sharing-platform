@@ -41,6 +41,12 @@ public interface ChapterService {
 
     ChapterResponse unpublishChapter(UUID chapterId, UUID authorId);
 
+    // Bulk chapter publishing
+    void bulkPublishChaptersByStory(UUID storyId, UUID authorId);
+
+    // Bulk chapter unpublishing
+    void bulkUnpublishChaptersByStory(UUID storyId, UUID authorId);
+
     void reorderChapters(UUID storyId, List<UUID> chapterIds, UUID authorId);
 
     // Chapter content and statistics

@@ -12,6 +12,9 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CategoryRepository;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.SearchIndexingService;
+import com.app.nomanweb_backend.service.PurchaseProtectionService;
+import com.app.nomanweb_backend.service.PurchaseProtectionException;
+import com.app.nomanweb_backend.service.ChapterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,6 +41,8 @@ public class StoryServiceImpl implements StoryService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PurchaseProtectionService purchaseProtectionService;
+    private final ChapterService chapterService;
 
     @Override
     public StoryResponse createStory(CreateStoryRequest request, UUID authorId) {
@@ -108,6 +113,13 @@ public class StoryServiceImpl implements StoryService {
             story.setCoverImageUrl(request.getCoverImageUrl());
         }
         if (request.getPricingType() != null) {
+            // Check if changing from paid to free and if there are existing purchases
+            if (story.isPaid() && request.getPricingType() == Story.PricingType.FREE) {
+                if (!purchaseProtectionService.canChangePricingToFreeWithoutRefund(storyId)) {
+                    throw new RuntimeException(
+                            "Cannot change pricing to free with existing purchases. Please process refunds first through the refund system.");
+                }
+            }
             story.setPricingType(request.getPricingType());
         }
         if (request.getBookStatus() != null) {
@@ -158,6 +170,17 @@ public class StoryServiceImpl implements StoryService {
             throw new RuntimeException("Not authorized to delete this story");
         }
 
+        // Check if story can be moved to trash without refund
+        if (!purchaseProtectionService.canMoveStoryToTrashWithoutRefund(storyId)) {
+            var refundCalculation = purchaseProtectionService.calculateStoryRefundAmount(storyId);
+            throw new PurchaseProtectionException(
+                    "Cannot move story to trash with existing purchases. Please process refunds first through the refund system.",
+                    storyId.toString(),
+                    story.getTitle(),
+                    refundCalculation.getTotalBuyersCount(),
+                    refundCalculation.getTotalRefundAmount());
+        }
+
         // Move to trash
         story.moveToTrash();
         log.info("🗑️ Called moveToTrash() - isDeleted: {}, deletedAt: {}",
@@ -172,11 +195,14 @@ public class StoryServiceImpl implements StoryService {
         // Double-check by fetching from database
         Story verifyStory = storyRepository.findById(storyId).orElse(null);
         if (verifyStory != null) {
-            log.info("🔍 Verification - Story from DB: {} - isDeleted: {}, deletedAt: {}",
-                    storyId, verifyStory.isInTrash(), verifyStory.getDeletedAt());
+            log.info("✅ Verification: Story in database - isDeleted: {}, deletedAt: {}",
+                    verifyStory.isInTrash(), verifyStory.getDeletedAt());
         } else {
-            log.error("❌ Verification failed - Story not found in DB: {}", storyId);
+            log.error("❌ Verification failed: Story not found in database after save");
         }
+
+        // Publish event for search indexing
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
     }
 
     @Override
@@ -217,6 +243,9 @@ public class StoryServiceImpl implements StoryService {
         if (!story.isInTrash()) {
             throw new RuntimeException("Story must be in trash before permanent deletion");
         }
+
+        // No purchase protection check needed for permanent deletion from trash
+        // Stories in trash have already gone through the refund process
 
         // Log related entities that will be cascade deleted
         log.info(
@@ -531,6 +560,15 @@ public class StoryServiceImpl implements StoryService {
 
         log.info("Story published successfully: {}", storyId);
 
+        // Automatically publish all draft chapters when story is published
+        try {
+            chapterService.bulkPublishChaptersByStory(storyId, authorId);
+            log.info("All draft chapters published automatically for story: {}", storyId);
+        } catch (Exception e) {
+            log.warn("Failed to auto-publish chapters for story: {} - {}", storyId, e.getMessage());
+            // Don't fail the story publishing if chapter publishing fails
+        }
+
         // Publish event for search indexing
         eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
 
@@ -548,10 +586,33 @@ public class StoryServiceImpl implements StoryService {
             throw new RuntimeException("Not authorized to unpublish this story");
         }
 
+        // Check if story has purchases and require refunds
+        boolean canUnpublish = purchaseProtectionService.canUnpublishStoryWithoutRefund(storyId);
+        boolean hasPurchases = purchaseProtectionService.storyHasPurchases(storyId);
+
+        // Special handling for whole book pricing
+        if (story.getPricingType() == Story.PricingType.WHOLE_BOOK && hasPurchases) {
+            log.warn("Unpublishing whole book priced story with purchases: {}. Refunds should be processed.", storyId);
+            // We allow unpublishing for whole book pricing, but log a warning
+        } else if (!canUnpublish) {
+            // For other pricing types, we still enforce the protection
+            throw new RuntimeException(
+                    "Cannot unpublish story with existing purchases. Please process refunds first through the refund system.");
+        }
+
         story.setPublishStatus(Story.PublishStatus.DRAFT);
         story = storyRepository.save(story);
 
         log.info("Story unpublished successfully: {}", storyId);
+
+        // Automatically unpublish all published chapters when story is unpublished
+        try {
+            chapterService.bulkUnpublishChaptersByStory(storyId, authorId);
+            log.info("All published chapters unpublished automatically for story: {}", storyId);
+        } catch (Exception e) {
+            log.warn("Failed to auto-unpublish chapters for story: {} - {}", storyId, e.getMessage());
+            // Don't fail the story unpublishing if chapter unpublishing fails
+        }
 
         // Publish event for search indexing
         eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));

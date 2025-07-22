@@ -15,9 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.PageImpl;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class MonetizationServiceImpl implements MonetizationService {
     private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final BookPurchaseRepository bookPurchaseRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final RefundTransactionRepository refundTransactionRepository;
     private final UserRepository userRepository;
     private final ChapterRepository chapterRepository;
     private final StoryRepository storyRepository;
@@ -44,20 +47,45 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Override
     @Transactional
     public GiftTransactionResponse sendGift(User sender, SendGiftRequest request) {
-        // Validate gift exists and is active
-        Gift gift = giftRepository.findById(request.getGiftId())
-                .orElseThrow(() -> new RuntimeException("Gift not found"));
-
-        if (!gift.isActive()) {
-            throw new RuntimeException("Gift is not available");
-        }
-
         // Validate recipient
         User recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
 
-        // Calculate total cost
-        BigDecimal totalCost = gift.getCoinCost().multiply(new BigDecimal(request.getQuantity()));
+        // Determine gift details and cost
+        Gift gift = null;
+        BigDecimal totalCost;
+        String giftName;
+        String giftDescription;
+
+        if (request.getCustomAmount() != null) {
+            // Custom coin amount gift
+            totalCost = request.getCustomAmount().multiply(new BigDecimal(request.getQuantity()));
+            giftName = "Custom Gift";
+            giftDescription = "Custom coin gift";
+        } else if (request.getGiftId() != null && request.getGiftId().startsWith("emoji_")) {
+            // Emoji gift - handle predefined emoji costs
+            String emojiType = request.getGiftId().replace("emoji_", "");
+            BigDecimal emojiCost = getEmojiGiftCost(emojiType);
+            totalCost = emojiCost.multiply(new BigDecimal(request.getQuantity()));
+            giftName = getEmojiGiftName(emojiType);
+            giftDescription = getEmojiGiftDescription(emojiType);
+        } else {
+            // Predefined gift from database
+            try {
+                gift = giftRepository.findById(UUID.fromString(request.getGiftId()))
+                        .orElseThrow(() -> new RuntimeException("Gift not found"));
+
+                if (!gift.isActive()) {
+                    throw new RuntimeException("Gift is not available");
+                }
+
+                totalCost = gift.getCoinCost().multiply(new BigDecimal(request.getQuantity()));
+                giftName = gift.getName();
+                giftDescription = gift.getDescription();
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid gift ID format");
+            }
+        }
 
         // Check sender has enough coins
         if (!sender.hasEnoughCoins(totalCost)) {
@@ -79,15 +107,15 @@ public class MonetizationServiceImpl implements MonetizationService {
         }
 
         // Deduct coins from sender
-        deductCoins(sender, totalCost, "Gift sent: " + gift.getName() + " x" + request.getQuantity());
+        deductCoins(sender, totalCost, "Gift sent: " + giftName + " x" + request.getQuantity());
 
-        // Add earnings to recipient (70% of gift value)
-        BigDecimal recipientEarnings = totalCost.multiply(new BigDecimal("0.70"));
-        addCoins(recipient, recipientEarnings, "Gift received: " + gift.getName() + " x" + request.getQuantity());
+        // Add earnings to recipient (100% of gift value - no platform fee)
+        BigDecimal recipientEarnings = totalCost;
+        addCoins(recipient, recipientEarnings, "Gift received: " + giftName + " x" + request.getQuantity());
 
         // Create gift transaction
         GiftTransaction giftTransaction = GiftTransaction.builder()
-                .gift(gift)
+                .gift(gift) // Can be null for custom/emoji gifts
                 .sender(sender)
                 .recipient(recipient)
                 .story(story)
@@ -105,7 +133,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                     recipient.getId(),
                     Notification.NotificationType.GIFT_RECEIVED,
                     "Gift Received",
-                    sender.getDisplayNameOrUsername() + " sent you " + gift.getName(),
+                    sender.getDisplayNameOrUsername() + " sent you " + giftName,
                     Notification.RelatedType.GIFT,
                     giftTransaction.getId());
         } catch (Exception e) {
@@ -133,6 +161,11 @@ public class MonetizationServiceImpl implements MonetizationService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new RuntimeException("Chapter not found"));
 
+        // Check if story is published
+        if (chapter.getStory().getPublishStatus() != Story.PublishStatus.PUBLISHED) {
+            return false;
+        }
+
         // Free chapters are always accessible
         if (chapter.getIsFree()) {
             return true;
@@ -143,8 +176,62 @@ public class MonetizationServiceImpl implements MonetizationService {
             return true;
         }
 
-        // Check if user has purchased the chapter
-        return chapterPurchaseRepository.existsByUserAndChapter(user, chapter);
+        // Check if user has purchased the chapter directly
+        java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
+                chapter);
+        if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
+            return true; // User has active chapter purchase
+        }
+
+        // Check if user has purchased the whole book
+        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
+                chapter.getStory());
+        if (!bookPurchases.isEmpty()) {
+            BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
+            if (mostRecentBookPurchase.isActive()) {
+            // If story is currently WHOLE_BOOK, user has access to all chapters
+            if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                return true;
+            }
+
+            // If story is currently PAID_PER_CHAPTER, user only has access to chapters that
+            // existed at purchase time
+            if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                // Check if this chapter existed at the time of book purchase
+                if (mostRecentBookPurchase.getChaptersAtPurchase() != null &&
+                        chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
+                    return true;
+                }
+            }
+            }
+        }
+
+        // Check if user has purchased individual chapters and story is now WHOLE_BOOK
+        // If user has purchased enough chapters, they should get access to the whole
+        // book
+        if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+            // Count how many active (non-refunded) chapters the user has purchased for this
+            // story
+            List<ChapterPurchase> userChapterPurchases = chapterPurchaseRepository.findByUserAndStory(user,
+                    chapter.getStory());
+
+            // Filter to only active (non-refunded) chapter purchases
+            List<ChapterPurchase> activeChapterPurchases = userChapterPurchases.stream()
+                    .filter(ChapterPurchase::isActive)
+                    .collect(Collectors.toList());
+
+            // Count total published chapters in the story
+            long totalPublishedChapters = chapterRepository.countByStoryAndStatus(chapter.getStory(),
+                    Chapter.Status.PUBLISHED);
+
+            // If user has purchased all or most chapters (90% threshold), give them access
+            // to the whole book
+            if (totalPublishedChapters > 0 && activeChapterPurchases.size() >= totalPublishedChapters * 0.9) {
+                return true;
+            }
+        }
+
+        return false; // No active (non-refunded) purchases found
     }
 
     @Override
@@ -152,6 +239,11 @@ public class MonetizationServiceImpl implements MonetizationService {
     public GiftTransactionResponse purchaseChapter(User user, PurchaseChapterRequest request) {
         Chapter chapter = chapterRepository.findById(request.getChapterId())
                 .orElseThrow(() -> new RuntimeException("Chapter not found"));
+
+        // Check if story is published
+        if (chapter.getStory().getPublishStatus() != Story.PublishStatus.PUBLISHED) {
+            throw new RuntimeException("Chapter is not available for purchase");
+        }
 
         // Check if chapter requires payment
         if (chapter.getIsFree()) {
@@ -163,10 +255,40 @@ public class MonetizationServiceImpl implements MonetizationService {
             throw new RuntimeException("Authors can read their own chapters for free");
         }
 
-        // Check if already purchased
-        if (chapterPurchaseRepository.existsByUserAndChapter(user, chapter)) {
+        // Check if already purchased and not refunded (either directly or through whole
+        // book)
+        java.util.Optional<ChapterPurchase> existingChapterPurchase = chapterPurchaseRepository
+                .findByUserAndChapter(user, chapter);
+        if (existingChapterPurchase.isPresent() && existingChapterPurchase.get().isActive()) {
             throw new RuntimeException("Chapter already purchased");
         }
+        // If refunded, allow repurchase
+
+        // Check if user has purchased the whole book
+        List<BookPurchase> existingBookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
+                chapter.getStory());
+        if (!existingBookPurchases.isEmpty()) {
+            BookPurchase mostRecentBookPurchase = existingBookPurchases.get(0);
+            if (mostRecentBookPurchase.isActive()) {
+            // If story is currently WHOLE_BOOK, user has access to all chapters
+            if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                throw new RuntimeException(
+                        "You already have access to this chapter through your book purchase");
+            }
+
+            // If story is currently PAID_PER_CHAPTER, user only has access to chapters that
+            // existed at purchase time
+            if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                // Check if this chapter existed at the time of book purchase
+                if (mostRecentBookPurchase.getChaptersAtPurchase() != null &&
+                        chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
+                    throw new RuntimeException(
+                            "You already have access to this chapter through your book purchase");
+                }
+            }
+            }
+        }
+        // If refunded, allow repurchase
 
         // Check if user has enough coins
         if (!user.hasEnoughCoins(chapter.getCoinPrice())) {
@@ -218,28 +340,72 @@ public class MonetizationServiceImpl implements MonetizationService {
 
     @Override
     public Page<GiftTransactionResponse> getPurchaseHistory(User user, Pageable pageable) {
-        Page<ChapterPurchase> purchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
-        return purchases.map(purchase -> GiftTransactionResponse.builder()
-                .id(purchase.getId())
-                .totalCoins(purchase.getCoinsSpent())
-                .createdAt(purchase.getPurchasedAt())
-                .chapter(GiftTransactionResponse.ChapterSummary.builder()
-                        .id(purchase.getChapter().getId())
-                        .title(purchase.getChapter().getTitle())
-                        .chapterNumber(purchase.getChapter().getChapterNumber())
-                        .build())
-                .story(GiftTransactionResponse.StorySummary.builder()
-                        .id(purchase.getStory().getId())
-                        .title(purchase.getStory().getTitle())
-                        .coverImageUrl(purchase.getStory().getCoverImageUrl())
-                        .build())
-                .build());
+        // Get chapter purchases
+        Page<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user,
+                pageable);
+
+        // Get book purchases
+        Page<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
+
+        // Combine and sort all purchases by date
+        List<GiftTransactionResponse> allPurchases = new ArrayList<>();
+
+        // Add chapter purchases
+        chapterPurchases.getContent().forEach(purchase -> {
+            allPurchases.add(GiftTransactionResponse.builder()
+                    .id(purchase.getId())
+                    .totalCoins(purchase.getCoinsSpent())
+                    .createdAt(purchase.getPurchasedAt())
+                    .chapter(GiftTransactionResponse.ChapterSummary.builder()
+                            .id(purchase.getChapter().getId())
+                            .title(purchase.getChapter().getTitle())
+                            .chapterNumber(purchase.getChapter().getChapterNumber())
+                            .build())
+                    .story(GiftTransactionResponse.StorySummary.builder()
+                            .id(purchase.getStory().getId())
+                            .title(purchase.getStory().getTitle())
+                            .coverImageUrl(purchase.getStory().getCoverImageUrl())
+                            .pricingType(purchase.getStory().getPricingType().name())
+                            .build())
+                    .build());
+        });
+
+        // Add book purchases
+        bookPurchases.getContent().forEach(purchase -> {
+            allPurchases.add(GiftTransactionResponse.builder()
+                    .id(purchase.getId())
+                    .totalCoins(purchase.getCoinsSpent())
+                    .createdAt(purchase.getPurchasedAt())
+                    .chaptersAtPurchase(purchase.getChaptersAtPurchase())
+                    .story(GiftTransactionResponse.StorySummary.builder()
+                            .id(purchase.getStory().getId())
+                            .title(purchase.getStory().getTitle())
+                            .coverImageUrl(purchase.getStory().getCoverImageUrl())
+                            .pricingType(purchase.getStory().getPricingType().name())
+                            .build())
+                    .build());
+        });
+
+        // Sort by creation date (most recent first)
+        allPurchases.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+        // Apply pagination
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allPurchases.size());
+        List<GiftTransactionResponse> pageContent = allPurchases.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, allPurchases.size());
     }
 
     @Override
     public boolean canAccessBook(User user, UUID storyId) {
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        // Check if story is published
+        if (story.getPublishStatus() != Story.PublishStatus.PUBLISHED) {
+            return false;
+        }
 
         // Free stories are always accessible
         if (story.getPricingType() == Story.PricingType.FREE) {
@@ -253,7 +419,21 @@ public class MonetizationServiceImpl implements MonetizationService {
 
         // For WHOLE_BOOK pricing, check if user has purchased the book
         if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
-            return bookPurchaseRepository.existsByUserAndStory(user, story);
+            List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user, story);
+            if (!bookPurchases.isEmpty()) {
+                // Get the most recent book purchase and check if it's active (not refunded)
+                BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
+                if (mostRecentBookPurchase.isActive()) {
+                    // Additional check: purchase must be made after the story's current publish
+                    // date
+                    // This prevents access from old purchases when a story is republished after
+                    // refunds
+                    if (story.getPublishedAt() != null &&
+                            mostRecentBookPurchase.getPurchasedAt().isAfter(story.getPublishedAt())) {
+                        return true; // User has valid active book purchase for current publish cycle
+                    }
+                }
+            }
         }
 
         // For PAID_PER_CHAPTER pricing, book access is not applicable
@@ -266,6 +446,11 @@ public class MonetizationServiceImpl implements MonetizationService {
         Story story = storyRepository.findById(request.getStoryId())
                 .orElseThrow(() -> new RuntimeException("Story not found"));
 
+        // Check if story is published
+        if (story.getPublishStatus() != Story.PublishStatus.PUBLISHED) {
+            throw new RuntimeException("Story is not available for purchase");
+        }
+
         // Check if story is available for whole book purchase
         if (story.getPricingType() != Story.PricingType.WHOLE_BOOK) {
             throw new RuntimeException("Story is not available for whole book purchase");
@@ -276,9 +461,33 @@ public class MonetizationServiceImpl implements MonetizationService {
             throw new RuntimeException("Authors can read their own stories for free");
         }
 
-        // Check if already purchased
-        if (bookPurchaseRepository.existsByUserAndStory(user, story)) {
-            throw new RuntimeException("Book already purchased");
+        // Check if already purchased and not refunded
+        // Use the new method to handle multiple book purchases properly
+        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user, story);
+        if (!bookPurchases.isEmpty()) {
+            // Check the most recent purchase
+            BookPurchase mostRecentPurchase = bookPurchases.get(0);
+            if (mostRecentPurchase.isActive()) {
+                // Additional check: purchase must be made after the story's current publish date
+                // This prevents duplicate purchases when a story is republished after refunds
+                if (story.getPublishedAt() != null &&
+                        mostRecentPurchase.getPurchasedAt().isAfter(story.getPublishedAt())) {
+                    throw new RuntimeException("Book already purchased");
+                }
+                // If purchase was made before current publish cycle, allow repurchase
+            }
+            // If refunded, allow repurchase
+        }
+
+        // Check if user has purchased any chapters from this story (that aren't
+        // refunded)
+        List<ChapterPurchase> existingChapterPurchases = chapterPurchaseRepository.findByUserAndStory(user, story);
+
+        for (ChapterPurchase purchase : existingChapterPurchases) {
+            if (purchase.getUser().getId().equals(user.getId()) && purchase.isActive()) {
+                throw new RuntimeException(
+                        "You already have access to some chapters from this story. Book purchase will give you access to all chapters.");
+            }
         }
 
         // Check if user has enough coins
@@ -294,11 +503,16 @@ public class MonetizationServiceImpl implements MonetizationService {
         BigDecimal authorEarnings = story.getBookPrice().multiply(new BigDecimal("0.70"));
         addCoins(story.getAuthor(), authorEarnings, "Book sale: " + story.getTitle());
 
+        // Count how many chapters exist at the time of purchase
+        long chaptersAtPurchase = chapterRepository.countByStoryAndStatusAndCreatedAtBefore(
+                story, Chapter.Status.PUBLISHED, LocalDateTime.now());
+
         // Create purchase record
         BookPurchase purchase = BookPurchase.builder()
                 .user(user)
                 .story(story)
                 .coinsSpent(story.getBookPrice())
+                .chaptersAtPurchase((int) chaptersAtPurchase)
                 .build();
 
         bookPurchaseRepository.save(purchase);
@@ -454,7 +668,7 @@ public class MonetizationServiceImpl implements MonetizationService {
     private GiftTransactionResponse convertToGiftTransactionResponse(GiftTransaction transaction) {
         return GiftTransactionResponse.builder()
                 .id(transaction.getId())
-                .gift(convertToGiftResponse(transaction.getGift()))
+                .gift(transaction.getGift() != null ? convertToGiftResponse(transaction.getGift()) : null)
                 .sender(convertToUserSummary(transaction.getSender()))
                 .recipient(convertToUserSummary(transaction.getRecipient()))
                 .story(transaction.getStory() != null ? convertToStorySummary(transaction.getStory()) : null)
@@ -489,5 +703,48 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .title(chapter.getTitle())
                 .chapterNumber(chapter.getChapterNumber())
                 .build();
+    }
+
+    // Helper methods for emoji gifts
+    private BigDecimal getEmojiGiftCost(String emojiType) {
+        return switch (emojiType) {
+            case "heart" -> new BigDecimal("1");
+            case "star" -> new BigDecimal("5");
+            case "crown" -> new BigDecimal("10");
+            case "diamond" -> new BigDecimal("25");
+            case "trophy" -> new BigDecimal("50");
+            case "fire" -> new BigDecimal("15");
+            case "rocket" -> new BigDecimal("30");
+            case "rainbow" -> new BigDecimal("20");
+            default -> new BigDecimal("1");
+        };
+    }
+
+    private String getEmojiGiftName(String emojiType) {
+        return switch (emojiType) {
+            case "heart" -> "Heart";
+            case "star" -> "Star";
+            case "crown" -> "Crown";
+            case "diamond" -> "Diamond";
+            case "trophy" -> "Trophy";
+            case "fire" -> "Fire";
+            case "rocket" -> "Rocket";
+            case "rainbow" -> "Rainbow";
+            default -> "Gift";
+        };
+    }
+
+    private String getEmojiGiftDescription(String emojiType) {
+        return switch (emojiType) {
+            case "heart" -> "Show your love";
+            case "star" -> "This story shines";
+            case "crown" -> "You are the king/queen";
+            case "diamond" -> "Precious like a diamond";
+            case "trophy" -> "You deserve this trophy";
+            case "fire" -> "This is fire!";
+            case "rocket" -> "To the moon!";
+            case "rainbow" -> "Magical content";
+            default -> "A special gift";
+        };
     }
 }

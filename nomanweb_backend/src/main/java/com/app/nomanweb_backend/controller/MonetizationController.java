@@ -4,6 +4,7 @@ import com.app.nomanweb_backend.dto.monetization.*;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.MonetizationService;
 import com.app.nomanweb_backend.service.AuthService;
+import com.app.nomanweb_backend.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ public class MonetizationController {
 
     private final MonetizationService monetizationService;
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
 
     @GetMapping("/gifts")
     @Operation(summary = "Get available gifts")
@@ -91,9 +93,10 @@ public class MonetizationController {
     @Operation(summary = "Purchase a chapter")
     public ResponseEntity<GiftTransactionResponse> purchaseChapter(
             @Valid @RequestBody PurchaseChapterRequest request,
-            HttpServletRequest httpRequest) {
+            @RequestHeader("Authorization") String token) {
 
-        User currentUser = getCurrentUser(httpRequest);
+        UUID userId = jwtUtil.getUserIdFromToken(token.substring(7));
+        User currentUser = authService.getCurrentUser(userId);
         GiftTransactionResponse response = monetizationService.purchaseChapter(currentUser, request);
 
         log.info("User {} purchased chapter {}", currentUser.getId(), request.getChapterId());
@@ -119,9 +122,10 @@ public class MonetizationController {
     @Operation(summary = "Purchase a whole book")
     public ResponseEntity<GiftTransactionResponse> purchaseBook(
             @Valid @RequestBody PurchaseBookRequest request,
-            HttpServletRequest httpRequest) {
+            @RequestHeader("Authorization") String token) {
 
-        User currentUser = getCurrentUser(httpRequest);
+        UUID userId = jwtUtil.getUserIdFromToken(token.substring(7));
+        User currentUser = authService.getCurrentUser(userId);
         GiftTransactionResponse response = monetizationService.purchaseBook(currentUser, request);
 
         log.info("User {} purchased book {}", currentUser.getId(), request.getStoryId());

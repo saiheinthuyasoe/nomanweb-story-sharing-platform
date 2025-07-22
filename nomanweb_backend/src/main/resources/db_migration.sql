@@ -138,7 +138,7 @@ CREATE INDEX IF NOT EXISTS idx_settings_key ON system_settings(setting_key);
 -- Insert default system settings
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('platform_fee_percentage', '30.00', 'Platform fee percentage for transactions'),
-('gift_recipient_percentage', '70.00', 'Percentage of gift value that recipients receive'),
+('gift_recipient_percentage', '100.00', 'Percentage of gift value that recipients receive (no platform fee)'),
 ('author_earnings_percentage', '70.00', 'Percentage of chapter sales that authors receive'),
 ('min_withdrawal_coins', '100', 'Minimum coins required for withdrawal'),
 ('max_withdrawal_coins', '10000', 'Maximum coins allowed per withdrawal'),

@@ -1,17 +1,23 @@
 package com.app.nomanweb_backend.service.impl;
 
 import com.app.nomanweb_backend.dto.chapter.*;
+import com.app.nomanweb_backend.entity.BookPurchase;
 import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.ChapterPurchase;
+import com.app.nomanweb_backend.entity.RefundTransaction;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.repository.BookPurchaseRepository;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CoinTransactionRepository;
 import com.app.nomanweb_backend.repository.ChapterPurchaseRepository;
+import com.app.nomanweb_backend.repository.RefundTransactionRepository;
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.CollaborationService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
+import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -40,8 +46,11 @@ public class ChapterServiceImpl implements ChapterService {
     private final UserRepository userRepository;
     private final CoinTransactionRepository coinTransactionRepository;
     private final ChapterPurchaseRepository chapterPurchaseRepository;
+    private final BookPurchaseRepository bookPurchaseRepository;
+    private final RefundTransactionRepository refundTransactionRepository;
     private final CollaborationService collaborationService;
     private final ViewTrackingService viewTrackingService;
+    private final PurchaseProtectionService purchaseProtectionService;
 
     private static final int WORDS_PER_MINUTE = 200; // Average reading speed
 
@@ -186,6 +195,13 @@ public class ChapterServiceImpl implements ChapterService {
             chapter.setCoinPrice(request.getCoinPrice());
         }
         if (request.getIsFree() != null) {
+            // Check if changing from paid to free and if there are existing purchases
+            if (!chapter.getIsFree() && request.getIsFree()) {
+                if (!purchaseProtectionService.canDeleteChapterWithoutRefund(chapterId)) {
+                    throw new IllegalArgumentException(
+                            "Cannot change chapter to free with existing purchases. Please process refunds first through the refund system.");
+                }
+            }
             chapter.setIsFree(request.getIsFree());
         }
         if (request.getChapterNumber() != null && !request.getChapterNumber().equals(chapter.getChapterNumber())) {
@@ -399,6 +415,12 @@ public class ChapterServiceImpl implements ChapterService {
             throw new IllegalArgumentException("Only the author can unpublish this chapter");
         }
 
+        // Check if chapter has purchases and require refunds
+        if (!purchaseProtectionService.canUnpublishChapterWithoutRefund(chapterId)) {
+            throw new IllegalArgumentException(
+                    "Cannot unpublish chapter with existing purchases. Please process refunds first through the refund system.");
+        }
+
         chapter.setStatus(Chapter.Status.DRAFT);
         chapter.setPublishedAt(null);
         chapter = chapterRepository.save(chapter);
@@ -521,30 +543,57 @@ public class ChapterServiceImpl implements ChapterService {
     public boolean hasUserPurchasedChapter(UUID chapterId, UUID userId) {
         log.info("Checking if user {} has purchased chapter {}", userId, chapterId);
 
-        // Check if user has a successful coin transaction for this chapter
-        boolean hasPurchased = coinTransactionRepository
-                .existsByUserIdAndReferenceIdAndReferenceTypeAndTransactionTypeAndStatus(
-                        userId, chapterId, com.app.nomanweb_backend.entity.CoinTransaction.ReferenceType.CHAPTER,
-                        com.app.nomanweb_backend.entity.CoinTransaction.TransactionType.PURCHASE,
-                        com.app.nomanweb_backend.entity.CoinTransaction.Status.COMPLETED);
+        Chapter chapter = chapterRepository.findById(chapterId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
 
-        log.info("User {} purchase check for chapter {}: {}", userId, chapterId, hasPurchased);
+        if (chapter == null || user == null) {
+            return false;
+        }
 
-        // Also check ChapterPurchase table as fallback
-        if (!hasPurchased) {
-            Chapter chapter = chapterRepository.findById(chapterId).orElse(null);
-            if (chapter != null) {
-                User user = userRepository.findById(userId).orElse(null);
-                if (user != null) {
-                    boolean hasChapterPurchase = chapterPurchaseRepository.existsByUserAndChapter(user, chapter);
-                    log.info("ChapterPurchase fallback check for user {} and chapter {}: {}", userId, chapterId,
-                            hasChapterPurchase);
-                    return hasChapterPurchase;
+        // Check if user has purchased this chapter
+        if (chapterPurchaseRepository.existsByUserAndChapter(user, chapter)) {
+            // Get the actual chapter purchase to check purchase date
+            java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
+                    chapter);
+            if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
+                // Additional check: purchase must be made after the story's current publish
+                // date
+                // This prevents access from old purchases when a story is republished after
+                // refunds
+                if (chapter.getStory().getPublishedAt() != null &&
+                        chapterPurchase.get().getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
+                    log.info("User {} has valid chapter purchase for chapter {} (purchased after current publish date)",
+                            userId, chapterId);
+                    return true;
                 }
+                log.info("User {} has chapter purchase for chapter {} but it was made before current publish date",
+                        userId, chapterId);
             }
         }
 
-        return hasPurchased;
+        // Also check if user purchased the whole book (which includes this chapter)
+        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user, chapter.getStory());
+        if (!bookPurchases.isEmpty()) {
+            // Get the most recent book purchase to check purchase date
+            BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
+            if (mostRecentBookPurchase.isActive()) {
+                // Additional check: purchase must be made after the story's current publish
+                // date
+                // This prevents access from old purchases when a story is republished after
+                // refunds
+                if (chapter.getStory().getPublishedAt() != null &&
+                        mostRecentBookPurchase.getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
+                    log.info("User {} has valid book purchase for chapter {} (purchased after current publish date)",
+                            userId, chapterId);
+                    return true;
+                }
+                log.info("User {} has book purchase for chapter {} but it was made before current publish date",
+                        userId, chapterId);
+            }
+        }
+
+        log.info("User {} has no active purchase for chapter {}", userId, chapterId);
+        return false;
     }
 
     @Override
@@ -756,6 +805,12 @@ public class ChapterServiceImpl implements ChapterService {
             throw new IllegalArgumentException("Only the author can delete this chapter");
         }
 
+        // Check if chapter can be moved to trash without refund
+        if (!purchaseProtectionService.canMoveChapterToTrashWithoutRefund(chapterId)) {
+            throw new IllegalArgumentException(
+                    "Cannot move chapter to trash with existing purchases. Please process refunds first through the refund system.");
+        }
+
         // Move to trash
         chapter.moveToTrash();
         chapterRepository.save(chapter);
@@ -807,6 +862,9 @@ public class ChapterServiceImpl implements ChapterService {
         if (!chapter.isInTrash()) {
             throw new IllegalArgumentException("Chapter must be in trash before permanent deletion");
         }
+
+        // No purchase protection check needed for permanent deletion from trash
+        // Chapters in trash have already gone through the refund process
 
         // Permanently delete
         chapterRepository.delete(chapter);
@@ -983,5 +1041,68 @@ public class ChapterServiceImpl implements ChapterService {
         chapterRepository.deleteAll(trashChapters);
 
         log.info("Emptied trash: permanently deleted {} chapters from story: {}", trashChapters.size(), storyId);
+    }
+
+    @Override
+    public void bulkPublishChaptersByStory(UUID storyId, UUID authorId) {
+        log.info("Bulk publishing chapters for story: {} by author: {}", storyId, authorId);
+
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        if (!story.getAuthor().getId().equals(authorId)) {
+            throw new RuntimeException("Not authorized to publish chapters for this story");
+        }
+
+        // Find all draft chapters for this story that are not in trash
+        List<Chapter> draftChapters = chapterRepository.findByStoryAndStatus(
+                story, Chapter.Status.DRAFT);
+
+        if (draftChapters.isEmpty()) {
+            log.info("No draft chapters found to publish for story: {}", storyId);
+            return;
+        }
+
+        // Publish all draft chapters
+        LocalDateTime publishTime = LocalDateTime.now();
+        for (Chapter chapter : draftChapters) {
+            chapter.setStatus(Chapter.Status.PUBLISHED);
+            chapter.setPublishedAt(publishTime);
+        }
+
+        chapterRepository.saveAll(draftChapters);
+
+        log.info("Successfully published {} chapters for story: {}", draftChapters.size(), storyId);
+    }
+
+    @Override
+    public void bulkUnpublishChaptersByStory(UUID storyId, UUID authorId) {
+        log.info("Bulk unpublishing chapters for story: {} by author: {}", storyId, authorId);
+
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        if (!story.getAuthor().getId().equals(authorId)) {
+            throw new RuntimeException("Not authorized to unpublish chapters for this story");
+        }
+
+        // Find all published chapters for this story that are not in trash
+        List<Chapter> publishedChapters = chapterRepository.findByStoryAndStatus(
+                story, Chapter.Status.PUBLISHED);
+
+        if (publishedChapters.isEmpty()) {
+            log.info("No published chapters found to unpublish for story: {}", storyId);
+            return;
+        }
+
+        // Unpublish all published chapters
+        for (Chapter chapter : publishedChapters) {
+            chapter.setStatus(Chapter.Status.DRAFT);
+            // Keep the original publishedAt timestamp for historical purposes
+        }
+
+        chapterRepository.saveAll(publishedChapters);
+
+        log.info("Successfully unpublished {} chapters for story: {}", publishedChapters.size(), storyId);
     }
 }

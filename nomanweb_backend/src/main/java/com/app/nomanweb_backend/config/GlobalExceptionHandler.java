@@ -34,4 +34,40 @@ public class GlobalExceptionHandler {
         log.error("Validation failed with {} errors", errors.size());
         return ResponseEntity.badRequest().body(response);
     }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        Map<String, Object> response = new HashMap<>();
+        String message = ex.getMessage();
+        
+        // Log the exception for debugging
+        log.error("RuntimeException caught: {}", message, ex);
+        
+        // Determine appropriate HTTP status based on the error message
+        HttpStatus status;
+        if (message != null) {
+            if (message.contains("already purchased") || 
+                message.contains("already have access")) {
+                status = HttpStatus.CONFLICT; // 409
+            } else if (message.contains("Insufficient coins")) {
+                status = HttpStatus.PAYMENT_REQUIRED; // 402
+            } else if (message.contains("not found") || 
+                      message.contains("User not found") ||
+                      message.contains("Story not found")) {
+                status = HttpStatus.NOT_FOUND; // 404
+            } else if (message.contains("Authors can read")) {
+                status = HttpStatus.FORBIDDEN; // 403
+            } else {
+                status = HttpStatus.BAD_REQUEST; // 400
+            }
+        } else {
+            status = HttpStatus.INTERNAL_SERVER_ERROR; // 500
+            message = "An unexpected error occurred";
+        }
+        
+        response.put("error", message);
+        response.put("status", status.value());
+        
+        return ResponseEntity.status(status).body(response);
+    }
 }

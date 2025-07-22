@@ -61,6 +61,7 @@ import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
 import ChapterPurchaseModal from '@/components/monetization/ChapterPurchaseModal';
 import BookPurchaseModal from '@/components/monetization/BookPurchaseModal';
+import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
 import { 
   BookOpen, 
   Heart, 
@@ -159,7 +160,6 @@ export default function StoryReaderView() {
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [newComment, setNewComment] = useState('');
-  const [giftAmount, setGiftAmount] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
@@ -171,6 +171,7 @@ export default function StoryReaderView() {
     coinPrice: number;
   } | null>(null);
   const [showBookPurchaseModal, setShowBookPurchaseModal] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -286,7 +287,23 @@ export default function StoryReaderView() {
   };
 
   const handleReadStory = () => {
-    router.push(`/stories/${storyId}/chapters/1/read`);
+    // For WHOLE_BOOK pricing, check if user has purchased the book
+    if (story.pricingType === 'WHOLE_BOOK') {
+      if (hasBookAccess || isAuthor) {
+        // User has purchased the book or is the author - navigate to first chapter
+        if (storyChapters.length > 0) {
+          router.push(`/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`);
+        }
+      } else {
+        // User hasn't purchased the book - show book purchase modal
+        setShowBookPurchaseModal(true);
+      }
+    } else {
+      // For other pricing types, navigate to first chapter
+      if (storyChapters.length > 0) {
+        router.push(`/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`);
+      }
+    }
   };
 
   const handleAddToLibrary = (listType: string = 'LIKE') => {
@@ -426,17 +443,29 @@ export default function StoryReaderView() {
 
   const handleChapterClick = (chapter: any) => {
     const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
-    const hasAccess = chapterAccess[chapter.id] || chapter.isFree;
+    const hasChapterAccess = chapterAccess[chapter.id] || chapter.isFree;
     
-    if (isPaidChapter && !hasAccess) {
-      setSelectedChapterForPurchase({
-        id: chapter.id,
-        title: chapter.title,
-        coinPrice: chapter.coinPrice,
-      });
-      setShowPurchaseModal(true);
+    // For WHOLE_BOOK pricing, check if user has purchased the book
+    if (story.pricingType === 'WHOLE_BOOK') {
+      if (hasBookAccess || isAuthor) {
+        // User has purchased the book or is the author - allow access
+        router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`);
+      } else {
+        // User hasn't purchased the book - show book purchase modal
+        setShowBookPurchaseModal(true);
+      }
     } else {
-      router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}`);
+      // For PAID_PER_CHAPTER pricing, check individual chapter access
+      if (isPaidChapter && !hasChapterAccess && !isAuthor) {
+        setSelectedChapterForPurchase({
+          id: chapter.id,
+          title: chapter.title,
+          coinPrice: chapter.coinPrice,
+        });
+        setShowPurchaseModal(true);
+      } else {
+        router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`);
+      }
     }
   };
 
@@ -745,6 +774,17 @@ export default function StoryReaderView() {
                     </span>
                   )}
                 </button>
+
+                {/* Gift Button - Only show if not the author */}
+                {!isAuthor && (
+                  <button
+                    onClick={() => setShowGiftModal(true)}
+                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center space-x-2"
+                  >
+                    <Gift className="h-5 w-5" />
+                    <span>Send Gift</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -817,8 +857,24 @@ export default function StoryReaderView() {
                 ) : (
                   storyChapters.map((chapter: any) => {
                     const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
-                    const hasAccess = chapterAccess[chapter.id] || chapter.isFree;
-                    const canAccess = hasAccess || chapter.isFree;
+                    const hasChapterAccess = chapterAccess[chapter.id] || chapter.isFree;
+                    
+                    // Determine access based on pricing type
+                    let canAccess = false;
+                    let accessStatus = '';
+                    let isLocked = false;
+                    
+                    if (story.pricingType === 'WHOLE_BOOK') {
+                      // For whole book pricing, check book purchase
+                      canAccess = hasBookAccess || isAuthor;
+                      accessStatus = canAccess ? 'BOOK_OWNED' : 'BOOK_REQUIRED';
+                      isLocked = !canAccess;
+                    } else {
+                      // For per-chapter pricing, check individual chapter access
+                      canAccess = hasChapterAccess || chapter.isFree || isAuthor;
+                      accessStatus = canAccess ? 'CHAPTER_OWNED' : 'CHAPTER_REQUIRED';
+                      isLocked = isPaidChapter && !canAccess;
+                    }
                     
                     return (
                       <div
@@ -826,15 +882,15 @@ export default function StoryReaderView() {
                         className={`border rounded-lg p-4 transition-all duration-200 cursor-pointer ${
                           canAccess 
                             ? 'border-gray-200 hover:bg-gray-50 hover:border-blue-300' 
-                            : 'border-red-200 bg-red-50 cursor-not-allowed'
+                            : 'border-red-200 bg-red-50'
                         }`}
                         onClick={() => handleChapterClick(chapter)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              {/* Lock Icon beside title for paid chapters */}
-                              {isPaidChapter && !canAccess && (
+                              {/* Lock Icon for locked chapters */}
+                              {isLocked && (
                                 <LockClosedIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
                               )}
                               <h4 className={`font-medium ${
@@ -842,45 +898,100 @@ export default function StoryReaderView() {
                               }`}>
                                 Chapter {chapter.chapterNumber}: {chapter.title}
                               </h4>
-                              {/* Premium Badge */}
-                              {isPaidChapter && (
+                              {/* Access Badge */}
+                              {story.pricingType === 'WHOLE_BOOK' ? (
+                                // Whole book pricing badges
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
-                                  canAccess 
+                                  isAuthor 
+                                    ? 'bg-purple-100 text-purple-800' 
+                                    : canAccess 
                                     ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
+                                    : 'bg-blue-100 text-blue-800'
                                 }`}>
-                                  {canAccess ? 'OWNED' : 'PREMIUM'}
+                                  {isAuthor ? 'AUTHOR' : canAccess ? 'BOOK OWNED' : 'BUY BOOK'}
                                 </span>
+                              ) : (
+                                // Per-chapter pricing badges
+                                isPaidChapter && (
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                                    isAuthor 
+                                      ? 'bg-purple-100 text-purple-800' 
+                                      : canAccess 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {isAuthor ? 'AUTHOR' : canAccess ? 'OWNED' : 'PREMIUM'}
+                                  </span>
+                                )
                               )}
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
                               {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
                             </p>
-                            {isPaidChapter && (
+                            {/* Access Status */}
+                            {story.pricingType === 'WHOLE_BOOK' ? (
+                              // Whole book pricing status
                               <div className="flex items-center space-x-2">
-                                {canAccess ? (
+                                {isAuthor ? (
+                                  <div className="flex items-center space-x-1">
+                                    <CheckCircleIcon className="w-4 h-4 text-purple-600" />
+                                    <span className="text-sm font-medium text-purple-600">
+                                      You are the author
+                                    </span>
+                                  </div>
+                                ) : canAccess ? (
                                   <div className="flex items-center space-x-1">
                                     <CheckCircleIcon className="w-4 h-4 text-green-600" />
                                     <span className="text-sm font-medium text-green-600">
-                                      Purchased
+                                      Book Purchased
                                     </span>
                                   </div>
                                 ) : (
                                   <div className="flex items-center space-x-1">
-                                    <ShoppingBagIcon className="w-4 h-4 text-red-600" />
-                                    <span className="text-sm font-medium text-red-600">
-                                      {chapter.coinPrice} coins required
+                                    <ShoppingBagIcon className="w-4 h-4 text-blue-600" />
+                                    <span className="text-sm font-medium text-blue-600">
+                                      Buy book for {story.bookPrice || 0} coins
                                     </span>
                                   </div>
                                 )}
                               </div>
+                            ) : (
+                              // Per-chapter pricing status
+                              isPaidChapter && (
+                                <div className="flex items-center space-x-2">
+                                  {isAuthor ? (
+                                    <div className="flex items-center space-x-1">
+                                      <CheckCircleIcon className="w-4 h-4 text-purple-600" />
+                                      <span className="text-sm font-medium text-purple-600">
+                                        You are the author
+                                      </span>
+                                    </div>
+                                  ) : canAccess ? (
+                                    <div className="flex items-center space-x-1">
+                                      <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                                      <span className="text-sm font-medium text-green-600">
+                                        Purchased
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center space-x-1">
+                                      <ShoppingBagIcon className="w-4 h-4 text-red-600" />
+                                      <span className="text-sm font-medium text-red-600">
+                                        {chapter.coinPrice} coins required
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )
                             )}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            {!canAccess && (
+                            {isLocked && (
                               <div className="flex items-center space-x-1 text-red-500">
                                 <LockClosedIcon className="w-4 h-4" />
-                                <span className="font-medium">Locked</span>
+                                <span className="font-medium">
+                                  {story.pricingType === 'WHOLE_BOOK' ? 'Book Locked' : 'Locked'}
+                                </span>
                               </div>
                             )}
                             <div className="flex items-center space-x-1">
@@ -1080,25 +1191,7 @@ export default function StoryReaderView() {
           </div>
         </div>
 
-        {/* Gift Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Gift className="h-5 w-5 mr-2 text-purple-600" />
-            Support the Author
-          </h3>
-          <div className="flex items-center space-x-4">
-            <input
-              type="number"
-              value={giftAmount}
-              onChange={(e) => setGiftAmount(e.target.value)}
-              placeholder="Enter amount"
-              className="flex-1 max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium">
-              Send Gift
-            </button>
-          </div>
-        </div>
+
 
         {/* User Rating Section */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
@@ -1165,6 +1258,19 @@ export default function StoryReaderView() {
         bookPrice={story.bookPrice || 0}
         totalChapters={story.totalChapters}
         onPurchaseComplete={handleBookPurchaseComplete}
+      />
+
+      {/* Gift Modal */}
+      <EnhancedGiftModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        recipientId={story.author.id}
+        recipientName={story.author.displayName || story.author.username}
+        storyId={story.id}
+        onGiftSent={() => {
+          toast.success('Gift sent successfully!');
+          // Optionally refresh the story data to update earnings
+        }}
       />
     </div>
   );

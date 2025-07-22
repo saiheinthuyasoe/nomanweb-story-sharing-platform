@@ -26,7 +26,7 @@ public class GiftTransaction {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gift_id", nullable = false)
+    @JoinColumn(name = "gift_id", nullable = true)
     private Gift gift;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -61,7 +61,7 @@ public class GiftTransaction {
 
     // Helper methods
     public BigDecimal getEarningsForRecipient() {
-        // Recipients get 70% of the gift value (30% platform fee)
-        return totalCoins.multiply(new BigDecimal("0.70"));
+        // Recipients get 100% of the gift value (no platform fee)
+        return totalCoins;
     }
 }

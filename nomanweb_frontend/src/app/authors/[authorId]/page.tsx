@@ -24,7 +24,8 @@ import {
   UserPlus,
   Loader2,
   Check,
-  X
+  X,
+  Gift
 } from 'lucide-react';
 import { usersApi, UserProfile } from '@/lib/api/users';
 import { storiesApi } from '@/lib/api/stories';
@@ -32,6 +33,7 @@ import { StoryPreview } from '@/types/story';
 import { StoryCard } from '@/components/stories/StoryCard';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
 
 export default function AuthorProfile() {
   const params = useParams();
@@ -46,6 +48,7 @@ export default function AuthorProfile() {
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
   const [booksTab, setBooksTab] = useState<'written' | 'read'>('written');
   const [followLoading, setFollowLoading] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   useEffect(() => {
     const fetchAuthorData = async () => {
@@ -242,6 +245,14 @@ export default function AuthorProfile() {
                           <HeartIcon className="w-5 h-5" />
                         )}
                         <span>{followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setShowGiftModal(true)}
+                        className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+                      >
+                        <Gift className="w-5 h-5" />
+                        <span>Send Gift</span>
                       </button>
                       
                       <button className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors">
@@ -506,6 +517,17 @@ export default function AuthorProfile() {
           </div>
         </div>
       </div>
+
+      {/* Gift Modal */}
+      <EnhancedGiftModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        recipientId={authorId}
+        recipientName={userProfile?.displayName || userProfile?.username || 'Author'}
+        onGiftSent={() => {
+          toast.success('Gift sent successfully!');
+        }}
+      />
     </div>
   );
 } 

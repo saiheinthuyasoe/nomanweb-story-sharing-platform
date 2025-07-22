@@ -11,6 +11,7 @@ import {
   useDeleteStory 
 } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProtectedActionButton } from '@/components/protection/ProtectedActionButton';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   EyeIcon, 
@@ -25,10 +26,12 @@ import {
   TagIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
-import { Coins } from 'lucide-react';
+import { Coins, Gift } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
 import { QuickCreateChapter } from '@/components/chapters/QuickCreateChapter';
+import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
+import { refundApi } from '@/lib/api/refunds';
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -40,8 +43,9 @@ export default function StoryDetailPage() {
   const { mutate: publishStory, isPending: isPublishing } = usePublishStory();
   const { mutate: unpublishStory, isPending: isUnpublishing } = useUnpublishStory();
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
-  
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Gift modal state
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
@@ -76,33 +80,39 @@ export default function StoryDetailPage() {
   };
 
   const handleUnpublish = () => {
-    unpublishStory(storyId);
+      unpublishStory(storyId);
   };
 
   const handleDelete = () => {
-    deleteStory(storyId, {
-      onSuccess: () => {
-        router.push('/dashboard/my-stories');
-      }
-    });
+      deleteStory(storyId, {
+        onSuccess: () => {
+          router.push('/dashboard/my-stories');
+        }
+      });
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: story.title,
-          text: story.description,
-          url: window.location.href,
-        });
-      } catch (error) {
-        // User cancelled sharing
+  // Test protection status
+  const testProtectionStatus = async () => {
+    try {
+      console.log('🧪 Testing protection status...');
+      const hasPurchases = await refundApi.getStoryProtectionStatus(storyId);
+      console.log('🧪 Protection test result:', hasPurchases);
+      
+      if (hasPurchases) {
+        toast.success('Story has purchases - protection should be active');
+      } else {
+        toast.info('Story has no purchases - no protection needed');
       }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+    } catch (error) {
+      console.error('🧪 Protection test failed:', error);
+      toast.error('Protection test failed');
     }
+  };
+
+  const handleShare = () => {
+    const currentUrl = window.location.href;
+    navigator.clipboard.writeText(currentUrl);
+      toast.success('Link copied to clipboard!');
   };
 
   return (
@@ -304,6 +314,14 @@ export default function StoryDetailPage() {
                         <span>Edit Story</span>
                       </Link>
 
+                      {/* Test Protection Button */}
+                      <button
+                        onClick={testProtectionStatus}
+                        className="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center space-x-2"
+                      >
+                        <span>🧪 Test Protection</span>
+                      </button>
+
                       {story.publishStatus === 'DRAFT' ? (
                         <button
                           onClick={handlePublish}
@@ -313,22 +331,33 @@ export default function StoryDetailPage() {
                           {isPublishing ? 'Publishing...' : 'Publish Story'}
                         </button>
                       ) : (
-                        <button
-                          onClick={handleUnpublish}
+                        <ProtectedActionButton
+                          itemId={storyId}
+                          itemType="story"
+                          itemTitle={story.title}
+                          actionType="unpublish"
+                          currentPublishStatus={story.publishStatus}
+                          currentPricingType={story.pricingType}
+                          onAction={handleUnpublish}
                           disabled={isUnpublishing}
-                          className="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 transition-colors"
                         >
                           {isUnpublishing ? 'Unpublishing...' : 'Unpublish Story'}
-                        </button>
+                        </ProtectedActionButton>
                       )}
 
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="px-4 py-3 border-2 border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors flex items-center space-x-2"
+                      <ProtectedActionButton
+                        itemId={storyId}
+                        itemType="story"
+                        itemTitle={story.title}
+                        actionType="delete"
+                        currentPublishStatus={story.publishStatus}
+                        currentPricingType={story.pricingType}
+                        onAction={handleDelete}
+                        disabled={isDeleting}
                       >
-                        <TrashIcon className="w-4 h-4" />
-                        <span>Delete Story</span>
-                      </button>
+                        <TrashIcon className="mr-2 h-4 w-4" />
+                        {isDeleting ? 'Deleting...' : 'Delete Story'}
+                      </ProtectedActionButton>
                     </>
                   )}
 
@@ -340,6 +369,17 @@ export default function StoryDetailPage() {
                     <ShareIcon className="w-4 h-4" />
                     <span>Share</span>
                   </button>
+
+                  {/* Gift Button - Only show if not the author */}
+                  {!isAuthor && (
+                    <button
+                      onClick={() => setShowGiftModal(true)}
+                      className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Gift className="w-4 h-4" />
+                      <span>Send Gift</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -406,32 +446,23 @@ export default function StoryDetailPage() {
         </div>
 
         {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="card-elevated p-6 max-w-md w-full">
-              <h3 className="text-lg font-semibold text-nomanweb-primary mb-4">Delete Story</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this story? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={isDeleting}
-                  className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* The delete confirmation modal is no longer needed as ProtectedActionButton handles it */}
+
+        {/* Refund Confirmation Dialog */}
+        {/* The refund confirmation dialog is no longer needed as ProtectedActionButton handles it */}
+
+        {/* Gift Modal */}
+        <EnhancedGiftModal
+          isOpen={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          recipientId={story.author.id}
+          recipientName={story.author.displayName || story.author.username}
+          storyId={story.id}
+          onGiftSent={() => {
+            toast.success('Gift sent successfully!');
+            // Optionally refresh the story data to update earnings
+          }}
+        />
       </div>
     </div>
   );

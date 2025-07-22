@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.dto.story.StoryPreviewResponse;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
+import com.app.nomanweb_backend.service.PurchaseProtectionException;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -18,7 +19,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -102,7 +105,7 @@ public class StoryController {
 
     // Move story to trash
     @PostMapping("/{id}/trash")
-    public ResponseEntity<Void> moveStoryToTrash(
+    public ResponseEntity<?> moveStoryToTrash(
             @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         try {
@@ -114,9 +117,28 @@ public class StoryController {
 
             log.info("✅ Successfully moved story {} to trash", id);
             return ResponseEntity.ok().build();
+        } catch (PurchaseProtectionException e) {
+            log.error("🚨 Purchase protection violation for story {}: {}", id, e.getMessage());
+
+            // Return structured error response for purchase protection
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "PURCHASE_PROTECTION_VIOLATION");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("storyId", e.getStoryId());
+            errorResponse.put("storyTitle", e.getStoryTitle());
+            errorResponse.put("totalPurchases", e.getTotalPurchases());
+            errorResponse.put("refundAmount", e.getRefundAmount());
+            errorResponse.put("requiresRefunds", e.requiresRefunds());
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         } catch (RuntimeException e) {
             log.error("❌ Error moving story to trash {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().build();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "GENERAL_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 

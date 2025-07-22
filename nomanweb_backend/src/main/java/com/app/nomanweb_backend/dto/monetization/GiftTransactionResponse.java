@@ -24,6 +24,7 @@ public class GiftTransactionResponse {
     private BigDecimal totalCoins;
     private String message;
     private LocalDateTime createdAt;
+    private Integer chaptersAtPurchase; // For book purchases, track chapters at purchase time
 
     @Data
     @NoArgsConstructor
@@ -44,6 +45,7 @@ public class GiftTransactionResponse {
         private UUID id;
         private String title;
         private String coverImageUrl;
+        private String pricingType; // Add pricing type to help frontend determine display
     }
 
     @Data

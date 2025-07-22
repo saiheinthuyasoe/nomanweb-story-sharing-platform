@@ -165,6 +165,21 @@ public class Story {
     @Builder.Default
     private List<ChapterPurchase> chapterPurchases = new ArrayList<>();
 
+    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<StoryView> storyViews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<RefundTransaction> refundTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<BookPurchase> bookPurchases = new ArrayList<>();
+
     // Enums
     public enum PublishStatus {
         DRAFT, PUBLISHED, COMPLETED, PENDING
@@ -237,6 +252,11 @@ public class Story {
 
     // Trash management helper methods
     public void moveToTrash() {
+        // Auto-unpublish if published
+        if (this.publishStatus == PublishStatus.PUBLISHED) {
+            this.publishStatus = PublishStatus.DRAFT;
+        }
+
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }

@@ -86,8 +86,8 @@ Complete checklist of the advanced monetization system implemented in NoManWeb -
   - Gift delivery notifications
 
 - [x] **Revenue Sharing (Gifts)**
-  - **70% to Content Creator**
-  - **30% Platform Fee**
+  - **100% to Content Creator**
+  - **No Platform Fee**
   - Automatic revenue distribution
   - Real-time earnings calculation
   - Revenue tracking per gift type
@@ -435,7 +435,7 @@ Complete checklist of the advanced monetization system implemented in NoManWeb -
 
 **🎯 Business Model: Creator Economy Platform**
 
-**💎 Revenue Share: 70% Creator / 30% Platform**
+**💎 Revenue Share: 100% Creator (Gifts) / 70% Creator (Content) / 30% Platform (Content)**
 
 **🔧 Tech Stack: Spring Boot + PostgreSQL + LINE Pay + PromptPay**
 
