@@ -51,7 +51,7 @@
   left: 0;
   right: 0;
   z-index: 50;
-  background: #9400f7;
+  background: #18243c;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   height: 60px;
 }
@@ -62,24 +62,23 @@
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
-/* Navbar purple button styles */
+/* Navbar glassmorphism button styles */
 .btn-navbar-purple {
-  background: #9400f7;
+  background: rgba(255,255,255,0.10);
   color: white;
-  border: 1px solid #9400f7;
+  border: 1px solid rgba(255,255,255,0.20);
+  backdrop-filter: blur(8px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(148, 0, 247, 0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
-
 .btn-navbar-purple:hover {
-  background: #7a00d1;
-  border-color: #7a00d1;
-  box-shadow: 0 4px 8px rgba(148, 0, 247, 0.3);
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.30);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
   transform: translateY(-1px);
 }
-
 .btn-navbar-purple:active {
-  background: #6a00b8;
+  background: rgba(255,255,255,0.22);
   transform: translateY(0);
 }
 
@@ -841,4 +840,41 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+}
+
+/* Animated gradient border for sign-in button (running only at border, slower speed) */
+.animated-gradient-border {
+  position: relative;
+  display: inline-block;
+  border-radius: 1rem;
+  padding: 0;
+}
+
+.animated-gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(270deg, #a78bfa, #6366f1, #d946ef, #38bdf8, #a78bfa);
+  background-size: 400% 400%;
+  animation: gradientMove 4s linear infinite;
+  transition: background 0.3s;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.animated-gradient-border:hover::before {
+  background: linear-gradient(270deg, #6366f1, #d946ef, #a78bfa, #38bdf8, #6366f1);
+}
+
+.animated-gradient-border > button {
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,0.15);
+  border-radius: inherit;
+  border: none;
 }

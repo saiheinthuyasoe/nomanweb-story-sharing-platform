@@ -5,6 +5,8 @@ import { useCategories } from '@/hooks/useStories';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { StoryCoverUpload } from '@/components/upload/StoryCoverUpload';
+import { Select } from '@/components/ui/Select';
+import { BookOpen, Sparkles, Tag, DollarSign, Info } from 'lucide-react';
 
 interface StoryFormProps {
   story?: Story;
@@ -148,193 +150,33 @@ export function StoryForm({
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          {isEdit ? 'Edit Story' : 'Create New Story'}
-        </h2>
-        <p className="text-gray-600 mt-1">
-          {isEdit ? 'Update your story details' : 'Share your story with the world'}
+    <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-[#18243c] via-[#18243c]/80 to-[#18243c]/60 px-8 py-6 text-white">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <h2 className="text-3xl font-bold">
+            {isEdit ? 'Edit Story' : 'Create New Story'}
+          </h2>
+        </div>
+        <p className="text-blue-100 text-lg">
+          {isEdit ? 'Update your story details and cover' : 'Share your story with the world'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        {/* Title */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-            Title *
-          </label>
-          <input
-            type="text"
-            id="title"
-            {...register('title', { 
-              required: 'Title is required',
-              maxLength: { value: 255, message: 'Title must not exceed 255 characters' }
-            })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter your story title..."
-          />
-          {errors.title && (
-            <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-          )}
-        </div>
-
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
-          <textarea
-            id="description"
-            rows={4}
-            {...register('description', {
-              maxLength: { value: 1000, message: 'Description must not exceed 1000 characters' }
-            })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Describe your story..."
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-          )}
-        </div>
-
-        {/* Category, Content Type, and Content Status Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Category */}
-          <div>
-            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              id="categoryId"
-              {...register('categoryId')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a category</option>
-              {categories?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Pricing Type */}
-          <div>
-            <label htmlFor="pricingType" className="block text-sm font-medium text-gray-700 mb-2">
-              Pricing Type
-            </label>
-            <select
-              id="pricingType"
-              {...register('pricingType')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="FREE">Free</option>
-              <option value="PAID_PER_CHAPTER">Paid per Chapter</option>
-              <option value="WHOLE_BOOK">Whole Book</option>
-            </select>
-          </div>
-
-          {/* Book Status */}
-          <div>
-            <label htmlFor="bookStatus" className="block text-sm font-medium text-gray-700 mb-2">
-              Book Status
-            </label>
-            <select
-              id="bookStatus"
-              {...register('bookStatus')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="ONGOING">Ongoing</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Pricing Section - Only show for paid content */}
-        {(watchedPricingType === 'PAID_PER_CHAPTER' || watchedPricingType === 'WHOLE_BOOK') && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <span className="text-yellow-500 mr-2">💰</span>
-              Pricing Settings
-            </h3>
-            
-            {/* Whole Book Price - Only show for WHOLE_BOOK type */}
-            {watchedPricingType === 'WHOLE_BOOK' && (
-              <div className="mb-6">
-                <label htmlFor="bookPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                  Book Price (Coins) *
-                </label>
-                <input
-                  type="number"
-                  id="bookPrice"
-                  min="1"
-                  step="1"
-                  {...register('bookPrice', {
-                    required: watchedPricingType === 'WHOLE_BOOK' ? 'Book price is required for whole book pricing' : false,
-                    min: { value: 1, message: 'Book price must be at least 1 coin' },
-                    validate: value => {
-                      if (watchedPricingType === 'WHOLE_BOOK' && (!value || value <= 0)) {
-                        return 'Book price is required for whole book pricing';
-                      }
-                      return true;
-                    }
-                  })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-xs"
-                  placeholder="Enter book price in coins"
-                />
-                {errors.bookPrice && (
-                  <p className="mt-1 text-sm text-red-600">{errors.bookPrice.message}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Readers will pay this price once to access all chapters
-                </p>
-              </div>
-            )}
-
-            {/* Paid Per Chapter Information - Only show for PAID_PER_CHAPTER */}
-            {watchedPricingType === 'PAID_PER_CHAPTER' && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <span className="text-blue-500 text-lg">📝</span>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-blue-900 mb-2">Chapter Pricing</h4>
-                    <p className="text-sm text-blue-700 mb-2">
-                      You'll set the price for each chapter individually when you create or edit chapters.
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      This gives you flexibility to price chapters based on their content and length.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Pricing Information */}
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h4 className="text-sm font-medium text-green-900 mb-2">💡 Pricing Information</h4>
-              <ul className="text-xs text-green-700 space-y-1">
-                <li>• You earn 70% of each transaction (platform takes 30%)</li>
-                <li>• Readers can send you gifts regardless of pricing type</li>
-                {watchedPricingType === 'WHOLE_BOOK' && (
-                  <li>• Whole book purchases give readers access to all current and future chapters</li>
-                )}
-                {watchedPricingType === 'PAID_PER_CHAPTER' && (
-                  <li>• Set individual chapter prices when creating or editing chapters</li>
-                )}
-              </ul>
+      <form onSubmit={handleSubmit(onFormSubmit)} className="p-8 space-y-8">
+        {/* Cover Image Section - Enhanced */}
+        <div className="bg-gradient-to-br from-gray-50 to-[#18243c]/5 rounded-2xl p-6 border border-gray-200">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
+            <h3 className="text-xl font-bold text-gray-900">Story Cover Image</h3>
           </div>
-        )}
-
-        {/* Cover Image */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Story Cover Image
-          </label>
-          <div className="flex justify-center">
+          
+          <div className="flex justify-center mb-4">
             <StoryCoverUpload
               storyId={story?.id || 'new'}
               value={watchedCoverImage}
@@ -344,24 +186,254 @@ export function StoryForm({
               placeholder="Upload your story cover"
             />
           </div>
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Upload a cover image from your device or enter an image URL. Recommended size: 800×1200px (3:4 ratio)
-          </p>
+          
+         
         </div>
 
-        {/* Tags */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tags (Optional)
-          </label>
-          <div className="space-y-3">
-            <div className="flex space-x-2">
+        {/* Basic Information Section */}
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Basic Information</h3>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-3">
+              Title *
+            </label>
+            <input
+              type="text"
+              id="title"
+              {...register('title', { 
+                required: 'Title is required',
+                maxLength: { value: 255, message: 'Title must not exceed 255 characters' }
+              })}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200 text-lg"
+              placeholder="Enter your story title..."
+            />
+            {errors.title && (
+              <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
+                <XMarkIcon className="w-4 h-4" />
+                <span>{errors.title.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-3">
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows={4}
+              {...register('description', {
+                maxLength: { value: 1000, message: 'Description must not exceed 1000 characters' }
+              })}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200 resize-none"
+              placeholder="Describe your story..."
+            />
+            {errors.description && (
+              <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
+                <XMarkIcon className="w-4 h-4" />
+                <span>{errors.description.message}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Category, Content Type, and Content Status Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Category */}
+            <div>
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    label="Category"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { value: '', label: 'Select a category' },
+                      ...(categories?.map((category) => ({ value: category.id, label: category.name })) || [])
+                    ]}
+                    disabled={isLoading}
+                    error={errors.categoryId?.message as string}
+                  />
+                )}
+              />
+            </div>
+
+            {/* Pricing Type */}
+            <div>
+              <Controller
+                name="pricingType"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    label="Pricing Type"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { value: 'FREE', label: 'Free' },
+                      { value: 'PAID_PER_CHAPTER', label: 'Paid per Chapter' },
+                      { value: 'WHOLE_BOOK', label: 'Whole Book' },
+                    ]}
+                    disabled={isLoading}
+                    error={errors.pricingType?.message as string}
+                  />
+                )}
+              />
+            </div>
+
+            {/* Book Status */}
+            <div>
+              <Controller
+                name="bookStatus"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    label="Book Status"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { value: 'ONGOING', label: 'Ongoing' },
+                      { value: 'COMPLETED', label: 'Completed' },
+                    ]}
+                    disabled={isLoading}
+                    error={errors.bookStatus?.message as string}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Pricing Section - Enhanced */}
+        {(watchedPricingType === 'PAID_PER_CHAPTER' || watchedPricingType === 'WHOLE_BOOK') && (
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Pricing Settings</h3>
+            </div>
+            
+            {/* Whole Book Price - Only show for WHOLE_BOOK type */}
+            {watchedPricingType === 'WHOLE_BOOK' && (
+              <div className="mb-6">
+                <label htmlFor="bookPrice" className="block text-sm font-semibold text-gray-700 mb-3">
+                  Book Price (Coins) *
+                </label>
+                <div className="relative max-w-xs">
+                  <input
+                    type="number"
+                    id="bookPrice"
+                    min="1"
+                    step="1"
+                    {...register('bookPrice', {
+                      required: watchedPricingType === 'WHOLE_BOOK' ? 'Book price is required for whole book pricing' : false,
+                      min: { value: 1, message: 'Book price must be at least 1 coin' },
+                      validate: value => {
+                        if (watchedPricingType === 'WHOLE_BOOK' && (!value || value <= 0)) {
+                          return 'Book price is required for whole book pricing';
+                        }
+                        return true;
+                      }
+                    })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200 text-lg"
+                    placeholder="Enter book price in coins"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                </div>
+                {errors.bookPrice && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center space-x-1">
+                    <XMarkIcon className="w-4 h-4" />
+                    <span>{errors.bookPrice.message}</span>
+                  </p>
+                )}
+                <p className="text-sm text-gray-600 mt-2">
+                  Readers will pay this price once to access all chapters
+                </p>
+              </div>
+            )}
+
+            {/* Paid Per Chapter Information - Only show for PAID_PER_CHAPTER */}
+            {watchedPricingType === 'PAID_PER_CHAPTER' && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-[#18243c]/10 to-[#18243c]/20 border border-[#18243c]/20 rounded-xl">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-[#18243c] rounded-lg flex items-center justify-center">
+                      <Info className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-[#18243c] mb-2">Chapter Pricing</h4>
+                    <p className="text-sm text-[#18243c] mb-2">
+                      You'll set the price for each chapter individually when you create or edit chapters.
+                    </p>
+                    <p className="text-xs text-[#18243c]/70">
+                      This gives you flexibility to price chapters based on their content and length.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Pricing Information */}
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+              <div className="flex items-center space-x-2 mb-3">
+                <Info className="w-4 h-4 text-green-600" />
+                <h4 className="text-sm font-semibold text-green-900">Pricing Information</h4>
+              </div>
+              <ul className="text-sm text-green-700 space-y-2">
+                <li className="flex items-center space-x-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span>You earn 70% of each transaction (platform takes 30%)</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span>Readers can send you gifts regardless of pricing type</span>
+                </li>
+                {watchedPricingType === 'WHOLE_BOOK' && (
+                  <li className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    <span>Whole book purchases give readers access to all current and future chapters</span>
+                  </li>
+                )}
+                {watchedPricingType === 'PAID_PER_CHAPTER' && (
+                  <li className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                    <span>Set individual chapter prices when creating or editing chapters</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Tags Section - Enhanced */}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-lg flex items-center justify-center">
+              <Tag className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Tags (Optional)</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex space-x-3">
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={handleTagInputKeyPress}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200"
                 placeholder="Enter a tag and press Enter"
                 maxLength={30}
               />
@@ -369,72 +441,72 @@ export function StoryForm({
                 type="button"
                 onClick={handleAddTag}
                 disabled={!tagInput.trim() || selectedTags.length >= 10}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-gradient-to-r from-[#18243c] to-[#18243c]/80 text-white rounded-xl hover:from-[#22325a] hover:to-[#18243c] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg"
               >
-                Add
+                Add Tag
               </button>
             </div>
             
             {/* Selected Tags */}
             {selectedTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {selectedTags.map((tag, index) => (
                   <div
                     key={`${tag}-${index}`}
                     className="inline-flex items-center"
                   >
                     {editingTagIndex === index ? (
-                      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 border border-yellow-300">
-                        <span className="mr-1">#</span>
+                      <div className="inline-flex items-center px-3 py-2 rounded-full text-sm bg-yellow-100 text-yellow-800 border-2 border-yellow-300">
+                        <span className="mr-1 font-medium">#</span>
                         <input
                           type="text"
                           value={editingTagValue}
                           onChange={(e) => setEditingTagValue(e.target.value)}
                           onKeyPress={handleEditTagKeyPress}
                           onBlur={handleSaveTagEdit}
-                          className="bg-transparent border-none outline-none text-sm w-16 min-w-0"
+                          className="bg-transparent border-none outline-none text-sm w-16 min-w-0 font-medium"
                           maxLength={30}
                           autoFocus
                         />
                         <button
                           type="button"
                           onClick={handleSaveTagEdit}
-                          className="ml-1 text-green-600 hover:text-green-800 rounded-full p-0.5"
+                          className="ml-2 text-green-600 hover:text-green-800 rounded-full p-1 hover:bg-green-100 transition-all duration-200"
                           title="Save changes"
                         >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </button>
                         <button
                           type="button"
                           onClick={handleCancelTagEdit}
-                          className="ml-1 text-red-600 hover:text-red-800 rounded-full p-0.5"
+                          className="ml-1 text-red-600 hover:text-red-800 rounded-full p-1 hover:bg-red-100 transition-all duration-200"
                           title="Cancel editing"
                         >
-                          <XMarkIcon className="w-3 h-3" />
+                          <XMarkIcon className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 group">
-                        #{tag}
+                                              <span className="inline-flex items-center px-3 py-2 rounded-full text-sm bg-gradient-to-r from-[#18243c]/10 to-[#18243c]/20 text-[#18243c] border border-[#18243c]/20 group hover:from-[#18243c]/20 hover:to-[#18243c]/30 transition-all duration-200">
+                        <span className="font-medium">#{tag}</span>
                         <button
                           type="button"
                           onClick={() => handleEditTag(index)}
-                          className="ml-2 text-blue-600 hover:text-blue-800 rounded-full p-0.5 transition-colors duration-200"
+                          className="ml-2 text-[#18243c] hover:text-[#18243c]/80 rounded-full p-1 hover:bg-[#18243c]/10 transition-all duration-200"
                           title={`Edit ${tag} tag`}
                         >
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          className="ml-1 text-blue-600 hover:text-red-600 hover:bg-red-100 rounded-full p-0.5 transition-colors duration-200"
+                          className="ml-1 text-[#18243c] hover:text-red-600 hover:bg-red-100 rounded-full p-1 transition-all duration-200"
                           title={`Remove ${tag} tag`}
                         >
-                          <XMarkIcon className="w-3 h-3" />
+                          <XMarkIcon className="w-4 h-4" />
                         </button>
                       </span>
                     )}
@@ -443,33 +515,35 @@ export function StoryForm({
               </div>
             )}
             
-            <p className="text-xs text-gray-500">
-              {selectedTags.length}/10 tags used. Tags help readers discover your story.
-              <br />
-              <span className="text-blue-600">
-                Click the edit icon to modify tags, or the × icon to remove them.
-              </span>
-            </p>
+            <div className="p-3 bg-gradient-to-r from-[#18243c]/10 to-[#18243c]/20 rounded-xl border border-[#18243c]/20">
+              <p className="text-sm text-[#18243c]">
+                <span className="font-semibold">{selectedTags.length}/10 tags used.</span> Tags help readers discover your story.
+                <br />
+                <span className="text-[#18243c] text-xs">
+                  💡 Click the edit icon to modify tags, or the × icon to remove them.
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        {/* Form Actions - Enhanced */}
+        <div className="flex justify-end space-x-4 pt-8 border-t-2 border-gray-100">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 transition-all duration-200 font-semibold"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-8 py-3 bg-gradient-to-r from-[#18243c] to-[#18243c]/80 text-white rounded-xl hover:from-[#22325a] hover:to-[#18243c] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl flex items-center space-x-2"
           >
             {isLoading && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             )}
             <span>{isEdit ? 'Update Story' : 'Create Story'}</span>
           </button>
