@@ -98,9 +98,6 @@ public class SecurityConfig {
                         // User endpoints - all require authentication
                         .requestMatchers("/api/users/**").authenticated()
 
-                        // Refund endpoints - all require authentication
-                        .requestMatchers("/api/refunds/**").authenticated()
-
                         // Test endpoints
                         .requestMatchers("/api/test/auth").authenticated()
 

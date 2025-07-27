@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Forward the request to the backend
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${backendUrl}/api/monetization/gifts/send`, {
+    const response = await fetch(`${backendUrl}/monetization/gifts/send`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

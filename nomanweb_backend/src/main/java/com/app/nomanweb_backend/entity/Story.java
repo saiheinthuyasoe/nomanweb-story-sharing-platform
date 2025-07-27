@@ -173,11 +173,6 @@ public class Story {
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private List<RefundTransaction> refundTransactions = new ArrayList<>();
-
-    @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
     private List<BookPurchase> bookPurchases = new ArrayList<>();
 
     // Enums

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to the backend SSE endpoint (user-accessible)
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const backendResponse = await fetch(`${backendUrl}/api/coins/sse/balance-updates`, {
+    const backendResponse = await fetch(`${backendUrl}/coins/sse/balance-updates`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

@@ -30,6 +30,6 @@ export const usePurchasedChapters = (enabled: boolean = true) => {
       return data.content || [];
     },
     enabled: enabled && !!user,
-    staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time refund updates
+    staleTime: 30 * 1000, // 30 seconds - shorter cache for real-time updates
   });
 };

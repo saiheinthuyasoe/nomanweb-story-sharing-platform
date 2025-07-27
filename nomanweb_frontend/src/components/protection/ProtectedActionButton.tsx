@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefundModal } from '@/components/refunds/RefundModal';
-import { usePurchaseProtection } from '@/hooks/usePurchaseProtection';
-import { useToast } from '@/hooks/use-toast';
-import { RefundType } from '@/types/refund';
-import { AlertTriangle, Trash2, EyeOff, DollarSign, ShieldCheck, Clock } from 'lucide-react';
+import { Trash2, EyeOff, DollarSign } from 'lucide-react';
+import { RefundConfirmationModal } from '@/components/modals/RefundConfirmationModal';
+import { toast } from 'react-hot-toast';
 
 interface ProtectedActionButtonProps {
   itemId: string;
@@ -38,19 +34,8 @@ export function ProtectedActionButton({
   disabled = false,
 }: ProtectedActionButtonProps) {
   const [showRefundModal, setShowRefundModal] = useState(false);
-  const [showProtectionInfo, setShowProtectionInfo] = useState(false);
-  const { toast } = useToast();
-
-  const {
-    hasPurchases,
-    canProceedWithAction,
-    requiresRefund,
-    isLoading,
-    error,
-    calculateRefund,
-    getActionRequirement,
-    getRefundType,
-  } = usePurchaseProtection(itemId, itemType, currentPublishStatus, currentPricingType);
+  const [refundData, setRefundData] = useState<any>(null);
+  const [isCheckingPurchases, setIsCheckingPurchases] = useState(false);
 
   const getActionIcon = () => {
     switch (actionType) {
@@ -95,209 +80,128 @@ export function ProtectedActionButton({
     }
   };
 
+  const checkPurchases = async () => {
+    if (itemType === 'story') {
+      try {
+        const response = await fetch(`/api/stories/${itemId}/has-purchases`);
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        }
+      } catch (error) {
+        console.error('Error checking purchases:', error);
+      }
+    } else if (itemType === 'chapter') {
+      try {
+        const response = await fetch(`/api/refunds/chapters/${itemId}/has-purchases`);
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        }
+      } catch (error) {
+        console.error('Error checking purchases:', error);
+      }
+    }
+    return { hasPurchases: false };
+  };
+
+  const calculateRefund = async () => {
+    if (itemType === 'story') {
+      try {
+        const response = await fetch(`/api/stories/${itemId}/calculate-refund`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        }
+      } catch (error) {
+        console.error('Error calculating refund:', error);
+      }
+    }
+    return { hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 };
+  };
+
   const handleButtonClick = async () => {
     if (disabled) return;
 
-    // Check if action is allowed
-    const canProceed = canProceedWithAction(actionType);
-    
-    // Special case for whole book pricing stories that need to be unpublished
-    if (actionType === 'unpublish' && currentPricingType === 'WHOLE_BOOK' && hasPurchases) {
-      // Show refund modal for whole book pricing stories
-      setShowRefundModal(true);
-      return;
-    }
-    
-    if (!canProceed) {
-      if (requiresRefund) {
-        // Show refund modal
-        setShowRefundModal(true);
-      } else {
-        // Show protection info
-        setShowProtectionInfo(true);
+    // Only check for purchases if the item is published and has paid pricing
+    if (currentPublishStatus === 'PUBLISHED' && 
+        currentPricingType && 
+        currentPricingType !== 'FREE' &&
+        (actionType === 'unpublish' || actionType === 'delete')) {
+      
+      setIsCheckingPurchases(true);
+      try {
+        const purchaseData = await checkPurchases();
         
-        // Show toast with requirement
-        toast({
-          title: 'Action Not Allowed',
-          description: getActionRequirement(actionType),
-          variant: 'destructive',
-        });
+        if (purchaseData.hasPurchases) {
+          const refundData = await calculateRefund();
+          setRefundData({
+            ...refundData,
+            itemTitle,
+            itemType,
+          });
+          setShowRefundModal(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking purchases:', error);
+        toast.error('Error checking purchases. Please try again.');
+      } finally {
+        setIsCheckingPurchases(false);
       }
-      return;
     }
 
-    // Action is allowed, proceed normally
+    // If no purchases or free content, proceed with action
     onAction();
   };
 
-  const handleRefundCompleted = () => {
-    setShowRefundModal(false);
-    
-    toast({
-      title: 'Refund Processed',
-      description: 'All buyers have been refunded. You can now proceed with your action.',
-    });
-    
-    // Proceed with original action after refund
-    onAction();
+  const handleRefundConfirm = async () => {
+    try {
+      await onAction();
+      setShowRefundModal(false);
+      toast.success(`${itemType === 'story' ? 'Story' : 'Chapter'} unpublished successfully with refunds processed.`);
+    } catch (error) {
+      console.error('Error during action:', error);
+      toast.error('Failed to complete action. Please try again.');
+    }
   };
-
-  const getButtonState = () => {
-    if (isLoading) return 'loading';
-    if (error) return 'error';
-    if (!hasPurchases) return 'safe';
-    if (requiresRefund) return 'protected';
-    return 'safe';
-  };
-
-  const buttonState = getButtonState();
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Button 
-        disabled 
-        className={className}
-        variant={getActionVariant()}
-      >
-        <Clock className="mr-2 h-4 w-4 animate-spin" />
-        Checking...
-      </Button>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="space-y-2">
-        <Button 
-          disabled 
-          className={className}
-          variant="destructive"
-        >
-          <AlertTriangle className="mr-2 h-4 w-4" />
-          Error
-        </Button>
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button
-          onClick={handleButtonClick}
-          disabled={disabled}
-          className={className}
-          variant={getActionVariant()}
-        >
-          {getActionIcon()}
-          {getActionLabel()}
-        </Button>
-        
-        {buttonState === 'protected' && (
-          <div className="flex items-center gap-1 text-amber-600">
-            <ShieldCheck className="h-4 w-4" />
-            <span className="text-sm">Protected</span>
-          </div>
+    <>
+    <Button
+      onClick={handleButtonClick}
+        disabled={disabled || isCheckingPurchases}
+      className={className}
+      variant={getActionVariant()}
+    >
+        {isCheckingPurchases ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            Checking...
+          </>
+        ) : (
+          <>
+      {getActionIcon()}
+      {getActionLabel()}
+          </>
         )}
-      </div>
+    </Button>
 
-      {/* Protection Info Display */}
-      {showProtectionInfo && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800">
-              <ShieldCheck className="h-5 w-5" />
-              Purchase Protection Active
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              {getActionRequirement(actionType)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-                         <div className="space-y-2">
-               {actionType === 'delete' && (
-                 <Alert>
-                   <AlertTriangle className="h-4 w-4" />
-                   <AlertDescription>
-                     {currentPricingType === 'WHOLE_BOOK' || currentPricingType === 'PAID_PER_CHAPTER' ? (
-                       currentPublishStatus === 'PUBLISHED' ? (
-                         <>
-                           <strong>For Paid Content:</strong>
-                           <br />
-                           <strong>Step 1:</strong> Unpublish this {itemType} first
-                           <br />
-                           {hasPurchases && (
-                             <>
-                               <strong>Step 2:</strong> Process refunds for all buyers
-                               <br />
-                             </>
-                           )}
-                           <strong>Step {hasPurchases ? '3' : '2'}:</strong> Then you can delete
-                         </>
-                       ) : (
-                         hasPurchases ? (
-                           <>
-                             <strong>Paid Content with Purchases:</strong>
-                             <br />
-                             Must process refunds for all buyers before deleting
-                           </>
-                         ) : (
-                           'This paid content can be deleted since it has no purchases'
-                         )
-                       )
-                     ) : (
-                       hasPurchases ? (
-                         'This content has existing purchases. All buyers must be refunded before deletion.'
-                       ) : (
-                         'This content can be deleted'
-                       )
-                     )}
-                   </AlertDescription>
-                 </Alert>
-               )}
-               
-               {actionType === 'unpublish' && hasPurchases && (
-                 <Alert>
-                   <AlertTriangle className="h-4 w-4" />
-                   <AlertDescription>
-                     <strong>Unpublish Requires Refunds:</strong>
-                     <br />
-                     This {itemType} has existing purchases. All buyers must be refunded before unpublishing.
-                   </AlertDescription>
-                 </Alert>
-               )}
-
-               {actionType === 'changePricing' && hasPurchases && (
-                 <Alert>
-                   <AlertTriangle className="h-4 w-4" />
-                   <AlertDescription>
-                     <strong>Pricing Change Requires Refunds:</strong>
-                     <br />
-                     This {itemType} has existing purchases. All buyers must be refunded before changing to free.
-                   </AlertDescription>
-                 </Alert>
-               )}
-             </div>
-          </CardContent>
-        </Card>
+      {refundData && (
+        <RefundConfirmationModal
+          isOpen={showRefundModal}
+          onClose={() => setShowRefundModal(false)}
+          onConfirm={handleRefundConfirm}
+          refundData={refundData}
+          isLoading={isCheckingPurchases}
+        />
       )}
-
-      {/* Refund Modal */}
-      <RefundModal
-        isOpen={showRefundModal}
-        onClose={() => setShowRefundModal(false)}
-        itemId={itemId}
-        itemType={itemType}
-        itemTitle={itemTitle}
-        refundType={getRefundType(actionType)}
-        onRefundInitiated={handleRefundCompleted}
-      />
-    </div>
+    </>
   );
 }

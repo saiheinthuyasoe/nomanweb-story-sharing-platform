@@ -23,7 +23,7 @@ interface Transaction {
     username: string;
     email: string;
   };
-  type: 'purchase' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'bonus' | 'refund';
+  type: 'purchase' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'bonus';
   amount: number;
   status: 'completed' | 'pending' | 'failed' | 'cancelled';
   date: string;
@@ -356,8 +356,7 @@ export default function CoinManagementPage() {
         return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
       case 'earning':
         return <ArrowUpIcon className="w-4 h-4 text-blue-600" />;
-      case 'refund':
-        return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
+
       case 'bonus':
         return <ArrowUpIcon className="w-4 h-4 text-purple-600" />;
       case 'penalty':
@@ -645,7 +644,7 @@ export default function CoinManagementPage() {
                   <option value="">All Types</option>
                   <option value="purchase">Purchase</option>
                   <option value="earning">Earning</option>
-                  <option value="refund">Refund</option>
+                  
                   <option value="bonus">Bonus</option>
                   <option value="penalty">Penalty</option>
                 </select>
@@ -1295,4 +1294,4 @@ export default function CoinManagementPage() {
       )}
     </div>
   );
-} 
+}

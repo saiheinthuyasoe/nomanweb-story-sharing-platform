@@ -269,11 +269,9 @@ export function ProtectedStoryManagementExample() {
           <div>
             <strong>PurchaseBenefitDisplay:</strong> Show this to readers during the purchase process to explain one-time purchase benefits
           </div>
-          <div>
-            <strong>usePurchaseProtection:</strong> Use this hook directly for custom protection logic
-          </div>
+
         </CardContent>
       </Card>
     </div>
   );
-} 
+}

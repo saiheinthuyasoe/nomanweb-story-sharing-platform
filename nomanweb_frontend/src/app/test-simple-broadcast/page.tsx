@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import Cookies from 'js-cookie';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import Cookies from "js-cookie";
 
 export default function TestSimpleBroadcastPage() {
   const { user } = useAuth();
   const [logs, setLogs] = useState<string[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [`${timestamp}: ${message}`, ...prev.slice(0, 49)]);
+    setLogs((prev) => [`${timestamp}: ${message}`, ...prev.slice(0, 49)]);
   };
 
   useEffect(() => {
     if (!user) {
-      addLog('No user found');
+      addLog("No user found");
       return;
     }
 
@@ -24,77 +24,98 @@ export default function TestSimpleBroadcastPage() {
 
     const connectToSSE = async () => {
       try {
-        const token = Cookies.get('token');
+        const token = Cookies.get("token");
         if (!token) {
-          addLog('No token found in cookies');
+          addLog("No token found in cookies");
           return;
         }
 
-        setConnectionStatus('connecting');
-        addLog('Connecting to backend SSE...');
+        setConnectionStatus("connecting");
+        addLog("Connecting to backend SSE...");
 
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-        const response = await fetch(`${backendUrl}/coins/sse/balance-updates`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-          },
-        });
+        const backendUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+        const response = await fetch(
+          `${backendUrl}/coins/sse/balance-updates`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "text/event-stream",
+              "Cache-Control": "no-cache",
+            },
+          }
+        );
 
         if (!response.ok) {
-          addLog(`SSE connection failed: ${response.status} ${response.statusText}`);
-          setConnectionStatus('disconnected');
+          addLog(
+            `SSE connection failed: ${response.status} ${response.statusText}`
+          );
+          setConnectionStatus("disconnected");
           return;
         }
 
-        addLog('Connected to coin balance updates SSE');
-        setConnectionStatus('connected');
+        addLog("Connected to coin balance updates SSE");
+        setConnectionStatus("connected");
 
         const reader = response.body?.getReader();
         if (!reader) {
-          addLog('No readable stream available');
+          addLog("No readable stream available");
           return;
         }
 
         const decoder = new TextDecoder();
-        let buffer = '';
+        let buffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done) {
-            addLog('SSE stream ended');
-            setConnectionStatus('disconnected');
+            addLog("SSE stream ended");
+            setConnectionStatus("disconnected");
             break;
           }
 
           buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
-            if (line.startsWith('event: ')) {
+            if (line.startsWith("event: ")) {
               const eventType = line.substring(7);
               const dataLine = lines[lines.indexOf(line) + 1];
-              
-              if (dataLine && dataLine.startsWith('data: ')) {
+
+              if (dataLine && dataLine.startsWith("data: ")) {
                 const data = dataLine.substring(6);
-                
+
                 try {
-                  if (eventType === 'connected') {
+                  if (eventType === "connected") {
                     const parsedData = JSON.parse(data);
                     addLog(`SSE connected: ${JSON.stringify(parsedData)}`);
-                  } else if (eventType === 'balance_update') {
+                  } else if (eventType === "balance_update") {
                     const update = JSON.parse(data);
-                    addLog(`Received balance update: ${JSON.stringify(update)}`);
-                    addLog(`Current user ID: ${user.id} (type: ${typeof user.id})`);
-                    addLog(`Update user ID: ${update.userId} (type: ${typeof update.userId})`);
-                    
-                    if (update.userId === user.id || update.userId === String(user.id)) {
-                      addLog(`Balance update for current user: ${user.coinBalance} -> ${update.newBalance}`);
+                    addLog(
+                      `Received balance update: ${JSON.stringify(update)}`
+                    );
+                    addLog(
+                      `Current user ID: ${user.id} (type: ${typeof user.id})`
+                    );
+                    addLog(
+                      `Update user ID: ${
+                        update.userId
+                      } (type: ${typeof update.userId})`
+                    );
+
+                    if (
+                      update.userId === user.id ||
+                      update.userId === String(user.id)
+                    ) {
+                      addLog(
+                        `Balance update for current user: ${user.coinBalance} -> ${update.newBalance}`
+                      );
                     } else {
-                      addLog(`Balance update for different user: ${update.userId} vs ${user.id}`);
+                      addLog(
+                        `Balance update for different user: ${update.userId} vs ${user.id}`
+                      );
                     }
                   } else {
                     addLog(`Received unknown event: ${eventType} - ${data}`);
@@ -106,15 +127,13 @@ export default function TestSimpleBroadcastPage() {
             }
           }
         }
-
       } catch (error) {
         addLog(`SSE connection error: ${error}`);
-        setConnectionStatus('disconnected');
+        setConnectionStatus("disconnected");
       }
     };
 
     connectToSSE();
-
   }, [user]);
 
   if (!user) {
@@ -129,13 +148,21 @@ export default function TestSimpleBroadcastPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">Test Simple Broadcast</h1>
-      
+
       <div className="mb-6 p-4 bg-gray-100 rounded-lg">
         <h2 className="text-lg font-semibold mb-2">User Info</h2>
-        <p><strong>ID:</strong> {user.id}</p>
-        <p><strong>Username:</strong> {user.username}</p>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Current Balance:</strong> {user.coinBalance} coins</p>
+        <p>
+          <strong>ID:</strong> {user.id}
+        </p>
+        <p>
+          <strong>Username:</strong> {user.username}
+        </p>
+        <p>
+          <strong>Email:</strong> {user.email}
+        </p>
+        <p>
+          <strong>Current Balance:</strong> {user.coinBalance} coins
+        </p>
       </div>
 
       <div className="mb-6 p-4 bg-gray-100 rounded-lg">
@@ -153,14 +180,18 @@ export default function TestSimpleBroadcastPage() {
             <p>No logs yet...</p>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="mb-1">{log}</div>
+              <div key={index} className="mb-1">
+                {log}
+              </div>
             ))
           )}
         </div>
       </div>
 
       <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-        <h3 className="font-semibold text-yellow-800 mb-2">Testing Instructions</h3>
+        <h3 className="font-semibold text-yellow-800 mb-2">
+          Testing Instructions
+        </h3>
         <ol className="list-decimal list-inside text-yellow-700 space-y-1">
           <li>Keep this page open</li>
           <li>Go to admin panel in another tab</li>
@@ -172,4 +203,4 @@ export default function TestSimpleBroadcastPage() {
       </div>
     </div>
   );
-} 
+}

@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.dto.story.StoryPreviewResponse;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
+import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.PurchaseProtectionException;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,16 @@ public class StoryController {
     private final StoryService storyService;
     private final JwtUtil jwtUtil;
     private final ViewTrackingService viewTrackingService;
+    private final PurchaseProtectionService purchaseProtectionService;
+
+    // Simple test endpoint to verify routing is working
+    @GetMapping("/test")
+    public ResponseEntity<?> testEndpoint() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "StoryController is working!");
+        response.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<StoryResponse> createStory(
@@ -401,7 +412,7 @@ public class StoryController {
     }
 
     @PostMapping("/{id}/unpublish")
-    public ResponseEntity<StoryResponse> unpublishStory(
+    public ResponseEntity<?> unpublishStory(
             @PathVariable UUID id,
             HttpServletRequest httpRequest) {
         try {
@@ -410,7 +421,20 @@ public class StoryController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.error("Error unpublishing story {}: {}", id, e.getMessage());
-            return ResponseEntity.badRequest().build();
+
+            // Return structured error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "UNPUBLISH_ERROR");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("storyId", id.toString());
+
+            // Check if refunds are required
+            if (e.getMessage().contains("Refunds required first")) {
+                errorResponse.put("requiresRefunds", true);
+                errorResponse.put("refundCheckRequired", true);
+            }
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
@@ -451,6 +475,68 @@ public class StoryController {
         } catch (RuntimeException e) {
             log.error("Error tracking story view {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Check if story has purchases (for refund functionality)
+    @GetMapping("/{id}/has-purchases")
+    public ResponseEntity<?> checkStoryHasPurchases(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            log.info("🔍 Checking purchases for story: {} by author: {}", id, authorId);
+
+            boolean hasPurchases = purchaseProtectionService.storyHasPurchases(id);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("hasPurchases", hasPurchases);
+            response.put("storyId", id.toString());
+
+            log.info("✅ Story {} has purchases: {}", id, hasPurchases);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("❌ Error checking story purchases for {}: {}", id, e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "CHECK_PURCHASES_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    // Calculate refund for unpublishing a story
+    @PostMapping("/{id}/calculate-refund")
+    public ResponseEntity<?> calculateStoryRefund(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            log.info("🧮 Calculating refund for story: {} by author: {}", id, authorId);
+
+            PurchaseProtectionService.RefundCalculationResult result = purchaseProtectionService
+                    .calculateStoryRefund(id);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("hasPurchases", result.isHasPurchases());
+            response.put("totalRefundAmount", result.getTotalRefundAmount());
+            response.put("affectedPurchasers", result.getAffectedPurchasers());
+            response.put("requiresRefunds", result.isRequiresRefunds());
+            response.put("pricingType", result.getPricingType());
+            response.put("storyId", id.toString());
+
+            log.info("✅ Refund calculation complete for story {}: {} refund, {} purchasers",
+                    id, result.getTotalRefundAmount(), result.getAffectedPurchasers());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("❌ Error calculating story refund for {}: {}", id, e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "CALCULATE_REFUND_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 

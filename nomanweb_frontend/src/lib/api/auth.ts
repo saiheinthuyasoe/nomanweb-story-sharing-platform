@@ -1,7 +1,7 @@
-import { apiClient } from './client';
-import { AuthResponse, User } from '@/types/user';
+import { apiClient } from "./client";
+import { AuthResponse, User } from "@/types/user";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 interface LoginData {
   email: string;
@@ -36,7 +36,10 @@ const authApi = {
     return response.data;
   },
 
-  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> => {
     const response = await apiClient.put(`/auth/change-password`, data);
     return response.data;
   },
@@ -46,7 +49,10 @@ const authApi = {
     return response.data;
   },
 
-  resetPassword: async (data: { token: string; password: string }): Promise<void> => {
+  resetPassword: async (data: {
+    token: string;
+    password: string;
+  }): Promise<void> => {
     const response = await apiClient.post(`/auth/reset-password`, data);
     return response.data;
   },
@@ -57,11 +63,16 @@ const authApi = {
   },
 
   resendVerification: async (email: string): Promise<void> => {
-    const response = await apiClient.post(`/auth/resend-verification`, { email });
+    const response = await apiClient.post(`/auth/resend-verification`, {
+      email,
+    });
     return response.data;
   },
 
-  changeEmail: async (data: { currentPassword: string; newEmail: string }): Promise<void> => {
+  changeEmail: async (data: {
+    currentPassword: string;
+    newEmail: string;
+  }): Promise<void> => {
     const response = await apiClient.post(`/auth/change-email`, data);
     return response.data;
   },
@@ -71,7 +82,10 @@ const authApi = {
     return response.data;
   },
 
-  changeUsername: async (data: { currentPassword: string; newUsername: string }): Promise<void> => {
+  changeUsername: async (data: {
+    currentPassword: string;
+    newUsername: string;
+  }): Promise<void> => {
     const response = await apiClient.post(`/auth/change-username`, data);
     return response.data;
   },
@@ -82,12 +96,17 @@ const authApi = {
   },
 
   verifyEmailChange: async (token: string): Promise<void> => {
-    const response = await apiClient.post(`/auth/verify-email-change`, { token });
+    const response = await apiClient.post(`/auth/verify-email-change`, {
+      token,
+    });
     return response.data;
   },
 
   resendEmailChangeVerification: async (newEmail: string): Promise<void> => {
-    const response = await apiClient.post(`/auth/resend-email-change-verification`, { newEmail });
+    const response = await apiClient.post(
+      `/auth/resend-email-change-verification`,
+      { newEmail }
+    );
     return response.data;
   },
 
@@ -108,11 +127,14 @@ const authApi = {
   },
 
   lineLogin: async (accessToken: string): Promise<AuthResponse> => {
-    console.log('LINE Login API call:');
-    console.log('- Access token length:', accessToken.length);
-    console.log('- Access token preview:', accessToken.substring(0, 20) + '...');
-    console.log('- API URL:', `/oauth/line`);
-    
+    console.log("LINE Login API call:");
+    console.log("- Access token length:", accessToken.length);
+    console.log(
+      "- Access token preview:",
+      accessToken.substring(0, 20) + "..."
+    );
+    console.log("- API URL:", `/oauth/line`);
+
     const response = await apiClient.post(`/oauth/line`, { accessToken });
     return response.data;
   },
@@ -128,4 +150,4 @@ const authApi = {
   },
 };
 
-export { authApi }; 
+export { authApi };

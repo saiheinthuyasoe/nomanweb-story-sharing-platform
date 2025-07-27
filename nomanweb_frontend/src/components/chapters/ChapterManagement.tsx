@@ -38,7 +38,6 @@ import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import BulkChapterUpload from "./BulkChapterUpload";
 import { QuickCreateChapter } from "./QuickCreateChapter";
-import { refundApi } from "@/lib/api/refunds";
 
 interface ChapterManagementProps {
   storyId: string;
@@ -67,6 +66,7 @@ export default function ChapterManagement({
     usePublishChapter();
   const { mutate: unpublishChapter, isPending: isUnpublishing } =
     useUnpublishChapter();
+
   const { mutate: deleteChapter, isPending: isDeleting } = useDeleteChapter();
   const { mutate: bulkDeleteChapters, isPending: isBulkDeleting } =
     useBulkDeleteChapters();
@@ -107,6 +107,7 @@ export default function ChapterManagement({
   const [showBulkRestoreConfirm, setShowBulkRestoreConfirm] = useState(false);
   const [showBulkPermanentDeleteConfirm, setShowBulkPermanentDeleteConfirm] =
     useState(false);
+
 
   // Get chapter access for non-authors
   const visibleChapters = chapters.filter(
@@ -275,23 +276,7 @@ export default function ChapterManagement({
     }
   };
 
-  // Test chapter protection status
-  const testChapterProtection = async (chapterId: string) => {
-    try {
-      console.log('🧪 Testing chapter protection for:', chapterId);
-      const hasPurchases = await refundApi.getChapterProtectionStatus(chapterId);
-      console.log('🧪 Chapter protection test result:', hasPurchases);
-      
-      if (hasPurchases) {
-        toast.success(`Chapter ${chapterId} has purchases - protection should be active`);
-      } else {
-        toast.info(`Chapter ${chapterId} has no purchases - no protection needed`);
-      }
-    } catch (error) {
-      console.error('🧪 Chapter protection test failed:', error);
-      toast.error('Chapter protection test failed');
-    }
-  };
+
 
   return (
     <div key={refreshKey} className="card-elevated p-6">
@@ -387,6 +372,8 @@ export default function ChapterManagement({
             <span>Trash ({trashChapters.length})</span>
           </button>
         </div>
+
+
       </div>
 
       {/* Bulk Selection Controls */}
@@ -720,6 +707,8 @@ export default function ChapterManagement({
           </div>
         </div>
       )}
+
+
 
       {/* Empty Trash Confirmation Modal */}
 
@@ -1113,15 +1102,6 @@ function ChapterContent({
             >
               <TrashIcon className="w-4 h-4" />
             </ProtectedActionButton>
-
-            {/* Test Protection Button */}
-            <button
-              onClick={() => testChapterProtection(chapter.id)}
-              className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
-              title="Test Chapter Protection"
-            >
-              <span className="text-xs">🧪</span>
-            </button>
           </>
         )}
       </div>

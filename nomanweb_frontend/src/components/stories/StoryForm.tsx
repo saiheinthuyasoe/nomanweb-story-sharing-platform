@@ -294,7 +294,7 @@ export function StoryForm({
                     </h4>
                     <p className="text-xs text-blue-700 mt-1">
                       Readers who already purchased will maintain access regardless of pricing model changes. 
-                      No refunds required for switching between paid pricing models.
+                      No restrictions for switching between paid pricing models.
                     </p>
                   </div>
                 </div>

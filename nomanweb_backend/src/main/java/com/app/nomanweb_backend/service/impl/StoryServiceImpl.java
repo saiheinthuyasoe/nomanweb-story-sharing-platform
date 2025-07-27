@@ -10,6 +10,7 @@ import com.app.nomanweb_backend.entity.Category;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CategoryRepository;
+import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.SearchIndexingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
@@ -25,11 +26,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.math.RoundingMode;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.BookPurchase;
+import com.app.nomanweb_backend.repository.BookPurchaseRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +49,8 @@ public class StoryServiceImpl implements StoryService {
     private final ApplicationEventPublisher eventPublisher;
     private final PurchaseProtectionService purchaseProtectionService;
     private final ChapterService chapterService;
+    private final ChapterRepository chapterRepository;
+    private final BookPurchaseRepository bookPurchaseRepository;
 
     @Override
     public StoryResponse createStory(CreateStoryRequest request, UUID authorId) {
@@ -113,13 +121,7 @@ public class StoryServiceImpl implements StoryService {
             story.setCoverImageUrl(request.getCoverImageUrl());
         }
         if (request.getPricingType() != null) {
-            // Check if changing from paid to free and if there are existing purchases
-            if (story.isPaid() && request.getPricingType() == Story.PricingType.FREE) {
-                if (!purchaseProtectionService.canChangePricingToFreeWithoutRefund(storyId)) {
-                    throw new RuntimeException(
-                            "Cannot change pricing to free with existing purchases. Please process refunds first through the refund system.");
-                }
-            }
+            // Pricing can now be changed without restrictions
             story.setPricingType(request.getPricingType());
         }
         if (request.getBookStatus() != null) {
@@ -170,16 +172,7 @@ public class StoryServiceImpl implements StoryService {
             throw new RuntimeException("Not authorized to delete this story");
         }
 
-        // Check if story can be moved to trash without refund
-        if (!purchaseProtectionService.canMoveStoryToTrashWithoutRefund(storyId)) {
-            var refundCalculation = purchaseProtectionService.calculateStoryRefundAmount(storyId);
-            throw new PurchaseProtectionException(
-                    "Cannot move story to trash with existing purchases. Please process refunds first through the refund system.",
-                    storyId.toString(),
-                    story.getTitle(),
-                    refundCalculation.getTotalBuyersCount(),
-                    refundCalculation.getTotalRefundAmount());
-        }
+        // Stories can now be moved to trash without restrictions
 
         // Move to trash
         story.moveToTrash();
@@ -555,7 +548,34 @@ public class StoryServiceImpl implements StoryService {
         }
 
         story.setPublishStatus(Story.PublishStatus.PUBLISHED);
-        story.setPublishedAt(LocalDateTime.now());
+
+        // Check if this is a republish after refunds
+        boolean isRepublishAfterRefunds = false;
+        if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
+            // Check if there are any refunded book purchases
+            List<BookPurchase> refundedPurchases = bookPurchaseRepository
+                    .findByStoryAndIsRefundedTrueOrderByPurchasedAtDesc(story);
+            if (!refundedPurchases.isEmpty()) {
+                isRepublishAfterRefunds = true;
+                log.info("Republishing story after refunds - {} refunded purchases found", refundedPurchases.size());
+            }
+        }
+
+        // Set publishedAt based on republish scenario
+        if (story.getPublishedAt() == null) {
+            // Initial publication
+            story.setPublishedAt(LocalDateTime.now());
+            log.info("Setting initial publish date for story: {}", storyId);
+        } else if (isRepublishAfterRefunds) {
+            // Republish after refunds - update publish date so old purchases don't work
+            story.setPublishedAt(LocalDateTime.now());
+            log.info("Republishing story after refunds - updating publish date for story: {} to {}", storyId,
+                    story.getPublishedAt());
+        } else {
+            // Regular republish - keep original publish date
+            log.info("Republishing story: {} - keeping original publish date: {}", storyId, story.getPublishedAt());
+        }
+
         story = storyRepository.save(story);
 
         log.info("Story published successfully: {}", storyId);
@@ -586,38 +606,23 @@ public class StoryServiceImpl implements StoryService {
             throw new RuntimeException("Not authorized to unpublish this story");
         }
 
-        // Check if story has purchases and require refunds
-        boolean canUnpublish = purchaseProtectionService.canUnpublishStoryWithoutRefund(storyId);
-        boolean hasPurchases = purchaseProtectionService.storyHasPurchases(storyId);
+        // Delegate unpublishing to a method that handles refunds, fixing a flaw where
+        // the action was blocked instead of processing refunds for active purchases.
+        // This assumes `chapterService.unpublishWholeBook` contains all necessary
+        // logic.
+        chapterService.unpublishWholeBook(storyId, authorId);
 
-        // Special handling for whole book pricing
-        if (story.getPricingType() == Story.PricingType.WHOLE_BOOK && hasPurchases) {
-            log.warn("Unpublishing whole book priced story with purchases: {}. Refunds should be processed.", storyId);
-            // We allow unpublishing for whole book pricing, but log a warning
-        } else if (!canUnpublish) {
-            // For other pricing types, we still enforce the protection
-            throw new RuntimeException(
-                    "Cannot unpublish story with existing purchases. Please process refunds first through the refund system.");
-        }
+        // The story status is updated within the delegated method, so we fetch the
+        // updated story.
+        Story updatedStory = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found after unpublishing"));
 
-        story.setPublishStatus(Story.PublishStatus.DRAFT);
-        story = storyRepository.save(story);
+        log.info("Story unpublished via unpublishWholeBook: {}", updatedStory.getId());
 
-        log.info("Story unpublished successfully: {}", storyId);
+        // Publish event for search indexing to reflect the update.
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(updatedStory));
 
-        // Automatically unpublish all published chapters when story is unpublished
-        try {
-            chapterService.bulkUnpublishChaptersByStory(storyId, authorId);
-            log.info("All published chapters unpublished automatically for story: {}", storyId);
-        } catch (Exception e) {
-            log.warn("Failed to auto-unpublish chapters for story: {} - {}", storyId, e.getMessage());
-            // Don't fail the story unpublishing if chapter unpublishing fails
-        }
-
-        // Publish event for search indexing
-        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
-
-        return convertToStoryResponse(story);
+        return convertToStoryResponse(updatedStory);
     }
 
     @Override

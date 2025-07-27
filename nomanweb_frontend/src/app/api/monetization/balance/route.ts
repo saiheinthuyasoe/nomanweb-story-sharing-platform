@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to the backend
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${backendUrl}/api/monetization/balance`, {
+    const response = await fetch(`${backendUrl}/monetization/balance`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',

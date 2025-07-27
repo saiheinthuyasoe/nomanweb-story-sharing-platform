@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   storiesApi,
   categoriesApi,
@@ -21,12 +22,32 @@ export const useStories = (params: GetStoriesParams = {}) => {
   });
 };
 
-export const useStory = (id: string, enabled = true) => {
-  return useQuery({
-    queryKey: ["story", id],
-    queryFn: () => storiesApi.getStory(id),
-    enabled: enabled && !!id,
+export const useStory = (id: string, enabled: boolean = true) => {
+  console.log('🔍 useStory called with id:', id, 'enabled:', enabled);
+  
+  const query = useQuery({
+    queryKey: ['story', id],
+    queryFn: () => {
+      console.log('📡 Calling storiesApi.getStory with id:', id);
+      return storiesApi.getStory(id);
+    },
+    enabled: !!id && enabled,
   });
+
+  // Handle success/error with useEffect (React Query v5 approach)
+  useEffect(() => {
+    if (query.data) {
+      console.log('✅ useStory success - data received:', query.data);
+    }
+  }, [query.data]);
+
+  useEffect(() => {
+    if (query.error) {
+      console.error('❌ useStory error:', query.error);
+    }
+  }, [query.error]);
+
+  return query;
 };
 
 export const useMyStories = (params: { page?: number; size?: number } = {}) => {
@@ -193,29 +214,8 @@ export const useMoveStoryToTrash = () => {
     },
     onError: (error: any, storyId) => {
       console.error("❌ Failed to move story to trash:", storyId, error);
-      
-      // Check if this is a purchase protection violation
       const errorData = error.response?.data as any;
-      if (errorData?.error === 'PURCHASE_PROTECTION_VIOLATION') {
-        console.log("🚨 Purchase protection violation detected:", errorData);
-        
-        // Dispatch a custom event for the UI to handle the refund modal
-        window.dispatchEvent(new CustomEvent('purchase-protection-violation', {
-          detail: {
-            storyId: errorData.storyId,
-            storyTitle: errorData.storyTitle,
-            totalPurchases: errorData.totalPurchases,
-            refundAmount: errorData.refundAmount,
-            message: errorData.message
-          }
-        }));
-        
-        toast.error(`Cannot delete story: ${errorData.totalPurchases} purchases found. Refunds required.`);
-      } else {
-        toast.error(
-          errorData?.message || "Failed to move story to trash"
-        );
-      }
+      toast.error(errorData?.message || "Failed to move story to trash");
     },
   });
 };
@@ -265,6 +265,29 @@ export const usePublishStory = () => {
       queryClient.invalidateQueries({ queryKey: ["story", publishedStory.id] });
       queryClient.invalidateQueries({ queryKey: ["stories"] });
       queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+
+      // Invalidate book access cache - crucial for republish after refunds
+      queryClient.invalidateQueries({
+        queryKey: ["bookAccess", publishedStory.id],
+      });
+
+      // Invalidate all chapter access caches for this story's chapters
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access"],
+        predicate: (query) => {
+          return query.queryKey[0] === "chapter-access";
+        },
+      });
+
+      // Invalidate batch chapter access queries
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access-batch"],
+      });
+
+      // Also invalidate purchase history and coin balance in case of republish
+      queryClient.invalidateQueries({ queryKey: ["purchaseHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["coinBalance"] });
+
       toast.success("Story published successfully!");
     },
     onError: (error: any) => {
@@ -284,13 +307,13 @@ export const useUnpublishStory = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["stories"] });
       queryClient.invalidateQueries({ queryKey: ["my-stories"] });
-      
+
       // Add these new invalidations:
       // Invalidate book access cache
       queryClient.invalidateQueries({
         queryKey: ["bookAccess", unpublishedStory.id],
       });
-      
+
       // Invalidate all chapter access caches for this story's chapters
       queryClient.invalidateQueries({
         queryKey: ["chapter-access"],
@@ -298,7 +321,7 @@ export const useUnpublishStory = () => {
           return query.queryKey[0] === "chapter-access";
         },
       });
-      
+
       // Invalidate batch chapter access queries
       queryClient.invalidateQueries({
         queryKey: ["chapter-access-batch"],
@@ -306,7 +329,28 @@ export const useUnpublishStory = () => {
 
       toast.success("Story unpublished successfully!");
     },
-    // ... existing code ...
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+
+      if (errorData?.refundCheckRequired) {
+        // Don't show error toast for refund check required - let UI handle it
+        return;
+      } else if (errorData?.insufficientCoins) {
+        toast.error(
+          `Cannot unpublish story: ${
+            errorData.message || "Insufficient coins to process refunds"
+          }`
+        );
+      } else if (errorData?.requiresRefunds) {
+        toast.error(
+          `Cannot unpublish story: ${
+            errorData.message || "Refunds required but cannot be processed"
+          }`
+        );
+      } else {
+        toast.error(errorData?.message || "Failed to unpublish story");
+      }
+    },
   });
 };
 

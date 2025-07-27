@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   useMyReadingLists, 
@@ -64,6 +64,32 @@ export default function LibraryPage() {
   const { data: readingHistoryData, isLoading: isLoadingHistory, error: historyError } = useMyReadingProgress(0, 20, !!user);
   const readingHistory = readingHistoryData?.content || [];
 
+  // New: Filter purchased stories by backend access
+  const [accessiblePurchasedStories, setAccessiblePurchasedStories] = useState<any[]>([]);
+  useEffect(() => {
+    async function checkAccess() {
+      if (!user || !purchasedStoriesData) {
+        setAccessiblePurchasedStories([]);
+        return;
+      }
+      const results = await Promise.all(
+        purchasedStoriesData.map(async (item: any) => {
+          try {
+            const res = await fetch(`/api/stories/${item.story.id}/can-access`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (data.canAccess === true || data === true) return item;
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      setAccessiblePurchasedStories(results.filter(Boolean));
+    }
+    checkAccess();
+  }, [user, purchasedStoriesData]);
+
   // Mutations
   const { mutate: toggleBookmark } = useToggleBookmark();
   const { mutate: clearHistory, isPending: isClearingHistory } = useClearReadingHistory();
@@ -86,7 +112,7 @@ export default function LibraryPage() {
         items = wantToReadData;
         break;
       case 'purchased':
-        items = purchasedStoriesData;
+        items = accessiblePurchasedStories;
         break;
       case 'all':
       default:

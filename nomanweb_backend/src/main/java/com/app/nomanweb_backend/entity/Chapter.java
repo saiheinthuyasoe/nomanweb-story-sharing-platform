@@ -118,10 +118,7 @@ public class Chapter {
     @Builder.Default
     private List<ChapterPurchase> chapterPurchases = new ArrayList<>();
 
-    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private List<RefundTransaction> refundTransactions = new ArrayList<>();
+
 
     @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore

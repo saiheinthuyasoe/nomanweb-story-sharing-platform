@@ -14,7 +14,7 @@ import {
 } from "@/hooks/useStories";
 import { useAuth } from "@/contexts/AuthContext";
 import { StoryPreview } from "@/types/story";
-import { RefundModal } from "@/components/refunds/RefundModal";
+
 
 import {
   Plus,
@@ -43,14 +43,7 @@ export default function MyStoriesPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StoryTab>("stories");
 
-  // Refund modal state
-  const [refundModalOpen, setRefundModalOpen] = useState(false);
-  const [refundStoryData, setRefundStoryData] = useState<{
-    storyId: string;
-    storyTitle: string;
-    totalPurchases: number;
-    refundAmount: number;
-  } | null>(null);
+
 
   const {
     data: storiesPage,
@@ -75,28 +68,7 @@ export default function MyStoriesPage() {
   const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } =
     usePermanentlyDeleteStory();
 
-  // Listen for purchase protection violations
-  useEffect(() => {
-    const handlePurchaseProtectionViolation = (event: CustomEvent) => {
-      const { storyId, storyTitle, totalPurchases, refundAmount } = event.detail;
-      
-      console.log("🚨 Purchase protection violation event received:", event.detail);
-      
-      setRefundStoryData({
-        storyId,
-        storyTitle,
-        totalPurchases,
-        refundAmount
-      });
-      setRefundModalOpen(true);
-    };
 
-    window.addEventListener('purchase-protection-violation', handlePurchaseProtectionViolation as EventListener);
-
-    return () => {
-      window.removeEventListener('purchase-protection-violation', handlePurchaseProtectionViolation as EventListener);
-    };
-  }, []);
 
   const handleCreateNew = () => {
     router.push("/stories/create");
@@ -730,25 +702,7 @@ export default function MyStoriesPage() {
         </div>
       </div>
 
-      {/* Refund Modal */}
-      {refundStoryData && (
-        <RefundModal
-          isOpen={refundModalOpen}
-          onClose={() => {
-            setRefundModalOpen(false);
-            setRefundStoryData(null);
-          }}
-          storyId={refundStoryData.storyId}
-          storyTitle={refundStoryData.storyTitle}
-          totalPurchases={refundStoryData.totalPurchases}
-          refundAmount={refundStoryData.refundAmount}
-          onRefundProcessed={() => {
-            // Retry deletion after refunds are processed
-            console.log("🔄 Retrying story deletion after refund:", refundStoryData.storyId);
-            moveToTrash(refundStoryData.storyId);
-          }}
-        />
-      )}
+
     </div>
   );
 }

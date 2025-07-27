@@ -368,6 +368,27 @@ public class ChapterController {
             errorResponse.put("message", e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
+        } catch (RuntimeException e) {
+            log.error("Error unpublishing chapter: {}", e.getMessage());
+
+            // Check if it's an insufficient coins error
+            if (e.getMessage().contains("Insufficient coins")) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "INSUFFICIENT_COINS");
+                errorResponse.put("message", e.getMessage());
+                errorResponse.put("chapterId", chapterId.toString());
+                errorResponse.put("requiresRefunds", true);
+                errorResponse.put("insufficientCoins", true);
+
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            // Return generic error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "UNPUBLISH_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             log.error("Unexpected error unpublishing chapter", e);
 
@@ -619,6 +640,57 @@ public class ChapterController {
         } catch (Exception e) {
             log.error("Unexpected error bulk unpublishing chapters", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Unpublish whole book with refunds
+    @PostMapping("/story/{storyId}/unpublish-book")
+    public ResponseEntity<?> unpublishWholeBook(
+            @PathVariable UUID storyId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            chapterService.unpublishWholeBook(storyId, authorId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Error unpublishing whole book: {}", e.getMessage());
+
+            // Return structured error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "VALIDATION_ERROR");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("storyId", storyId.toString());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (RuntimeException e) {
+            log.error("Error unpublishing whole book: {}", e.getMessage());
+
+            // Check if it's an insufficient coins error
+            if (e.getMessage().contains("Insufficient coins")) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "INSUFFICIENT_COINS");
+                errorResponse.put("message", e.getMessage());
+                errorResponse.put("storyId", storyId.toString());
+                errorResponse.put("requiresRefunds", true);
+                errorResponse.put("insufficientCoins", true);
+
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            // Return generic error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "UNPUBLISH_ERROR");
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("Unexpected error unpublishing whole book", e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "INTERNAL_SERVER_ERROR");
+            errorResponse.put("message", "An unexpected error occurred");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 

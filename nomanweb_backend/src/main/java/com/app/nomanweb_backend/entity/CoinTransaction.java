@@ -62,7 +62,7 @@ public class CoinTransaction {
 
     // Enums
     public enum TransactionType {
-        PURCHASE, EARNING, REFUND, BONUS, PENALTY
+        PURCHASE, EARNING, BONUS, PENALTY, REFUND, REFUND_DEDUCTION
     }
 
     public enum ReferenceType {

@@ -8,7 +8,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   try {
     // Initialize real-time connections
     useCoinBalanceRealtime();
-    console.log('✅ useCoinBalanceRealtime hook called successfully');
+    console.log('✅ Real-time hooks called successfully');
   } catch (error) {
     console.error('❌ Error in RealtimeProvider:', error);
   }

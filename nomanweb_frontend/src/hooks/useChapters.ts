@@ -381,21 +381,99 @@ export const useUnpublishChapter = () => {
         queryKey: ["chapters-paged", unpublishedChapter.story.id],
       });
 
+      // Invalidate book access cache to reflect potential refunds
+      queryClient.invalidateQueries({
+        queryKey: ["bookAccess", unpublishedChapter.story.id],
+      });
+
+      // Invalidate chapter access caches for this specific chapter
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access", id],
+      });
+
+      // Invalidate batch chapter access queries
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access-batch"],
+      });
+
       toast.success("Chapter unpublished successfully!");
     },
     onError: (error: any) => {
       console.error("Chapter unpublish error:", error);
-      
+
       // Check if this is a purchase protection error
-      if (error.response?.status === 409 && error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION") {
+      if (
+        error.response?.status === 409 &&
+        error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION"
+      ) {
         console.log("Purchase protection violation detected");
         // Don't show error toast - let ProtectedActionButton handle it
         return;
       }
-      
+
       toast.error(
         error.response?.data?.message || "Failed to unpublish chapter"
       );
+    },
+  });
+};
+
+export const useUnpublishWholeBook = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (storyId: string) => chaptersApi.unpublishWholeBook(storyId),
+    onSuccess: (_, storyId) => {
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: ["chapters", storyId] });
+      queryClient.invalidateQueries({ queryKey: ["chapters-paged", storyId] });
+      queryClient.invalidateQueries({ queryKey: ["story", storyId] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["my-stories"] });
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["refund-transactions"] });
+
+      // Invalidate book access cache to reflect refunded purchases
+      queryClient.invalidateQueries({
+        queryKey: ["bookAccess", storyId],
+      });
+
+      // Invalidate all chapter access caches for this story's chapters
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access"],
+        predicate: (query) => {
+          return query.queryKey[0] === "chapter-access";
+        },
+      });
+
+      // Invalidate batch chapter access queries
+      queryClient.invalidateQueries({
+        queryKey: ["chapter-access-batch"],
+      });
+
+      toast.success(
+        "Book unpublished successfully! Refunds have been processed for all purchases."
+      );
+    },
+    onError: (error: any) => {
+      console.error("Book unpublish error:", error);
+
+      // Check if this is an insufficient coins error
+      if (error.response?.data?.insufficientCoins) {
+        toast.error(
+          `Cannot unpublish book: ${
+            error.response?.data?.message ||
+            "Insufficient coins to process refunds"
+          }`
+        );
+        return;
+      }
+
+      if (error.response?.status === 400) {
+        toast.error(error.response?.data?.message || "Cannot unpublish book");
+      } else {
+        toast.error("Failed to unpublish book. Please try again.");
+      }
     },
   });
 };
@@ -448,14 +526,17 @@ export const useMoveChapterToTrash = () => {
     },
     onError: (error: any) => {
       console.error("Chapter move to trash error:", error);
-      
+
       // Check if this is a purchase protection error
-      if (error.response?.status === 409 && error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION") {
+      if (
+        error.response?.status === 409 &&
+        error.response?.data?.error === "PURCHASE_PROTECTION_VIOLATION"
+      ) {
         console.log("Purchase protection violation detected");
         // Don't show error toast - let ProtectedActionButton handle it
         return;
       }
-      
+
       toast.error(
         error.response?.data?.message || "Failed to move chapter to trash"
       );

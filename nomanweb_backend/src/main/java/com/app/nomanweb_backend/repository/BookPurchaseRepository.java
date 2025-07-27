@@ -38,15 +38,26 @@ public interface BookPurchaseRepository extends JpaRepository<BookPurchase, UUID
     // Find book purchase by user and story
     java.util.Optional<BookPurchase> findByUserAndStory(User user, Story story);
 
-    // Find the most recent book purchase by user and story (to handle multiple purchases)
+    // Find the most recent book purchase by user and story (to handle multiple
+    // purchases)
     @Query("SELECT bp FROM BookPurchase bp WHERE bp.user = :user AND bp.story = :story ORDER BY bp.purchasedAt DESC")
     List<BookPurchase> findByUserAndStoryOrderByPurchasedAtDesc(@Param("user") User user, @Param("story") Story story);
 
     // Find the most recent active book purchase by user and story
     @Query("SELECT bp FROM BookPurchase bp WHERE bp.user = :user AND bp.story = :story AND bp.isRefunded = false ORDER BY bp.purchasedAt DESC")
-    List<BookPurchase> findActiveByUserAndStoryOrderByPurchasedAtDesc(@Param("user") User user, @Param("story") Story story);
+    List<BookPurchase> findActiveByUserAndStoryOrderByPurchasedAtDesc(@Param("user") User user,
+            @Param("story") Story story);
 
     // Find all active book purchases for a story (not refunded)
     @Query("SELECT bp FROM BookPurchase bp WHERE bp.story = :story AND bp.isRefunded = false ORDER BY bp.purchasedAt DESC")
     List<BookPurchase> findActiveByStoryOrderByPurchasedAtDesc(@Param("story") Story story);
+
+    // Find all active book purchases for a story (not refunded) - alternative
+    // method name
+    @Query("SELECT bp FROM BookPurchase bp WHERE bp.story = :story AND bp.isRefunded = false ORDER BY bp.purchasedAt DESC")
+    List<BookPurchase> findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(@Param("story") Story story);
+
+    // Find all refunded book purchases for a story
+    @Query("SELECT bp FROM BookPurchase bp WHERE bp.story = :story AND bp.isRefunded = true ORDER BY bp.purchasedAt DESC")
+    List<BookPurchase> findByStoryAndIsRefundedTrueOrderByPurchasedAtDesc(@Param("story") Story story);
 }

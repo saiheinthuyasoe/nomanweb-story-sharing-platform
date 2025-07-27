@@ -8,7 +8,7 @@ import {
   useStory, 
   usePublishStory, 
   useUnpublishStory, 
-  useDeleteStory 
+  useDeleteStory
 } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedActionButton } from '@/components/protection/ProtectedActionButton';
@@ -24,14 +24,15 @@ import {
   ShareIcon,
   CalendarIcon,
   TagIcon,
-  PlusIcon
+  PlusIcon,
+  Gift
 } from '@heroicons/react/24/outline';
-import { Coins, Gift } from 'lucide-react';
+import { Coins, Gift as LucideGift } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ChapterManagement from '@/components/chapters/ChapterManagement';
 import { QuickCreateChapter } from '@/components/chapters/QuickCreateChapter';
 import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
-import { refundApi } from '@/lib/api/refunds';
+
 
 export default function StoryDetailPage() {
   const params = useParams();
@@ -46,6 +47,7 @@ export default function StoryDetailPage() {
 
   // Gift modal state
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
@@ -80,8 +82,27 @@ export default function StoryDetailPage() {
   };
 
   const handleUnpublish = () => {
-      unpublishStory(storyId);
+    unpublishStory(storyId, {
+      onError: (error: any) => {
+        const errorData = error.response?.data;
+        
+        toast.error(`Cannot unpublish story: ${errorData?.message || 'Unknown error occurred'}`);
+      }
+    });
   };
+
+  // Remove refund confirmation handler
+  // const handleRefundConfirm = () => {
+  //   if (refundData) {
+  //     // The refund logic is removed, so this function is now effectively a no-op
+  //     // processRefundsAndUnpublish(storyId, {
+  //     //   onSuccess: () => {
+  //     //     setShowRefundModal(false);
+  //     //     setRefundData(null);
+  //     //   }
+  //     // });
+  //   }
+  // };
 
   const handleDelete = () => {
       deleteStory(storyId, {
@@ -91,23 +112,7 @@ export default function StoryDetailPage() {
       });
   };
 
-  // Test protection status
-  const testProtectionStatus = async () => {
-    try {
-      console.log('🧪 Testing protection status...');
-      const hasPurchases = await refundApi.getStoryProtectionStatus(storyId);
-      console.log('🧪 Protection test result:', hasPurchases);
-      
-      if (hasPurchases) {
-        toast.success('Story has purchases - protection should be active');
-      } else {
-        toast.info('Story has no purchases - no protection needed');
-      }
-    } catch (error) {
-      console.error('🧪 Protection test failed:', error);
-      toast.error('Protection test failed');
-    }
-  };
+
 
   const handleShare = () => {
     const currentUrl = window.location.href;
@@ -314,13 +319,7 @@ export default function StoryDetailPage() {
                         <span>Edit Story</span>
                       </Link>
 
-                      {/* Test Protection Button */}
-                      <button
-                        onClick={testProtectionStatus}
-                        className="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center space-x-2"
-                      >
-                        <span>🧪 Test Protection</span>
-                      </button>
+
 
                       {story.publishStatus === 'DRAFT' ? (
                         <button
@@ -331,6 +330,7 @@ export default function StoryDetailPage() {
                           {isPublishing ? 'Publishing...' : 'Publish Story'}
                         </button>
                       ) : (
+                        <>
                         <ProtectedActionButton
                           itemId={storyId}
                           itemType="story"
@@ -343,6 +343,7 @@ export default function StoryDetailPage() {
                         >
                           {isUnpublishing ? 'Unpublishing...' : 'Unpublish Story'}
                         </ProtectedActionButton>
+                        </>
                       )}
 
                       <ProtectedActionButton
@@ -376,7 +377,7 @@ export default function StoryDetailPage() {
                       onClick={() => setShowGiftModal(true)}
                       className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
                     >
-                      <Gift className="w-4 h-4" />
+                      <LucideGift className="w-4 h-4" />
                       <span>Send Gift</span>
                     </button>
                   )}
@@ -448,8 +449,7 @@ export default function StoryDetailPage() {
         {/* Delete Confirmation Modal */}
         {/* The delete confirmation modal is no longer needed as ProtectedActionButton handles it */}
 
-        {/* Refund Confirmation Dialog */}
-        {/* The refund confirmation dialog is no longer needed as ProtectedActionButton handles it */}
+
 
         {/* Gift Modal */}
         <EnhancedGiftModal
@@ -463,6 +463,20 @@ export default function StoryDetailPage() {
             // Optionally refresh the story data to update earnings
           }}
         />
+
+        {/* Remove Refund Confirmation Modal */}
+        {/* {refundData && (
+          <RefundConfirmationModal
+            isOpen={showRefundModal}
+            onClose={() => {
+              setShowRefundModal(false);
+              setRefundData(null);
+            }}
+            onConfirm={handleRefundConfirm}
+            refundData={refundData}
+            isProcessing={false} // isProcessingRefunds is removed
+          />
+        )} */}
       </div>
     </div>
   );

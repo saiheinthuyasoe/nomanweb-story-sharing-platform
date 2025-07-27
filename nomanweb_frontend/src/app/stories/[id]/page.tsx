@@ -1,41 +1,43 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  useStory, 
-  usePublishStory, 
-  useUnpublishStory, 
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import Image from "next/image";
+import { Story } from "@/types/story";
+import {
+  useStory,
+  usePublishStory,
+  useUnpublishStory,
   useDeleteStory,
-  useIncrementStoryView
-} from '@/hooks/useStories';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  useStoryReactionStatus, 
-  useToggleStoryLike 
-} from '@/hooks/useReactions';
-import { 
-  useBookmarkStatus, 
-  useToggleBookmark 
-} from '@/hooks/useReadingLists';
-import { useChaptersByStory } from '@/hooks/useChapters';
-import { useChapterAccessBatch, useChapterAccess } from '@/hooks/useChapterAccess';
-import { usePurchaseChapter } from '@/hooks/useChapterPurchase';
-import { useCoinBalance } from '@/hooks/useCoinBalance';
-import { usePurchaseBook, useBookAccess } from '@/hooks/useBookPurchase';
-import { 
-  useStoryComments, 
+  useIncrementStoryView,
+} from "@/hooks/useStories";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  useStoryReactionStatus,
+  useToggleStoryLike,
+} from "@/hooks/useReactions";
+import { useBookmarkStatus, useToggleBookmark } from "@/hooks/useReadingLists";
+import { useChaptersByStory } from "@/hooks/useChapters";
+import {
+  useChapterAccessBatch,
+  useChapterAccess,
+} from "@/hooks/useChapterAccess";
+import { usePurchaseChapter } from "@/hooks/useChapterPurchase";
+import { useCoinBalance } from "@/hooks/useCoinBalance";
+import { usePurchaseBook, useBookAccess } from "@/hooks/useBookPurchase";
+import {
+  useStoryComments,
   useCreateComment,
   useDeleteComment,
   useUpdateComment,
-  useToggleCommentLike 
-} from '@/hooks/useComments';
-import { formatDistanceToNow } from 'date-fns';
-import { 
-  EyeIcon, 
-  HeartIcon, 
+  useToggleCommentLike,
+} from "@/hooks/useComments";
+import { formatDistanceToNow } from "date-fns";
+import {
+  EyeIcon,
+  HeartIcon,
   BookOpenIcon,
   StarIcon,
   UserIcon,
@@ -49,64 +51,38 @@ import {
   CheckCircleIcon,
   BookmarkIcon,
   ShoppingBagIcon,
-  LockClosedIcon
-} from '@heroicons/react/24/outline';
-import { 
+  LockClosedIcon,
+} from "@heroicons/react/24/outline";
+import {
   HeartIcon as HeartIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
   BookmarkIcon as BookmarkIconSolid,
-  ShoppingBagIcon as ShoppingBagIconSolid
-} from '@heroicons/react/24/solid';
-import { toast } from 'react-hot-toast';
-import ChapterManagement from '@/components/chapters/ChapterManagement';
-import ChapterPurchaseModal from '@/components/monetization/ChapterPurchaseModal';
-import BookPurchaseModal from '@/components/monetization/BookPurchaseModal';
-import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
-import { 
-  BookOpen, 
-  Heart, 
-  Share2, 
-  Plus, 
-  Star, 
-  Eye, 
-  MessageCircle, 
-  ThumbsUp, 
-  Flag, 
-  ChevronLeft, 
+  ShoppingBagIcon as ShoppingBagIconSolid,
+} from "@heroicons/react/24/solid";
+import { toast } from "react-hot-toast";
+import ChapterManagement from "@/components/chapters/ChapterManagement";
+import ChapterPurchaseModal from "@/components/monetization/ChapterPurchaseModal";
+import BookPurchaseModal from "@/components/monetization/BookPurchaseModal";
+import EnhancedGiftModal from "@/components/monetization/EnhancedGiftModal";
+import {
+  BookOpen,
+  Heart,
+  Share2,
+  Plus,
+  Star,
+  Eye,
+  MessageCircle,
+  ThumbsUp,
+  Flag,
+  ChevronLeft,
   ChevronRight,
   Calendar,
   User,
   Gift,
-  Tag
-} from 'lucide-react';
+  Tag,
+} from "lucide-react";
 
-interface StoryDetails {
-  id: string;
-  title: string;
-  description: string;
-  coverImageUrl?: string;
-  author: {
-    id: string;
-    username: string;
-    displayName?: string;
-    profileImageUrl?: string;
-  };
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED' | 'SUSPENDED';
-  totalChapters: number;
-  totalViews: number;
-  totalLikes: number;
-  totalComments: number;
-  rating: number;
-  ratingCount: number;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+// Using Story type from @/types/story instead of local interface
 
 interface Chapter {
   id: string;
@@ -135,33 +111,56 @@ interface Comment {
 export default function StoryReaderView() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const storyId = params.id as string;
-  
+
   const { data: story, isLoading, error } = useStory(storyId);
+
+  // Debug log the raw story data
+  useEffect(() => {
+    console.log("🔍 useStory hook state:", {
+      story,
+      isLoading,
+      error,
+      storyId,
+    });
+    if (story) {
+      console.log(
+        "📖 Raw story data received:",
+        JSON.stringify(story, null, 2)
+      );
+      console.log("📖 Story pricingType specifically:", story.pricingType);
+    } else {
+      console.log("❌ No story data available");
+    }
+  }, [story, isLoading, error, storyId]);
   const { mutate: publishStory, isPending: isPublishing } = usePublishStory();
-  const { mutate: unpublishStory, isPending: isUnpublishing } = useUnpublishStory();
+  const { mutate: unpublishStory, isPending: isUnpublishing } =
+    useUnpublishStory();
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
   const { mutate: incrementStoryView } = useIncrementStoryView();
-  
+
   // Reaction hooks with real-time updates
-  const { 
-    data: reactionStatus, 
-    isFetching: isFetchingReactions 
-  } = useStoryReactionStatus(storyId, !!user, true); // Enable real-time updates
-  const { mutate: toggleStoryLike, isPending: isLikeLoading } = useToggleStoryLike();
-  
+  const { data: reactionStatus, isFetching: isFetchingReactions } =
+    useStoryReactionStatus(storyId, !!user, true); // Enable real-time updates
+  const { mutate: toggleStoryLike, isPending: isLikeLoading } =
+    useToggleStoryLike();
+
   // Reading list hooks
   const { data: bookmarkStatus } = useBookmarkStatus(storyId, !!user);
-  const { mutate: toggleBookmark, isPending: isBookmarkLoading } = useToggleBookmark();
-  
+  const { mutate: toggleBookmark, isPending: isBookmarkLoading } =
+    useToggleBookmark();
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'about' | 'chapters' | 'comments'>('about');
+  const [activeTab, setActiveTab] = useState<"about" | "chapters" | "comments">(
+    "about"
+  );
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [newComment, setNewComment] = useState('');
+  const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [editContent, setEditContent] = useState("");
   const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -172,52 +171,136 @@ export default function StoryReaderView() {
   } | null>(null);
   const [showBookPurchaseModal, setShowBookPurchaseModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
-  
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setShowLibraryDropdown(false);
       }
     };
 
     if (showLibraryDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showLibraryDropdown]);
-  
+
   // Fetch chapters and comments data with real-time updates
-  const { data: storyChapters = [], isLoading: isLoadingChapters } = useChaptersByStory(storyId, !!storyId);
-  const { 
-    data: commentsData, 
-    isLoading: isLoadingComments, 
+  const { data: storyChapters = [], isLoading: isLoadingChapters } =
+    useChaptersByStory(storyId, !!storyId);
+  const {
+    data: commentsData,
+    isLoading: isLoadingComments,
     isFetching: isFetchingComments,
-    refetch: refetchComments 
+    refetch: refetchComments,
   } = useStoryComments(storyId, 0, 20, true); // Enable real-time updates
-  const { mutate: createComment, isPending: isCreatingComment } = useCreateComment();
-  const { mutate: deleteComment, isPending: isDeletingComment } = useDeleteComment();
-  const { mutate: updateComment, isPending: isUpdatingComment } = useUpdateComment();
-  const { mutate: toggleCommentLike, isPending: isTogglingCommentLike } = useToggleCommentLike();
-  
+  const { mutate: createComment, isPending: isCreatingComment } =
+    useCreateComment();
+  const { mutate: deleteComment, isPending: isDeletingComment } =
+    useDeleteComment();
+  const { mutate: updateComment, isPending: isUpdatingComment } =
+    useUpdateComment();
+  const { mutate: toggleCommentLike, isPending: isTogglingCommentLike } =
+    useToggleCommentLike();
+
   // Extract comments from the paginated response
   const storyComments = (commentsData as any)?.content || [];
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
-  
+
   // Chapter access and purchase hooks
   const chapterIds = storyChapters.map((chapter: any) => chapter.id);
-  const { data: chapterAccess = {} } = useChapterAccessBatch(chapterIds, !!user && !isAuthor);
-  const { mutate: purchaseChapter, isPending: isPurchasing } = usePurchaseChapter();
+  const { data: chapterAccess = {} } = useChapterAccessBatch(
+    chapterIds,
+    story?.updatedAt || '',
+    !!user && !isAuthor
+  );
+  const { mutate: purchaseChapter, isPending: isPurchasing } =
+    usePurchaseChapter();
   const { data: coinBalance = 0 } = useCoinBalance(!!user);
-  
+
   // Book access and purchase hooks
-  const { data: hasBookAccess = false } = useBookAccess(storyId, !!user && !isAuthor);
-  const { mutate: purchaseBook, isPending: isPurchasingBook } = usePurchaseBook();
+  const { data: hasBookAccess = false } = useBookAccess(
+    storyId,
+    story?.updatedAt || '',
+    !!user && !isAuthor
+  );
+  const { mutate: purchaseBook, isPending: isPurchasingBook } =
+    usePurchaseBook();
+
+
+
+  // Debug log for book access status
+  console.log(
+    "🔍 Debug - hasBookAccess:",
+    hasBookAccess,
+    "user:",
+    !!user,
+    "isAuthor:",
+    isAuthor,
+    "storyId:",
+    storyId
+  );
+  console.log(
+    "🔍 Badge condition - pricingType:",
+    story?.pricingType,
+    "isAuthor:",
+    isAuthor,
+    "hasBookAccess === true:",
+    hasBookAccess === true,
+    "should show badge:",
+    story?.pricingType === "WHOLE_BOOK" && !isAuthor && hasBookAccess === true
+  );
+
+  // Use hasBookAccess from useBookAccess hook for book ownership check
+
+  // Temporarily disabled cache clearing to debug story loading
+  // useEffect(() => {
+  //   console.log('🔄 Starting cache clearing for story:', storyId);
+  //
+  //   // Remove book access queries for this specific story
+  //   queryClient.removeQueries({
+  //     predicate: (query) => {
+  //       const key = query.queryKey;
+  //       return Array.isArray(key) && key[0] === "bookAccess" && key[1] === storyId;
+  //     },
+  //   });
+
+  //   // Remove chapter access queries
+  //   queryClient.removeQueries({
+  //     predicate: (query) => {
+  //       const key = query.queryKey;
+  //       return Array.isArray(key) && key[0].startsWith("chapter-access");
+  //     },
+  //   });
+
+  //   console.log('🔄 Completed cache clearing for story:', storyId);
+  // }, [storyId, queryClient]);
+
+  // Additional effect to force refresh when story data changes
+  useEffect(() => {
+    if (story) {
+      console.log("📖 Story loaded:", {
+        id: story.id,
+        title: story.title,
+        pricingType: story.pricingType,
+        bookPrice: story.bookPrice,
+      });
+
+      // Force refresh book access when story loads
+      queryClient.invalidateQueries({
+        queryKey: ["bookAccess", storyId],
+      });
+    }
+  }, [story, storyId, queryClient]);
 
   // Track story view when component mounts and story is loaded
   useEffect(() => {
@@ -238,9 +321,13 @@ export default function StoryReaderView() {
           <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <BookOpenIcon className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">Story Not Found</h2>
-          <p className="text-gray-600 mb-6">The story you're looking for doesn't exist or has been removed.</p>
-          <Link 
+          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">
+            Story Not Found
+          </h2>
+          <p className="text-gray-600 mb-6">
+            The story you're looking for doesn't exist or has been removed.
+          </p>
+          <Link
             href="/stories"
             className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift inline-flex items-center space-x-2"
           >
@@ -263,8 +350,8 @@ export default function StoryReaderView() {
   const handleDelete = () => {
     deleteStory(storyId, {
       onSuccess: () => {
-        router.push('/dashboard');
-      }
+        router.push("/dashboard");
+      },
     });
   };
 
@@ -282,17 +369,19 @@ export default function StoryReaderView() {
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+      toast.success("Link copied to clipboard!");
     }
   };
 
   const handleReadStory = () => {
     // For WHOLE_BOOK pricing, check if user has purchased the book
-    if (story.pricingType === 'WHOLE_BOOK') {
-      if (hasBookAccess || isAuthor) {
+    if (story.pricingType === "WHOLE_BOOK") {
+      if (hasBookAccess === true || isAuthor) {
         // User has purchased the book or is the author - navigate to first chapter
         if (storyChapters.length > 0) {
-          router.push(`/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`);
+          router.push(
+            `/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`
+          );
         }
       } else {
         // User hasn't purchased the book - show book purchase modal
@@ -301,34 +390,36 @@ export default function StoryReaderView() {
     } else {
       // For other pricing types, navigate to first chapter
       if (storyChapters.length > 0) {
-        router.push(`/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`);
+        router.push(
+          `/stories/${storyId}/chapters/${storyChapters[0].chapterNumber}/read`
+        );
       }
     }
   };
 
-  const handleAddToLibrary = (listType: string = 'LIKE') => {
+  const handleAddToLibrary = (listType: string = "LIKE") => {
     if (!user) {
-      toast.error('Please login to add to library');
+      toast.error("Please login to add to library");
       return;
     }
-    
-    toggleBookmark({ 
-      storyId, 
-      listType 
+
+    toggleBookmark({
+      storyId,
+      listType,
     });
     setShowLibraryDropdown(false);
   };
 
   const getLibraryButtonStatus = () => {
     if (!bookmarkStatus?.listTypes) return { inLibrary: false, types: [] };
-    
+
     const activeTypes = Object.entries(bookmarkStatus.listTypes)
       .filter(([_, active]) => active)
       .map(([type, _]) => type);
-    
+
     return {
       inLibrary: activeTypes.length > 0,
-      types: activeTypes
+      types: activeTypes,
     };
   };
 
@@ -336,50 +427,50 @@ export default function StoryReaderView() {
 
   const libraryOptions = [
     {
-      type: 'READING',
-      label: 'Currently Reading',
+      type: "READING",
+      label: "Currently Reading",
       icon: EyeIcon,
       solidIcon: EyeIcon,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
     },
     {
-      type: 'WANT_TO_READ',
-      label: 'Want to Read',
+      type: "WANT_TO_READ",
+      label: "Want to Read",
       icon: BookmarkIcon,
       solidIcon: BookmarkIconSolid,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
     },
-              {
-            type: 'LIKE',
-            label: 'Liked',
+    {
+      type: "LIKE",
+      label: "Liked",
       icon: HeartIcon,
       solidIcon: HeartIconSolid,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100'
+      color: "text-red-600",
+      bgColor: "bg-red-100",
     },
     {
-      type: 'COMPLETED',
-      label: 'Completed',
+      type: "COMPLETED",
+      label: "Completed",
       icon: CheckCircleIcon,
       solidIcon: CheckCircleIconSolid,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      color: "text-green-600",
+      bgColor: "bg-green-100",
     },
     {
-      type: 'PURCHASED',
-      label: 'Purchased',
+      type: "PURCHASED",
+      label: "Purchased",
       icon: ShoppingBagIcon,
       solidIcon: ShoppingBagIconSolid,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100'
-    }
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-100",
+    },
   ];
 
   const handleLike = () => {
     if (!user) {
-      toast.error('Please login to like this story');
+      toast.error("Please login to like this story");
       return;
     }
     toggleStoryLike(storyId);
@@ -392,21 +483,21 @@ export default function StoryReaderView() {
 
   const handleCommentSubmit = () => {
     if (!user) {
-      toast.error('Please log in to comment');
+      toast.error("Please log in to comment");
       return;
     }
-    
+
     if (newComment.trim()) {
       createComment({
         storyId,
         content: newComment.trim(),
       });
-      setNewComment('');
+      setNewComment("");
     }
   };
 
   const handleDeleteComment = (commentId: string) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
       deleteComment(commentId);
     }
   };
@@ -418,24 +509,24 @@ export default function StoryReaderView() {
 
   const handleSaveEdit = () => {
     if (!editingCommentId || !editContent.trim()) return;
-    
+
     updateComment({
       commentId: editingCommentId,
       content: editContent.trim(),
     });
-    
+
     setEditingCommentId(null);
-    setEditContent('');
+    setEditContent("");
   };
 
   const handleCancelEdit = () => {
     setEditingCommentId(null);
-    setEditContent('');
+    setEditContent("");
   };
 
   const handleCommentLike = (commentId: string) => {
     if (!user) {
-      toast.error('Please log in to like comments');
+      toast.error("Please log in to like comments");
       return;
     }
     toggleCommentLike(commentId);
@@ -444,12 +535,14 @@ export default function StoryReaderView() {
   const handleChapterClick = (chapter: any) => {
     const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
     const hasChapterAccess = chapterAccess[chapter.id] || chapter.isFree;
-    
+
     // For WHOLE_BOOK pricing, check if user has purchased the book
-    if (story.pricingType === 'WHOLE_BOOK') {
-      if (hasBookAccess || isAuthor) {
+    if (story.pricingType === "WHOLE_BOOK") {
+      if (hasBookAccess === true || isAuthor) {
         // User has purchased the book or is the author - allow access
-        router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`);
+        router.push(
+          `/stories/${storyId}/chapters/${chapter.chapterNumber}/read`
+        );
       } else {
         // User hasn't purchased the book - show book purchase modal
         setShowBookPurchaseModal(true);
@@ -464,7 +557,9 @@ export default function StoryReaderView() {
         });
         setShowPurchaseModal(true);
       } else {
-        router.push(`/stories/${storyId}/chapters/${chapter.chapterNumber}/read`);
+        router.push(
+          `/stories/${storyId}/chapters/${chapter.chapterNumber}/read`
+        );
       }
     }
   };
@@ -483,24 +578,22 @@ export default function StoryReaderView() {
   };
 
   const getBookStatus = (bookStatus: string) => {
-    return bookStatus === 'COMPLETED' ? 'Completed' : 'Ongoing';
+    return bookStatus === "COMPLETED" ? "Completed" : "Ongoing";
   };
 
   const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
     return num.toString();
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
-
-
 
   // Mock rating data since it's not in the Story type
   const storyRating = 4.25;
@@ -512,17 +605,24 @@ export default function StoryReaderView() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
+            <Link href="/" className="hover:text-blue-600 transition-colors">
+              Home
+            </Link>
             <span>/</span>
             {story.category ? (
-              <Link href={`/categories/${story.category.slug}`} className="hover:text-blue-600 transition-colors">
+              <Link
+                href={`/categories/${story.category.slug}`}
+                className="hover:text-blue-600 transition-colors"
+              >
                 {story.category.name}
               </Link>
             ) : (
               <span>Uncategorized</span>
             )}
             <span>/</span>
-            <span className="text-gray-900 font-medium truncate">{story.title}</span>
+            <span className="text-gray-900 font-medium truncate">
+              {story.title}
+            </span>
           </nav>
         </div>
       </div>
@@ -568,11 +668,15 @@ export default function StoryReaderView() {
             <div className="lg:col-span-2 space-y-6">
               {/* Title and Author */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{story.title}</h1>
-                <p className="text-lg text-gray-600 mb-1">{story.category?.name || 'Uncategorized'}</p>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {story.title}
+                </h1>
+                <p className="text-lg text-gray-600 mb-1">
+                  {story.category?.name || "Uncategorized"}
+                </p>
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4 text-gray-400" />
-                  <Link 
+                  <Link
                     href={`/authors/${story.author.id}`}
                     className="text-blue-600 hover:text-blue-700 font-medium"
                   >
@@ -585,27 +689,35 @@ export default function StoryReaderView() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Eye className="h-5 w-5 text-gray-400 mx-auto mb-1" />
-                  <div className="text-lg font-semibold text-gray-900">{formatNumber(story.totalViews)}</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatNumber(story.totalViews)}
+                  </div>
                   <div className="text-xs text-gray-500">Views</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Heart className="h-5 w-5 text-gray-400 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-gray-900">
-                    {formatNumber(reactionStatus?.totalLikes || story.totalLikes)}
+                    {formatNumber(
+                      reactionStatus?.totalLikes || story.totalLikes
+                    )}
                   </div>
                   <div className="text-xs text-gray-500">Likes</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <BookOpen className="h-5 w-5 text-gray-400 mx-auto mb-1" />
-                  <div className="text-lg font-semibold text-gray-900">{story.totalChapters}</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {story.totalChapters}
+                  </div>
                   <div className="text-xs text-gray-500">Chapters</div>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium mb-1 ${
-                    story.status === 'COMPLETED' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
+                  <div
+                    className={`inline-flex px-2 py-1 rounded-full text-xs font-medium mb-1 ${
+                      story.status === "COMPLETED"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
                     {getBookStatus(story.bookStatus)}
                   </div>
                   <div className="text-xs text-gray-500">Status</div>
@@ -620,15 +732,19 @@ export default function StoryReaderView() {
                       key={star}
                       className={`h-5 w-5 ${
                         star <= Math.floor(storyRating)
-                          ? 'text-yellow-400 fill-current'
+                          ? "text-yellow-400 fill-current"
                           : star <= storyRating
-                          ? 'text-yellow-400 fill-current opacity-50'
-                          : 'text-gray-300'
+                          ? "text-yellow-400 fill-current opacity-50"
+                          : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="text-lg font-semibold text-gray-900 ml-2">{storyRating}</span>
-                  <span className="text-sm text-gray-500">({formatNumber(storyRatingCount)} ratings)</span>
+                  <span className="text-lg font-semibold text-gray-900 ml-2">
+                    {storyRating}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    ({formatNumber(storyRatingCount)} ratings)
+                  </span>
                 </div>
               </div>
 
@@ -649,26 +765,48 @@ export default function StoryReaderView() {
                   <BookOpen className="h-5 w-5" />
                   <span>Read</span>
                 </button>
-                
+
                 {/* Buy Whole Book Button */}
-                {story.pricingType === 'WHOLE_BOOK' && !isAuthor && !hasBookAccess && (
-                  <button
-                    onClick={handleBookPurchase}
-                    disabled={isPurchasingBook}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2 disabled:opacity-50"
-                  >
-                    <ShoppingBagIcon className="h-5 w-5" />
-                    <span>{isPurchasingBook ? 'Purchasing...' : `Buy Book (${story.bookPrice || 0} coins)`}</span>
-                  </button>
-                )}
-                
+                {story.pricingType === "WHOLE_BOOK" &&
+                  !isAuthor &&
+                  hasBookAccess === false && (
+                    <button
+                      onClick={handleBookPurchase}
+                      disabled={isPurchasingBook}
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2 disabled:opacity-50"
+                    >
+                      <ShoppingBagIcon className="h-5 w-5" />
+                      <span>
+                        {isPurchasingBook
+                          ? "Purchasing..."
+                          : `Buy Book (${story.bookPrice || 0} coins)`}
+                      </span>
+                    </button>
+                  )}
+
                 {/* Book Already Purchased Badge */}
-                {story.pricingType === 'WHOLE_BOOK' && !isAuthor && hasBookAccess && (
-                  <div className="bg-green-100 text-green-800 px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
-                    <CheckCircleIcon className="h-5 w-5" />
-                    <span>Book Purchased</span>
-                  </div>
-                )}
+                {(() => {
+                  const shouldShowBadge =
+                    story.pricingType === "WHOLE_BOOK" &&
+                    !isAuthor &&
+                    hasBookAccess === true;
+                  console.log(
+                    "🔍 Badge render check - pricingType:",
+                    story.pricingType,
+                    "isAuthor:",
+                    isAuthor,
+                    "hasBookAccess:",
+                    hasBookAccess,
+                    "shouldShow:",
+                    shouldShowBadge
+                  );
+                  return shouldShowBadge ? (
+                    <div className="bg-green-100 text-green-800 px-6 py-3 rounded-lg font-medium flex items-center space-x-2">
+                      <CheckCircleIcon className="h-5 w-5" />
+                      <span>Book Purchased</span>
+                    </div>
+                  ) : null;
+                })()}
                 {/* Library Dropdown Button */}
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -676,18 +814,19 @@ export default function StoryReaderView() {
                     disabled={isBookmarkLoading}
                     className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center space-x-2 ${
                       libraryStatus.inLibrary
-                        ? 'bg-green-100 text-green-700 border border-green-200'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    } ${isBookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? "bg-green-100 text-green-700 border border-green-200"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    } ${
+                      isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <Plus className="h-5 w-5" />
                     <span>
-                      {isBookmarkLoading 
-                        ? 'Updating...' 
-                        : libraryStatus.inLibrary 
-                          ? `In Library (${libraryStatus.types.length})` 
-                          : 'Add to Library'
-                      }
+                      {isBookmarkLoading
+                        ? "Updating..."
+                        : libraryStatus.inLibrary
+                        ? `In Library (${libraryStatus.types.length})`
+                        : "Add to Library"}
                     </span>
                     <ChevronDownIcon className="h-4 w-4" />
                   </button>
@@ -696,15 +835,22 @@ export default function StoryReaderView() {
                   {showLibraryDropdown && (
                     <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                       <div className="p-3 border-b border-gray-100">
-                        <h3 className="text-sm font-medium text-gray-900">Add to Library</h3>
-                        <p className="text-xs text-gray-500">Choose a reading list</p>
+                        <h3 className="text-sm font-medium text-gray-900">
+                          Add to Library
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Choose a reading list
+                        </p>
                       </div>
                       <div className="p-2">
                         {libraryOptions.map((option) => {
                           const Icon = option.icon;
                           const SolidIcon = option.solidIcon;
-                          const isActive = bookmarkStatus?.listTypes?.[option.type.toLowerCase() as keyof typeof bookmarkStatus.listTypes];
-                          
+                          const isActive =
+                            bookmarkStatus?.listTypes?.[
+                              option.type.toLowerCase() as keyof typeof bookmarkStatus.listTypes
+                            ];
+
                           return (
                             <button
                               key={option.type}
@@ -712,7 +858,7 @@ export default function StoryReaderView() {
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                                 isActive
                                   ? `${option.bgColor} ${option.color}`
-                                  : 'text-gray-700 hover:bg-gray-100'
+                                  : "text-gray-700 hover:bg-gray-100"
                               }`}
                             >
                               {isActive ? (
@@ -720,19 +866,19 @@ export default function StoryReaderView() {
                               ) : (
                                 <Icon className="h-5 w-5" />
                               )}
-                              <span className="flex-1 text-left">{option.label}</span>
-                              {isActive && (
-                                <span className="text-xs">✓</span>
-                              )}
+                              <span className="flex-1 text-left">
+                                {option.label}
+                              </span>
+                              {isActive && <span className="text-xs">✓</span>}
                             </button>
                           );
                         })}
-                        
+
                         {libraryStatus.inLibrary && (
                           <>
                             <div className="border-t border-gray-100 my-2"></div>
                             <button
-                              onClick={() => handleAddToLibrary('REMOVE')}
+                              onClick={() => handleAddToLibrary("REMOVE")}
                               className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                             >
                               <TrashIcon className="h-5 w-5" />
@@ -756,23 +902,34 @@ export default function StoryReaderView() {
                   disabled={isLikeLoading || isFetchingReactions}
                   className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 ${
                     reactionStatus?.liked
-                      ? 'bg-red-100 text-red-700 border border-red-200'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  } ${(isLikeLoading || isFetchingReactions) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  title={reactionStatus?.liked ? 'Unlike story' : 'Like story'}
+                      ? "bg-red-100 text-red-700 border border-red-200"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  } ${
+                    isLikeLoading || isFetchingReactions
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  title={reactionStatus?.liked ? "Unlike story" : "Like story"}
                 >
-                  <Heart className={`h-5 w-5 transition-all duration-200 ${
-                    reactionStatus?.liked ? 'fill-current' : ''
-                  } ${isLikeLoading ? 'animate-pulse' : ''} ${isFetchingReactions ? 'animate-spin' : ''}`} />
+                  <Heart
+                    className={`h-5 w-5 transition-all duration-200 ${
+                      reactionStatus?.liked ? "fill-current" : ""
+                    } ${isLikeLoading ? "animate-pulse" : ""} ${
+                      isFetchingReactions ? "animate-spin" : ""
+                    }`}
+                  />
                   <span className="transition-all duration-200">
-                    {reactionStatus?.liked ? 'Liked' : 'Like'}
-                    {isFetchingReactions && <span className="ml-1 text-xs animate-pulse">↻</span>}
+                    {reactionStatus?.liked ? "Liked" : "Like"}
+                    {isFetchingReactions && (
+                      <span className="ml-1 text-xs animate-pulse">↻</span>
+                    )}
                   </span>
-                  {reactionStatus?.totalLikes && reactionStatus.totalLikes > 0 && (
-                    <span className="text-xs transition-all duration-200">
-                      ({formatNumber(reactionStatus.totalLikes)})
-                    </span>
-                  )}
+                  {reactionStatus?.totalLikes &&
+                    reactionStatus.totalLikes > 0 && (
+                      <span className="text-xs transition-all duration-200">
+                        ({formatNumber(reactionStatus.totalLikes)})
+                      </span>
+                    )}
                 </button>
 
                 {/* Gift Button - Only show if not the author */}
@@ -796,17 +953,17 @@ export default function StoryReaderView() {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-8">
               {[
-                { id: 'about', label: 'About' },
-                { id: 'chapters', label: `Chapters (${story.totalChapters})` },
-                { id: 'comments', label: `Comments (${story.totalComments})` }
+                { id: "about", label: "About" },
+                { id: "chapters", label: `Chapters (${story.totalChapters})` },
+                { id: "comments", label: `Comments (${story.totalComments})` },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   {tab.label}
@@ -817,16 +974,22 @@ export default function StoryReaderView() {
 
           {/* Tab Content */}
           <div className="p-8">
-            {activeTab === 'about' && (
+            {activeTab === "about" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
-                  <p className="text-gray-700 leading-relaxed">{story.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Description
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    {story.description}
+                  </p>
                 </div>
-                
+
                 {/* Tags */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Tags</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Tags
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {story.tags.map((tag, index) => (
                       <span
@@ -842,7 +1005,7 @@ export default function StoryReaderView() {
               </div>
             )}
 
-            {activeTab === 'chapters' && (
+            {activeTab === "chapters" && (
               <div className="space-y-4">
                 {isLoadingChapters ? (
                   <div className="flex justify-center py-8">
@@ -851,38 +1014,82 @@ export default function StoryReaderView() {
                 ) : storyChapters.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Chapters Yet</h3>
-                    <p className="text-gray-600">This story doesn't have any chapters published yet.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Chapters Yet
+                    </h3>
+                    <p className="text-gray-600">
+                      This story doesn't have any chapters published yet.
+                    </p>
                   </div>
                 ) : (
                   storyChapters.map((chapter: any) => {
-                    const isPaidChapter = !chapter.isFree && chapter.coinPrice > 0;
-                    const hasChapterAccess = chapterAccess[chapter.id] || chapter.isFree;
-                    
+                    const isPaidChapter =
+                      !chapter.isFree && chapter.coinPrice > 0;
+                    const hasChapterAccess =
+                      chapterAccess[chapter.id] || chapter.isFree;
+
                     // Determine access based on pricing type
                     let canAccess = false;
-                    let accessStatus = '';
+                    let accessStatus = "";
                     let isLocked = false;
-                    
-                    if (story.pricingType === 'WHOLE_BOOK') {
+
+                    console.log(
+                      "🔍 Pricing type check - story.pricingType:",
+                      story.pricingType,
+                      "typeof:",
+                      typeof story.pricingType,
+                      "chapter:",
+                      chapter.chapterNumber
+                    );
+
+                    if (story.pricingType === "WHOLE_BOOK") {
                       // For whole book pricing, check book purchase
-                      canAccess = hasBookAccess || isAuthor;
-                      accessStatus = canAccess ? 'BOOK_OWNED' : 'BOOK_REQUIRED';
+                      // Explicitly check that hasBookAccess is true (not undefined, null, or false)
+                      canAccess = hasBookAccess === true || isAuthor;
+                      console.log(
+                        "🔍 Chapter canAccess calculation - hasBookAccess:",
+                        hasBookAccess,
+                        "typeof hasBookAccess:",
+                        typeof hasBookAccess,
+                        "isAuthor:",
+                        isAuthor,
+                        "canAccess:",
+                        canAccess,
+                        "chapter:",
+                        chapter.chapterNumber
+                      );
+                      accessStatus = canAccess ? "BOOK_OWNED" : "BOOK_REQUIRED";
                       isLocked = !canAccess;
                     } else {
-                      // For per-chapter pricing, check individual chapter access
-                      canAccess = hasChapterAccess || chapter.isFree || isAuthor;
-                      accessStatus = canAccess ? 'CHAPTER_OWNED' : 'CHAPTER_REQUIRED';
+                      // For per-chapter pricing or undefined pricing type, check individual chapter access
+                      // When pricing type is undefined, default to per-chapter logic to prevent incorrect access
+                      canAccess =
+                        hasChapterAccess || chapter.isFree || isAuthor;
+                      console.log(
+                        "🔍 Per-chapter canAccess calculation - hasChapterAccess:",
+                        hasChapterAccess,
+                        "chapter.isFree:",
+                        chapter.isFree,
+                        "isAuthor:",
+                        isAuthor,
+                        "canAccess:",
+                        canAccess,
+                        "chapter:",
+                        chapter.chapterNumber
+                      );
+                      accessStatus = canAccess
+                        ? "CHAPTER_OWNED"
+                        : "CHAPTER_REQUIRED";
                       isLocked = isPaidChapter && !canAccess;
                     }
-                    
+
                     return (
                       <div
                         key={chapter.id}
                         className={`border rounded-lg p-4 transition-all duration-200 cursor-pointer ${
-                          canAccess 
-                            ? 'border-gray-200 hover:bg-gray-50 hover:border-blue-300' 
-                            : 'border-red-200 bg-red-50'
+                          canAccess
+                            ? "border-gray-200 hover:bg-gray-50 hover:border-blue-300"
+                            : "border-red-200 bg-red-50"
                         }`}
                         onClick={() => handleChapterClick(chapter)}
                       >
@@ -893,43 +1100,50 @@ export default function StoryReaderView() {
                               {isLocked && (
                                 <LockClosedIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
                               )}
-                              <h4 className={`font-medium ${
-                                canAccess ? 'text-gray-900' : 'text-gray-600'
-                              }`}>
+                              <h4
+                                className={`font-medium ${
+                                  canAccess ? "text-gray-900" : "text-gray-600"
+                                }`}
+                              >
                                 Chapter {chapter.chapterNumber}: {chapter.title}
                               </h4>
                               {/* Access Badge */}
-                              {story.pricingType === 'WHOLE_BOOK' ? (
-                                // Whole book pricing badges
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
-                                  isAuthor 
-                                    ? 'bg-purple-100 text-purple-800' 
-                                    : canAccess 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {isAuthor ? 'AUTHOR' : canAccess ? 'BOOK OWNED' : 'BUY BOOK'}
-                                </span>
+                              {story.pricingType === "WHOLE_BOOK" ? (
+                                canAccess === true ? (
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 bg-green-100 text-green-800 ml-2">
+                                    Book Owned
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 bg-yellow-100 text-yellow-800 ml-2">
+                                    Buy Book
+                                  </span>
+                                )
                               ) : (
-                                // Per-chapter pricing badges
                                 isPaidChapter && (
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
-                                    isAuthor 
-                                      ? 'bg-purple-100 text-purple-800' 
-                                      : canAccess 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {isAuthor ? 'AUTHOR' : canAccess ? 'OWNED' : 'PREMIUM'}
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                                      isAuthor
+                                        ? "bg-purple-100 text-purple-800"
+                                        : canAccess
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
+                                    } ml-2`}
+                                  >
+                                    {isAuthor
+                                      ? "AUTHOR"
+                                      : canAccess
+                                      ? "OWNED"
+                                      : "PREMIUM"}
                                   </span>
                                 )
                               )}
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
-                              {formatNumber(chapter.wordCount)} words • {formatDate(chapter.createdAt)}
+                              {formatNumber(chapter.wordCount)} words •{" "}
+                              {formatDate(chapter.createdAt)}
                             </p>
                             {/* Access Status */}
-                            {story.pricingType === 'WHOLE_BOOK' ? (
+                            {story.pricingType === "WHOLE_BOOK" ? (
                               // Whole book pricing status
                               <div className="flex items-center space-x-2">
                                 {isAuthor ? (
@@ -955,8 +1169,8 @@ export default function StoryReaderView() {
                                   </div>
                                 )}
                               </div>
-                            ) : (
-                              // Per-chapter pricing status
+                            ) : story.pricingType ? (
+                              // Per-chapter pricing status (only show if pricing type is defined)
                               isPaidChapter && (
                                 <div className="flex items-center space-x-2">
                                   {isAuthor ? (
@@ -983,6 +1197,13 @@ export default function StoryReaderView() {
                                   )}
                                 </div>
                               )
+                            ) : (
+                              // Undefined pricing type - don't show any purchase status to prevent confusion
+                              <div className="flex items-center space-x-1 text-gray-500">
+                                <span className="text-sm">
+                                  Loading pricing information...
+                                </span>
+                              </div>
                             )}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -990,7 +1211,9 @@ export default function StoryReaderView() {
                               <div className="flex items-center space-x-1 text-red-500">
                                 <LockClosedIcon className="w-4 h-4" />
                                 <span className="font-medium">
-                                  {story.pricingType === 'WHOLE_BOOK' ? 'Book Locked' : 'Locked'}
+                                  {story.pricingType === "WHOLE_BOOK"
+                                    ? "Book Locked"
+                                    : "Locked"}
                                 </span>
                               </div>
                             )}
@@ -1011,11 +1234,13 @@ export default function StoryReaderView() {
               </div>
             )}
 
-            {activeTab === 'comments' && (
+            {activeTab === "comments" && (
               <div className="space-y-6">
                 {/* Comments Header with Real-time Status */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900">Comments ({story.totalComments})</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Comments ({story.totalComments})
+                  </h3>
                   <div className="flex items-center space-x-2">
                     {/* Real-time status indicator */}
                     <div className="flex items-center space-x-2">
@@ -1031,7 +1256,7 @@ export default function StoryReaderView() {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Manual refresh button */}
                     <button
                       onClick={() => refetchComments()}
@@ -1039,7 +1264,11 @@ export default function StoryReaderView() {
                       title="Refresh comments"
                       disabled={isFetchingComments}
                     >
-                      <ChevronRight className={`h-4 w-4 ${isFetchingComments ? 'animate-spin' : ''}`} />
+                      <ChevronRight
+                        className={`h-4 w-4 ${
+                          isFetchingComments ? "animate-spin" : ""
+                        }`}
+                      />
                       <span>Refresh</span>
                     </button>
                   </div>
@@ -1060,11 +1289,11 @@ export default function StoryReaderView() {
                       disabled={isCreatingComment || !newComment.trim()}
                       className={`px-4 py-2 rounded-lg transition-colors font-medium ${
                         isCreatingComment || !newComment.trim()
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
                       }`}
                     >
-                      {isCreatingComment ? 'Posting...' : 'Send'}
+                      {isCreatingComment ? "Posting..." : "Send"}
                     </button>
                   </div>
                 </div>
@@ -1078,12 +1307,19 @@ export default function StoryReaderView() {
                   ) : storyComments.length === 0 ? (
                     <div className="text-center py-8">
                       <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Comments Yet</h3>
-                      <p className="text-gray-600">Be the first to share your thoughts about this story!</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No Comments Yet
+                      </h3>
+                      <p className="text-gray-600">
+                        Be the first to share your thoughts about this story!
+                      </p>
                     </div>
                   ) : (
                     storyComments.map((comment: any) => (
-                      <div key={comment.id} className="border border-gray-200 rounded-lg p-4">
+                      <div
+                        key={comment.id}
+                        className="border border-gray-200 rounded-lg p-4"
+                      >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
                             {comment.user.profileImageUrl ? (
@@ -1102,16 +1338,22 @@ export default function StoryReaderView() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-medium text-gray-900">{comment.user.username}</span>
-                              <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
+                              <span className="font-medium text-gray-900">
+                                {comment.user.username}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {formatDate(comment.createdAt)}
+                              </span>
                             </div>
-                            
+
                             {/* Comment content - editable if user is editing this comment */}
                             {editingCommentId === comment.id ? (
                               <div className="mb-2">
                                 <textarea
                                   value={editContent}
-                                  onChange={(e) => setEditContent(e.target.value)}
+                                  onChange={(e) =>
+                                    setEditContent(e.target.value)
+                                  }
                                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                   rows={3}
                                   placeholder="Edit your comment..."
@@ -1119,10 +1361,12 @@ export default function StoryReaderView() {
                                 <div className="flex items-center space-x-2 mt-2">
                                   <button
                                     onClick={handleSaveEdit}
-                                    disabled={isUpdatingComment || !editContent.trim()}
+                                    disabled={
+                                      isUpdatingComment || !editContent.trim()
+                                    }
                                     className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
                                   >
-                                    {isUpdatingComment ? 'Saving...' : 'Save'}
+                                    {isUpdatingComment ? "Saving..." : "Save"}
                                   </button>
                                   <button
                                     onClick={handleCancelEdit}
@@ -1133,52 +1377,76 @@ export default function StoryReaderView() {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-gray-700 mb-2">{comment.content}</p>
+                              <p className="text-gray-700 mb-2">
+                                {comment.content}
+                              </p>
                             )}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
-                                <button 
+                                <button
                                   onClick={() => handleCommentLike(comment.id)}
                                   disabled={isTogglingCommentLike}
                                   className={`flex items-center space-x-1 text-sm transition-colors ${
-                                    isTogglingCommentLike 
-                                      ? 'text-gray-400 cursor-not-allowed' 
-                                      : 'text-gray-500 hover:text-blue-600'
+                                    isTogglingCommentLike
+                                      ? "text-gray-400 cursor-not-allowed"
+                                      : "text-gray-500 hover:text-blue-600"
                                   }`}
                                   title="Like comment"
                                 >
-                                  <ThumbsUp className={`h-4 w-4 ${isTogglingCommentLike ? 'animate-pulse' : ''}`} />
+                                  <ThumbsUp
+                                    className={`h-4 w-4 ${
+                                      isTogglingCommentLike
+                                        ? "animate-pulse"
+                                        : ""
+                                    }`}
+                                  />
                                   <span>{comment.likes || 0}</span>
                                 </button>
                                 <button className="text-sm text-gray-500 hover:text-red-600">
                                   <Flag className="h-4 w-4" />
                                 </button>
-                                
+
                                 {/* Edit button for comment author */}
-                                {user && user.id === comment.user.id && editingCommentId !== comment.id && (
+                                {user &&
+                                  user.id === comment.user.id &&
+                                  editingCommentId !== comment.id && (
+                                    <button
+                                      onClick={() =>
+                                        handleEditComment(
+                                          comment.id,
+                                          comment.content
+                                        )
+                                      }
+                                      className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600"
+                                      title="Edit comment"
+                                    >
+                                      <PencilIcon className="h-4 w-4" />
+                                      <span>Edit</span>
+                                    </button>
+                                  )}
+                              </div>
+
+                              {/* Delete button for story owner or comment author */}
+                              {user &&
+                                ((story && user.id === story.author.id) ||
+                                  user.id === comment.user.id) &&
+                                editingCommentId !== comment.id && (
                                   <button
-                                    onClick={() => handleEditComment(comment.id, comment.content)}
-                                    className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-600"
-                                    title="Edit comment"
+                                    onClick={() =>
+                                      handleDeleteComment(comment.id)
+                                    }
+                                    disabled={isDeletingComment}
+                                    className="flex items-center space-x-1 text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+                                    title="Delete comment"
                                   >
-                                    <PencilIcon className="h-4 w-4" />
-                                    <span>Edit</span>
+                                    <TrashIcon className="h-4 w-4" />
+                                    <span>
+                                      {isDeletingComment
+                                        ? "Deleting..."
+                                        : "Delete"}
+                                    </span>
                                   </button>
                                 )}
-                              </div>
-                              
-                              {/* Delete button for story owner or comment author */}
-                              {user && ((story && user.id === story.author.id) || user.id === comment.user.id) && editingCommentId !== comment.id && (
-                                <button
-                                  onClick={() => handleDeleteComment(comment.id)}
-                                  disabled={isDeletingComment}
-                                  className="flex items-center space-x-1 text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
-                                  title="Delete comment"
-                                >
-                                  <TrashIcon className="h-4 w-4" />
-                                  <span>{isDeletingComment ? 'Deleting...' : 'Delete'}</span>
-                                </button>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -1191,11 +1459,11 @@ export default function StoryReaderView() {
           </div>
         </div>
 
-
-
         {/* User Rating Section */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Rate this Story</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Rate this Story
+          </h3>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -1209,15 +1477,17 @@ export default function StoryReaderView() {
                   <Star
                     className={`h-8 w-8 ${
                       star <= (hoverRating || userRating)
-                        ? 'text-yellow-400 fill-current'
-                        : 'text-gray-300'
+                        ? "text-yellow-400 fill-current"
+                        : "text-gray-300"
                     }`}
                   />
                 </button>
               ))}
             </div>
             <span className="text-gray-600">
-              {userRating > 0 ? `You rated: ${userRating} stars` : 'Click to rate'}
+              {userRating > 0
+                ? `You rated: ${userRating} stars`
+                : "Click to rate"}
             </span>
           </div>
         </div>
@@ -1268,29 +1538,52 @@ export default function StoryReaderView() {
         recipientName={story.author.displayName || story.author.username}
         storyId={story.id}
         onGiftSent={() => {
-          toast.success('Gift sent successfully!');
+          toast.success("Gift sent successfully!");
           // Optionally refresh the story data to update earnings
         }}
       />
+
+      {/* Buy Again Button for refunded book */}
+      {!isAuthor &&
+        hasBookAccess === false &&
+        story?.pricingType === "WHOLE_BOOK" && (
+          <div className="my-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+            <h2 className="text-xl font-bold text-yellow-800 mb-2">
+              You no longer own this book
+            </h2>
+            <p className="text-yellow-700 mb-4">
+              This book was refunded and republished. You must buy it again to
+              regain access to all chapters.
+            </p>
+            <button
+              onClick={() => setShowBookPurchaseModal(true)}
+              className="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              Buy Again
+            </button>
+          </div>
+        )}
     </div>
   );
 }
 
 // Stat Card Component
-function StatCard({ 
-  icon: Icon, 
-  value, 
-  label, 
-  gradient 
-}: { 
-  icon: React.ComponentType<{ className?: string }>; 
-  value: string; 
+function StatCard({
+  icon: Icon,
+  value,
+  label,
+  gradient,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  value: string;
   label: string;
   gradient: string;
 }) {
   return (
     <div className="text-center">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${gradient} text-white mb-2`}>
+      <div
+        className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${gradient} text-white mb-2`}
+      >
         <Icon className="w-5 h-5" />
       </div>
       <div className="text-2xl font-bold text-nomanweb-primary">{value}</div>
@@ -1300,27 +1593,31 @@ function StatCard({
 }
 
 // Detail Card Component
-function DetailCard({ 
-  title, 
-  value, 
-  color 
-}: { 
-  title: string; 
-  value: string; 
+function DetailCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: string;
   color: string;
 }) {
   const colorClasses = {
-    green: 'bg-green-100 text-green-800',
-    blue: 'bg-blue-100 text-blue-800',
-    purple: 'bg-purple-100 text-purple-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    red: 'bg-red-100 text-red-800'
+    green: "bg-green-100 text-green-800",
+    blue: "bg-blue-100 text-blue-800",
+    purple: "bg-purple-100 text-purple-800",
+    yellow: "bg-yellow-100 text-yellow-800",
+    red: "bg-red-100 text-red-800",
   };
 
   return (
     <div>
       <h4 className="text-sm font-medium text-gray-700 mb-2">{title}</h4>
-      <span className={`px-3 py-1 text-sm font-medium rounded-full ${colorClasses[color as keyof typeof colorClasses]}`}>
+      <span
+        className={`px-3 py-1 text-sm font-medium rounded-full ${
+          colorClasses[color as keyof typeof colorClasses]
+        }`}
+      >
         {value}
       </span>
     </div>

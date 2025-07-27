@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     // Forward the request to the backend
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${backendUrl}/api/monetization/gifts`, {
+    const response = await fetch(`${backendUrl}/monetization/gifts`, {
       headers: {
         'Content-Type': 'application/json',
       },
