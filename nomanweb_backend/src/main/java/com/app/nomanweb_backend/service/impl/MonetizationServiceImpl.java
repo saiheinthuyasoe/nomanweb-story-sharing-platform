@@ -190,10 +190,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         if (!userBookPurchases.isEmpty()) {
             BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK pricing, an active book purchase grants access to all its
-                // chapters,
-                // even if a chapter was individually unpublished and refunded.
+                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous pricing changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
+                        return chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
+                    }
+                    // If no limit is set, grant access to all chapters (normal whole book purchase)
                     return true;
                 }
                 // For PAID_PER_CHAPTER, check if the chapter existed at the time of purchase.
@@ -260,8 +263,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         if (!userBookPurchases.isEmpty()) {
             BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK, an active purchase grants access to all chapters.
+                // For WHOLE_BOOK, check if there's a chapter limit from previous pricing changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
+                        return chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
+                    }
+                    // If no limit is set, grant access to all chapters (normal whole book purchase)
                     return true;
                 }
                 // For PAID_PER_CHAPTER, check if the chapter existed at the time of purchase.
@@ -326,16 +334,26 @@ public class MonetizationServiceImpl implements MonetizationService {
         if (!existingBookPurchases.isEmpty()) {
             BookPurchase mostRecentBookPurchase = existingBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // If story is currently WHOLE_BOOK, user has access to all chapters
+                // If story is currently WHOLE_BOOK, check if user has access to this chapter
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    // For WHOLE_BOOK pricing, even if user has chapter refund, they should still
-                    // have access
-                    // through their active book purchase without needing to repurchase
-                    return GiftTransactionResponse.builder()
-                            .id(mostRecentBookPurchase.getId())
-                            .totalCoins(BigDecimal.ZERO) // No charge since they already own the book
-                            .createdAt(LocalDateTime.now())
-                            .build();
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
+                        if (chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
+                            return GiftTransactionResponse.builder()
+                                    .id(mostRecentBookPurchase.getId())
+                                    .totalCoins(BigDecimal.ZERO) // No charge since they already own the book
+                                    .createdAt(LocalDateTime.now())
+                                    .build();
+                        }
+                        // Chapter is beyond their purchase limit, they need to buy it
+                    } else {
+                        // No limit set, they have access to all chapters (normal whole book purchase)
+                        return GiftTransactionResponse.builder()
+                                .id(mostRecentBookPurchase.getId())
+                                .totalCoins(BigDecimal.ZERO) // No charge since they already own the book
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                    }
                 }
 
                 // If story is currently PAID_PER_CHAPTER, user only has access to chapters that

@@ -5,7 +5,8 @@ import { useCategories } from "@/hooks/useStories";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { StoryCoverUpload } from "@/components/upload/StoryCoverUpload";
-import { ProtectedPricingForm } from "@/components/protection/ProtectedPricingForm";
+import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
+
 
 interface StoryFormProps {
   story?: Story;
@@ -27,8 +28,11 @@ export function StoryForm({
   const [selectedTags, setSelectedTags] = useState<string[]>(story?.tags || []);
   const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
   const [editingTagValue, setEditingTagValue] = useState("");
-  const [showProtectedPricingForm, setShowProtectedPricingForm] = useState(false);
-  const [pendingPricingChange, setPendingPricingChange] = useState<string | null>(null);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundData, setRefundData] = useState<any>({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
+  const [isCalculatingRefund, setIsCalculatingRefund] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<any>(null);
+
 
   const {
     register,
@@ -134,7 +138,33 @@ export function StoryForm({
     setValue("coverImageUrl", "");
   };
 
-  const onFormSubmit = (data: CreateStoryRequest | UpdateStoryRequest) => {
+  const calculateRefund = async (storyId: string) => {
+    try {
+      setIsCalculatingRefund(true);
+      const response = await fetch(`/api/stories/${storyId}/calculate-refund`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to calculate refund");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error calculating refund:", error);
+      toast.error("Failed to calculate refund");
+      return null;
+    } finally {
+      setIsCalculatingRefund(false);
+    }
+  };
+
+  const onFormSubmit = async (data: CreateStoryRequest | UpdateStoryRequest) => {
     const submissionData = { ...data, tags: selectedTags };
 
     // Only include pricing fields when relevant to pricing type
@@ -150,7 +180,40 @@ export function StoryForm({
       delete submissionData.bookPrice;
     }
 
+    // Check if this is an edit and pricing is changing to free
+    const isPaidToFree = isEdit && 
+      story && 
+      (story.pricingType === "PAID_PER_CHAPTER" || story.pricingType === "WHOLE_BOOK") && 
+      data.pricingType === "FREE";
+
+    if (isPaidToFree && story?.id) {
+      // Calculate refund before showing confirmation
+      const refundInfo = await calculateRefund(story.id);
+      if (refundInfo && refundInfo.hasPurchases) {
+        setRefundData(refundInfo);
+        setPendingFormData(submissionData);
+        setShowRefundModal(true);
+        return;
+      }
+    }
+
+    // Submit normally if no refund needed
     onSubmit(submissionData);
+  };
+
+  const handleRefundConfirm = () => {
+    if (pendingFormData) {
+      onSubmit(pendingFormData);
+      setShowRefundModal(false);
+      setPendingFormData(null);
+      setRefundData({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
+    }
+  };
+
+  const handleRefundCancel = () => {
+    setShowRefundModal(false);
+    setPendingFormData(null);
+    setRefundData({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
   };
 
   return (
@@ -258,19 +321,9 @@ export function StoryForm({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onChange={(e) => {
                 const newPricingType = e.target.value;
-                
-                // Check if this is an edit and pricing is changing from paid to free
-                if (isEdit && story && story.pricingType !== newPricingType) {
-                  const isPaidToFree = (story.pricingType === 'PAID_PER_CHAPTER' || story.pricingType === 'WHOLE_BOOK') && newPricingType === 'FREE';
-                  
-                  if (isPaidToFree) {
-                    setPendingPricingChange(newPricingType);
-                    setShowProtectedPricingForm(true);
-                    return;
-                  }
-                }
-                
-                // If not a protected change, update normally
+
+                // For any pricing type change, update normally
+                // The backend will handle refunds automatically when the story is updated
                 setValue("pricingType", newPricingType as any);
               }}
             >
@@ -278,28 +331,33 @@ export function StoryForm({
               <option value="PAID_PER_CHAPTER">Paid per Chapter</option>
               <option value="WHOLE_BOOK">Whole Book</option>
             </select>
-            
+
             {/* One-Time Purchase Protection Message for Paid-to-Paid Changes */}
-            {isEdit && story && story.pricingType !== watchedPricingType && 
-             ((story.pricingType === 'PAID_PER_CHAPTER' || story.pricingType === 'WHOLE_BOOK') && 
-              (watchedPricingType === 'PAID_PER_CHAPTER' || watchedPricingType === 'WHOLE_BOOK')) && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <div className="flex-shrink-0">
-                    <span className="text-blue-500 text-sm">🛡️</span>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-blue-900">
-                      One-Time Purchase Protection
-                    </h4>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Readers who already purchased will maintain access regardless of pricing model changes. 
-                      No restrictions for switching between paid pricing models.
-                    </p>
+            {isEdit &&
+              story &&
+              story.pricingType !== watchedPricingType &&
+              (story.pricingType === "PAID_PER_CHAPTER" ||
+                story.pricingType === "WHOLE_BOOK") &&
+              (watchedPricingType === "PAID_PER_CHAPTER" ||
+                watchedPricingType === "WHOLE_BOOK") && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0">
+                      <span className="text-blue-500 text-sm">🛡️</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900">
+                        One-Time Purchase Protection
+                      </h4>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Readers who already purchased will maintain access
+                        regardless of pricing model changes. No restrictions for
+                        switching between paid pricing models.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Book Status */}
@@ -588,25 +646,13 @@ export function StoryForm({
         </div>
       </form>
 
-      {/* Protected Pricing Form */}
-      {showProtectedPricingForm && isEdit && story && pendingPricingChange && (
-        <ProtectedPricingForm
-          itemId={story.id}
-          itemType="story"
-          itemTitle={story.title}
-          currentPricingType={story.pricingType}
-          newPricingType={pendingPricingChange as any}
-          onConfirm={() => {
-            setValue("pricingType", pendingPricingChange as any);
-            setShowProtectedPricingForm(false);
-            setPendingPricingChange(null);
-          }}
-          onCancel={() => {
-            setShowProtectedPricingForm(false);
-            setPendingPricingChange(null);
-          }}
-        />
-      )}
+      <RefundConfirmationModal
+        isOpen={showRefundModal}
+        onClose={handleRefundCancel}
+        onConfirm={handleRefundConfirm}
+        refundData={refundData}
+        isLoading={isLoading || isCalculatingRefund}
+      />
     </div>
   );
 }

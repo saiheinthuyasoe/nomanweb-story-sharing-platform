@@ -692,9 +692,16 @@ public class ChapterServiceImpl implements ChapterService {
             // Get the most recent book purchase
             BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK pricing, active book purchase grants access to all chapters
-                // regardless of individual chapter unpublishing/republishing
+                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous pricing changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
+                        boolean hasAccess = chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
+                        log.info("User {} has book purchase with chapter limit {} for chapter {} - access: {}",
+                                userId, mostRecentBookPurchase.getChaptersAtPurchase(), chapterId, hasAccess);
+                        return hasAccess;
+                    }
+                    // If no limit is set, grant access to all chapters (normal whole book purchase)
                     log.info("User {} has valid book purchase for WHOLE_BOOK story - access granted to chapter {}",
                             userId, chapterId);
                     return true;

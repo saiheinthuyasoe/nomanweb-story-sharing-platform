@@ -31,6 +31,9 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react";
+import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
+import { ProtectedActionButton } from "@/components/protection/ProtectedActionButton";
+import { toast } from "react-hot-toast";
 import "./ant-table.css";
 
 type StoryTab = "stories" | "drafts" | "trash";
@@ -41,6 +44,9 @@ export default function MyStoriesPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StoryTab>("stories");
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundData, setRefundData] = useState<any>(null);
+  const [storyToMove, setStoryToMove] = useState<string | null>(null);
 
   const {
     data: storiesPage,
@@ -83,18 +89,49 @@ export default function MyStoriesPage() {
     router.push(`/dashboard/stories/${storyId}/edit`);
   };
 
-  const handleDelete = (storyId: string) => {
+  const handleMoveToTrashClick = (storyId: string) => {
     console.log("🗑️ User clicked move to trash for story:", storyId);
-    if (
-      window.confirm(
-        "Are you sure you want to move this story to trash? You can restore it later."
-      )
-    ) {
-      console.log("🗑️ User confirmed move to trash for story:", storyId);
-      moveToTrash(storyId);
-      setOpenDropdown(null);
-    } else {
-      console.log("🗑️ User cancelled move to trash for story:", storyId);
+    moveToTrash(storyId, {
+      onSuccess: () => {
+        toast.success("Story moved to trash.");
+        // Optionally refetch stories here if the list doesn't update automatically
+      },
+      onError: (error: any) => {
+        const errorData = error.response?.data;
+        if (errorData?.requiresRefund) {
+          console.log("🔍 Refund required. Details:", errorData.refundDetails);
+          setStoryToMove(storyId);
+          setRefundData(errorData.refundDetails);
+          setShowRefundModal(true);
+        } else {
+          toast.error(
+            `Cannot move story to trash: ${
+              errorData?.message || "Unknown error"
+            }`
+          );
+        }
+      },
+    });
+  };
+
+  const handleRefundConfirm = () => {
+    if (storyToMove) {
+      moveToTrash(storyToMove, {
+        onSuccess: () => {
+          setShowRefundModal(false);
+          setRefundData(null);
+          setStoryToMove(null);
+          toast.success("Story moved to trash with refund.");
+        },
+        onError: (error: any) => {
+          const errorData = error.response?.data;
+          toast.error(
+            `Failed to process refunds: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
+        },
+      });
     }
   };
 
@@ -337,6 +374,16 @@ export default function MyStoriesPage() {
             </nav>
           </div>
         </div>
+
+        {showRefundModal && refundData && (
+          <RefundConfirmationModal
+            isOpen={showRefundModal}
+            onClose={() => setShowRefundModal(false)}
+            onConfirm={handleRefundConfirm}
+            refundData={refundData}
+            isLoading={isMovingToTrash}
+          />
+        )}
 
         {/* Stories Table - Ant Design Style */}
         <div className="ant-table-wrapper">
@@ -664,18 +711,26 @@ export default function MyStoriesPage() {
                                                 </button>
                                               </>
                                             ) : (
-                                              <button
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  setOpenDropdown(null);
-                                                  handleDelete(story.id);
-                                                }}
-                                                className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                                              >
-                                                <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
-                                                <span>Move to Trash</span>
-                                              </button>
+                                              <div className="w-full">
+                                                <ProtectedActionButton
+                                                  itemId={story.id}
+                                                  itemType="story"
+                                                  itemTitle={story.title}
+                                                  actionType="moveToTrash"
+                                                  currentPublishStatus={story.publishStatus}
+                                                  currentPricingType={story.pricingType}
+                                                  onAction={() => {
+                                                    setOpenDropdown(null);
+                                                    handleMoveToTrashClick(story.id);
+                                                  }}
+                                                  disabled={isMovingToTrash}
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-0 bg-transparent justify-start h-auto p-0"
+                                                  variant="destructive"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                  <span>{isMovingToTrash ? "Moving to trash..." : "Move to Trash"}</span>
+                                                </ProtectedActionButton>
+                                              </div>
                                             )}
                                           </div>
                                         </div>

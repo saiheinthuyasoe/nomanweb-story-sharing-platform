@@ -44,7 +44,7 @@ export function RefundConfirmationModal({
     }
   };
 
-  if (!refundData.hasPurchases) {
+  if (!refundData || !refundData.hasPurchases) {
     return null;
   }
 
