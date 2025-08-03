@@ -343,10 +343,11 @@ public class ChapterController {
     @PostMapping("/{chapterId}/unpublish")
     public ResponseEntity<?> unpublishChapter(
             @PathVariable UUID chapterId,
+            @RequestParam(defaultValue = "false") boolean confirmRefund,
             HttpServletRequest httpRequest) {
         try {
             UUID authorId = getCurrentUserId(httpRequest);
-            ChapterResponse chapter = chapterService.unpublishChapter(chapterId, authorId);
+            ChapterResponse chapter = chapterService.unpublishChapter(chapterId, authorId, confirmRefund);
             return ResponseEntity.ok(chapter);
         } catch (IllegalArgumentException e) {
             log.error("Error unpublishing chapter: {}", e.getMessage());
@@ -647,10 +648,11 @@ public class ChapterController {
     @PostMapping("/story/{storyId}/unpublish-book")
     public ResponseEntity<?> unpublishWholeBook(
             @PathVariable UUID storyId,
+            @RequestParam(defaultValue = "false") boolean confirmRefund,
             HttpServletRequest httpRequest) {
         try {
             UUID authorId = getCurrentUserId(httpRequest);
-            chapterService.unpublishWholeBook(storyId, authorId);
+            chapterService.unpublishWholeBook(storyId, authorId, confirmRefund);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             log.error("Error unpublishing whole book: {}", e.getMessage());

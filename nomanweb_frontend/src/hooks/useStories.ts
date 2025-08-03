@@ -23,12 +23,12 @@ export const useStories = (params: GetStoriesParams = {}) => {
 };
 
 export const useStory = (id: string, enabled: boolean = true) => {
-  console.log('🔍 useStory called with id:', id, 'enabled:', enabled);
-  
+  console.log("🔍 useStory called with id:", id, "enabled:", enabled);
+
   const query = useQuery({
-    queryKey: ['story', id],
+    queryKey: ["story", id],
     queryFn: () => {
-      console.log('📡 Calling storiesApi.getStory with id:', id);
+      console.log("📡 Calling storiesApi.getStory with id:", id);
       return storiesApi.getStory(id);
     },
     enabled: !!id && enabled,
@@ -37,13 +37,13 @@ export const useStory = (id: string, enabled: boolean = true) => {
   // Handle success/error with useEffect (React Query v5 approach)
   useEffect(() => {
     if (query.data) {
-      console.log('✅ useStory success - data received:', query.data);
+      console.log("✅ useStory success - data received:", query.data);
     }
   }, [query.data]);
 
   useEffect(() => {
     if (query.error) {
-      console.error('❌ useStory error:', query.error);
+      console.error("❌ useStory error:", query.error);
     }
   }, [query.error]);
 

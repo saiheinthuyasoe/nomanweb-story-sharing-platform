@@ -1,42 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { storyId: string } }
+  { params }: { params: Promise<{ storyId: string }> }
 ) {
   try {
+    // Await params to fix Next.js 15 async params requirement
+    const { storyId } = await params;
+
     // Get the user from the request
-    const token = request.cookies.get('token')?.value || 
-                  request.headers.get('authorization')?.replace('Bearer ', '');
-    
+    const token =
+      request.cookies.get("token")?.value ||
+      request.headers.get("authorization")?.replace("Bearer ", "");
+
     if (!token) {
-      return NextResponse.json({ error: 'No authentication token provided' }, { status: 401 });
+      return NextResponse.json(
+        { error: "No authentication token provided" },
+        { status: 401 }
+      );
     }
 
     // Verify the JWT token and extract user information
     let user;
     try {
       const jwtSecret = process.env.JWT_SECRET;
-      
-      if (!jwtSecret || jwtSecret === 'your-jwt-secret') {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+
+      if (!jwtSecret || jwtSecret === "your-jwt-secret") {
+        return NextResponse.json(
+          { error: "Server configuration error" },
+          { status: 500 }
+        );
       }
-      
+
       const decoded = jwt.verify(token, jwtSecret) as any;
-      
+
       user = {
         id: decoded.sub,
         email: decoded.email,
-        role: decoded.role
+        role: decoded.role,
       };
     } catch (error) {
-      return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid authentication token" },
+        { status: 401 }
+      );
     }
 
     // Use the existing StoryController endpoint instead of RefundController
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/stories/${params.storyId}/has-purchases`,
+      `${process.env.NEXT_PUBLIC_API_URL}/stories/${storyId}/has-purchases`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,4 +70,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

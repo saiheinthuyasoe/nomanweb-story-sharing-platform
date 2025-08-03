@@ -215,9 +215,20 @@ export const chaptersApi = {
     return response.data;
   },
 
-  async unpublishChapter(id: string): Promise<Chapter> {
-    const response = await apiClient.post(`/chapters/${id}/unpublish`);
+  async unpublishChapter(id: string, confirmRefund: boolean): Promise<Chapter> {
+    const response = await apiClient.post(
+      `/chapters/${id}/unpublish?confirmRefund=${confirmRefund}`
+    );
     return response.data;
+  },
+
+  async unpublishWholeBook(
+    storyId: string,
+    confirmRefund: boolean = false
+  ): Promise<void> {
+    await apiClient.post(
+      `/chapters/story/${storyId}/unpublish-book?confirmRefund=${confirmRefund}`
+    );
   },
 
   // Reorder chapters

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-export async function POST(
+export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ storyId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
   try {
     // Await params to fix Next.js 15 async params requirement
-    const { storyId } = await params;
+    const { chapterId } = await params;
 
     // Get the user from the request
     const token =
@@ -48,27 +48,26 @@ export async function POST(
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/stories/${storyId}/calculate-refund`,
+      `${process.env.NEXT_PUBLIC_API_URL}/refunds/chapters/${chapterId}/calculate-refund`,
       {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(await request.json()),
       }
     );
 
     if (!response.ok) {
-      throw new Error("Failed to calculate refund");
+      throw new Error("Failed to calculate chapter refund");
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error calculating refund:", error);
+    console.error("Error calculating chapter refund:", error);
     return NextResponse.json(
-      { error: "Failed to calculate refund" },
+      { error: "Failed to calculate chapter refund" },
       { status: 500 }
     );
   }

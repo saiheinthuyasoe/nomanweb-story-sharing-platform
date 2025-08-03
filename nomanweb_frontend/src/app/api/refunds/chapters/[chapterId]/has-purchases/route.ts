@@ -3,9 +3,12 @@ import jwt from "jsonwebtoken";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
   try {
+    // Await params to fix Next.js 15 async params requirement
+    const { chapterId } = await params;
+
     // Get the user from the request
     const token =
       request.cookies.get("token")?.value ||
@@ -45,7 +48,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/refunds/chapters/${params.chapterId}/has-purchases`,
+      `${process.env.NEXT_PUBLIC_API_URL}/refunds/chapters/${chapterId}/has-purchases`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

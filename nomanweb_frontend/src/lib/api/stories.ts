@@ -1,12 +1,12 @@
-import apiClient  from './client';
-import { 
-  Story, 
-  StoryPreview, 
-  CreateStoryRequest, 
-  UpdateStoryRequest, 
+import apiClient from "./client";
+import {
+  Story,
+  StoryPreview,
+  CreateStoryRequest,
+  UpdateStoryRequest,
   StoriesResponse,
-  Category 
-} from '@/types/story';
+  Category,
+} from "@/types/story";
 
 export interface GetStoriesParams {
   page?: number;
@@ -28,7 +28,7 @@ export interface SearchStoriesParams {
 export const storiesApi = {
   // Basic CRUD operations
   async createStory(data: CreateStoryRequest): Promise<Story> {
-    const response = await apiClient.post<Story>('/stories', data);
+    const response = await apiClient.post<Story>("/stories", data);
     return response.data;
   },
 
@@ -60,55 +60,92 @@ export const storiesApi = {
 
   // Story listing with pagination and filters
   async getStories(params: GetStoriesParams = {}): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories', { params });
+    const response = await apiClient.get<StoriesResponse>("/stories", {
+      params,
+    });
     return response.data;
   },
 
-  async getMyStories(params: { page?: number; size?: number } = {}): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories/my-stories', { params });
+  async getMyStories(
+    params: { page?: number; size?: number } = {}
+  ): Promise<StoriesResponse> {
+    const response = await apiClient.get<StoriesResponse>(
+      "/stories/my-stories",
+      { params }
+    );
     return response.data;
   },
 
-  async getMyStoriesIncludingDeleted(params: { page?: number; size?: number } = {}): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories/my-stories/all', { params });
+  async getMyStoriesIncludingDeleted(
+    params: { page?: number; size?: number } = {}
+  ): Promise<StoriesResponse> {
+    const response = await apiClient.get<StoriesResponse>(
+      "/stories/my-stories/all",
+      { params }
+    );
     return response.data;
   },
 
   async getStoriesByAuthor(
-    authorId: string, 
+    authorId: string,
     params: { page?: number; size?: number } = {}
   ): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>(`/stories/author/${authorId}`, { params });
+    const response = await apiClient.get<StoriesResponse>(
+      `/stories/author/${authorId}`,
+      { params }
+    );
     return response.data;
   },
 
   async getStoriesByCategory(
-    categoryId: string, 
+    categoryId: string,
     params: { page?: number; size?: number } = {}
   ): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>(`/stories/category/${categoryId}`, { params });
+    const response = await apiClient.get<StoriesResponse>(
+      `/stories/category/${categoryId}`,
+      { params }
+    );
     return response.data;
   },
 
   // Discovery and search
   async searchStories(params: SearchStoriesParams): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories/search', { params });
+    const response = await apiClient.get<StoriesResponse>("/stories/search", {
+      params,
+    });
     return response.data;
   },
 
-  async getTrendingStories(params: { page?: number; size?: number } = {}): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories/trending', { params });
+  async getTrendingStories(
+    params: { page?: number; size?: number } = {}
+  ): Promise<StoriesResponse> {
+    const response = await apiClient.get<StoriesResponse>("/stories/trending", {
+      params,
+    });
     return response.data;
   },
 
-  async getFeaturedStories(params: { page?: number; size?: number } = {}): Promise<StoriesResponse> {
-    const response = await apiClient.get<StoriesResponse>('/stories/featured', { params });
+  async getFeaturedStories(
+    params: { page?: number; size?: number } = {}
+  ): Promise<StoriesResponse> {
+    const response = await apiClient.get<StoriesResponse>("/stories/featured", {
+      params,
+    });
     return response.data;
   },
 
   // Story actions
-  async publishStory(id: string): Promise<Story> {
-    const response = await apiClient.post<Story>(`/stories/${id}/publish`);
+  async publishStory(
+    id: string,
+    autoPublishChapters: boolean = true
+  ): Promise<Story> {
+    const response = await apiClient.post<Story>(
+      `/stories/${id}/publish`,
+      null,
+      {
+        params: { autoPublishChapters },
+      }
+    );
     return response.data;
   },
 
@@ -129,7 +166,7 @@ export const storiesApi = {
 
 export const categoriesApi = {
   async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get<Category[]>('/categories');
+    const response = await apiClient.get<Category[]>("/categories");
     return response.data;
   },
 
@@ -137,4 +174,4 @@ export const categoriesApi = {
     const response = await apiClient.get<Category>(`/categories/${id}`);
     return response.data;
   },
-}; 
+};

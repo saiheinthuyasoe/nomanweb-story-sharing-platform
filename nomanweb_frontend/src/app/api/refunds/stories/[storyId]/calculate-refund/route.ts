@@ -3,9 +3,12 @@ import jwt from "jsonwebtoken";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { storyId: string } }
+  { params }: { params: Promise<{ storyId: string }> }
 ) {
   try {
+    // Await params to fix Next.js 15 async params requirement
+    const { storyId } = await params;
+
     // Get the user from the request
     const token =
       request.cookies.get("token")?.value ||
@@ -46,7 +49,7 @@ export async function POST(
 
     // Use the existing StoryController endpoint instead of RefundController
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/stories/${params.storyId}/calculate-refund`,
+      `${process.env.NEXT_PUBLIC_API_URL}/stories/${storyId}/calculate-refund`,
       {
         method: "POST",
         headers: {

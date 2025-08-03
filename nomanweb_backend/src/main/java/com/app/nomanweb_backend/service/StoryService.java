@@ -46,6 +46,8 @@ public interface StoryService {
     // Story actions
     StoryResponse publishStory(UUID storyId, UUID authorId);
 
+    StoryResponse publishStory(UUID storyId, UUID authorId, boolean autoPublishChapters);
+
     StoryResponse unpublishStory(UUID storyId, UUID authorId);
 
     void incrementViews(UUID storyId);

@@ -124,7 +124,7 @@ export const useCreateChapter = () => {
       // If this chapter is being created as published (not draft), also publish the story
       if (!data.isDraft) {
         try {
-          await storiesApi.publishStory(data.storyId);
+          await storiesApi.publishStory(data.storyId, false);
           console.log("Story auto-published along with chapter creation");
         } catch (storyError: any) {
           // If story is already published or other error, we can ignore it
@@ -179,7 +179,7 @@ export const useUpdateChapter = () => {
       // If this update is publishing the chapter (shouldPublish is true), also publish the story
       if (data.shouldPublish) {
         try {
-          await storiesApi.publishStory(updatedChapter.story.id);
+          await storiesApi.publishStory(updatedChapter.story.id, false);
           console.log("Story auto-published along with chapter update");
         } catch (storyError: any) {
           // If story is already published or other error, we can ignore it
@@ -322,9 +322,12 @@ export const usePublishChapter = () => {
       const publishedChapter = await chaptersApi.publishChapter(id);
 
       // Then automatically publish the story if it's not already published
+      // Set autoPublishChapters=false to prevent bulk publishing of other chapters
       try {
-        await storiesApi.publishStory(publishedChapter.story.id);
-        console.log("Story auto-published along with chapter");
+        await storiesApi.publishStory(publishedChapter.story.id, false);
+        console.log(
+          "Story auto-published along with chapter (without bulk chapter publishing)"
+        );
       } catch (storyError: any) {
         // If story is already published or other error, we can ignore it
         console.log(
@@ -368,8 +371,14 @@ export const useUnpublishChapter = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => chaptersApi.unpublishChapter(id),
-    onSuccess: (unpublishedChapter, id) => {
+    mutationFn: ({
+      id,
+      confirmRefund,
+    }: {
+      id: string;
+      confirmRefund: boolean;
+    }) => chaptersApi.unpublishChapter(id, confirmRefund),
+    onSuccess: (unpublishedChapter, { id }) => {
       // Update the chapter in cache
       queryClient.setQueryData(["chapter", id], unpublishedChapter);
 
@@ -422,7 +431,13 @@ export const useUnpublishWholeBook = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (storyId: string) => chaptersApi.unpublishWholeBook(storyId),
+    mutationFn: ({
+      storyId,
+      confirmRefund,
+    }: {
+      storyId: string;
+      confirmRefund: boolean;
+    }) => chaptersApi.unpublishWholeBook(storyId, confirmRefund),
     onSuccess: (_, storyId) => {
       // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ["chapters", storyId] });

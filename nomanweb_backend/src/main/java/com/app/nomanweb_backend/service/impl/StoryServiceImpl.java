@@ -16,6 +16,7 @@ import com.app.nomanweb_backend.service.SearchIndexingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.PurchaseProtectionException;
 import com.app.nomanweb_backend.service.ChapterService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -49,6 +50,7 @@ public class StoryServiceImpl implements StoryService {
     private final ApplicationEventPublisher eventPublisher;
     private final PurchaseProtectionService purchaseProtectionService;
     private final ChapterService chapterService;
+
     private final ChapterRepository chapterRepository;
     private final BookPurchaseRepository bookPurchaseRepository;
 
@@ -164,38 +166,27 @@ public class StoryServiceImpl implements StoryService {
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
 
-        log.info("📖 Found story: {} - current isDeleted: {}, deletedAt: {}",
-                storyId, story.isInTrash(), story.getDeletedAt());
-
-        // Check if user is the author
         if (!story.getAuthor().getId().equals(authorId)) {
             throw new RuntimeException("Not authorized to delete this story");
         }
 
-        // Stories can now be moved to trash without restrictions
-
-        // Move to trash
-        story.moveToTrash();
-        log.info("🗑️ Called moveToTrash() - isDeleted: {}, deletedAt: {}",
-                story.isInTrash(), story.getDeletedAt());
-
-        Story savedStory = storyRepository.save(story);
-
-        // Debug logging to confirm the save
-        log.info("✅ Story moved to trash successfully: {} - isDeleted: {}, deletedAt: {}",
-                storyId, savedStory.isInTrash(), savedStory.getDeletedAt());
-
-        // Double-check by fetching from database
-        Story verifyStory = storyRepository.findById(storyId).orElse(null);
-        if (verifyStory != null) {
-            log.info("✅ Verification: Story in database - isDeleted: {}, deletedAt: {}",
-                    verifyStory.isInTrash(), verifyStory.getDeletedAt());
-        } else {
-            log.error("❌ Verification failed: Story not found in database after save");
+        // Unpublish the story and process refunds if necessary
+        if (story.getPublishStatus() == Story.PublishStatus.PUBLISHED) {
+            chapterService.unpublishWholeBook(storyId, authorId, true); // This handles refunds and sets status to DRAFT
         }
 
+        // The story object might be stale after the unpublish call. Re-fetch for
+        // safety.
+        Story storyToTrash = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story disappeared after unpublish call"));
+
+        storyToTrash.moveToTrash();
+        storyRepository.save(storyToTrash);
+
+        log.info("✅ Story moved to trash successfully: {}", storyId);
+
         // Publish event for search indexing
-        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(story));
+        eventPublisher.publishEvent(new SearchIndexingService.StoryUpdatedEvent(storyToTrash));
     }
 
     @Override
@@ -538,7 +529,13 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public StoryResponse publishStory(UUID storyId, UUID authorId) {
-        log.info("Publishing story: {} by author: {}", storyId, authorId);
+        return publishStory(storyId, authorId, true);
+    }
+
+    @Override
+    public StoryResponse publishStory(UUID storyId, UUID authorId, boolean autoPublishChapters) {
+        log.info("Publishing story: {} by author: {} with autoPublishChapters: {}", storyId, authorId,
+                autoPublishChapters);
 
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
@@ -580,13 +577,18 @@ public class StoryServiceImpl implements StoryService {
 
         log.info("Story published successfully: {}", storyId);
 
-        // Automatically publish all draft chapters when story is published
-        try {
-            chapterService.bulkPublishChaptersByStory(storyId, authorId);
-            log.info("All draft chapters published automatically for story: {}", storyId);
-        } catch (Exception e) {
-            log.warn("Failed to auto-publish chapters for story: {} - {}", storyId, e.getMessage());
-            // Don't fail the story publishing if chapter publishing fails
+        // Automatically publish all draft chapters when story is published (only if
+        // autoPublishChapters is true)
+        if (autoPublishChapters) {
+            try {
+                chapterService.bulkPublishChaptersByStory(storyId, authorId);
+                log.info("All draft chapters published automatically for story: {}", storyId);
+            } catch (Exception e) {
+                log.warn("Failed to auto-publish chapters for story: {} - {}", storyId, e.getMessage());
+                // Don't fail the story publishing if chapter publishing fails
+            }
+        } else {
+            log.info("Skipping auto-publish of chapters for story: {} (autoPublishChapters=false)", storyId);
         }
 
         // Publish event for search indexing
@@ -610,7 +612,7 @@ public class StoryServiceImpl implements StoryService {
         // the action was blocked instead of processing refunds for active purchases.
         // This assumes `chapterService.unpublishWholeBook` contains all necessary
         // logic.
-        chapterService.unpublishWholeBook(storyId, authorId);
+        chapterService.unpublishWholeBook(storyId, authorId, true);
 
         // The story status is updated within the delegated method, so we fetch the
         // updated story.

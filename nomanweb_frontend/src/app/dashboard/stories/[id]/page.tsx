@@ -1,21 +1,23 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  useStory, 
-  usePublishStory, 
-  useUnpublishStory, 
-  useDeleteStory
-} from '@/hooks/useStories';
-import { useAuth } from '@/contexts/AuthContext';
-import { ProtectedActionButton } from '@/components/protection/ProtectedActionButton';
-import { formatDistanceToNow } from 'date-fns';
-import { 
-  EyeIcon, 
-  HeartIcon, 
+import React, { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  useStory,
+  usePublishStory,
+  useUnpublishStory,
+  useDeleteStory,
+  useMoveStoryToTrash,
+} from "@/hooks/useStories";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedActionButton } from "@/components/protection/ProtectedActionButton";
+import { ButtonTestComponent } from "@/components/debug/ButtonTestComponent";
+import { formatDistanceToNow } from "date-fns";
+import {
+  EyeIcon,
+  HeartIcon,
   BookOpenIcon,
   StarIcon,
   UserIcon,
@@ -25,29 +27,37 @@ import {
   CalendarIcon,
   TagIcon,
   PlusIcon,
-  Gift
-} from '@heroicons/react/24/outline';
-import { Coins, Gift as LucideGift } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import ChapterManagement from '@/components/chapters/ChapterManagement';
-import { QuickCreateChapter } from '@/components/chapters/QuickCreateChapter';
-import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
-
+  Gift,
+} from "@heroicons/react/24/outline";
+import { Coins, Gift as LucideGift } from "lucide-react";
+import { toast } from "react-hot-toast";
+import ChapterManagement from "@/components/chapters/ChapterManagement";
+import { QuickCreateChapter } from "@/components/chapters/QuickCreateChapter";
+import EnhancedGiftModal from "@/components/monetization/EnhancedGiftModal";
+import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
 
 export default function StoryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const storyId = params.id as string;
-  
+
   const { data: story, isLoading, error } = useStory(storyId);
   const { mutate: publishStory, isPending: isPublishing } = usePublishStory();
-  const { mutate: unpublishStory, isPending: isUnpublishing } = useUnpublishStory();
+  const { mutate: unpublishStory, isPending: isUnpublishing } =
+    useUnpublishStory();
   const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
+  const { mutate: moveToTrash, isPending: isMovingToTrash } =
+    useMoveStoryToTrash();
+
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundData, setRefundData] = useState<any>(null);
 
   // Gift modal state
   const [showGiftModal, setShowGiftModal] = useState(false);
-  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(
+    null
+  );
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
@@ -63,9 +73,13 @@ export default function StoryDetailPage() {
           <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <BookOpenIcon className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">Story Not Found</h2>
-          <p className="text-gray-600 mb-6">The story you're looking for doesn't exist or has been removed.</p>
-          <Link 
+          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">
+            Story Not Found
+          </h2>
+          <p className="text-gray-600 mb-6">
+            The story you're looking for doesn't exist or has been removed.
+          </p>
+          <Link
             href="/stories"
             className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift inline-flex items-center space-x-2"
           >
@@ -82,42 +96,97 @@ export default function StoryDetailPage() {
   };
 
   const handleUnpublish = () => {
+    console.log("🚀 handleUnpublish called for storyId:", storyId);
     unpublishStory(storyId, {
       onError: (error: any) => {
+        console.error("❌ Error in handleUnpublish:", error);
         const errorData = error.response?.data;
-        
-        toast.error(`Cannot unpublish story: ${errorData?.message || 'Unknown error occurred'}`);
-      }
+
+        if (errorData?.requiresRefund) {
+          setRefundData(errorData.refundDetails);
+          setShowRefundModal(true);
+        } else {
+          toast.error(
+            `Cannot unpublish story: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
+        }
+      },
     });
   };
 
-  // Remove refund confirmation handler
-  // const handleRefundConfirm = () => {
-  //   if (refundData) {
-  //     // The refund logic is removed, so this function is now effectively a no-op
-  //     // processRefundsAndUnpublish(storyId, {
-  //     //   onSuccess: () => {
-  //     //     setShowRefundModal(false);
-  //     //     setRefundData(null);
-  //     //   }
-  //     // });
-  //   }
-  // };
-
-  const handleDelete = () => {
-      deleteStory(storyId, {
-        onSuccess: () => {
-          router.push('/dashboard/my-stories');
+  const handleMoveToTrash = () => {
+    console.log("🚀 handleMoveToTrash called for storyId:", storyId);
+    moveToTrash(storyId, {
+      onSuccess: () => {
+        console.log("✅ Move to trash successful, redirecting to dashboard");
+        router.push("/dashboard/my-stories");
+      },
+      onError: (error: any) => {
+        console.error("❌ Error in handleMoveToTrash:", error);
+        const errorData = error.response?.data;
+        if (errorData?.requiresRefund) {
+          setRefundData(errorData.refundDetails);
+          setShowRefundModal(true);
+        } else {
+          toast.error(
+            `Cannot move story to trash: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
         }
-      });
+      },
+    });
   };
 
+  const handleRefundConfirm = () => {
+    if (refundData) {
+      unpublishStory(storyId, {
+        onSuccess: () => {
+          setShowRefundModal(false);
+          setRefundData(null);
+        },
+        onError: (error: any) => {
+          const errorData = error.response?.data;
+          toast.error(
+            `Failed to process refunds: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
+        },
+      });
+    }
+  };
 
+  const handleDelete = () => {
+    console.log("🚀 handleDelete called for storyId:", storyId);
+    deleteStory(storyId, {
+      onSuccess: () => {
+        console.log("✅ Delete successful, redirecting to dashboard");
+        router.push("/dashboard/my-stories");
+      },
+      onError: (error: any) => {
+        console.error("❌ Error in handleDelete:", error);
+        const errorData = error.response?.data;
+        if (errorData?.requiresRefund) {
+          setRefundData(errorData.refundDetails);
+          setShowRefundModal(true);
+        } else {
+          toast.error(
+            `Cannot delete story: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
+        }
+      },
+    });
+  };
 
   const handleShare = () => {
     const currentUrl = window.location.href;
     navigator.clipboard.writeText(currentUrl);
-      toast.success('Link copied to clipboard!');
+    toast.success("Link copied to clipboard!");
   };
 
   return (
@@ -141,27 +210,31 @@ export default function StoryDetailPage() {
                     <BookOpenIcon className="w-24 h-24 text-white/80" />
                   </div>
                 )}
-                
+
                 {/* Status Badges */}
                 <div className="absolute top-4 left-4 space-y-2">
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
-                    story.publishStatus === 'PUBLISHED' 
-                      ? 'bg-green-500/90 text-white' 
-                      : story.publishStatus === 'DRAFT'
-                      ? 'bg-yellow-500/90 text-white'
-                      : story.publishStatus === 'COMPLETED'
-                      ? 'bg-blue-500/90 text-white'
-                      : 'bg-red-500/90 text-white'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
+                      story.publishStatus === "PUBLISHED"
+                        ? "bg-green-500/90 text-white"
+                        : story.publishStatus === "DRAFT"
+                        ? "bg-yellow-500/90 text-white"
+                        : story.publishStatus === "COMPLETED"
+                        ? "bg-blue-500/90 text-white"
+                        : "bg-red-500/90 text-white"
+                    }`}
+                  >
                     {story.publishStatus}
                   </span>
-                  
+
                   {/* Book Status Badge */}
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
-                    story.bookStatus === 'ONGOING' 
-                      ? 'bg-blue-500/90 text-white' 
-                      : 'bg-purple-500/90 text-white'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
+                      story.bookStatus === "ONGOING"
+                        ? "bg-blue-500/90 text-white"
+                        : "bg-purple-500/90 text-white"
+                    }`}
+                  >
                     {story.bookStatus}
                   </span>
                 </div>
@@ -180,12 +253,14 @@ export default function StoryDetailPage() {
             {/* Story Info */}
             <div className="md:w-2/3 p-6 lg:p-8">
               <div className="mb-4">
-                <h1 className="text-3xl lg:text-4xl font-bold text-nomanweb-primary mb-4">{story.title}</h1>
-                
+                <h1 className="text-3xl lg:text-4xl font-bold text-nomanweb-primary mb-4">
+                  {story.title}
+                </h1>
+
                 {/* Author */}
                 <div className="mb-6">
                   <div>
-                    <Link 
+                    <Link
                       href={`/authors/${story.author.id}`}
                       className="text-lg font-semibold text-nomanweb-primary hover:text-nomanweb-secondary transition-colors"
                     >
@@ -198,14 +273,16 @@ export default function StoryDetailPage() {
                 {/* Description */}
                 {story.description && (
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <p className="text-gray-700 leading-relaxed">{story.description}</p>
+                    <p className="text-gray-700 leading-relaxed">
+                      {story.description}
+                    </p>
                   </div>
                 )}
 
                 {/* Category */}
                 {story.category && (
                   <div className="mb-4">
-                    <Link 
+                    <Link
                       href={`/categories/${story.category.id}`}
                       className="inline-block px-4 py-2 text-sm font-medium text-white bg-nomanweb-gradient rounded-full hover:scale-105 transition-transform"
                     >
@@ -219,7 +296,9 @@ export default function StoryDetailPage() {
                   <div className="mb-6">
                     <div className="flex items-center space-x-2 mb-3">
                       <TagIcon className="w-4 h-4 text-nomanweb-primary" />
-                      <span className="text-sm font-medium text-nomanweb-primary">Tags</span>
+                      <span className="text-sm font-medium text-nomanweb-primary">
+                        Tags
+                      </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {story.tags.map((tag) => (
@@ -235,7 +314,13 @@ export default function StoryDetailPage() {
                 )}
 
                 {/* Stats */}
-                <div className={`grid grid-cols-2 gap-4 mb-6 ${story.pricingType === 'WHOLE_BOOK' ? 'md:grid-cols-3 lg:grid-cols-5' : 'md:grid-cols-4'}`}>
+                <div
+                  className={`grid grid-cols-2 gap-4 mb-6 ${
+                    story.pricingType === "WHOLE_BOOK"
+                      ? "md:grid-cols-3 lg:grid-cols-5"
+                      : "md:grid-cols-4"
+                  }`}
+                >
                   <StatCard
                     icon={EyeIcon}
                     value={story.totalViews.toLocaleString()}
@@ -260,9 +345,9 @@ export default function StoryDetailPage() {
                     label="Comments"
                     gradient="from-yellow-500 to-orange-600"
                   />
-                  
+
                   {/* Book Price Stat - Only for WHOLE_BOOK stories */}
-                  {story.pricingType === 'WHOLE_BOOK' && (
+                  {story.pricingType === "WHOLE_BOOK" && (
                     <StatCard
                       icon={Coins}
                       value={`${story.bookPrice || 0}`}
@@ -276,12 +361,22 @@ export default function StoryDetailPage() {
                 <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
                   <div className="flex items-center space-x-1">
                     <CalendarIcon className="w-4 h-4" />
-                    <span>Created {formatDistanceToNow(new Date(story.createdAt), { addSuffix: true })}</span>
+                    <span>
+                      Created{" "}
+                      {formatDistanceToNow(new Date(story.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
                   </div>
                   {story.publishedAt && (
                     <div className="flex items-center space-x-1">
                       <CalendarIcon className="w-4 h-4" />
-                      <span>Published {formatDistanceToNow(new Date(story.publishedAt), { addSuffix: true })}</span>
+                      <span>
+                        Published{" "}
+                        {formatDistanceToNow(new Date(story.publishedAt), {
+                          addSuffix: true,
+                        })}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -319,30 +414,30 @@ export default function StoryDetailPage() {
                         <span>Edit Story</span>
                       </Link>
 
-
-
-                      {story.publishStatus === 'DRAFT' ? (
+                      {story.publishStatus === "DRAFT" ? (
                         <button
                           onClick={handlePublish}
                           disabled={isPublishing}
                           className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                         >
-                          {isPublishing ? 'Publishing...' : 'Publish Story'}
+                          {isPublishing ? "Publishing..." : "Publish Story"}
                         </button>
                       ) : (
                         <>
-                        <ProtectedActionButton
-                          itemId={storyId}
-                          itemType="story"
-                          itemTitle={story.title}
-                          actionType="unpublish"
-                          currentPublishStatus={story.publishStatus}
-                          currentPricingType={story.pricingType}
-                          onAction={handleUnpublish}
-                          disabled={isUnpublishing}
-                        >
-                          {isUnpublishing ? 'Unpublishing...' : 'Unpublish Story'}
-                        </ProtectedActionButton>
+                          <ProtectedActionButton
+                            itemId={storyId}
+                            itemType="story"
+                            itemTitle={story.title}
+                            actionType="unpublish"
+                            currentPublishStatus={story.publishStatus}
+                            currentPricingType={story.pricingType}
+                            onAction={handleUnpublish}
+                            disabled={isUnpublishing}
+                          >
+                            {isUnpublishing
+                              ? "Unpublishing..."
+                              : "Unpublish Story"}
+                          </ProtectedActionButton>
                         </>
                       )}
 
@@ -357,7 +452,7 @@ export default function StoryDetailPage() {
                         disabled={isDeleting}
                       >
                         <TrashIcon className="mr-2 h-4 w-4" />
-                        {isDeleting ? 'Deleting...' : 'Delete Story'}
+                        {isDeleting ? "Deleting..." : "Delete Story"}
                       </ProtectedActionButton>
                     </>
                   )}
@@ -397,34 +492,58 @@ export default function StoryDetailPage() {
             <DetailCard
               title="Publish Status"
               value={story.publishStatus}
-              color={story.publishStatus === 'PUBLISHED' ? 'green' : story.publishStatus === 'DRAFT' ? 'yellow' : story.publishStatus === 'COMPLETED' ? 'blue' : 'red'}
+              color={
+                story.publishStatus === "PUBLISHED"
+                  ? "green"
+                  : story.publishStatus === "DRAFT"
+                  ? "yellow"
+                  : story.publishStatus === "COMPLETED"
+                  ? "blue"
+                  : "red"
+              }
             />
             <DetailCard
               title="Book Status"
               value={story.bookStatus}
-              color={story.bookStatus === 'ONGOING' ? 'green' : 'blue'}
+              color={story.bookStatus === "ONGOING" ? "green" : "blue"}
             />
             <DetailCard
               title="Pricing Type"
-              value={story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 
-                     story.pricingType === 'WHOLE_BOOK' ? `WHOLE BOOK (${story.bookPrice || 0} coins)` : 
-                     story.pricingType}
-              color={story.pricingType === 'FREE' ? 'green' : story.pricingType === 'PAID_PER_CHAPTER' ? 'blue' : 'purple'}
+              value={
+                story.pricingType === "PAID_PER_CHAPTER"
+                  ? "PAID PER CHAPTER"
+                  : story.pricingType === "WHOLE_BOOK"
+                  ? `WHOLE BOOK (${story.bookPrice || 0} coins)`
+                  : story.pricingType
+              }
+              color={
+                story.pricingType === "FREE"
+                  ? "green"
+                  : story.pricingType === "PAID_PER_CHAPTER"
+                  ? "blue"
+                  : "purple"
+              }
             />
-            
+
             {/* Book Price - Only show for WHOLE_BOOK pricing */}
-            {story.pricingType === 'WHOLE_BOOK' && (
-              <BookPriceCard 
+            {story.pricingType === "WHOLE_BOOK" && (
+              <BookPriceCard
                 title="Book Price"
                 value={`${story.bookPrice || 0} coins`}
                 color="purple"
               />
             )}
-            
+
             <DetailCard
               title="Moderation Status"
               value={story.moderationStatus}
-              color={story.moderationStatus === 'APPROVED' ? 'green' : story.moderationStatus === 'PENDING' ? 'yellow' : 'red'}
+              color={
+                story.moderationStatus === "APPROVED"
+                  ? "green"
+                  : story.moderationStatus === "PENDING"
+                  ? "yellow"
+                  : "red"
+              }
             />
             <DetailCard
               title="Total Earnings"
@@ -436,20 +555,18 @@ export default function StoryDetailPage() {
 
         {/* Chapter Management */}
         <div className="mb-8">
-          <ChapterManagement 
-            storyId={storyId} 
+          <ChapterManagement
+            storyId={storyId}
             isAuthor={isAuthor || false}
             story={{
               pricingType: story.pricingType,
-              bookPrice: story.bookPrice
+              bookPrice: story.bookPrice,
             }}
           />
         </div>
 
         {/* Delete Confirmation Modal */}
         {/* The delete confirmation modal is no longer needed as ProtectedActionButton handles it */}
-
-
 
         {/* Gift Modal */}
         <EnhancedGiftModal
@@ -459,44 +576,43 @@ export default function StoryDetailPage() {
           recipientName={story.author.displayName || story.author.username}
           storyId={story.id}
           onGiftSent={() => {
-            toast.success('Gift sent successfully!');
+            toast.success("Gift sent successfully!");
             // Optionally refresh the story data to update earnings
           }}
         />
 
         {/* Remove Refund Confirmation Modal */}
-        {/* {refundData && (
+        {refundData && (
           <RefundConfirmationModal
             isOpen={showRefundModal}
-            onClose={() => {
-              setShowRefundModal(false);
-              setRefundData(null);
-            }}
+            onClose={() => setShowRefundModal(false)}
             onConfirm={handleRefundConfirm}
             refundData={refundData}
-            isProcessing={false} // isProcessingRefunds is removed
+            isLoading={isUnpublishing || isDeleting}
           />
-        )} */}
+        )}
       </div>
     </div>
   );
 }
 
 // Stat Card Component
-function StatCard({ 
-  icon: Icon, 
-  value, 
-  label, 
-  gradient 
-}: { 
-  icon: React.ComponentType<{ className?: string }>; 
-  value: string; 
+function StatCard({
+  icon: Icon,
+  value,
+  label,
+  gradient,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  value: string;
   label: string;
   gradient: string;
 }) {
   return (
     <div className="text-center">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${gradient} text-white mb-2`}>
+      <div
+        className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${gradient} text-white mb-2`}
+      >
         <Icon className="w-5 h-5" />
       </div>
       <div className="text-2xl font-bold text-nomanweb-primary">{value}</div>
@@ -506,27 +622,31 @@ function StatCard({
 }
 
 // Detail Card Component
-function DetailCard({ 
-  title, 
-  value, 
-  color 
-}: { 
-  title: string; 
-  value: string; 
+function DetailCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: string;
   color: string;
 }) {
   const colorClasses = {
-    green: 'bg-green-100 text-green-800',
-    blue: 'bg-blue-100 text-blue-800',
-    purple: 'bg-purple-100 text-purple-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    red: 'bg-red-100 text-red-800'
+    green: "bg-green-100 text-green-800",
+    blue: "bg-blue-100 text-blue-800",
+    purple: "bg-purple-100 text-purple-800",
+    yellow: "bg-yellow-100 text-yellow-800",
+    red: "bg-red-100 text-red-800",
   };
 
   return (
     <div>
       <h4 className="text-sm font-medium text-gray-700 mb-2">{title}</h4>
-      <span className={`px-3 py-1 text-sm font-medium rounded-full ${colorClasses[color as keyof typeof colorClasses]}`}>
+      <span
+        className={`px-3 py-1 text-sm font-medium rounded-full ${
+          colorClasses[color as keyof typeof colorClasses]
+        }`}
+      >
         {value}
       </span>
     </div>
@@ -534,32 +654,34 @@ function DetailCard({
 }
 
 // Book Price Card Component - Enhanced for book pricing
-function BookPriceCard({ 
-  title, 
-  value, 
-  color 
-}: { 
-  title: string; 
-  value: string; 
+function BookPriceCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: string;
   color: string;
 }) {
   const colorClasses = {
-    green: 'bg-green-100 text-green-800 border-green-200',
-    blue: 'bg-blue-100 text-blue-800 border-blue-200',
-    purple: 'bg-purple-100 text-purple-800 border-purple-200',
-    yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    red: 'bg-red-100 text-red-800 border-red-200'
+    green: "bg-green-100 text-green-800 border-green-200",
+    blue: "bg-blue-100 text-blue-800 border-blue-200",
+    purple: "bg-purple-100 text-purple-800 border-purple-200",
+    yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    red: "bg-red-100 text-red-800 border-red-200",
   };
 
   return (
-    <div className={`p-4 rounded-lg border-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
+    <div
+      className={`p-4 rounded-lg border-2 ${
+        colorClasses[color as keyof typeof colorClasses]
+      }`}
+    >
       <div className="flex items-center space-x-2 mb-2">
         <span className="text-2xl">💰</span>
         <h4 className="text-sm font-medium text-gray-700">{title}</h4>
       </div>
-      <div className="text-xl font-bold text-purple-900">
-        {value}
-      </div>
+      <div className="text-xl font-bold text-purple-900">{value}</div>
       <p className="text-xs text-purple-700 mt-1">
         Readers pay this price once for full access
       </p>

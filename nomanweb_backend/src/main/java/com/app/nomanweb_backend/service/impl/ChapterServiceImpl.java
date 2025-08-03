@@ -1,9 +1,11 @@
 package com.app.nomanweb_backend.service.impl;
 
 import com.app.nomanweb_backend.dto.chapter.*;
+import com.app.nomanweb_backend.exception.InsufficientFundsException;
 import com.app.nomanweb_backend.entity.BookPurchase;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.ChapterPurchase;
+import com.app.nomanweb_backend.entity.ChapterRefund;
 
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
@@ -13,6 +15,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CoinTransactionRepository;
 import com.app.nomanweb_backend.repository.ChapterPurchaseRepository;
+import com.app.nomanweb_backend.repository.ChapterRefundRepository;
 
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.CollaborationService;
@@ -48,6 +51,7 @@ public class ChapterServiceImpl implements ChapterService {
     private final CoinTransactionRepository coinTransactionRepository;
     private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final BookPurchaseRepository bookPurchaseRepository;
+    private final ChapterRefundRepository chapterRefundRepository;
 
     private final CollaborationService collaborationService;
     private final ViewTrackingService viewTrackingService;
@@ -386,12 +390,20 @@ public class ChapterServiceImpl implements ChapterService {
     }
 
     @Override
+    @Transactional
     public ChapterResponse publishChapter(UUID chapterId, UUID authorId) {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
         if (!chapter.getStory().getAuthor().getId().equals(authorId)) {
             throw new IllegalArgumentException("Only the author can publish this chapter");
+        }
+
+        // When a chapter is republished, delete any existing refund records for it
+        long deletedRefundsCount = chapterRefundRepository.deleteByChapter(chapter);
+        chapterRefundRepository.flush(); // Ensure deletion is committed immediately
+        if (deletedRefundsCount > 0) {
+            log.info("Deleted {} existing refund records for chapter {}", deletedRefundsCount, chapterId);
         }
 
         chapter.setStatus(Chapter.Status.PUBLISHED);
@@ -403,7 +415,7 @@ public class ChapterServiceImpl implements ChapterService {
     }
 
     @Override
-    public ChapterResponse unpublishChapter(UUID chapterId, UUID authorId) {
+    public ChapterResponse unpublishChapter(UUID chapterId, UUID authorId, boolean confirmRefund) {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
@@ -414,93 +426,112 @@ public class ChapterServiceImpl implements ChapterService {
         Story story = chapter.getStory();
 
         // Handle refunds based on pricing type
-        if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
-            // For WHOLE_BOOK pricing, refund proportionally to all book purchasers
-            List<BookPurchase> activeBookPurchases = bookPurchaseRepository
-                    .findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story);
+        if (confirmRefund) {
+            if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                // For WHOLE_BOOK pricing, provide simple proportional refund without affecting
+                // book access
+                List<BookPurchase> activeBookPurchases = bookPurchaseRepository
+                        .findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story);
 
-            if (!activeBookPurchases.isEmpty()) {
-                log.info("Found {} active book purchases for story: {}", activeBookPurchases.size(), story.getId());
+                if (!activeBookPurchases.isEmpty()) {
+                    log.info("Found {} active book purchases for story: {}", activeBookPurchases.size(), story.getId());
 
-                // Count total published chapters to calculate proportional refund
-                long totalPublishedChapters = chapterRepository.countByStoryAndStatus(story, Chapter.Status.PUBLISHED);
-                if (totalPublishedChapters > 0) {
-                    // Calculate refund amount per chapter: book price / total chapters
-                    BigDecimal refundPerChapter = story.getBookPrice()
-                            .divide(BigDecimal.valueOf(totalPublishedChapters), 2, java.math.RoundingMode.HALF_UP);
+                    // Count total published chapters to calculate proportional refund
+                    long totalPublishedChapters = chapterRepository.countByStoryAndStatus(story,
+                            Chapter.Status.PUBLISHED);
+                    if (totalPublishedChapters > 0) {
+                        // Calculate refund amount per chapter: book price / total chapters
+                        BigDecimal refundPerChapter = story.getBookPrice()
+                                .divide(BigDecimal.valueOf(totalPublishedChapters), 2, java.math.RoundingMode.HALF_UP);
+
+                        // Check if author has enough coins to refund
+                        User author = story.getAuthor();
+                        BigDecimal totalRefundAmount = refundPerChapter
+                                .multiply(BigDecimal.valueOf(activeBookPurchases.size()));
+
+                        if (author.getCoinBalance().compareTo(totalRefundAmount) < 0) {
+                            throw new InsufficientFundsException("Insufficient coins to process refunds. Required: " +
+                                    totalRefundAmount + ", Available: " + author.getCoinBalance());
+                        }
+
+                        // Process simple proportional refunds for all book purchasers
+                        // Note: Book purchases remain active, ensuring continued access to other
+                        // chapters
+                        for (BookPurchase purchase : activeBookPurchases) {
+                            // Refund proportional amount to each purchaser
+                            monetizationService.addCoins(purchase.getUser(), refundPerChapter,
+                                    "Chapter refund: " + chapter.getTitle() + " from " + story.getTitle());
+
+                            // Deduct from author's balance
+                            monetizationService.deductCoins(author, refundPerChapter,
+                                    "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
+                                            " for: " + chapter.getTitle());
+
+                            // Create ChapterRefund record for tracking only (does not affect access)
+                            ChapterRefund chapterRefund = ChapterRefund.builder()
+                                    .user(purchase.getUser())
+                                    .chapter(chapter)
+                                    .story(story)
+                                    .bookPurchase(purchase)
+                                    .refundAmount(refundPerChapter)
+                                    .reason("Chapter unpublished: " + chapter.getTitle())
+                                    .build();
+                            chapterRefundRepository.save(chapterRefund);
+
+                            log.info("Processed proportional refund for book purchase: {} to user: {} amount: {}",
+                                    purchase.getId(), purchase.getUser().getId(), refundPerChapter);
+                        }
+
+                        log.info(
+                                "Successfully processed {} proportional chapter refunds for story: {} - Book access maintained",
+                                activeBookPurchases.size(), story.getId());
+                    }
+                }
+            } else if (story.getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                // For PAID_PER_CHAPTER pricing, refund individual chapter purchasers
+                List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository
+                        .findByChapterAndIsRefundedFalseOrderByPurchasedAtDesc(chapter);
+
+                if (!activeChapterPurchases.isEmpty()) {
+                    log.info("Found {} active chapter purchases for chapter: {}", activeChapterPurchases.size(),
+                            chapterId);
 
                     // Check if author has enough coins to refund
                     User author = story.getAuthor();
-                    BigDecimal totalRefundAmount = refundPerChapter
-                            .multiply(BigDecimal.valueOf(activeBookPurchases.size()));
+                    BigDecimal totalRefundAmount = BigDecimal.ZERO;
+                    for (ChapterPurchase purchase : activeChapterPurchases) {
+                        totalRefundAmount = totalRefundAmount.add(purchase.getCoinsSpent());
+                    }
 
                     if (author.getCoinBalance().compareTo(totalRefundAmount) < 0) {
-                        throw new RuntimeException("Insufficient coins to process refunds. Required: " +
+                        throw new InsufficientFundsException("Insufficient coins to process refunds. Required: " +
                                 totalRefundAmount + ", Available: " + author.getCoinBalance());
                     }
 
-                    // Process proportional refunds for all book purchasers
-                    for (BookPurchase purchase : activeBookPurchases) {
-                        // Refund proportional amount to each purchaser
-                        monetizationService.addCoins(purchase.getUser(), refundPerChapter,
+                    // Process refunds for all chapter purchasers
+                    for (ChapterPurchase purchase : activeChapterPurchases) {
+                        // Refund the full chapter price to each purchaser
+                        monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(),
                                 "Chapter refund: " + chapter.getTitle() + " from " + story.getTitle());
 
                         // Deduct from author's balance
-                        monetizationService.deductCoins(author, refundPerChapter,
+                        monetizationService.deductCoins(author, purchase.getCoinsSpent(),
                                 "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
                                         " for: " + chapter.getTitle());
 
-                        log.info("Processed proportional refund for book purchase: {} to user: {} amount: {}",
-                                purchase.getId(), purchase.getUser().getId(), refundPerChapter);
+                        // Mark purchase as refunded
+                        purchase.markAsRefunded();
+
+                        log.info("Processed refund for chapter purchase: {} to user: {} amount: {}",
+                                purchase.getId(), purchase.getUser().getId(), purchase.getCoinsSpent());
                     }
 
-                    log.info("Successfully processed {} proportional chapter refunds for story: {}",
-                            activeBookPurchases.size(), story.getId());
+                    // Save all refunded purchases
+                    chapterPurchaseRepository.saveAll(activeChapterPurchases);
+
+                    log.info("Successfully processed {} chapter refunds for chapter: {}",
+                            activeChapterPurchases.size(), chapterId);
                 }
-            }
-        } else if (story.getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
-            // For PAID_PER_CHAPTER pricing, refund individual chapter purchasers
-            List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository
-                    .findByChapterAndIsRefundedFalseOrderByPurchasedAtDesc(chapter);
-
-            if (!activeChapterPurchases.isEmpty()) {
-                log.info("Found {} active chapter purchases for chapter: {}", activeChapterPurchases.size(), chapterId);
-
-                // Check if author has enough coins to refund
-                User author = story.getAuthor();
-                BigDecimal totalRefundAmount = BigDecimal.ZERO;
-                for (ChapterPurchase purchase : activeChapterPurchases) {
-                    totalRefundAmount = totalRefundAmount.add(purchase.getCoinsSpent());
-                }
-
-                if (author.getCoinBalance().compareTo(totalRefundAmount) < 0) {
-                    throw new RuntimeException("Insufficient coins to process refunds. Required: " +
-                            totalRefundAmount + ", Available: " + author.getCoinBalance());
-                }
-
-                // Process refunds for all chapter purchasers
-                for (ChapterPurchase purchase : activeChapterPurchases) {
-                    // Refund the full chapter price to each purchaser
-                    monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(),
-                            "Chapter refund: " + chapter.getTitle() + " from " + story.getTitle());
-
-                    // Deduct from author's balance
-                    monetizationService.deductCoins(author, purchase.getCoinsSpent(),
-                            "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
-                                    " for: " + chapter.getTitle());
-
-                    // Mark purchase as refunded
-                    purchase.markAsRefunded();
-
-                    log.info("Processed refund for chapter purchase: {} to user: {} amount: {}",
-                            purchase.getId(), purchase.getUser().getId(), purchase.getCoinsSpent());
-                }
-
-                // Save all refunded purchases
-                chapterPurchaseRepository.saveAll(activeChapterPurchases);
-
-                log.info("Successfully processed {} chapter refunds for chapter: {}",
-                        activeChapterPurchases.size(), chapterId);
             }
         }
 
@@ -658,13 +689,19 @@ public class ChapterServiceImpl implements ChapterService {
         List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
                 chapter.getStory());
         if (!bookPurchases.isEmpty()) {
-            // Get the most recent book purchase to check purchase date
+            // Get the most recent book purchase
             BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // Additional check: purchase must be made after the story's current publish
+                // For WHOLE_BOOK pricing, active book purchase grants access to all chapters
+                // regardless of individual chapter unpublishing/republishing
+                if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    log.info("User {} has valid book purchase for WHOLE_BOOK story - access granted to chapter {}",
+                            userId, chapterId);
+                    return true;
+                }
+
+                // For PAID_PER_CHAPTER pricing, check if purchase was made after story publish
                 // date
-                // This prevents access from old purchases when a story is republished after
-                // refunds
                 if (chapter.getStory().getPublishedAt() != null &&
                         mostRecentBookPurchase.getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
                     log.info("User {} has valid book purchase for chapter {} (purchased after current publish date)",
@@ -675,6 +712,9 @@ public class ChapterServiceImpl implements ChapterService {
                         userId, chapterId);
             }
         }
+
+        // Note: ChapterRefund records do NOT grant access to republished content
+        // Users must repurchase after refunds and republishing
 
         log.info("User {} has no active purchase for chapter {}", userId, chapterId);
         return false;
@@ -1188,8 +1228,9 @@ public class ChapterServiceImpl implements ChapterService {
     }
 
     @Override
-    public void unpublishWholeBook(UUID storyId, UUID authorId) {
-        log.info("Unpublishing whole book for story: {} by author: {}", storyId, authorId);
+    public void unpublishWholeBook(UUID storyId, UUID authorId, boolean confirmRefund) {
+        log.info("Unpublishing whole book for story: {} by author: {} with confirmRefund: {}", storyId, authorId,
+                confirmRefund);
 
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
@@ -1198,7 +1239,10 @@ public class ChapterServiceImpl implements ChapterService {
             throw new RuntimeException("Not authorized to unpublish this story");
         }
 
-        // Check if story has WHOLE_BOOK pricing and has purchases
+        List<Chapter> publishedChapters = chapterRepository.findByStoryAndStatus(
+                story, Chapter.Status.PUBLISHED);
+
+        // Handle refunds for both WHOLE_BOOK and PAID_PER_CHAPTER pricing
         if (story.getPricingType() == Story.PricingType.WHOLE_BOOK) {
             List<BookPurchase> activeBookPurchases = bookPurchaseRepository
                     .findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story);
@@ -1206,14 +1250,13 @@ public class ChapterServiceImpl implements ChapterService {
             if (!activeBookPurchases.isEmpty()) {
                 log.info("Found {} active book purchases for story: {}", activeBookPurchases.size(), storyId);
 
-                BigDecimal totalRefundAmount = BigDecimal.ZERO;
-                for (BookPurchase purchase : activeBookPurchases) {
-                    totalRefundAmount = totalRefundAmount.add(purchase.getCoinsSpent());
-                }
+                BigDecimal totalRefundAmount = activeBookPurchases.stream()
+                        .map(BookPurchase::getCoinsSpent)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 User author = story.getAuthor();
                 if (author.getCoinBalance().compareTo(totalRefundAmount) < 0) {
-                    throw new RuntimeException("Insufficient coins to process refunds. Required: " +
+                    throw new InsufficientFundsException("Insufficient coins to process refunds. Required: " +
                             totalRefundAmount + ", Available: " + author.getCoinBalance());
                 }
 
@@ -1223,20 +1266,46 @@ public class ChapterServiceImpl implements ChapterService {
                     monetizationService.deductCoins(author, purchase.getCoinsSpent(),
                             "Book refund to " + purchase.getUser().getDisplayNameOrUsername() +
                                     " for: " + story.getTitle());
+
                     purchase.markAsRefunded(); // Mark as refunded so access is lost
                     log.info("Marked purchase {} as refunded: isRefunded={}, refundedAt={}", purchase.getId(),
                             purchase.getIsRefunded(), purchase.getRefundedAt());
                 }
                 bookPurchaseRepository.saveAll(activeBookPurchases);
-                bookPurchaseRepository.flush();
-                log.info("After refund, all purchases for story {}: {}", storyId,
-                        bookPurchaseRepository.findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story));
+            }
+        } else if (story.getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+            List<ChapterPurchase> allActiveChapterPurchases = new java.util.ArrayList<>();
+            for (Chapter chapter : publishedChapters) {
+                allActiveChapterPurchases.addAll(
+                        chapterPurchaseRepository.findByChapterAndIsRefundedFalseOrderByPurchasedAtDesc(chapter));
+            }
+
+            if (!allActiveChapterPurchases.isEmpty()) {
+                log.info("Found {} active chapter purchases for story: {}", allActiveChapterPurchases.size(), storyId);
+
+                BigDecimal totalRefundAmount = allActiveChapterPurchases.stream()
+                        .map(ChapterPurchase::getCoinsSpent)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                User author = story.getAuthor();
+                if (author.getCoinBalance().compareTo(totalRefundAmount) < 0) {
+                    throw new InsufficientFundsException("Insufficient coins to process refunds. Required: " +
+                            totalRefundAmount + ", Available: " + author.getCoinBalance());
+                }
+
+                for (ChapterPurchase purchase : allActiveChapterPurchases) {
+                    monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(),
+                            "Chapter refund: " + purchase.getChapter().getTitle() + " from " + story.getTitle()
+                                    + " (book unpublished)");
+                    monetizationService.deductCoins(author, purchase.getCoinsSpent(),
+                            "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
+                                    " for: " + purchase.getChapter().getTitle());
+                    // We don't mark as refunded, so the user keeps access
+                }
             }
         }
 
         // Unpublish all chapters
-        List<Chapter> publishedChapters = chapterRepository.findByStoryAndStatus(
-                story, Chapter.Status.PUBLISHED);
         if (!publishedChapters.isEmpty()) {
             for (Chapter chapter : publishedChapters) {
                 chapter.setStatus(Chapter.Status.DRAFT);

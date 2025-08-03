@@ -39,7 +39,7 @@ public interface ChapterService {
     // Chapter management
     ChapterResponse publishChapter(UUID chapterId, UUID authorId);
 
-    ChapterResponse unpublishChapter(UUID chapterId, UUID authorId);
+    ChapterResponse unpublishChapter(UUID chapterId, UUID authorId, boolean confirmRefund);
 
     // Bulk chapter publishing
     void bulkPublishChaptersByStory(UUID storyId, UUID authorId);
@@ -48,7 +48,7 @@ public interface ChapterService {
     void bulkUnpublishChaptersByStory(UUID storyId, UUID authorId);
 
     // Unpublish whole book with refunds
-    void unpublishWholeBook(UUID storyId, UUID authorId);
+    void unpublishWholeBook(UUID storyId, UUID authorId, boolean confirmRefund);
 
     void reorderChapters(UUID storyId, List<UUID> chapterIds, UUID authorId);
 

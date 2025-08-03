@@ -108,6 +108,7 @@ export default function ChapterManagement({
   const [showBulkPermanentDeleteConfirm, setShowBulkPermanentDeleteConfirm] =
     useState(false);
 
+  const [unpublishConfirm, setUnpublishConfirm] = useState<string | null>(null);
 
   // Get chapter access for non-authors
   const visibleChapters = chapters.filter(
@@ -201,18 +202,16 @@ export default function ChapterManagement({
     publishChapter(chapterId);
   };
 
-  const handleUnpublish = async (chapterId: string) => {
-    console.log(`🔍 Attempting to unpublish chapter: ${chapterId}`);
-    console.log(`📊 Story pricing type: ${story?.pricingType}`);
-    // This function should only be called by ProtectedActionButton when protection allows it
-    await unpublishChapter(chapterId);
+  const handleUnpublish = (id: string, confirmRefund: boolean) => {
+    unpublishChapter({ id, confirmRefund });
+    setUnpublishConfirm(null);
   };
 
   const handleDelete = async (chapterId: string) => {
-    console.log(`🔍 Attempting to delete chapter: ${chapterId}`);
+    console.log(`🔍 Attempting to move chapter to trash: ${chapterId}`);
     console.log(`📊 Story pricing type: ${story?.pricingType}`);
     // This function should only be called by ProtectedActionButton when protection allows it
-    await deleteChapter(chapterId);
+    moveToTrash(chapterId);
     setDeleteConfirm(null);
   };
 
@@ -275,8 +274,6 @@ export default function ChapterManagement({
       setShowBulkPermanentDeleteConfirm(false);
     }
   };
-
-
 
   return (
     <div key={refreshKey} className="card-elevated p-6">
@@ -372,8 +369,6 @@ export default function ChapterManagement({
             <span>Trash ({trashChapters.length})</span>
           </button>
         </div>
-
-
       </div>
 
       {/* Bulk Selection Controls */}
@@ -472,7 +467,7 @@ export default function ChapterManagement({
               chapter={chapter}
               storyId={storyId}
               onPublish={handlePublish}
-              onUnpublish={handleUnpublish}
+              onUnpublish={() => setUnpublishConfirm(chapter.id)}
               onDelete={() => {
                 if (activeTab === "trash") {
                   setShowPermanentDeleteConfirm(chapter.id);
@@ -708,8 +703,6 @@ export default function ChapterManagement({
         </div>
       )}
 
-
-
       {/* Empty Trash Confirmation Modal */}
 
       {/* Bulk Upload Modal */}
@@ -734,6 +727,50 @@ export default function ChapterManagement({
             setIsUploading(false);
           }}
         />
+      )}
+
+      {/* Unpublish Confirmation Modal */}
+      {unpublishConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="card-elevated p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-nomanweb-primary mb-4">
+              Unpublish Chapter
+            </h3>
+            <p className="text-gray-600 mb-2">
+              Are you sure you want to unpublish this chapter? It will be moved
+              to drafts.
+            </p>
+            <p className="text-sm text-red-600 mb-6">
+              If this chapter was paid, unpublishing it may refund the users.
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setUnpublishConfirm(null)}
+                disabled={isUnpublishing}
+                className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleUnpublish(unpublishConfirm, true)}
+                disabled={isUnpublishing}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 transition-colors"
+              >
+                {isUnpublishing ? "Unpublishing..." : "Unpublish & Refund"}
+              </button>
+              <button
+                onClick={() => handleUnpublish(unpublishConfirm, false)}
+                disabled={isUnpublishing}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {isUnpublishing
+                  ? "Unpublishing..."
+                  : "Unpublish without Refund"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -760,7 +797,7 @@ function ChapterManagementCard({
   chapter: ChapterPreview;
   storyId: string;
   onPublish: (id: string) => void;
-  onUnpublish: (id: string) => void;
+  onUnpublish: () => void;
   onDelete: () => void;
   onRestore?: () => void;
   isPublishing: boolean;
@@ -836,7 +873,7 @@ function ChapterContent({
   };
   storyId: string;
   onPublish: (id: string) => void;
-  onUnpublish: (id: string) => void;
+  onUnpublish: () => void;
   onDelete: () => void;
   onRestore?: () => void;
   isPublishing: boolean;
@@ -1078,7 +1115,7 @@ function ChapterContent({
                 actionType="unpublish"
                 currentPublishStatus={chapter.status}
                 currentPricingType={story?.pricingType}
-                onAction={() => onUnpublish(chapter.id)}
+                onAction={onUnpublish}
                 className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
                 disabled={isUnpublishing}
                 variant="outline"
@@ -1092,7 +1129,7 @@ function ChapterContent({
               itemId={chapter.id}
               itemType="chapter"
               itemTitle={chapter.title}
-              actionType="delete"
+              actionType="moveToTrash"
               currentPublishStatus={chapter.status}
               currentPricingType={story?.pricingType}
               onAction={onDelete}

@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, DollarSign, Users, CheckCircle } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, DollarSign, Users, CheckCircle } from "lucide-react";
 
 interface RefundConfirmationModalProps {
   isOpen: boolean;
@@ -14,7 +21,7 @@ interface RefundConfirmationModalProps {
     totalRefundAmount: number;
     affectedPurchasers: number;
     itemTitle: string;
-    itemType: 'story' | 'chapter';
+    itemType: "story" | "chapter";
   };
   isLoading?: boolean;
 }
@@ -50,7 +57,8 @@ export function RefundConfirmationModal({
             <span>Refund Required</span>
           </DialogTitle>
           <DialogDescription>
-            This {refundData.itemType} has active purchases that require refunds before unpublishing.
+            This {refundData.itemType} has active purchases that require refunds
+            before unpublishing.
           </DialogDescription>
         </DialogHeader>
 
@@ -59,18 +67,22 @@ export function RefundConfirmationModal({
             <h4 className="font-medium text-yellow-800 mb-2">
               Refund Summary for "{refundData.itemTitle}"
             </h4>
-            
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-yellow-700">Total Refund Amount:</span>
+                <span className="text-sm text-yellow-700">
+                  Total Refund Amount:
+                </span>
                 <span className="font-medium text-yellow-800 flex items-center">
                   <DollarSign className="w-4 h-4 mr-1" />
                   {refundData.totalRefundAmount} coins
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between">
-                <span className="text-sm text-yellow-700">Affected Purchasers:</span>
+                <span className="text-sm text-yellow-700">
+                  Affected Purchasers:
+                </span>
                 <span className="font-medium text-yellow-800 flex items-center">
                   <Users className="w-4 h-4 mr-1" />
                   {refundData.affectedPurchasers} users
@@ -83,9 +95,14 @@ export function RefundConfirmationModal({
             <div className="flex items-start space-x-2">
               <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-800 mb-1">What happens next?</h4>
+                <h4 className="font-medium text-blue-800 mb-1">
+                  What happens next?
+                </h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• All affected users will receive their refunds automatically</li>
+                  <li>
+                    • All affected users will receive their refunds
+                    automatically
+                  </li>
                   <li>• The {refundData.itemType} will be unpublished</li>
                   <li>• Users will lose access to the content</li>
                   <li>• You can republish later if needed</li>
@@ -124,4 +141,4 @@ export function RefundConfirmationModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

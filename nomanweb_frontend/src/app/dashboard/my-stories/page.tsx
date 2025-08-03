@@ -15,7 +15,6 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { StoryPreview } from "@/types/story";
 
-
 import {
   Plus,
   MoreVertical,
@@ -43,8 +42,6 @@ export default function MyStoriesPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StoryTab>("stories");
 
-
-
   const {
     data: storiesPage,
     isLoading,
@@ -67,8 +64,6 @@ export default function MyStoriesPage() {
     useRestoreStoryFromTrash();
   const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } =
     usePermanentlyDeleteStory();
-
-
 
   const handleCreateNew = () => {
     router.push("/stories/create");
@@ -701,8 +696,6 @@ export default function MyStoriesPage() {
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }

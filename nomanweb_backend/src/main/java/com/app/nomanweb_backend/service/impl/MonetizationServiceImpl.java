@@ -31,6 +31,7 @@ public class MonetizationServiceImpl implements MonetizationService {
     private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final BookPurchaseRepository bookPurchaseRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final ChapterRefundRepository chapterRefundRepository;
 
     private final UserRepository userRepository;
     private final ChapterRepository chapterRepository;
@@ -180,35 +181,26 @@ public class MonetizationServiceImpl implements MonetizationService {
         java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
                 chapter);
         if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
-            // Only allow access if purchase is after or at the same time as the story's
-            // current publish date
-            if (chapter.getStory().getPublishedAt() != null &&
-                    !chapterPurchase.get().getPurchasedAt().isBefore(chapter.getStory().getPublishedAt())) {
-                return true;
-            }
+            return true; // An active chapter purchase grants access.
         }
 
         // Check if user has purchased the whole book (active, not refunded)
-        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
+        List<BookPurchase> userBookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
                 chapter.getStory());
-        if (!bookPurchases.isEmpty()) {
-            BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
+        if (!userBookPurchases.isEmpty()) {
+            BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // Only allow access if purchase is after or at the same time as the story's
-                // current publish date
-                if (chapter.getStory().getPublishedAt() != null &&
-                        !mostRecentBookPurchase.getPurchasedAt().isBefore(chapter.getStory().getPublishedAt())) {
-                    // If story is currently WHOLE_BOOK, user has access to all chapters
-                    if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                // For WHOLE_BOOK pricing, an active book purchase grants access to all its
+                // chapters,
+                // even if a chapter was individually unpublished and refunded.
+                if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    return true;
+                }
+                // For PAID_PER_CHAPTER, check if the chapter existed at the time of purchase.
+                if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null &&
+                            chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
                         return true;
-                    }
-                    // If story is currently PAID_PER_CHAPTER, user only has access to chapters that
-                    // existed at purchase time
-                    if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
-                        if (mostRecentBookPurchase.getChaptersAtPurchase() != null &&
-                                chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
-                            return true;
-                        }
                     }
                 }
             }
@@ -221,8 +213,6 @@ public class MonetizationServiceImpl implements MonetizationService {
                     chapter.getStory());
             List<ChapterPurchase> activeChapterPurchases = userChapterPurchases.stream()
                     .filter(ChapterPurchase::isActive)
-                    .filter(cp -> chapter.getStory().getPublishedAt() != null
-                            && !cp.getPurchasedAt().isBefore(chapter.getStory().getPublishedAt()))
                     .collect(Collectors.toList());
             long totalPublishedChapters = chapterRepository.countByStoryAndStatus(chapter.getStory(),
                     Chapter.Status.PUBLISHED);
@@ -230,6 +220,20 @@ public class MonetizationServiceImpl implements MonetizationService {
                 return true;
             }
         }
+
+        // For WHOLE_BOOK pricing: Check if user has a ChapterRefund record for this
+        // specific chapter
+        // This ensures users who received a proportional refund for an unpublished
+        // chapter regain access if it's republished.
+        if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+            if (chapterRefundRepository.existsByUserAndChapter(user, chapter)) {
+                log.info("User {} has a refund record for chapter {}, granting access.", user.getId(), chapter.getId());
+                return true;
+            }
+        }
+
+        // Note: For PAID_PER_CHAPTER pricing, ChapterRefund records do NOT grant access
+        // to republished content - users must repurchase after refunds and republishing
 
         return false; // No active (non-refunded) purchases found
     }
@@ -247,24 +251,42 @@ public class MonetizationServiceImpl implements MonetizationService {
         java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
                 chapter);
         if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
-            if (chapter.getStory().getPublishedAt() != null &&
-                    !chapterPurchase.get().getPurchasedAt().isBefore(chapter.getStory().getPublishedAt())) {
+            return true;
+        }
+
+        // Also check if user purchased the whole book (active, not refunded)
+        List<BookPurchase> userBookPurchases = bookPurchaseRepository
+                .findByUserAndStoryOrderByPurchasedAtDesc(user, chapter.getStory());
+        if (!userBookPurchases.isEmpty()) {
+            BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
+            if (mostRecentBookPurchase.isActive()) {
+                // For WHOLE_BOOK, an active purchase grants access to all chapters.
+                if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+                    return true;
+                }
+                // For PAID_PER_CHAPTER, check if the chapter existed at the time of purchase.
+                if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                    if (mostRecentBookPurchase.getChaptersAtPurchase() != null &&
+                            chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // For WHOLE_BOOK pricing: Check if user has a ChapterRefund record for this
+        // specific chapter
+        // This ensures users who received a proportional refund for an unpublished
+        // chapter regain access if it's republished.
+        if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
+            if (chapterRefundRepository.existsByUserAndChapter(user, chapter)) {
                 return true;
             }
         }
 
-        // Also check if user purchased the whole book (active, not refunded)
-        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
-                chapter.getStory());
-        if (!bookPurchases.isEmpty()) {
-            BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
-            if (mostRecentBookPurchase.isActive()) {
-                if (chapter.getStory().getPublishedAt() != null &&
-                        !mostRecentBookPurchase.getPurchasedAt().isBefore(chapter.getStory().getPublishedAt())) {
-                    return true;
-                }
-            }
-        }
+        // Note: For PAID_PER_CHAPTER pricing, ChapterRefund records do NOT grant access
+        // to republished content - users must repurchase after refunds and republishing
+
         return false;
     }
 
@@ -306,8 +328,14 @@ public class MonetizationServiceImpl implements MonetizationService {
             if (mostRecentBookPurchase.isActive()) {
                 // If story is currently WHOLE_BOOK, user has access to all chapters
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    throw new RuntimeException(
-                            "You already have access to this chapter through your book purchase");
+                    // For WHOLE_BOOK pricing, even if user has chapter refund, they should still
+                    // have access
+                    // through their active book purchase without needing to repurchase
+                    return GiftTransactionResponse.builder()
+                            .id(mostRecentBookPurchase.getId())
+                            .totalCoins(BigDecimal.ZERO) // No charge since they already own the book
+                            .createdAt(LocalDateTime.now())
+                            .build();
                 }
 
                 // If story is currently PAID_PER_CHAPTER, user only has access to chapters that
@@ -322,7 +350,9 @@ public class MonetizationServiceImpl implements MonetizationService {
                 }
             }
         }
-        // If refunded, allow repurchase
+        // For PAID_PER_CHAPTER pricing: If refunded, allow repurchase
+        // For WHOLE_BOOK pricing: Active book purchase should grant access even after
+        // individual chapter refunds
 
         // Check if user has enough coins
         if (!user.hasEnoughCoins(chapter.getCoinPrice())) {
@@ -459,18 +489,13 @@ public class MonetizationServiceImpl implements MonetizationService {
                 // Get the most recent book purchase and check if it's active (not refunded)
                 BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
                 if (mostRecentBookPurchase.isActive()) {
-                    // Additional check: purchase must be made after or at the same time as the
-                    // story's current publish
-                    // date
-                    // This prevents access from old purchases when a story is republished after
-                    // refunds
-                    if (story.getPublishedAt() != null &&
-                            !mostRecentBookPurchase.getPurchasedAt().isBefore(story.getPublishedAt())) {
-                        return true; // User has valid active book purchase for current publish cycle
-                    }
+                    return true; // User has valid active book purchase
                 }
             }
         }
+
+        // Note: ChapterRefund records do NOT grant access to republished content
+        // Users must repurchase after refunds and republishing
 
         // For PAID_PER_CHAPTER pricing, book access is not applicable
         return false;

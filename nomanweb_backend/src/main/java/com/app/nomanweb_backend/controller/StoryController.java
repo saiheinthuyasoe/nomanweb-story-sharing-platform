@@ -400,10 +400,11 @@ public class StoryController {
     @PostMapping("/{id}/publish")
     public ResponseEntity<StoryResponse> publishStory(
             @PathVariable UUID id,
+            @RequestParam(defaultValue = "true") boolean autoPublishChapters,
             HttpServletRequest httpRequest) {
         try {
             UUID authorId = getUserIdFromRequest(httpRequest);
-            StoryResponse response = storyService.publishStory(id, authorId);
+            StoryResponse response = storyService.publishStory(id, authorId, autoPublishChapters);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             log.error("Error publishing story {}: {}", id, e.getMessage());
