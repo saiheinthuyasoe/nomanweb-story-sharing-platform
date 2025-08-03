@@ -209,17 +209,20 @@ public class MonetizationServiceImpl implements MonetizationService {
             }
         }
 
-        // Check if user has purchased enough chapters for 90% threshold (active, not
-        // refunded)
+        // For WHOLE_BOOK pricing: Grant full access to users who previously bought individual chapters
+        // This handles the case where pricing changed from PAID_PER_CHAPTER to WHOLE_BOOK
         if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
             List<ChapterPurchase> userChapterPurchases = chapterPurchaseRepository.findByUserAndStory(user,
                     chapter.getStory());
             List<ChapterPurchase> activeChapterPurchases = userChapterPurchases.stream()
                     .filter(ChapterPurchase::isActive)
                     .collect(Collectors.toList());
-            long totalPublishedChapters = chapterRepository.countByStoryAndStatus(chapter.getStory(),
-                    Chapter.Status.PUBLISHED);
-            if (totalPublishedChapters > 0 && activeChapterPurchases.size() >= totalPublishedChapters * 0.9) {
+            
+            // If user has ANY active chapter purchases, grant access to ALL chapters
+            // This ensures fairness when pricing changes from PAID_PER_CHAPTER to WHOLE_BOOK
+            if (!activeChapterPurchases.isEmpty()) {
+                log.info("User {} has {} active chapter purchases for WHOLE_BOOK story {}, granting full access.", 
+                        user.getId(), activeChapterPurchases.size(), chapter.getStory().getId());
                 return true;
             }
         }

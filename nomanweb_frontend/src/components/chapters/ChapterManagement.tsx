@@ -34,6 +34,16 @@ import {
   Cog6ToothIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
+import { AlertTriangle, DollarSign, Users, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import BulkChapterUpload from "./BulkChapterUpload";
@@ -109,6 +119,13 @@ export default function ChapterManagement({
     useState(false);
 
   const [unpublishConfirm, setUnpublishConfirm] = useState<string | null>(null);
+  const [refundData, setRefundData] = useState<{
+    hasPurchases: boolean;
+    totalRefundAmount: number;
+    affectedPurchasers: number;
+    itemTitle: string;
+    itemType: "chapter";
+  } | null>(null);
 
   // Get chapter access for non-authors
   const visibleChapters = chapters.filter(
@@ -202,9 +219,40 @@ export default function ChapterManagement({
     publishChapter(chapterId);
   };
 
+  const calculateRefund = async (chapterId: string, chapterTitle: string) => {
+    try {
+      const response = await fetch(
+        `/api/refunds/chapters/${chapterId}/calculate-refund`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          ...data,
+          itemTitle: chapterTitle,
+          itemType: "chapter" as const,
+        };
+      }
+    } catch (error) {
+      console.error("Error calculating chapter refund:", error);
+    }
+    return { hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 };
+  };
+
+  const handleUnpublishClick = async (chapterId: string, chapterTitle: string) => {
+    // For WHOLE_BOOK pricing, calculate refunds
+    if (story?.pricingType === "WHOLE_BOOK") {
+      const refundInfo = await calculateRefund(chapterId, chapterTitle);
+      setRefundData(refundInfo);
+    } else {
+      setRefundData(null);
+    }
+    setUnpublishConfirm(chapterId);
+  };
+
   const handleUnpublish = (id: string, confirmRefund: boolean) => {
     unpublishChapter({ id, confirmRefund });
     setUnpublishConfirm(null);
+    setRefundData(null);
   };
 
   const handleDelete = async (chapterId: string) => {
@@ -467,7 +515,7 @@ export default function ChapterManagement({
               chapter={chapter}
               storyId={storyId}
               onPublish={handlePublish}
-              onUnpublish={() => setUnpublishConfirm(chapter.id)}
+              onUnpublish={() => handleUnpublishClick(chapter.id, chapter.title)}
               onDelete={() => {
                 if (activeTab === "trash") {
                   setShowPermanentDeleteConfirm(chapter.id);
@@ -730,48 +778,137 @@ export default function ChapterManagement({
       )}
 
       {/* Unpublish Confirmation Modal */}
-      {unpublishConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="card-elevated p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-nomanweb-primary mb-4">
-              Unpublish Chapter
-            </h3>
-            <p className="text-gray-600 mb-2">
-              Are you sure you want to unpublish this chapter? It will be moved
-              to drafts.
-            </p>
-            <p className="text-sm text-red-600 mb-6">
-              If this chapter was paid, unpublishing it may refund the users.
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setUnpublishConfirm(null)}
-                disabled={isUnpublishing}
-                className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleUnpublish(unpublishConfirm, true)}
-                disabled={isUnpublishing}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 transition-colors"
-              >
-                {isUnpublishing ? "Unpublishing..." : "Unpublish & Refund"}
-              </button>
-              <button
-                onClick={() => handleUnpublish(unpublishConfirm, false)}
-                disabled={isUnpublishing}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {isUnpublishing
-                  ? "Unpublishing..."
-                  : "Unpublish without Refund"}
-              </button>
+      <Dialog open={!!unpublishConfirm} onOpenChange={() => setUnpublishConfirm(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-500" />
+              <span>Unpublish Chapter</span>
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unpublish this chapter? It will be moved to drafts.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {story?.pricingType === "WHOLE_BOOK" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-yellow-800 mb-1">
+                      Refund Warning
+                    </h4>
+                    <p className="text-sm text-yellow-700">
+                      If this chapter was paid, unpublishing it may refund the users.
+                      This action cannot be undone.
+                    </p>
+                    {refundData && refundData.hasPurchases && (
+                      <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-yellow-800">
+                            Total Refund Amount:
+                          </span>
+                          <span className="text-lg font-bold text-yellow-900">
+                            ${refundData.totalRefundAmount?.toFixed(2) || '0.00'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-yellow-700">
+                            Affected Users:
+                          </span>
+                          <span className="text-sm font-medium text-yellow-800">
+                            {refundData.affectedPurchasers || 0}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <CheckCircle className="w-5 h-5 text-blue-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-blue-800 mb-1">
+                    What happens next?
+                  </h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• The chapter will be moved to drafts</li>
+                    <li>• Readers will lose access to this chapter</li>
+                    {story?.pricingType === "WHOLE_BOOK" && (
+                      <li>• Affected users may receive refunds automatically</li>
+                    )}
+                    <li>• You can republish later if needed</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setUnpublishConfirm(null)}
+              disabled={isUnpublishing}
+            >
+              Cancel
+            </Button>
+            {story?.pricingType === "WHOLE_BOOK" ? (
+              <>
+                <Button
+                  onClick={() => handleUnpublish(unpublishConfirm, true)}
+                  disabled={isUnpublishing}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  {isUnpublishing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Unpublishing...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Unpublish & Refund
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleUnpublish(unpublishConfirm, false)}
+                  disabled={isUnpublishing}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isUnpublishing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Unpublishing...
+                    </>
+                  ) : (
+                    "Unpublish without Refund"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => handleUnpublish(unpublishConfirm, false)}
+                disabled={isUnpublishing}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isUnpublishing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Unpublishing...
+                  </>
+                ) : (
+                  "Unpublish"
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

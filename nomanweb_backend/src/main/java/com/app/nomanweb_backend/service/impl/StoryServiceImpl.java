@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.math.RoundingMode;
 import java.util.stream.Collectors;
@@ -212,10 +213,11 @@ public class StoryServiceImpl implements StoryService {
             return;
         }
 
-        // Case 3: PAID_PER_CHAPTER to WHOLE_BOOK - No automatic refunds
-        // This is a business decision - existing chapter purchasers keep their access
+        // Case 3: PAID_PER_CHAPTER to WHOLE_BOOK - Grant full access to chapter purchasers
+        // Users who bought individual chapters get full access to all chapters (including future ones)
         if (originalPricingType == Story.PricingType.PAID_PER_CHAPTER && newPricingType == Story.PricingType.WHOLE_BOOK) {
-            log.info("📖➡️📚 PAID_PER_CHAPTER to WHOLE_BOOK: No automatic refunds. Existing chapter purchases remain valid.");
+            log.info("📖➡️📚 PAID_PER_CHAPTER to WHOLE_BOOK: Granting full access to existing chapter purchasers.");
+            grantFullAccessToChapterPurchasers(story);
             return;
         }
 
@@ -409,6 +411,65 @@ public class StoryServiceImpl implements StoryService {
         }
 
         log.info("✅ Completed full chapter refunds: {} users refunded, {} total coins", refundedCount, totalRefunded);
+    }
+
+    /**
+     * Grant full access to users who previously bought individual chapters
+     * when pricing changes from PAID_PER_CHAPTER to WHOLE_BOOK
+     */
+    @Transactional
+    private void grantFullAccessToChapterPurchasers(Story story) {
+        // Find all users who have active chapter purchases for this story
+        List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository.findActiveByStoryOrderByPurchasedAtDesc(story);
+        
+        if (activeChapterPurchases.isEmpty()) {
+            log.info("📚 No active chapter purchases found for story: {}", story.getId());
+            return;
+        }
+
+        // Group purchases by user to avoid duplicate book purchases
+        Map<User, List<ChapterPurchase>> purchasesByUser = activeChapterPurchases.stream()
+                .collect(Collectors.groupingBy(ChapterPurchase::getUser));
+
+        int grantedCount = 0;
+        
+        for (Map.Entry<User, List<ChapterPurchase>> entry : purchasesByUser.entrySet()) {
+            User user = entry.getKey();
+            List<ChapterPurchase> userPurchases = entry.getValue();
+            
+            try {
+                // Check if user already has a book purchase for this story
+                List<BookPurchase> existingBookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user, story);
+                boolean hasActiveBookPurchase = existingBookPurchases.stream().anyMatch(BookPurchase::isActive);
+                
+                if (!hasActiveBookPurchase) {
+                    // Create a virtual book purchase to grant full access
+                    BookPurchase virtualBookPurchase = new BookPurchase();
+                    virtualBookPurchase.setUser(user);
+                    virtualBookPurchase.setStory(story);
+                    virtualBookPurchase.setCoinsSpent(BigDecimal.ZERO); // No cost for this virtual purchase
+                    virtualBookPurchase.setPurchasedAt(LocalDateTime.now());
+                    virtualBookPurchase.setIsRefunded(false);
+                    virtualBookPurchase.setChaptersAtPurchase(story.getChapters().size()); // Set to current chapter count for full access
+                    
+                    bookPurchaseRepository.save(virtualBookPurchase);
+                    grantedCount++;
+                    
+                    log.info("📖➡️📚 Granted full access to user {} who had {} chapter purchases for story {}", 
+                            user.getUsername(), userPurchases.size(), story.getId());
+                } else {
+                    log.info("📚 User {} already has book purchase for story {}, skipping", 
+                            user.getUsername(), story.getId());
+                }
+                
+            } catch (Exception e) {
+                log.error("❌ Failed to grant full access to user {} for story {}: {}", 
+                        user.getUsername(), story.getId(), e.getMessage());
+            }
+        }
+        
+        log.info("✅ Granted full access to {} users who previously bought individual chapters for story {}", 
+                grantedCount, story.getId());
     }
 
     @Override

@@ -106,24 +106,26 @@ public class PurchaseProtectionServiceImpl implements PurchaseProtectionService 
                                         return true;
                                 }
                         }
-                }
+                } else if (story.getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                        // For PAID_PER_CHAPTER pricing, only check for direct chapter purchases of this
+                        // specific chapter
+                        List<ChapterPurchase> purchases = chapterPurchaseRepository
+                                        .findByChapterAndIsRefundedFalseOrderByPurchasedAtDesc(chapter);
+                        log.info("📖 Found {} active direct chapter purchases for chapter: {}", purchases.size(),
+                                        chapterId);
 
-                // Check for direct chapter purchases from current publish cycle (only active,
-                // non-refunded)
-                List<ChapterPurchase> purchases = chapterPurchaseRepository
-                                .findByChapterAndIsRefundedFalseOrderByPurchasedAtDesc(chapter);
-                log.info("📖 Found {} active direct chapter purchases for chapter: {}", purchases.size(), chapterId);
-
-                if (!purchases.isEmpty() && story.getPublishedAt() != null) {
-                        // Only count purchases made on or after the current publish date
-                        long validChapterPurchases = purchases.stream()
-                                        .filter(purchase -> !purchase.getPurchasedAt().isBefore(story.getPublishedAt()))
-                                        .count();
-                        log.info("📖 Found {} valid chapter purchases from current publish cycle",
-                                        validChapterPurchases);
-                        if (validChapterPurchases > 0) {
-                                log.info("✅ Found valid chapter purchases - chapter has purchases: TRUE");
-                                return true;
+                        if (!purchases.isEmpty() && story.getPublishedAt() != null) {
+                                // Only count purchases made on or after the current publish date
+                                long validChapterPurchases = purchases.stream()
+                                                .filter(purchase -> !purchase.getPurchasedAt()
+                                                                .isBefore(story.getPublishedAt()))
+                                                .count();
+                                log.info("📖 Found {} valid chapter purchases from current publish cycle",
+                                                validChapterPurchases);
+                                if (validChapterPurchases > 0) {
+                                        log.info("✅ Found valid chapter purchases - chapter has purchases: TRUE");
+                                        return true;
+                                }
                         }
                 }
 
