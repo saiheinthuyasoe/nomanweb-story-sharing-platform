@@ -13,14 +13,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "reading_lists")
+@Table(name = "libraries", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "user_id", "story_id", "list_type" })
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
-public class ReadingList {
+public class Library {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

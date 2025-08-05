@@ -1,32 +1,29 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
-import { monetizationApi, PurchaseChapterRequest, PurchaseResponse } from '@/lib/api/monetization';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  monetizationApi,
+  PurchaseChapterRequest,
+} from "@/lib/api/monetization";
+import { toast } from "react-hot-toast";
 
 export const usePurchaseChapter = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (request: PurchaseChapterRequest): Promise<PurchaseResponse> => {
-      return monetizationApi.purchaseChapter(request);
+    mutationFn: monetizationApi.purchaseChapter,
+    onSuccess: (response) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["coinBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["purchaseHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["chapter-access"] });
+      queryClient.invalidateQueries({ queryKey: ["purchased-chapters"] });
+      queryClient.invalidateQueries({ queryKey: ["bookAccess"] });
+
+      toast.success("Chapter purchased successfully!");
     },
-    onSuccess: (data, variables) => {
-      // Invalidate chapter access queries
-      queryClient.invalidateQueries({ queryKey: ['chapter-access'] });
-      queryClient.invalidateQueries({ queryKey: ['chapter-access-batch'] });
-      
-      // Invalidate coin balance
-      queryClient.invalidateQueries({ queryKey: ['coin-balance'] });
-      
-      // Invalidate purchase history
-      queryClient.invalidateQueries({ queryKey: ['purchase-history'] });
-      
-      // Invalidate library purchased content
-      queryClient.invalidateQueries({ queryKey: ['reading-lists', 'purchased'] });
-      
-      toast.success('Chapter purchased successfully!');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to purchase chapter');
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to purchase chapter"
+      );
     },
   });
-}; 
+};

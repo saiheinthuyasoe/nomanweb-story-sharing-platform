@@ -9,6 +9,7 @@ import com.app.nomanweb_backend.entity.ChapterRefund;
 
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.entity.Library;
 import com.app.nomanweb_backend.repository.BookPurchaseRepository;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
@@ -16,6 +17,8 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.CoinTransactionRepository;
 import com.app.nomanweb_backend.repository.ChapterPurchaseRepository;
 import com.app.nomanweb_backend.repository.ChapterRefundRepository;
+import com.app.nomanweb_backend.repository.LibraryRepository;
+import com.app.nomanweb_backend.repository.ReadingProgressRepository;
 
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.CollaborationService;
@@ -52,6 +55,8 @@ public class ChapterServiceImpl implements ChapterService {
     private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final BookPurchaseRepository bookPurchaseRepository;
     private final ChapterRefundRepository chapterRefundRepository;
+    private final LibraryRepository libraryRepository;
+    private final ReadingProgressRepository readingProgressRepository;
 
     private final CollaborationService collaborationService;
     private final ViewTrackingService viewTrackingService;
@@ -109,6 +114,11 @@ public class ChapterServiceImpl implements ChapterService {
         // Update story chapter count
         story.setTotalChapters(story.getTotalChapters() + 1);
         storyRepository.save(story);
+
+        // Update library status for users if chapter is published
+        if (!request.getIsDraft()) {
+            updateLibraryStatusForNewChapter(story);
+        }
 
         log.info("Chapter created successfully: {}", chapter.getId());
         return mapToChapterResponse(chapter, authorId);
@@ -218,10 +228,12 @@ public class ChapterServiceImpl implements ChapterService {
         }
 
         // Handle publishing
+        boolean wasJustPublished = false;
         if (request.getShouldPublish() != null) {
             if (request.getShouldPublish() && chapter.getStatus() == Chapter.Status.DRAFT) {
                 chapter.setStatus(Chapter.Status.PUBLISHED);
                 chapter.setPublishedAt(LocalDateTime.now());
+                wasJustPublished = true;
             } else if (!request.getShouldPublish() && chapter.getStatus() == Chapter.Status.PUBLISHED) {
                 chapter.setStatus(Chapter.Status.DRAFT);
                 chapter.setPublishedAt(null);
@@ -240,6 +252,11 @@ public class ChapterServiceImpl implements ChapterService {
         chapter.setUpdatedAt(LocalDateTime.now());
 
         chapter = chapterRepository.save(chapter);
+
+        // Update library status for users if chapter was just published
+        if (wasJustPublished) {
+            updateLibraryStatusForNewChapter(chapter.getStory());
+        }
 
         // Log the saved chapter state
         log.info(
@@ -409,6 +426,9 @@ public class ChapterServiceImpl implements ChapterService {
         chapter.setStatus(Chapter.Status.PUBLISHED);
         chapter.setPublishedAt(LocalDateTime.now());
         chapter = chapterRepository.save(chapter);
+
+        // Update library status for users who had completed this story
+        updateLibraryStatusForNewChapter(chapter.getStory());
 
         log.info("Chapter published: {}", chapterId);
         return mapToChapterResponse(chapter, authorId);
@@ -692,11 +712,14 @@ public class ChapterServiceImpl implements ChapterService {
             // Get the most recent book purchase
             BookPurchase mostRecentBookPurchase = bookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous pricing changes
+                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous
+                // pricing changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing
+                    // change)
                     if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
-                        boolean hasAccess = chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
+                        boolean hasAccess = chapter.getChapterNumber() <= mostRecentBookPurchase
+                                .getChaptersAtPurchase();
                         log.info("User {} has book purchase with chapter limit {} for chapter {} - access: {}",
                                 userId, mostRecentBookPurchase.getChaptersAtPurchase(), chapterId, hasAccess);
                         return hasAccess;
@@ -1199,6 +1222,11 @@ public class ChapterServiceImpl implements ChapterService {
 
         chapterRepository.saveAll(draftChapters);
 
+        // Update library status for users since new chapters were published
+        if (!draftChapters.isEmpty()) {
+            updateLibraryStatusForNewChapter(story);
+        }
+
         log.info("Successfully published {} chapters for story: {}", draftChapters.size(), storyId);
     }
 
@@ -1326,5 +1354,80 @@ public class ChapterServiceImpl implements ChapterService {
 
         log.info("Successfully unpublished whole book with {} chapters for story: {}", publishedChapters.size(),
                 storyId);
+    }
+
+    /**
+     * Update library status for users who had completed a story when a new chapter
+     * is published
+     * This moves stories from COMPLETED back to READING status without resetting
+     * reading progress
+     * The individual chapter progress remains intact, only the library
+     * categorization changes
+     */
+    private void updateLibraryStatusForNewChapter(Story story) {
+        try {
+            // Find all users who have this story in their COMPLETED list
+            List<Library> completedEntries = libraryRepository.findByStoryIdAndListType(
+                    story.getId(), Library.ListType.COMPLETED);
+
+            if (completedEntries.isEmpty()) {
+                log.info("No users have completed story {} - no library updates needed", story.getId());
+                return;
+            }
+
+            log.info("Found {} users who completed story {} - updating their library status",
+                    completedEntries.size(), story.getId());
+
+            // Get total published chapters for this story
+            long totalChapters = chapterRepository.countByStoryAndStatus(
+                    story, Chapter.Status.PUBLISHED);
+
+            for (Library completedEntry : completedEntries) {
+                User user = completedEntry.getUser();
+
+                // Get completed chapters count for this user and story
+                long completedChapters = readingProgressRepository.countCompletedChaptersByUserAndStory(
+                        user.getId(), story.getId());
+
+                // Check if story is still completed (all chapters read)
+                boolean isStillCompleted = totalChapters > 0 && completedChapters >= totalChapters;
+
+                if (!isStillCompleted) {
+                    // Move from COMPLETED back to READING
+                    // Remove from COMPLETED
+                    libraryRepository.deleteByUserIdAndStoryIdAndListTypeIn(
+                            user.getId(), story.getId(), List.of(Library.ListType.COMPLETED));
+
+                    // Update story counts
+                    story.setTotalCompleted(Math.max(0, story.getTotalCompleted() - 1));
+
+                    // Add to READING (check again to prevent duplicates)
+                    if (!libraryRepository.existsByUserIdAndStoryIdAndListType(
+                            user.getId(), story.getId(), Library.ListType.READING)) {
+                        Library readingEntry = Library.builder()
+                                .user(user)
+                                .story(story)
+                                .listType(Library.ListType.READING)
+                                .build();
+                        libraryRepository.save(readingEntry);
+                    }
+
+                    // Update story counts
+                    story.setTotalCurrentlyReading(story.getTotalCurrentlyReading() + 1);
+
+                    log.info(
+                            "Moved story {} from COMPLETED back to READING for user {} due to new chapter (reading progress preserved)",
+                            story.getId(), user.getId());
+                }
+            }
+
+            // Save updated story counts
+            storyRepository.save(story);
+
+        } catch (Exception e) {
+            log.error("Error updating library status for new chapter in story {}: {}",
+                    story.getId(), e.getMessage(), e);
+            // Don't throw exception to avoid breaking the chapter publishing process
+        }
     }
 }

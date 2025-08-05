@@ -89,7 +89,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/chapters/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/chapters/**").authenticated()
                         .requestMatchers("/api/reading-progress/**").authenticated()
-                        .requestMatchers("/api/reading-lists/**").authenticated()
+                        .requestMatchers("/api/libraries/**").authenticated()
                         .requestMatchers("/api/reactions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/comments/**").authenticated()

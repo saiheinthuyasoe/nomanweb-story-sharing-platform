@@ -30,7 +30,7 @@ import {
   useChapterReactionStatus,
   useToggleChapterLike,
 } from "@/hooks/useReactions";
-import { useAutoUpdateProgress } from "@/hooks/useReadingProgress";
+import { useAutoUpdateProgress, useUpdateReadingProgress, useChapterProgress } from "@/hooks/useReadingProgress";
 import { useChapterAccess } from "@/hooks/useChapterAccess";
 import { useBookAccess } from "@/hooks/useBookPurchase";
 import {
@@ -106,6 +106,11 @@ export default function ChapterReadPage() {
     }
   }, []);
 
+  // Scroll to top when component mounts or chapter changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [storyId, chapterNumber]);
+
   // Save settings to localStorage
   const updateSettings = (newSettings: Partial<ReadingSettings>) => {
     const updated = { ...settings, ...newSettings };
@@ -165,6 +170,8 @@ export default function ChapterReadPage() {
   const toggleReaction = useToggleChapterLike();
 
   const updateProgress = useAutoUpdateProgress(chapter?.id || "");
+  const updateReadingProgress = useUpdateReadingProgress();
+  const { data: currentProgress } = useChapterProgress(chapter?.id || "", !!chapter?.id);
 
   // Comment hooks
   const { data: commentsData, isLoading: isLoadingComments } =
@@ -178,21 +185,46 @@ export default function ChapterReadPage() {
   // Extract comments from paginated response
   const comments = commentsData?.content || [];
 
+  // Initial progress update when chapter loads (to add to Reading list)
+  useEffect(() => {
+    if (chapter && user && canAccessChapter() && !isAuthor) {
+      // Only trigger initial progress update if there's no existing progress
+      // This prevents overwriting completed chapters with 0% progress
+      if (!currentProgress || (!currentProgress.hasProgress && currentProgress.progressPercentage === 0)) {
+        updateReadingProgress.mutate({
+          chapterId: chapter.id,
+          progressPercentage: 0,
+        });
+      }
+    }
+  }, [chapter?.id, user, isAuthor, currentProgress]); // Added currentProgress to dependencies
+
   // Scroll tracking
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.pageYOffset;
       setShowScrollTop(scrollTop > 300);
 
-      // Update reading progress - simplified calculation
+      // Update reading progress - improved calculation
       if (chapter) {
         const documentHeight = document.documentElement.scrollHeight;
         const windowHeight = window.innerHeight;
         const scrollableHeight = documentHeight - windowHeight;
-        const progressPercent =
+        
+        // Calculate scroll percentage
+        let progressPercent = 
           scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
+        
+        // Check if user has reached the bottom (with a small threshold)
+        const isAtBottom = 
+          scrollTop + windowHeight >= documentHeight - 20; // 20px threshold
+        
+        // If user has reached the bottom, mark as 100% complete
+        if (isAtBottom) {
+          progressPercent = 100;
+        }
+        
         const clampedPercent = Math.min(100, Math.max(0, progressPercent));
-
         updateProgress(clampedPercent);
       }
     };
@@ -628,6 +660,10 @@ export default function ChapterReadPage() {
               fontSize: `${settings.fontSize}px`,
               lineHeight: settings.lineHeight,
               color: settings.textColor,
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+              hyphens: 'auto',
             }}
             dangerouslySetInnerHTML={{ __html: chapter.content }}
           />

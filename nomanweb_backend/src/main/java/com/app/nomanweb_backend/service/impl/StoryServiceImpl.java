@@ -121,7 +121,7 @@ public class StoryServiceImpl implements StoryService {
 
         // Store original pricing type to detect changes
         Story.PricingType originalPricingType = story.getPricingType();
-        
+
         // Update fields if provided
         if (request.getTitle() != null) {
             story.setTitle(request.getTitle());
@@ -171,30 +171,34 @@ public class StoryServiceImpl implements StoryService {
     /**
      * Handle refunds when pricing model changes according to the flowchart logic:
      * - WHOLE_BOOK to FREE: Refund all book purchasers
-     * - WHOLE_BOOK to PAID_PER_CHAPTER: No refunds, users keep access to existing chapters
+     * - WHOLE_BOOK to PAID_PER_CHAPTER: No refunds, users keep access to existing
+     * chapters
      * - Any pricing to FREE: Refund affected purchasers
      */
     @Transactional
-    private void handlePricingModelChangeRefunds(Story story, Story.PricingType originalPricingType, Story.PricingType newPricingType) {
-        log.info("🔄 Handling pricing model change for story: {} from {} to {}", 
+    private void handlePricingModelChangeRefunds(Story story, Story.PricingType originalPricingType,
+            Story.PricingType newPricingType) {
+        log.info("🔄 Handling pricing model change for story: {} from {} to {}",
                 story.getId(), originalPricingType, newPricingType);
 
         // Case 1: WHOLE_BOOK to PAID_PER_CHAPTER - No refunds needed
         // Users who bought the whole book keep access to all current chapters
         // They will need to buy new chapters added after the pricing change
-        if (originalPricingType == Story.PricingType.WHOLE_BOOK && newPricingType == Story.PricingType.PAID_PER_CHAPTER) {
-            log.info("📚➡️📖 WHOLE_BOOK to PAID_PER_CHAPTER: No refunds needed. Users keep access to existing chapters.");
-            
+        if (originalPricingType == Story.PricingType.WHOLE_BOOK
+                && newPricingType == Story.PricingType.PAID_PER_CHAPTER) {
+            log.info(
+                    "📚➡️📖 WHOLE_BOOK to PAID_PER_CHAPTER: No refunds needed. Users keep access to existing chapters.");
+
             // Update book purchases to track chapters available at time of purchase
             List<BookPurchase> bookPurchases = bookPurchaseRepository.findActiveByStoryOrderByPurchasedAtDesc(story);
             long currentChapterCount = chapterRepository.countByStory(story);
-            
+
             for (BookPurchase purchase : bookPurchases) {
                 purchase.setChaptersAtPurchase((int) currentChapterCount);
                 bookPurchaseRepository.save(purchase);
             }
-            
-            log.info("✅ Updated {} book purchases with current chapter count: {}", 
+
+            log.info("✅ Updated {} book purchases with current chapter count: {}",
                     bookPurchases.size(), currentChapterCount);
             return;
         }
@@ -202,7 +206,7 @@ public class StoryServiceImpl implements StoryService {
         // Case 2: Any pricing model to FREE - Refund affected purchasers
         if (newPricingType == Story.PricingType.FREE) {
             log.info("💰 Pricing changed to FREE - calculating refunds");
-            
+
             if (originalPricingType == Story.PricingType.WHOLE_BOOK) {
                 // Refund all book purchasers the full book price
                 refundBookPurchasers(story);
@@ -213,9 +217,12 @@ public class StoryServiceImpl implements StoryService {
             return;
         }
 
-        // Case 3: PAID_PER_CHAPTER to WHOLE_BOOK - Grant full access to chapter purchasers
-        // Users who bought individual chapters get full access to all chapters (including future ones)
-        if (originalPricingType == Story.PricingType.PAID_PER_CHAPTER && newPricingType == Story.PricingType.WHOLE_BOOK) {
+        // Case 3: PAID_PER_CHAPTER to WHOLE_BOOK - Grant full access to chapter
+        // purchasers
+        // Users who bought individual chapters get full access to all chapters
+        // (including future ones)
+        if (originalPricingType == Story.PricingType.PAID_PER_CHAPTER
+                && newPricingType == Story.PricingType.WHOLE_BOOK) {
             log.info("📖➡️📚 PAID_PER_CHAPTER to WHOLE_BOOK: Granting full access to existing chapter purchasers.");
             grantFullAccessToChapterPurchasers(story);
             return;
@@ -231,7 +238,7 @@ public class StoryServiceImpl implements StoryService {
     @Transactional
     private void refundBookPurchasers(Story story) {
         List<BookPurchase> activeBookPurchases = bookPurchaseRepository.findActiveByStoryOrderByPurchasedAtDesc(story);
-        
+
         if (activeBookPurchases.isEmpty()) {
             log.info("📚 No active book purchases to refund for story: {}", story.getId());
             return;
@@ -239,7 +246,7 @@ public class StoryServiceImpl implements StoryService {
 
         // Get the number of chapters for partial refund calculation
         long chapterCount = chapterRepository.countByStory(story);
-        
+
         if (chapterCount == 0) {
             log.warn("⚠️ Story has no chapters, using full refund for book purchases");
             // If no chapters, give full refund
@@ -250,7 +257,7 @@ public class StoryServiceImpl implements StoryService {
         BigDecimal totalRefunded = BigDecimal.ZERO;
         int refundedCount = 0;
 
-        log.info("📊 Calculating partial refunds: {} chapters found, {} book purchasers", 
+        log.info("📊 Calculating partial refunds: {} chapters found, {} book purchasers",
                 chapterCount, activeBookPurchases.size());
 
         for (BookPurchase purchase : activeBookPurchases) {
@@ -258,28 +265,28 @@ public class StoryServiceImpl implements StoryService {
                 // Calculate partial refund: Book price ÷ Number of chapters
                 BigDecimal partialRefundAmount = purchase.getCoinsSpent()
                         .divide(BigDecimal.valueOf(chapterCount), 2, RoundingMode.HALF_UP);
-                
+
                 // Add coins back to user
-                monetizationService.addCoins(purchase.getUser(), partialRefundAmount, 
+                monetizationService.addCoins(purchase.getUser(), partialRefundAmount,
                         "Partial refund for pricing model change: " + story.getTitle());
-                
+
                 // Mark purchase as refunded
                 purchase.markAsRefunded();
                 bookPurchaseRepository.save(purchase);
-                
+
                 totalRefunded = totalRefunded.add(partialRefundAmount);
                 refundedCount++;
-                
-                log.info("💰 Partial refund: {} coins (from {} total) to user {} for book purchase", 
+
+                log.info("💰 Partial refund: {} coins (from {} total) to user {} for book purchase",
                         partialRefundAmount, purchase.getCoinsSpent(), purchase.getUser().getUsername());
-                        
+
             } catch (Exception e) {
-                log.error("❌ Failed to refund book purchase {} for user {}: {}", 
+                log.error("❌ Failed to refund book purchase {} for user {}: {}",
                         purchase.getId(), purchase.getUser().getUsername(), e.getMessage());
             }
         }
 
-        log.info("✅ Completed partial book refunds: {} users refunded, {} total coins (partial amounts)", 
+        log.info("✅ Completed partial book refunds: {} users refunded, {} total coins (partial amounts)",
                 refundedCount, totalRefunded);
     }
 
@@ -294,21 +301,21 @@ public class StoryServiceImpl implements StoryService {
         for (BookPurchase purchase : activeBookPurchases) {
             try {
                 // Add full coins back to user
-                monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(), 
+                monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(),
                         "Full refund for pricing model change (no chapters): " + story.getTitle());
-                
+
                 // Mark purchase as refunded
                 purchase.markAsRefunded();
                 bookPurchaseRepository.save(purchase);
-                
+
                 totalRefunded = totalRefunded.add(purchase.getCoinsSpent());
                 refundedCount++;
-                
-                log.info("💰 Full refund: {} coins to user {} for book purchase", 
+
+                log.info("💰 Full refund: {} coins to user {} for book purchase",
                         purchase.getCoinsSpent(), purchase.getUser().getUsername());
-                        
+
             } catch (Exception e) {
-                log.error("❌ Failed to refund book purchase {} for user {}: {}", 
+                log.error("❌ Failed to refund book purchase {} for user {}: {}",
                         purchase.getId(), purchase.getUser().getUsername(), e.getMessage());
             }
         }
@@ -317,15 +324,17 @@ public class StoryServiceImpl implements StoryService {
     }
 
     /**
-     * Refund all active chapter purchasers for a story using partial refund formula:
+     * Refund all active chapter purchasers for a story using partial refund
+     * formula:
      * Each user gets a partial refund based on: Book price ÷ Number of chapters
-     * Note: For chapter purchases, we calculate as if they bought the equivalent book value
+     * Note: For chapter purchases, we calculate as if they bought the equivalent
+     * book value
      */
     @Transactional
     private void refundChapterPurchasers(Story story) {
         List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository
                 .findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story);
-        
+
         if (activeChapterPurchases.isEmpty()) {
             log.info("📖 No active chapter purchases to refund for story: {}", story.getId());
             return;
@@ -333,7 +342,7 @@ public class StoryServiceImpl implements StoryService {
 
         // Get the number of chapters for partial refund calculation
         long chapterCount = chapterRepository.countByStory(story);
-        
+
         if (chapterCount == 0) {
             log.warn("⚠️ Story has no chapters, using full refund for chapter purchases");
             // If no chapters, give full refund
@@ -344,7 +353,7 @@ public class StoryServiceImpl implements StoryService {
         BigDecimal totalRefunded = BigDecimal.ZERO;
         int refundedCount = 0;
 
-        log.info("📊 Calculating partial refunds for chapters: {} chapters found, {} chapter purchasers", 
+        log.info("📊 Calculating partial refunds for chapters: {} chapters found, {} chapter purchasers",
                 chapterCount, activeChapterPurchases.size());
 
         for (ChapterPurchase purchase : activeChapterPurchases) {
@@ -353,29 +362,29 @@ public class StoryServiceImpl implements StoryService {
                 // This represents the proportional value of each chapter
                 BigDecimal partialRefundAmount = purchase.getCoinsSpent()
                         .divide(BigDecimal.valueOf(chapterCount), 2, RoundingMode.HALF_UP);
-                
+
                 // Add coins back to user
-                monetizationService.addCoins(purchase.getUser(), partialRefundAmount, 
+                monetizationService.addCoins(purchase.getUser(), partialRefundAmount,
                         "Partial refund for pricing model change: " + story.getTitle());
-                
+
                 // Mark purchase as refunded
                 purchase.setIsRefunded(true);
                 purchase.setRefundedAt(LocalDateTime.now());
                 chapterPurchaseRepository.save(purchase);
-                
+
                 totalRefunded = totalRefunded.add(partialRefundAmount);
                 refundedCount++;
-                
-                log.info("💰 Partial refund: {} coins (from {} total) to user {} for chapter purchase", 
+
+                log.info("💰 Partial refund: {} coins (from {} total) to user {} for chapter purchase",
                         partialRefundAmount, purchase.getCoinsSpent(), purchase.getUser().getUsername());
-                        
+
             } catch (Exception e) {
-                log.error("❌ Failed to refund chapter purchase {} for user {}: {}", 
+                log.error("❌ Failed to refund chapter purchase {} for user {}: {}",
                         purchase.getId(), purchase.getUser().getUsername(), e.getMessage());
             }
         }
 
-        log.info("✅ Completed partial chapter refunds: {} users refunded, {} total coins (partial amounts)", 
+        log.info("✅ Completed partial chapter refunds: {} users refunded, {} total coins (partial amounts)",
                 refundedCount, totalRefunded);
     }
 
@@ -390,22 +399,22 @@ public class StoryServiceImpl implements StoryService {
         for (ChapterPurchase purchase : activeChapterPurchases) {
             try {
                 // Add full coins back to user
-                monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(), 
+                monetizationService.addCoins(purchase.getUser(), purchase.getCoinsSpent(),
                         "Full refund for pricing model change (no chapters): " + story.getTitle());
-                
+
                 // Mark purchase as refunded
                 purchase.setIsRefunded(true);
                 purchase.setRefundedAt(LocalDateTime.now());
                 chapterPurchaseRepository.save(purchase);
-                
+
                 totalRefunded = totalRefunded.add(purchase.getCoinsSpent());
                 refundedCount++;
-                
-                log.info("💰 Full refund: {} coins to user {} for chapter purchase", 
+
+                log.info("💰 Full refund: {} coins to user {} for chapter purchase",
                         purchase.getCoinsSpent(), purchase.getUser().getUsername());
-                        
+
             } catch (Exception e) {
-                log.error("❌ Failed to refund chapter purchase {} for user {}: {}", 
+                log.error("❌ Failed to refund chapter purchase {} for user {}: {}",
                         purchase.getId(), purchase.getUser().getUsername(), e.getMessage());
             }
         }
@@ -420,8 +429,9 @@ public class StoryServiceImpl implements StoryService {
     @Transactional
     private void grantFullAccessToChapterPurchasers(Story story) {
         // Find all users who have active chapter purchases for this story
-        List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository.findActiveByStoryOrderByPurchasedAtDesc(story);
-        
+        List<ChapterPurchase> activeChapterPurchases = chapterPurchaseRepository
+                .findActiveByStoryOrderByPurchasedAtDesc(story);
+
         if (activeChapterPurchases.isEmpty()) {
             log.info("📚 No active chapter purchases found for story: {}", story.getId());
             return;
@@ -432,16 +442,17 @@ public class StoryServiceImpl implements StoryService {
                 .collect(Collectors.groupingBy(ChapterPurchase::getUser));
 
         int grantedCount = 0;
-        
+
         for (Map.Entry<User, List<ChapterPurchase>> entry : purchasesByUser.entrySet()) {
             User user = entry.getKey();
             List<ChapterPurchase> userPurchases = entry.getValue();
-            
+
             try {
                 // Check if user already has a book purchase for this story
-                List<BookPurchase> existingBookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user, story);
+                List<BookPurchase> existingBookPurchases = bookPurchaseRepository
+                        .findByUserAndStoryOrderByPurchasedAtDesc(user, story);
                 boolean hasActiveBookPurchase = existingBookPurchases.stream().anyMatch(BookPurchase::isActive);
-                
+
                 if (!hasActiveBookPurchase) {
                     // Create a virtual book purchase to grant full access
                     BookPurchase virtualBookPurchase = new BookPurchase();
@@ -450,25 +461,26 @@ public class StoryServiceImpl implements StoryService {
                     virtualBookPurchase.setCoinsSpent(BigDecimal.ZERO); // No cost for this virtual purchase
                     virtualBookPurchase.setPurchasedAt(LocalDateTime.now());
                     virtualBookPurchase.setIsRefunded(false);
-                    virtualBookPurchase.setChaptersAtPurchase(story.getChapters().size()); // Set to current chapter count for full access
-                    
+                    virtualBookPurchase.setChaptersAtPurchase(story.getChapters().size()); // Set to current chapter
+                                                                                           // count for full access
+
                     bookPurchaseRepository.save(virtualBookPurchase);
                     grantedCount++;
-                    
-                    log.info("📖➡️📚 Granted full access to user {} who had {} chapter purchases for story {}", 
+
+                    log.info("📖➡️📚 Granted full access to user {} who had {} chapter purchases for story {}",
                             user.getUsername(), userPurchases.size(), story.getId());
                 } else {
-                    log.info("📚 User {} already has book purchase for story {}, skipping", 
+                    log.info("📚 User {} already has book purchase for story {}, skipping",
                             user.getUsername(), story.getId());
                 }
-                
+
             } catch (Exception e) {
-                log.error("❌ Failed to grant full access to user {} for story {}: {}", 
+                log.error("❌ Failed to grant full access to user {} for story {}: {}",
                         user.getUsername(), story.getId(), e.getMessage());
             }
         }
-        
-        log.info("✅ Granted full access to {} users who previously bought individual chapters for story {}", 
+
+        log.info("✅ Granted full access to {} users who previously bought individual chapters for story {}",
                 grantedCount, story.getId());
     }
 
@@ -557,7 +569,7 @@ public class StoryServiceImpl implements StoryService {
                 story.getChapters().size(),
                 story.getComments().size(),
                 story.getReadingProgress().size(),
-                story.getReadingLists().size(),
+                story.getLibraries().size(),
                 story.getGiftTransactions().size(),
                 story.getChapterPurchases().size());
 
@@ -675,7 +687,7 @@ public class StoryServiceImpl implements StoryService {
         int totalChapters = stories.stream().mapToInt(s -> s.getChapters().size()).sum();
         int totalComments = stories.stream().mapToInt(s -> s.getComments().size()).sum();
         int totalReadingProgress = stories.stream().mapToInt(s -> s.getReadingProgress().size()).sum();
-        int totalReadingLists = stories.stream().mapToInt(s -> s.getReadingLists().size()).sum();
+        int totalReadingLists = stories.stream().mapToInt(s -> s.getLibraries().size()).sum();
         int totalGiftTransactions = stories.stream().mapToInt(s -> s.getGiftTransactions().size()).sum();
         int totalChapterPurchases = stories.stream().mapToInt(s -> s.getChapterPurchases().size()).sum();
 
@@ -707,7 +719,7 @@ public class StoryServiceImpl implements StoryService {
         int totalChapters = trashStories.stream().mapToInt(s -> s.getChapters().size()).sum();
         int totalComments = trashStories.stream().mapToInt(s -> s.getComments().size()).sum();
         int totalReadingProgress = trashStories.stream().mapToInt(s -> s.getReadingProgress().size()).sum();
-        int totalReadingLists = trashStories.stream().mapToInt(s -> s.getReadingLists().size()).sum();
+        int totalReadingLists = trashStories.stream().mapToInt(s -> s.getLibraries().size()).sum();
         int totalGiftTransactions = trashStories.stream().mapToInt(s -> s.getGiftTransactions().size()).sum();
         int totalChapterPurchases = trashStories.stream().mapToInt(s -> s.getChapterPurchases().size()).sum();
 
@@ -1019,6 +1031,9 @@ public class StoryServiceImpl implements StoryService {
                 .totalViews(story.getTotalViews())
                 .totalLikes(story.getTotalLikes())
                 .totalComments(story.getTotalComments())
+                .totalWantToRead(story.getTotalWantToRead())
+                .totalCompleted(story.getTotalCompleted())
+                .totalCurrentlyReading(story.getTotalCurrentlyReading())
                 .totalCoinsEarned(story.getTotalCoinsEarned())
                 .bookPrice(story.getBookPrice())
                 .defaultChapterPrice(story.getDefaultChapterPrice())

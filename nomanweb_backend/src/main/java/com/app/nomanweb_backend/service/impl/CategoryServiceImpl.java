@@ -161,7 +161,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .slug(category.getSlug())
                 .isActive(category.getIsActive())
                 .createdAt(category.getCreatedAt())
-                .storyCount((long) category.getStories().size())
+                .storyCount(0L) // TODO: Implement proper story count query to avoid lazy loading issues
                 .build();
     }
 }

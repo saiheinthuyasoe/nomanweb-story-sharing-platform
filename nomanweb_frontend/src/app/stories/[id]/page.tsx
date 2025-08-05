@@ -18,7 +18,7 @@ import {
   useStoryReactionStatus,
   useToggleStoryLike,
 } from "@/hooks/useReactions";
-import { useBookmarkStatus, useToggleBookmark } from "@/hooks/useReadingLists";
+import { useBookmarkStatus, useToggleBookmark } from "@/hooks/useLibraries";
 import { useChaptersByStory } from "@/hooks/useChapters";
 import {
   useChapterAccessBatch,
@@ -473,6 +473,12 @@ export default function StoryReaderView() {
       toast.error("Please login to like this story");
       return;
     }
+    // Update bookmark status in library
+    toggleBookmark({
+      storyId,
+      listType: "LIKE",
+    });
+    // Update like count in stories database
     toggleStoryLike(storyId);
   };
 
@@ -686,7 +692,7 @@ export default function StoryReaderView() {
               </div>
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Eye className="h-5 w-5 text-gray-400 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-gray-900">
@@ -723,6 +729,8 @@ export default function StoryReaderView() {
                   <div className="text-xs text-gray-500">Status</div>
                 </div>
               </div>
+
+
 
               {/* Rating */}
               <div className="flex items-center space-x-4">
@@ -851,12 +859,23 @@ export default function StoryReaderView() {
                               option.type.toLowerCase() as keyof typeof bookmarkStatus.listTypes
                             ];
 
+                          // Check if this option should be disabled to prevent conflicts
+                          const isReadingActive = bookmarkStatus?.listTypes?.reading;
+                          const isCompletedActive = bookmarkStatus?.listTypes?.completed;
+                          
+                          const isDisabled = 
+                            (option.type === "READING" && isCompletedActive && !isActive) ||
+                            (option.type === "COMPLETED" && isReadingActive && !isActive);
+
                           return (
                             <button
                               key={option.type}
-                              onClick={() => handleAddToLibrary(option.type)}
+                              onClick={() => !isDisabled && handleAddToLibrary(option.type)}
+                              disabled={isDisabled}
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                                isActive
+                                isDisabled
+                                  ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                                  : isActive
                                   ? `${option.bgColor} ${option.color}`
                                   : "text-gray-700 hover:bg-gray-100"
                               }`}
@@ -864,10 +883,17 @@ export default function StoryReaderView() {
                               {isActive ? (
                                 <SolidIcon className="h-5 w-5" />
                               ) : (
-                                <Icon className="h-5 w-5" />
+                                <Icon className={`h-5 w-5 ${isDisabled ? "opacity-50" : ""}`} />
                               )}
                               <span className="flex-1 text-left">
                                 {option.label}
+                                {isDisabled && (
+                                  <span className="block text-xs text-gray-400 mt-1">
+                                    {option.type === "READING" 
+                                      ? "Remove from Completed first"
+                                      : "Remove from Reading first"}
+                                  </span>
+                                )}
                               </span>
                               {isActive && <span className="text-xs">✓</span>}
                             </button>
@@ -899,28 +925,26 @@ export default function StoryReaderView() {
                 </button>
                 <button
                   onClick={handleLike}
-                  disabled={isLikeLoading || isFetchingReactions}
+                  disabled={isBookmarkLoading}
                   className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 ${
-                    reactionStatus?.liked
+                    bookmarkStatus?.listTypes?.LIKE
                       ? "bg-red-100 text-red-700 border border-red-200"
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   } ${
-                    isLikeLoading || isFetchingReactions
+                    isBookmarkLoading
                       ? "opacity-50 cursor-not-allowed"
                       : ""
                   }`}
-                  title={reactionStatus?.liked ? "Unlike story" : "Like story"}
+                  title={bookmarkStatus?.listTypes?.LIKE ? "Unlike story" : "Like story"}
                 >
                   <Heart
                     className={`h-5 w-5 transition-all duration-200 ${
-                      reactionStatus?.liked ? "fill-current" : ""
-                    } ${isLikeLoading ? "animate-pulse" : ""} ${
-                      isFetchingReactions ? "animate-spin" : ""
-                    }`}
+                      bookmarkStatus?.listTypes?.LIKE ? "fill-current" : ""
+                    } ${isBookmarkLoading ? "animate-pulse" : ""}`}
                   />
                   <span className="transition-all duration-200">
-                    {reactionStatus?.liked ? "Liked" : "Like"}
-                    {isFetchingReactions && (
+                    {bookmarkStatus?.listTypes?.LIKE ? "Liked" : "Like"}
+                    {isBookmarkLoading && (
                       <span className="ml-1 text-xs animate-pulse">↻</span>
                     )}
                   </span>

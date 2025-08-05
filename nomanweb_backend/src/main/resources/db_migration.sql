@@ -19,23 +19,23 @@ CREATE INDEX IF NOT EXISTS idx_reactions_user ON reactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_reactions_target ON reactions(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_reactions_type ON reactions(reaction_type);
 
--- Create reading_lists table
-CREATE TABLE IF NOT EXISTS reading_lists (
+-- Create libraries table
+CREATE TABLE IF NOT EXISTS libraries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     story_id UUID NOT NULL,
     list_type VARCHAR(20) NOT NULL CHECK (list_type IN ('READING', 'COMPLETED', 'LIKE', 'WANT_TO_READ')),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT fk_reading_lists_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_reading_lists_story FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE,
-    CONSTRAINT unique_list_item UNIQUE (user_id, story_id, list_type)
+    CONSTRAINT fk_libraries_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_libraries_story FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE,
+    CONSTRAINT unique_library_item UNIQUE (user_id, story_id, list_type)
 );
 
--- Create indexes for reading_lists table
-CREATE INDEX IF NOT EXISTS idx_reading_list_user ON reading_lists(user_id);
-CREATE INDEX IF NOT EXISTS idx_reading_list_story ON reading_lists(story_id);
-CREATE INDEX IF NOT EXISTS idx_reading_list_type ON reading_lists(list_type);
+-- Create indexes for libraries table
+CREATE INDEX IF NOT EXISTS idx_library_user ON libraries(user_id);
+CREATE INDEX IF NOT EXISTS idx_library_story ON libraries(story_id);
+CREATE INDEX IF NOT EXISTS idx_library_type ON libraries(list_type);
 
 -- Drop the old reading_progress table if it exists with wrong constraint
 DROP TABLE IF EXISTS reading_progress;
@@ -155,4 +155,4 @@ INSERT INTO gifts (name, description, icon_url, coin_cost) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Display completion message
-SELECT 'Reader functionality and monetization tables created successfully!' as status; 
+SELECT 'Reader functionality and monetization tables created successfully!' as status;

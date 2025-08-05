@@ -34,6 +34,9 @@ public class StoryResponse {
     private Long totalViews;
     private Long totalLikes;
     private Long totalComments;
+    private Long totalWantToRead;
+    private Long totalCompleted;
+    private Long totalCurrentlyReading;
     private BigDecimal totalCoinsEarned;
 
     // Pricing

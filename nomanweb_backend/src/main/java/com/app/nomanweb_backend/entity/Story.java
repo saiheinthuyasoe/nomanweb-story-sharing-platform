@@ -89,6 +89,18 @@ public class Story {
     @Builder.Default
     private Long totalComments = 0L;
 
+    @Column(name = "total_want_to_read")
+    @Builder.Default
+    private Long totalWantToRead = 0L;
+
+    @Column(name = "total_completed")
+    @Builder.Default
+    private Long totalCompleted = 0L;
+
+    @Column(name = "total_currently_reading")
+    @Builder.Default
+    private Long totalCurrentlyReading = 0L;
+
     @Column(name = "total_coins_earned", precision = 10, scale = 2)
     @Builder.Default
     private BigDecimal totalCoinsEarned = BigDecimal.ZERO;
@@ -153,7 +165,7 @@ public class Story {
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private List<ReadingList> readingLists = new ArrayList<>();
+    private List<Library> libraries = new ArrayList<>();
 
     @OneToMany(mappedBy = "story", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -214,6 +226,36 @@ public class Story {
     public void decrementComments() {
         if (this.totalComments > 0) {
             this.totalComments--;
+        }
+    }
+
+    public void incrementWantToRead() {
+        this.totalWantToRead++;
+    }
+
+    public void decrementWantToRead() {
+        if (this.totalWantToRead > 0) {
+            this.totalWantToRead--;
+        }
+    }
+
+    public void incrementCompleted() {
+        this.totalCompleted++;
+    }
+
+    public void decrementCompleted() {
+        if (this.totalCompleted > 0) {
+            this.totalCompleted--;
+        }
+    }
+
+    public void incrementCurrentlyReading() {
+        this.totalCurrentlyReading++;
+    }
+
+    public void decrementCurrentlyReading() {
+        if (this.totalCurrentlyReading > 0) {
+            this.totalCurrentlyReading--;
         }
     }
 

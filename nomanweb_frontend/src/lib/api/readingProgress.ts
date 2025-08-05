@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface ReadingProgressData {
   progressPercentage: number;
@@ -50,10 +50,17 @@ export interface UpdateProgressResponse {
 
 export const readingProgressApi = {
   // Update reading progress
-  async updateProgress(chapterId: string, progressPercentage: number): Promise<UpdateProgressResponse> {
-    const response = await apiClient.post(`/reading-progress/chapter/${chapterId}/update`, null, {
-      params: { progressPercentage }
-    });
+  async updateProgress(
+    chapterId: string,
+    progressPercentage: number
+  ): Promise<UpdateProgressResponse> {
+    const response = await apiClient.post(
+      `/reading-progress/chapter/${chapterId}/update`,
+      null,
+      {
+        params: { progressPercentage },
+      }
+    );
     return response.data;
   },
 
@@ -65,21 +72,38 @@ export const readingProgressApi = {
 
   // Get chapter progress
   async getChapterProgress(chapterId: string): Promise<ReadingProgressData> {
-    const response = await apiClient.get(`/reading-progress/chapter/${chapterId}`);
+    const response = await apiClient.get(
+      `/reading-progress/chapter/${chapterId}`
+    );
     return response.data;
   },
 
   // Get my reading progress
-  async getMyReadingProgress(page: number = 0, size: number = 20): Promise<{ content: ReadingProgressItem[]; totalElements: number }> {
-    const response = await apiClient.get('/reading-progress/my-progress', {
-      params: { page, size }
+  async getMyReadingProgress(
+    page: number = 0,
+    size: number = 20
+  ): Promise<{ content: ReadingProgressItem[]; totalElements: number }> {
+    const response = await apiClient.get("/reading-progress/my-progress", {
+      params: { page, size },
     });
     return response.data;
   },
 
   // Clear reading history
-  async clearReadingHistory(): Promise<{ message: string; deletedCount: number }> {
-    const response = await apiClient.delete('/reading-progress/clear-history');
+  async clearReadingHistory(): Promise<{
+    message: string;
+    deletedCount: number;
+  }> {
+    const response = await apiClient.delete("/reading-progress/clear-history");
     return response.data;
   },
-}; 
+
+  // Reset reading progress for a specific story
+  async resetStoryProgress(storyId: string): Promise<{
+    message: string;
+    deletedCount: number;
+  }> {
+    const response = await apiClient.delete(`/reading-progress/story/${storyId}/reset`);
+    return response.data;
+  },
+};

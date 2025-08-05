@@ -23,7 +23,7 @@ import java.util.UUID;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = { "http://localhost:3000", "https://localhost:3000" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://localhost:3000" })
 public class UserController {
 
     private final UserService userService;

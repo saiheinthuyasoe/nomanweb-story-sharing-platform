@@ -28,6 +28,8 @@ import {
   TagIcon,
   PlusIcon,
   Gift,
+  BookmarkIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Coins, Gift as LucideGift } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -317,8 +319,8 @@ export default function StoryDetailPage() {
                 <div
                   className={`grid grid-cols-2 gap-4 mb-6 ${
                     story.pricingType === "WHOLE_BOOK"
-                      ? "md:grid-cols-3 lg:grid-cols-5"
-                      : "md:grid-cols-4"
+                      ? "md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8"
+                      : "md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
                   }`}
                 >
                   <StatCard
@@ -344,6 +346,26 @@ export default function StoryDetailPage() {
                     value={story.totalComments.toLocaleString()}
                     label="Comments"
                     gradient="from-yellow-500 to-orange-600"
+                  />
+                  
+                  {/* Library Statistics */}
+                  <StatCard
+                    icon={BookmarkIcon}
+                    value={(story.totalWantToRead || 0).toLocaleString()}
+                    label="Want to Read"
+                    gradient="from-indigo-500 to-blue-600"
+                  />
+                  <StatCard
+                    icon={BookOpenIcon}
+                    value={(story.totalCurrentlyReading || 0).toLocaleString()}
+                    label="Currently Reading"
+                    gradient="from-amber-500 to-yellow-600"
+                  />
+                  <StatCard
+                    icon={CheckCircleIcon}
+                    value={(story.totalCompleted || 0).toLocaleString()}
+                    label="Completed"
+                    gradient="from-emerald-500 to-green-600"
                   />
 
                   {/* Book Price Stat - Only for WHOLE_BOOK stories */}

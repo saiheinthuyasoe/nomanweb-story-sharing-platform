@@ -26,7 +26,7 @@ import java.util.UUID;
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
 @Tag(name = "Comments", description = "Comment management operations")
-@CrossOrigin(origins = { "http://localhost:3000", "http://127.0.0.1:3000" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000" })
 public class CommentController {
 
     private final CommentService commentService;

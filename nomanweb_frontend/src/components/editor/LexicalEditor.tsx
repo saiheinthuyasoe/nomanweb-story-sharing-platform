@@ -324,6 +324,10 @@ export default function LexicalEditor({
                     fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
                     backgroundColor: isDarkMode ? 'rgb(31, 41, 55)' : 'white',
                     color: isDarkMode ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)',
+                    wordWrap: 'break-word',
+                    overflowWrap: 'break-word',
+                    wordBreak: 'break-word',
+                    hyphens: 'auto',
                   }}
                 />
               }
@@ -447,4 +451,4 @@ function InitialContentPlugin({ value }: { value?: string }) {
   }, [editor, value, hasLoadedInitialContent]);
 
   return null;
-} 
+}

@@ -21,7 +21,7 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/reactions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "https://nomanweb.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb.vercel.app" })
 public class ReactionController {
 
         private final ReactionRepository reactionRepository;
