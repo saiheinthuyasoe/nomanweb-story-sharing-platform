@@ -19,17 +19,22 @@ interface EnhancedGiftModalProps {
   onGiftSent?: () => void;
 }
 
-// Emoji gifts with their corresponding icons
-const EMOJI_GIFTS = [
-  { id: 'heart', name: 'Heart', emoji: '❤️', cost: 1, description: 'Show your love' },
-  { id: 'star', name: 'Star', emoji: '⭐', cost: 5, description: 'This story shines' },
-  { id: 'crown', name: 'Crown', emoji: '👑', cost: 10, description: 'You are the king/queen' },
-  { id: 'diamond', name: 'Diamond', emoji: '💎', cost: 25, description: 'Precious like a diamond' },
-  { id: 'trophy', name: 'Trophy', emoji: '🏆', cost: 50, description: 'You deserve this trophy' },
-  { id: 'fire', name: 'Fire', emoji: '🔥', cost: 15, description: 'This is fire!' },
-  { id: 'rocket', name: 'Rocket', emoji: '🚀', cost: 30, description: 'To the moon!' },
-  { id: 'rainbow', name: 'Rainbow', emoji: '🌈', cost: 20, description: 'Magical content' },
-];
+// Emoji mapping for gifts
+const GIFT_EMOJI_MAP: { [key: string]: string } = {
+  'Heart': '❤️',
+  'Star': '⭐',
+  'Crown': '👑',
+  'Diamond': '💎',
+  'Trophy': '🏆',
+  'Fire': '🔥',
+  'Rocket': '🚀',
+  'Rainbow': '🌈',
+};
+
+// Get emoji for gift name, fallback to gift icon
+const getGiftEmoji = (giftName: string): string => {
+  return GIFT_EMOJI_MAP[giftName] || '🎁';
+};
 
 export default function EnhancedGiftModal({
   isOpen,
@@ -42,7 +47,6 @@ export default function EnhancedGiftModal({
 }: EnhancedGiftModalProps) {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [giftMode, setGiftMode] = useState<'emoji' | 'custom'>('emoji');
   const [quantity, setQuantity] = useState(1);
   const [customAmount, setCustomAmount] = useState('');
@@ -59,8 +63,8 @@ export default function EnhancedGiftModal({
 
   // Debug quantity changes
   useEffect(() => {
-    console.log('Quantity changed:', { quantity, giftMode, selectedEmoji, customAmount, coinBalance });
-  }, [quantity, giftMode, selectedEmoji, customAmount, coinBalance]);
+    console.log('Quantity changed:', { quantity, giftMode, selectedGift: selectedGift?.name, customAmount, coinBalance });
+  }, [quantity, giftMode, selectedGift, customAmount, coinBalance]);
 
   const fetchGifts = async () => {
     try {
@@ -83,8 +87,8 @@ export default function EnhancedGiftModal({
   };
 
   const handleSendGift = async () => {
-    if (giftMode === 'emoji' && !selectedEmoji) {
-      toast.error('Please select an emoji gift');
+    if (giftMode === 'emoji' && !selectedGift) {
+      toast.error('Please select a gift');
       return;
     }
 
@@ -94,7 +98,7 @@ export default function EnhancedGiftModal({
     }
 
     const amount = giftMode === 'emoji' 
-      ? EMOJI_GIFTS.find(e => e.id === selectedEmoji)?.cost || 0
+      ? selectedGift?.coinCost || 0
       : parseFloat(customAmount);
 
     const totalCost = amount * quantity;
@@ -107,7 +111,7 @@ export default function EnhancedGiftModal({
     setLoading(true);
     try {
       await monetizationApi.sendGift({
-        giftId: giftMode === 'emoji' ? `emoji_${selectedEmoji}` : 'custom',
+        giftId: giftMode === 'emoji' ? selectedGift?.id : 'custom',
         recipientId,
         storyId,
         chapterId,
@@ -122,7 +126,6 @@ export default function EnhancedGiftModal({
       
       // Reset form
       setSelectedGift(null);
-      setSelectedEmoji(null);
       setQuantity(1);
       setCustomAmount('');
       setMessage('');
@@ -135,10 +138,9 @@ export default function EnhancedGiftModal({
   };
 
   const getTotalCost = () => {
-    if (giftMode === 'emoji' && selectedEmoji) {
-      const emojiGift = EMOJI_GIFTS.find(e => e.id === selectedEmoji);
-      const cost = (emojiGift?.cost || 0) * quantity;
-      console.log('Emoji gift cost:', { emojiGift: emojiGift?.name, cost: emojiGift?.cost, quantity, totalCost: cost });
+    if (giftMode === 'emoji' && selectedGift) {
+      const cost = (selectedGift.coinCost || 0) * quantity;
+      console.log('Gift cost:', { gift: selectedGift.name, cost: selectedGift.coinCost, quantity, totalCost: cost });
       return cost;
     }
     if (giftMode === 'custom' && customAmount) {
@@ -150,9 +152,8 @@ export default function EnhancedGiftModal({
   };
 
   const getMaxQuantity = () => {
-    if (giftMode === 'emoji' && selectedEmoji) {
-      const emojiGift = EMOJI_GIFTS.find(e => e.id === selectedEmoji);
-      const costPerGift = emojiGift?.cost || 1;
+    if (giftMode === 'emoji' && selectedGift) {
+      const costPerGift = selectedGift.coinCost || 1;
       return Math.floor(coinBalance / costPerGift);
     }
     if (giftMode === 'custom' && customAmount) {
@@ -202,7 +203,7 @@ export default function EnhancedGiftModal({
               <button
                 onClick={() => {
                   setGiftMode('emoji');
-                  setSelectedEmoji(null);
+                  setSelectedGift(null);
                   setQuantity(1);
                   setCustomAmount('');
                 }}
@@ -212,14 +213,14 @@ export default function EnhancedGiftModal({
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                🎁 Emoji Gifts
+                🎁 Gifts
               </button>
               <button
                 onClick={() => {
                   setGiftMode('custom');
                   setCustomAmount('');
                   setQuantity(1);
-                  setSelectedEmoji(null);
+                  setSelectedGift(null);
                 }}
                 className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
                   giftMode === 'custom'
@@ -232,32 +233,34 @@ export default function EnhancedGiftModal({
             </div>
           </div>
 
-          {/* Emoji Gifts */}
+          {/* Available Gifts */}
           {giftMode === 'emoji' && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Choose an Emoji Gift</h3>
+              <h3 className="text-lg font-semibold mb-4">Choose a Gift</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {EMOJI_GIFTS.map((emojiGift) => (
+                {gifts.map((gift) => (
                   <Card
-                    key={emojiGift.id}
+                    key={gift.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedEmoji === emojiGift.id
+                      selectedGift?.id === gift.id
                         ? 'ring-2 ring-purple-500 bg-purple-50'
                         : ''
                     }`}
                     onClick={() => {
-                      setSelectedEmoji(emojiGift.id);
-                      // Reset quantity to 1 when selecting a new emoji
+                      setSelectedGift(gift);
+                      // Reset quantity to 1 when selecting a new gift
                       setQuantity(1);
                     }}
                   >
                     <CardContent className="p-4 text-center">
-                      <div className="text-4xl mb-2">{emojiGift.emoji}</div>
-                      <h4 className="font-medium text-sm mb-1">{emojiGift.name}</h4>
-                      <p className="text-xs text-gray-600 mb-2">{emojiGift.description}</p>
+                      <div className="text-4xl mb-2">
+                        {gift.iconUrl || getGiftEmoji(gift.name)}
+                      </div>
+                      <h4 className="font-medium text-sm mb-1">{gift.name}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{gift.description}</p>
                       <div className="flex items-center justify-center gap-1 text-yellow-600">
                         <Coins className="h-4 w-4" />
-                        <span className="font-bold">{emojiGift.cost}</span>
+                        <span className="font-bold">{gift.coinCost}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -294,7 +297,7 @@ export default function EnhancedGiftModal({
           )}
 
           {/* Quantity and Message */}
-          {((giftMode === 'emoji' && selectedEmoji) || (giftMode === 'custom' && customAmount)) && (
+          {((giftMode === 'emoji' && selectedGift) || (giftMode === 'custom' && customAmount)) && (
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -371,8 +374,8 @@ export default function EnhancedGiftModal({
                   <span>Cost per gift:</span>
                   <span className="flex items-center gap-1">
                     <Coins className="h-4 w-4" />
-                    {giftMode === 'emoji' && selectedEmoji 
-                      ? EMOJI_GIFTS.find(e => e.id === selectedEmoji)?.cost || 0
+                    {giftMode === 'emoji' && selectedGift 
+                      ? selectedGift.coinCost || 0
                       : customAmount || 0
                     }
                   </span>
@@ -411,7 +414,7 @@ export default function EnhancedGiftModal({
             </Button>
             <Button
               onClick={handleSendGift}
-              disabled={!selectedEmoji && giftMode === 'emoji' || 
+              disabled={!selectedGift && giftMode === 'emoji' || 
                        (giftMode === 'custom' && (!customAmount || parseFloat(customAmount) <= 0)) || 
                        !canAfford || loading}
               className="flex-1 flex items-center gap-2"
@@ -428,4 +431,4 @@ export default function EnhancedGiftModal({
       </div>
     </div>
   );
-} 
+}

@@ -179,6 +179,36 @@ public class MonetizationController {
         return ResponseEntity.ok(revenue);
     }
 
+    @GetMapping("/earnings")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get user earnings from reader purchases")
+    public ResponseEntity<Page<EarnedMoneyResponse>> getUserEarnings(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<EarnedMoneyResponse> earnings = monetizationService.getUserEarnings(currentUser, pageable);
+
+        return ResponseEntity.ok(earnings);
+    }
+
+    @GetMapping("/purchases")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get user purchase history")
+    public ResponseEntity<Page<PurchaseHistoryResponse>> getUserPurchases(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PurchaseHistoryResponse> purchases = monetizationService.getUserPurchaseHistory(currentUser, pageable);
+
+        return ResponseEntity.ok(purchases);
+    }
+
     private User getCurrentUser(HttpServletRequest request) {
         UUID userId = getCurrentUserId(request);
         return authService.getCurrentUser(userId);

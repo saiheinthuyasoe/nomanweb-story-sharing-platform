@@ -34,6 +34,7 @@ import {
   useUpdateComment,
   useToggleCommentLike,
 } from "@/hooks/useComments";
+import { useRatingOperations } from "@/hooks/useRatings";
 import { formatDistanceToNow } from "date-fns";
 import {
   EyeIcon,
@@ -152,6 +153,20 @@ export default function StoryReaderView() {
   const { mutate: toggleBookmark, isPending: isBookmarkLoading } =
     useToggleBookmark();
 
+  // Rating hooks
+  const {
+    userRating: userRatingData,
+    ratingStats,
+    handleRating: submitRating,
+    handleDeleteRating,
+    canRate,
+    hasRated,
+    currentRating,
+    averageRating,
+    totalRatings,
+    isSubmitting: isRatingLoading,
+  } = useRatingOperations(storyId);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<"about" | "chapters" | "comments">(
     "about"
@@ -171,6 +186,15 @@ export default function StoryReaderView() {
   } | null>(null);
   const [showBookPurchaseModal, setShowBookPurchaseModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
+
+  // Update local userRating state when API data changes
+  useEffect(() => {
+    if (currentRating !== null) {
+      setUserRating(currentRating);
+    } else {
+      setUserRating(0);
+    }
+  }, [currentRating]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -483,8 +507,18 @@ export default function StoryReaderView() {
   };
 
   const handleRating = (rating: number) => {
+    if (!user) {
+      toast.error("Please log in to rate this story");
+      return;
+    }
+    
+    if (!canRate && !hasRated) {
+      toast.error("You cannot rate this story");
+      return;
+    }
+    
     setUserRating(rating);
-    // Submit rating to API
+    submitRating(rating);
   };
 
   const handleCommentSubmit = () => {
@@ -601,9 +635,9 @@ export default function StoryReaderView() {
     });
   };
 
-  // Mock rating data since it's not in the Story type
-  const storyRating = 4.25;
-  const storyRatingCount = 1250;
+  // Use real rating data from API
+  const storyRating = averageRating || 0;
+  const storyRatingCount = totalRatings || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">

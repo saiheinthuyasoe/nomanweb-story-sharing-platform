@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -1075,5 +1076,63 @@ public class StoryServiceImpl implements StoryService {
                 .isDeleted(story.isInTrash())
                 .deletedAt(story.getDeletedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> recalculateStoryEarnings(UUID storyId, UUID authorId) {
+        log.info("Recalculating earnings for story: {} by author: {}", storyId, authorId);
+
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Story not found"));
+
+        // Check if user is the author
+        if (!story.getAuthor().getId().equals(authorId)) {
+            throw new RuntimeException("Not authorized to recalculate earnings for this story");
+        }
+
+        // Calculate total earnings from chapter purchases (70% of purchase amount)
+        BigDecimal chapterEarnings = chapterPurchaseRepository.findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story)
+                .stream()
+                .map(purchase -> purchase.getCoinsSpent().multiply(new BigDecimal("0.70")))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate total earnings from book purchases (70% of purchase amount)
+        BigDecimal bookEarnings = bookPurchaseRepository.findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story)
+                .stream()
+                .map(purchase -> purchase.getCoinsSpent().multiply(new BigDecimal("0.70")))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate total earnings from gift transactions
+        BigDecimal giftEarnings = story.getGiftTransactions()
+                .stream()
+                .map(giftTransaction -> giftTransaction.getTotalCoins())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate total earnings
+        BigDecimal totalEarnings = chapterEarnings.add(bookEarnings).add(giftEarnings);
+        BigDecimal previousEarnings = story.getTotalCoinsEarned();
+
+        // Update story's total coins earned
+        story.setTotalCoinsEarned(totalEarnings);
+        storyRepository.save(story);
+
+        log.info("✅ Recalculated earnings for story {}: {} coins (was {} coins)", 
+                storyId, totalEarnings, previousEarnings);
+
+        // Return detailed breakdown
+        Map<String, Object> result = new HashMap<>();
+        result.put("storyId", storyId);
+        result.put("storyTitle", story.getTitle());
+        result.put("previousEarnings", previousEarnings);
+        result.put("newEarnings", totalEarnings);
+        result.put("breakdown", Map.of(
+                "chapterPurchases", chapterEarnings,
+                "bookPurchases", bookEarnings,
+                "gifts", giftEarnings
+        ));
+        result.put("message", "Story earnings recalculated successfully");
+
+        return result;
     }
 }

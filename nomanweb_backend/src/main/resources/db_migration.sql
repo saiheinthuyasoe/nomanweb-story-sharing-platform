@@ -147,11 +147,11 @@ ON CONFLICT (setting_key) DO NOTHING;
 
 -- Insert default gift items
 INSERT INTO gifts (name, description, icon_url, coin_cost) VALUES
-('Heart', 'Show your love', '/icons/heart.png', 1),
-('Star', 'This story shines', '/icons/star.png', 5),
-('Crown', 'You are the king/queen', '/icons/crown.png', 10),
-('Diamond', 'Precious like a diamond', '/icons/diamond.png', 25),
-('Trophy', 'You deserve this trophy', '/icons/trophy.png', 50)
+('Heart', 'Show your love', '❤️', 1),
+('Star', 'This story shines', '⭐', 5),
+('Crown', 'You are the king/queen', '👑', 10),
+('Diamond', 'Precious like a diamond', '💎', 25),
+('Trophy', 'You deserve this trophy', '🏆', 50)
 ON CONFLICT (name) DO NOTHING;
 
 -- Display completion message

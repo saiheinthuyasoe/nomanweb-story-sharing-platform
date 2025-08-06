@@ -377,3 +377,22 @@ export const useIncrementStoryView = () => {
     // Don't show toast notifications for view tracking
   });
 };
+
+// Earnings management
+export const useRecalculateStoryEarnings = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => storiesApi.recalculateStoryEarnings(id),
+    onSuccess: (data, storyId) => {
+      // Invalidate and refetch story data to update the earnings display
+      queryClient.invalidateQueries({ queryKey: ["story", storyId] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      
+      toast.success(`Story earnings recalculated successfully! New total: ${data.newEarnings} coins`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to recalculate story earnings");
+    },
+  });
+};

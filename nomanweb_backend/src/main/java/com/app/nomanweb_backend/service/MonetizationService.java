@@ -45,4 +45,10 @@ public interface MonetizationService {
     BigDecimal calculateTotalEarnings(User user);
 
     BigDecimal calculateMonthlyEarnings(User user, int year, int month);
+
+    // Earnings from reader purchases
+    Page<EarnedMoneyResponse> getUserEarnings(User user, Pageable pageable);
+
+    // User's own purchase history (formatted for frontend)
+    Page<PurchaseHistoryResponse> getUserPurchaseHistory(User user, Pageable pageable);
 }

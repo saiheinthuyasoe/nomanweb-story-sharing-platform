@@ -114,6 +114,12 @@ public class MonetizationServiceImpl implements MonetizationService {
         BigDecimal recipientEarnings = totalCost;
         addCoins(recipient, recipientEarnings, "Gift received: " + giftName + " x" + request.getQuantity());
 
+        // Update story's total coins earned if gift is for a story
+        if (story != null) {
+            story.addCoinsEarned(totalCost);
+            storyRepository.save(story);
+        }
+
         // Create gift transaction
         GiftTransaction giftTransaction = GiftTransaction.builder()
                 .gift(gift) // Can be null for custom/emoji gifts
@@ -391,6 +397,11 @@ public class MonetizationServiceImpl implements MonetizationService {
         addCoins(chapter.getStory().getAuthor(), authorEarnings,
                 "Chapter sale: " + chapter.getTitle());
 
+        // Update story's total coins earned (70% of chapter price)
+        Story story = chapter.getStory();
+        story.addCoinsEarned(authorEarnings);
+        storyRepository.save(story);
+
         // Create purchase record
         ChapterPurchase purchase = ChapterPurchase.builder()
                 .user(user)
@@ -593,6 +604,10 @@ public class MonetizationServiceImpl implements MonetizationService {
         // Add earnings to author (70% of book price)
         BigDecimal authorEarnings = story.getBookPrice().multiply(new BigDecimal("0.70"));
         addCoins(story.getAuthor(), authorEarnings, "Book sale: " + story.getTitle());
+
+        // Update story's total coins earned (70% of book price)
+        story.addCoinsEarned(authorEarnings);
+        storyRepository.save(story);
 
         // Count how many chapters exist at the time of purchase
         long chaptersAtPurchase = chapterRepository.countByStoryAndStatusAndCreatedAtBefore(
@@ -837,5 +852,115 @@ public class MonetizationServiceImpl implements MonetizationService {
             case "rainbow" -> "Magical content";
             default -> "A special gift";
         };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<EarnedMoneyResponse> getUserEarnings(User user, Pageable pageable) {
+        List<EarnedMoneyResponse> earnings = new ArrayList<>();
+        
+        // Get chapter purchase earnings
+        List<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByChapter_Story_AuthorOrderByCreatedAtDesc(user);
+        for (ChapterPurchase purchase : chapterPurchases) {
+            EarnedMoneyResponse earning = EarnedMoneyResponse.builder()
+                    .id(purchase.getId())
+                    .transactionType("chapter_purchase")
+                    .amount(purchase.getCoinsSpent())
+                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName() : purchase.getUser().getUsername())
+                    .readerUsername(purchase.getUser().getUsername())
+                    .storyTitle(purchase.getStory().getTitle())
+                    .chapterTitle(purchase.getChapter().getTitle())
+                    .chapterNumber(purchase.getChapter().getChapterNumber())
+                    .createdAt(purchase.getPurchasedAt())
+                    .commission(BigDecimal.valueOf(0.30)) // 30% platform commission
+                    .netEarnings(purchase.getCoinsSpent().multiply(BigDecimal.valueOf(0.70))) // 70% to author
+                    .build();
+            earnings.add(earning);
+        }
+        
+        // Get book purchase earnings
+        List<BookPurchase> bookPurchases = bookPurchaseRepository.findByStory_AuthorOrderByCreatedAtDesc(user);
+        for (BookPurchase purchase : bookPurchases) {
+            EarnedMoneyResponse earning = EarnedMoneyResponse.builder()
+                    .id(purchase.getId())
+                    .transactionType("story_purchase")
+                    .amount(purchase.getCoinsSpent())
+                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName() : purchase.getUser().getUsername())
+                    .readerUsername(purchase.getUser().getUsername())
+                    .storyTitle(purchase.getStory().getTitle())
+                    .chapterTitle(null)
+                    .chapterNumber(null)
+                    .createdAt(purchase.getPurchasedAt())
+                    .commission(BigDecimal.valueOf(0.30)) // 30% platform commission
+                    .netEarnings(purchase.getCoinsSpent().multiply(BigDecimal.valueOf(0.70))) // 70% to author
+                    .build();
+            earnings.add(earning);
+        }
+        
+        // Sort by creation date descending
+        earnings.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        
+        // Apply pagination
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), earnings.size());
+        List<EarnedMoneyResponse> paginatedEarnings = earnings.subList(start, end);
+        
+        return new PageImpl<>(paginatedEarnings, pageable, earnings.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PurchaseHistoryResponse> getUserPurchaseHistory(User user, Pageable pageable) {
+        // Get chapter purchases
+        Page<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
+        
+        // Get book purchases
+        Page<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
+        
+        // Combine and sort all purchases by date
+        List<PurchaseHistoryResponse> allPurchases = new ArrayList<>();
+        
+        // Add chapter purchases
+        chapterPurchases.getContent().forEach(purchase -> {
+            allPurchases.add(PurchaseHistoryResponse.builder()
+                    .id(purchase.getId())
+                    .purchaseType("chapter")
+                    .storyId(purchase.getStory().getId())
+                    .storyTitle(purchase.getStory().getTitle())
+                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null ? 
+                        purchase.getStory().getAuthor().getDisplayName() : purchase.getStory().getAuthor().getUsername())
+                    .chapterId(purchase.getChapter().getId())
+                    .chapterTitle(purchase.getChapter().getTitle())
+                    .chapterNumber(purchase.getChapter().getChapterNumber())
+                    .amount(purchase.getCoinsSpent())
+                    .createdAt(purchase.getPurchasedAt())
+                    .status(purchase.getIsRefunded() ? "refunded" : "completed")
+                    .build());
+        });
+        
+        // Add book purchases
+        bookPurchases.getContent().forEach(purchase -> {
+            allPurchases.add(PurchaseHistoryResponse.builder()
+                    .id(purchase.getId())
+                    .purchaseType("book")
+                    .storyId(purchase.getStory().getId())
+                    .storyTitle(purchase.getStory().getTitle())
+                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null ? 
+                        purchase.getStory().getAuthor().getDisplayName() : purchase.getStory().getAuthor().getUsername())
+                    .amount(purchase.getCoinsSpent())
+                    .createdAt(purchase.getPurchasedAt())
+                    .status(purchase.getIsRefunded() ? "refunded" : "completed")
+                    .build());
+        });
+        
+        // Sort by creation date (most recent first)
+        allPurchases.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        
+        // Apply pagination
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allPurchases.size());
+        List<PurchaseHistoryResponse> pageContent = allPurchases.subList(start, end);
+        
+        return new PageImpl<>(pageContent, pageable, allPurchases.size());
     }
 }

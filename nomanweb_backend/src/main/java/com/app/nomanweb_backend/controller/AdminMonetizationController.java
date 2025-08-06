@@ -38,9 +38,9 @@ public class AdminMonetizationController {
 
     // Gift Management
     @GetMapping("/gifts")
-    @Operation(summary = "Get all gifts (admin)")
+    @Operation(summary = "Get all active gifts (admin)")
     public ResponseEntity<List<GiftResponse>> getAllGifts() {
-        List<GiftResponse> gifts = giftService.getAllGifts();
+        List<GiftResponse> gifts = giftService.getAllActiveGifts();
         return ResponseEntity.ok(gifts);
     }
 

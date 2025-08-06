@@ -542,6 +542,22 @@ public class StoryController {
         }
     }
 
+    @PostMapping("/{id}/recalculate-earnings")
+    public ResponseEntity<?> recalculateStoryEarnings(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getUserIdFromRequest(httpRequest);
+            Map<String, Object> result = storyService.recalculateStoryEarnings(id, authorId);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            log.error("Error recalculating earnings for story {}: {}", id, e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     private UUID getUserIdFromRequest(HttpServletRequest request) {
         // Get the authenticated user from SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

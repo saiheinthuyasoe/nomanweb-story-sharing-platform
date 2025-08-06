@@ -73,4 +73,7 @@ public interface StoryService {
     void bulkPermanentlyDelete(List<UUID> storyIds, UUID authorId);
 
     void emptyTrash(UUID authorId);
+
+    // Earnings management
+    java.util.Map<String, Object> recalculateStoryEarnings(UUID storyId, UUID authorId);
 }

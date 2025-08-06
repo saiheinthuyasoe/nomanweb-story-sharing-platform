@@ -14,6 +14,7 @@ import {
   UserPlus,
   UserMinus 
 } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 interface Gift {
   id: string;
@@ -64,7 +65,7 @@ export default function AdminMonetizationPage() {
       // Fetch gifts
       const giftsResponse = await fetch('/api/admin/monetization/gifts', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
       });
       
@@ -76,7 +77,7 @@ export default function AdminMonetizationPage() {
       // Fetch settings
       const settingsResponse = await fetch('/api/admin/monetization/settings', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
       });
       
@@ -98,7 +99,7 @@ export default function AdminMonetizationPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify(giftForm),
       });
@@ -125,7 +126,7 @@ export default function AdminMonetizationPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify(giftForm),
       });
@@ -151,7 +152,7 @@ export default function AdminMonetizationPage() {
       const response = await fetch(`/api/admin/monetization/gifts/${giftId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
       });
 
@@ -185,7 +186,7 @@ export default function AdminMonetizationPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify({
           userId: userIdForCoins,
@@ -214,7 +215,7 @@ export default function AdminMonetizationPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify({
           userId: userIdForCoins,
@@ -539,4 +540,4 @@ export default function AdminMonetizationPage() {
       )}
     </div>
   );
-} 
+}

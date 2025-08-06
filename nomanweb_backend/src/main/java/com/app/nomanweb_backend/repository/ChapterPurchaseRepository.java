@@ -70,4 +70,8 @@ public interface ChapterPurchaseRepository extends JpaRepository<ChapterPurchase
     // Find all active chapter purchases for a story (not refunded)
     @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.story = :story AND cp.isRefunded = false ORDER BY cp.purchasedAt DESC")
     List<ChapterPurchase> findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(@Param("story") Story story);
+
+    // Find all chapter purchases for stories authored by a specific user
+    @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.chapter.story.author = :author ORDER BY cp.purchasedAt DESC")
+    List<ChapterPurchase> findByChapter_Story_AuthorOrderByCreatedAtDesc(@Param("author") User author);
 }

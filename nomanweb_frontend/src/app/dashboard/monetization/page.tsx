@@ -19,6 +19,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { apiClient } from "@/lib/api/client";
 
 interface RevenueAnalytics {
   totalEarnings: number;
@@ -52,7 +53,7 @@ interface GiftTransaction {
     name: string;
     iconUrl: string;
     coinCost: number;
-  };
+  } | null;
   sender: {
     id: string;
     username: string;
@@ -175,87 +176,59 @@ export default function MonetizationPage() {
       setLoading(true);
 
       // Fetch revenue analytics
-      const revenueResponse = await fetch("/api/monetization/revenue", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (revenueResponse.ok) {
-        const revenueData = await revenueResponse.json();
-        setAnalytics(revenueData);
+      try {
+        const revenueResponse = await apiClient.get("/monetization/revenue");
+        setAnalytics(revenueResponse.data);
+      } catch (error) {
+        console.error("Failed to fetch revenue analytics:", error);
       }
 
       // Fetch coin balance
-      const balanceResponse = await fetch("/api/monetization/balance", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (balanceResponse.ok) {
-        const balance = await balanceResponse.json();
-        setCoinBalance(balance);
+      try {
+        const balanceResponse = await apiClient.get("/monetization/balance");
+        setCoinBalance(balanceResponse.data);
+      } catch (error) {
+        console.error("Failed to fetch coin balance:", error);
       }
 
       // Fetch received gifts
-      const receivedResponse = await fetch(
-        "/api/monetization/gifts/received?page=0&size=10",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (receivedResponse.ok) {
-        const receivedData = await receivedResponse.json();
-        setReceivedGifts(receivedData.content || []);
+      try {
+        const receivedResponse = await apiClient.get(
+          "/monetization/gifts/received?page=0&size=10"
+        );
+        setReceivedGifts(receivedResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch received gifts:", error);
       }
 
       // Fetch sent gifts
-      const sentResponse = await fetch(
-        "/api/monetization/gifts/sent?page=0&size=10",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (sentResponse.ok) {
-        const sentData = await sentResponse.json();
-        setSentGifts(sentData.content || []);
+      try {
+        const sentResponse = await apiClient.get(
+          "/monetization/gifts/sent?page=0&size=10"
+        );
+        setSentGifts(sentResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch sent gifts:", error);
       }
 
       // Fetch earned money from reader purchases
-      const earnedResponse = await fetch(
-        "/api/monetization/earnings?page=0&size=20",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (earnedResponse.ok) {
-        const earnedData = await earnedResponse.json();
-        setEarnedMoney(earnedData.content || []);
+      try {
+        const earnedResponse = await apiClient.get(
+          "/monetization/earnings?page=0&size=20"
+        );
+        setEarnedMoney(earnedResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch earned money:", error);
       }
 
       // Fetch purchase history (user's own purchases)
-      const purchaseResponse = await fetch(
-        "/api/monetization/purchases?page=0&size=20",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (purchaseResponse.ok) {
-        const purchaseData = await purchaseResponse.json();
-        setPurchaseHistory(purchaseData.content || []);
+      try {
+        const purchaseResponse = await apiClient.get(
+          "/monetization/purchases?page=0&size=20"
+        );
+        setPurchaseHistory(purchaseResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch purchase history:", error);
       }
     } catch (error) {
       console.error("Error fetching monetization data:", error);
@@ -278,6 +251,58 @@ export default function MonetizationPage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Helper function to check if iconUrl is an emoji
+  const isEmoji = (str: string) => {
+    // Check if string contains emoji characters or is a single character emoji
+    const emojiRegex =
+      /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]$/u;
+    return emojiRegex.test(str) || str.length <= 4; // Most emojis are 1-4 characters
+  };
+
+  // Helper component to render gift icon
+  const GiftIcon = ({
+    iconUrl,
+    name,
+    className = "",
+  }: {
+    iconUrl?: string;
+    name?: string;
+    className?: string;
+  }) => {
+    if (!iconUrl) {
+      return (
+        <div
+          className={`w-full h-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center ${className}`}
+        >
+          <Gift className="h-6 w-6 text-white" />
+        </div>
+      );
+    }
+
+    if (isEmoji(iconUrl)) {
+      return (
+        <div
+          className={`w-full h-full flex items-center justify-center text-2xl ${className}`}
+        >
+          {iconUrl}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={iconUrl}
+        alt={name || "Gift"}
+        className={`w-full h-full object-cover ${className}`}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+          if (fallback) fallback.style.display = "flex";
+        }}
+      />
+    );
   };
 
   if (loading) {
@@ -771,17 +796,40 @@ export default function MonetizationPage() {
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Gift className="h-5 w-5 text-purple-600" />
+                      <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center border-2 border-purple-200">
+                        <GiftIcon
+                          iconUrl={gift.gift?.iconUrl}
+                          name={gift.gift?.name}
+                          className=""
+                        />
+                        {gift.gift?.iconUrl && !isEmoji(gift.gift.iconUrl) && (
+                          <div
+                            className="w-full h-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center"
+                            style={{ display: "none" }}
+                          >
+                            <Gift className="h-6 w-6 text-white" />
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <h4 className="font-medium">{gift.gift.name}</h4>
-                        <p className="text-sm text-gray-600">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900">
+                            {gift.gift?.name || "Unknown Gift"}
+                          </h4>
+                          {gift.gift?.coinCost && (
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                              {gift.gift.coinCost} coins
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
                           From:{" "}
-                          {gift.sender.displayName || gift.sender.username}
+                          <span className="font-medium">
+                            {gift.sender.displayName || gift.sender.username}
+                          </span>
                         </p>
                         {gift.message && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 italic mb-1">
                             "{gift.message}"
                           </p>
                         )}
@@ -828,18 +876,41 @@ export default function MonetizationPage() {
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Gift className="h-5 w-5 text-blue-600" />
+                      <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center border-2 border-blue-200">
+                        <GiftIcon
+                          iconUrl={gift.gift?.iconUrl}
+                          name={gift.gift?.name}
+                          className=""
+                        />
+                        {gift.gift?.iconUrl && !isEmoji(gift.gift.iconUrl) && (
+                          <div
+                            className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center"
+                            style={{ display: "none" }}
+                          >
+                            <Gift className="h-6 w-6 text-white" />
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <h4 className="font-medium">{gift.gift.name}</h4>
-                        <p className="text-sm text-gray-600">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900">
+                            {gift.gift?.name || "Unknown Gift"}
+                          </h4>
+                          {gift.gift?.coinCost && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                              {gift.gift.coinCost} coins
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
                           To:{" "}
-                          {gift.recipient.displayName ||
-                            gift.recipient.username}
+                          <span className="font-medium">
+                            {gift.recipient.displayName ||
+                              gift.recipient.username}
+                          </span>
                         </p>
                         {gift.message && (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 italic mb-1">
                             "{gift.message}"
                           </p>
                         )}
@@ -985,7 +1056,7 @@ export default function MonetizationPage() {
                           <h4 className="font-medium text-gray-900">
                             {purchase.purchaseType === "book"
                               ? purchase.storyTitle
-                              : `Chapter ${purchase.chapterNumber}: ${purchase.chapterTitle}`}
+                              : `Chapter ${purchase.chapterNumber || 'N/A'}: ${purchase.chapterTitle || 'Untitled'}`}
                           </h4>
                           <p className="text-sm text-gray-600">
                             {purchase.purchaseType === "book"
@@ -1014,8 +1085,10 @@ export default function MonetizationPage() {
                               }
                               className="text-xs"
                             >
-                              {purchase.status.charAt(0).toUpperCase() +
-                                purchase.status.slice(1)}
+                              {purchase.status
+                                ? purchase.status.charAt(0).toUpperCase() +
+                                  purchase.status.slice(1)
+                                : "Unknown"}
                             </Badge>
                           </div>
                           <p className="text-xs text-gray-400 mt-1">

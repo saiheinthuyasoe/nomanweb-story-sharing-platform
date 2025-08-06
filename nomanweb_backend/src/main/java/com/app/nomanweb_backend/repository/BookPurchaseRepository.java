@@ -60,4 +60,8 @@ public interface BookPurchaseRepository extends JpaRepository<BookPurchase, UUID
     // Find all refunded book purchases for a story
     @Query("SELECT bp FROM BookPurchase bp WHERE bp.story = :story AND bp.isRefunded = true ORDER BY bp.purchasedAt DESC")
     List<BookPurchase> findByStoryAndIsRefundedTrueOrderByPurchasedAtDesc(@Param("story") Story story);
+
+    // Find all book purchases for stories authored by a specific user
+    @Query("SELECT bp FROM BookPurchase bp WHERE bp.story.author = :author ORDER BY bp.purchasedAt DESC")
+    List<BookPurchase> findByStory_AuthorOrderByCreatedAtDesc(@Param("author") User author);
 }

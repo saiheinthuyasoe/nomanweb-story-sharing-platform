@@ -11,7 +11,8 @@ import {
   ArrowDownIcon,
   EyeIcon,
   CalendarIcon,
-  FunnelIcon
+  FunnelIcon,
+  GiftIcon
 } from '@heroicons/react/24/outline';
 import { useCoinTransfersRealtime } from '@/hooks/useCoinTransfersRealtime';
 
@@ -43,6 +44,16 @@ interface CoinPackage {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface Gift {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string;
+  coinCost: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export default function CoinManagementPage() {
@@ -93,12 +104,27 @@ export default function CoinManagementPage() {
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   const [transferConnectionStatus, setTransferConnectionStatus] = useState(false);
 
+  // Gift management state
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [showGiftForm, setShowGiftForm] = useState(false);
+  const [editingGift, setEditingGift] = useState<Gift | null>(null);
+  const [giftForm, setGiftForm] = useState({
+    name: '',
+    description: '',
+    iconUrl: '',
+    coinCost: 0,
+    isActive: true,
+  });
+  const [giftLoading, setGiftLoading] = useState(false);
+
   useEffect(() => {
     if (activeTab === 'transactions') {
       fetchTransactions();
       fetchTransactionStats();
     } else if (activeTab === 'packages') {
       fetchCoinPackages();
+    } else if (activeTab === 'gifts') {
+      fetchGifts();
     }
   }, [activeTab]);
 
@@ -274,6 +300,160 @@ export default function CoinManagementPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Gift management functions
+  const fetchGifts = async () => {
+    setLoading(true);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        console.error('Admin token not found');
+        return;
+      }
+
+      const response = await fetch('/api/admin/gifts', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGifts(data);
+      } else {
+        console.error('Failed to fetch gifts');
+        // Mock data for development
+        setGifts([
+          {
+            id: '1',
+            name: 'Heart',
+            description: 'Show your love',
+            iconUrl: '❤️',
+            coinCost: 10,
+            isActive: true,
+            createdAt: '2024-01-01T00:00:00Z'
+          },
+          {
+            id: '2',
+            name: 'Star',
+            description: 'You are a star',
+            iconUrl: '⭐',
+            coinCost: 25,
+            isActive: true,
+            createdAt: '2024-01-01T00:00:00Z'
+          },
+          {
+            id: '3',
+            name: 'Diamond',
+            description: 'Precious like a diamond',
+            iconUrl: '💎',
+            coinCost: 100,
+            isActive: true,
+            createdAt: '2024-01-01T00:00:00Z'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching gifts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGiftSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGiftLoading(true);
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('Admin token not found. Please login again.');
+        return;
+      }
+
+      const url = editingGift ? `/api/admin/gifts/${editingGift.id}` : '/api/admin/gifts';
+      const method = editingGift ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(giftForm),
+      });
+
+      if (response.ok) {
+        alert(editingGift ? 'Gift updated successfully!' : 'Gift created successfully!');
+        resetGiftForm();
+        fetchGifts();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message || 'Failed to save gift'}`);
+      }
+    } catch (error) {
+      console.error('Error saving gift:', error);
+      alert('Network error: Failed to save gift. Please try again.');
+    } finally {
+      setGiftLoading(false);
+    }
+  };
+
+  const handleEditGift = (gift: Gift) => {
+    setEditingGift(gift);
+    setGiftForm({
+      name: gift.name,
+      description: gift.description,
+      iconUrl: gift.iconUrl,
+      coinCost: gift.coinCost,
+      isActive: gift.isActive,
+    });
+    setShowGiftForm(true);
+  };
+
+  const handleDeleteGift = async (giftId: string) => {
+    if (!confirm('Are you sure you want to delete this gift?')) {
+      return;
+    }
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('Admin token not found. Please login again.');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/gifts/${giftId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+
+      if (response.ok) {
+        alert('Gift deleted successfully!');
+        fetchGifts();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message || 'Failed to delete gift'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting gift:', error);
+      alert('Network error: Failed to delete gift. Please try again.');
+    }
+  };
+
+  const resetGiftForm = () => {
+    setGiftForm({
+      name: '',
+      description: '',
+      iconUrl: '',
+      coinCost: 0,
+      isActive: true,
+    });
+    setEditingGift(null);
+    setShowGiftForm(false);
   };
 
   // Transfer functions
@@ -553,6 +733,7 @@ export default function CoinManagementPage() {
             {[
               { id: 'transactions', name: 'Transactions', icon: CurrencyDollarIcon },
               { id: 'packages', name: 'Coin Packages', icon: PlusIcon },
+              { id: 'gifts', name: 'Gift Packages', icon: GiftIcon },
               { id: 'transfer', name: 'Coin Transfer', icon: ArrowUpIcon }
             ].map((tab) => {
               const Icon = tab.icon;
@@ -862,6 +1043,86 @@ export default function CoinManagementPage() {
                     </button>
                     <button
                       onClick={() => handleDeletePackage(pkg.id)}
+                      className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
+                    >
+                      <TrashIcon className="w-4 h-4 mr-1" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Gift Packages Tab */}
+      {activeTab === 'gifts' && (
+        <div className="space-y-6">
+          {/* Header with Add Button */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-900">Gift Packages</h2>
+            <button
+              onClick={() => {
+                setEditingGift(null);
+                setGiftForm({
+                  name: '',
+                  description: '',
+                  iconUrl: '',
+                  coinCost: 0,
+                  isActive: true,
+                });
+                setShowGiftForm(true);
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Gift
+            </button>
+          </div>
+
+          {/* Gifts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              <div className="col-span-3 flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : gifts.length === 0 ? (
+              <div className="col-span-3 text-center py-8 text-gray-500">No gifts found</div>
+            ) : (
+              gifts.map((gift) => (
+                <div key={gift.id} className={`bg-white rounded-lg shadow-lg p-6 border-2 ${gift.isActive ? 'border-green-200' : 'border-gray-200'}`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center">
+                      <div className="text-2xl mr-3">{gift.iconUrl}</div>
+                      <h3 className="text-lg font-semibold text-gray-900">{gift.name}</h3>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${gift.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {gift.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cost:</span>
+                      <span className="font-medium">{gift.coinCost} coins</span>
+                    </div>
+                  </div>
+                  
+                  {gift.description && (
+                    <p className="text-sm text-gray-600 mb-4">{gift.description}</p>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditGift(gift)}
+                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center"
+                    >
+                      <PencilIcon className="w-4 h-4 mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGift(gift.id)}
                       className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
                     >
                       <TrashIcon className="w-4 h-4 mr-1" />
@@ -1196,6 +1457,97 @@ export default function CoinManagementPage() {
                 {packageLoading ? 'Saving...' : (editingPackage ? 'Update' : 'Create')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gift Form Modal */}
+      {showGiftForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingGift ? 'Edit Gift' : 'Add New Gift'}
+            </h3>
+            
+            <form onSubmit={handleGiftSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gift Name *</label>
+                <input
+                  type="text"
+                  value={giftForm.name}
+                  onChange={(e) => setGiftForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter gift name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon/Emoji *</label>
+                <input
+                  type="text"
+                  value={giftForm.iconUrl}
+                  onChange={(e) => setGiftForm(prev => ({ ...prev, iconUrl: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="❤️ or image URL"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Coin Cost *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={giftForm.coinCost}
+                  onChange={(e) => setGiftForm(prev => ({ ...prev, coinCost: parseInt(e.target.value) || 0 }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="10"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={giftForm.description}
+                  onChange={(e) => setGiftForm(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Gift description..."
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={giftForm.isActive}
+                    onChange={(e) => setGiftForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Active Gift</span>
+                </label>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={resetGiftForm}
+                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  disabled={giftLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={giftLoading}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {giftLoading ? 'Saving...' : (editingGift ? 'Update' : 'Create')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

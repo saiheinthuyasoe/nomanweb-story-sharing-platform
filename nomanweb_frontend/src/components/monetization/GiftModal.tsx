@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Gift, Coins, Send } from 'lucide-react';
+import Cookies from 'js-cookie';
 
 interface Gift {
   id: string;
@@ -63,7 +64,7 @@ export default function GiftModal({
     try {
       const response = await fetch('/api/monetization/balance', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
       });
       if (response.ok) {
@@ -90,7 +91,7 @@ export default function GiftModal({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${Cookies.get('token')}`,
         },
         body: JSON.stringify({
           giftId: selectedGift.id,
@@ -285,4 +286,4 @@ export default function GiftModal({
       </div>
     </div>
   );
-} 
+}

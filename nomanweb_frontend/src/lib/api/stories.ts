@@ -162,6 +162,23 @@ export const storiesApi = {
   async incrementStoryView(id: string): Promise<void> {
     await apiClient.post(`/stories/${id}/view`);
   },
+
+  // Earnings management
+  async recalculateStoryEarnings(id: string): Promise<{
+    storyId: string;
+    storyTitle: string;
+    previousEarnings: number;
+    newEarnings: number;
+    breakdown: {
+      chapterPurchases: number;
+      bookPurchases: number;
+      gifts: number;
+    };
+    message: string;
+  }> {
+    const response = await apiClient.post(`/stories/${id}/recalculate-earnings`);
+    return response.data;
+  },
 };
 
 export const categoriesApi = {
