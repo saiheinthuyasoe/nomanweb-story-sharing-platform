@@ -2,37 +2,50 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { notificationsApi, NotificationResponse, UnreadCountResponse } from '@/lib/api/notifications';
 import { Notification, NotificationStats } from '@/types/user';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Get notifications
 export const useNotifications = (page: number = 0, size: number = 20) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['notifications', page, size],
     queryFn: () => notificationsApi.getNotifications(page, size),
+    enabled: !!user, // Only run when user is authenticated
   });
 };
 
 // Get unread notifications
 export const useUnreadNotifications = (page: number = 0, size: number = 20) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['notifications', 'unread', page, size],
     queryFn: () => notificationsApi.getUnreadNotifications(page, size),
+    enabled: !!user, // Only run when user is authenticated
   });
 };
 
 // Get unread count
 export const useUnreadCount = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => notificationsApi.getUnreadCount(),
     refetchInterval: 30000, // Refetch every 30 seconds
+    enabled: !!user, // Only run when user is authenticated
   });
 };
 
 // Get notification stats
 export const useNotificationStats = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['notifications', 'stats'],
     queryFn: () => notificationsApi.getNotificationStats(),
+    enabled: !!user, // Only run when user is authenticated
   });
 };
 
@@ -118,4 +131,4 @@ export const useSendSystemNotification = () => {
       toast.error(error.response?.data?.error || 'Failed to send system notification');
     },
   });
-}; 
+};

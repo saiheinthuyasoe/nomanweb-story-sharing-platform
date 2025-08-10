@@ -10,51 +10,53 @@ import java.util.UUID;
 
 public interface NotificationService {
 
-    // Basic notification operations
-    Notification createNotification(UUID userId, Notification.NotificationType type,
-            String title, String message,
-            Notification.RelatedType relatedType, UUID relatedId);
+        // Basic notification operations
+        Notification createNotification(UUID userId, Notification.NotificationType type,
+                        String title, String message,
+                        Notification.RelatedType relatedType, UUID relatedId);
 
-    Page<Notification> getUserNotifications(UUID userId, Pageable pageable);
+        Page<Notification> getUserNotifications(UUID userId, Pageable pageable);
 
-    Page<Notification> getUnreadNotifications(UUID userId, Pageable pageable);
+        Page<Notification> getUnreadNotifications(UUID userId, Pageable pageable);
 
-    long getUnreadCount(UUID userId);
+        long getUnreadCount(UUID userId);
 
-    void markAsRead(UUID notificationId);
+        void markAsRead(UUID notificationId);
 
-    void markAllAsRead(UUID userId);
+        void markAllAsRead(UUID userId);
 
-    void deleteNotification(UUID notificationId);
+        void deleteNotification(UUID notificationId);
 
-    // Social notifications
-    void notifyNewFollower(UUID followedUserId, UUID followerUserId);
+        // Social notifications
+        void notifyNewFollower(UUID followedUserId, UUID followerUserId);
 
-    void notifyNewStory(UUID authorId, UUID storyId);
+        void notifyNewStory(UUID authorId, UUID storyId);
 
-    void notifyNewChapter(UUID authorId, UUID storyId, UUID chapterId);
+        void notifyNewChapter(UUID authorId, UUID storyId, UUID chapterId);
 
-    void notifyStoryLike(UUID storyAuthorId, UUID likerId, UUID storyId);
+        void notifyStoryLike(UUID storyAuthorId, UUID likerId, UUID storyId);
 
-    void notifyChapterLike(UUID chapterAuthorId, UUID likerId, UUID chapterId);
+        void notifyChapterLike(UUID chapterAuthorId, UUID likerId, UUID chapterId);
 
-    void notifyNewComment(UUID contentAuthorId, UUID commenterId, UUID storyId, UUID chapterId, UUID commentId);
+        void notifyCommentLike(UUID commentAuthorId, UUID likerId, UUID commentId);
 
-    void notifyCommentReply(UUID parentCommentAuthorId, UUID replierId, UUID commentId);
+        void notifyNewComment(UUID contentAuthorId, UUID commenterId, UUID storyId, UUID chapterId, UUID commentId);
 
-    // Batch operations
-    void sendNotificationsToFollowers(UUID authorId, String title, String message,
-            Notification.NotificationType type,
-            Notification.RelatedType relatedType, UUID relatedId);
+        void notifyCommentReply(UUID parentCommentAuthorId, UUID replierId, UUID commentId);
 
-    // System notifications
-    void sendSystemNotification(UUID userId, String title, String message);
+        // Batch operations
+        void sendNotificationsToFollowers(UUID authorId, String title, String message,
+                        Notification.NotificationType type,
+                        Notification.RelatedType relatedType, UUID relatedId);
 
-    void sendBulkSystemNotification(List<UUID> userIds, String title, String message);
+        // System notifications
+        void sendSystemNotification(UUID userId, String title, String message);
 
-    // Cleanup and maintenance
-    void cleanupOldNotifications(int daysToKeep);
+        void sendBulkSystemNotification(List<UUID> userIds, String title, String message);
 
-    // Statistics
-    Map<String, Long> getNotificationStats(UUID userId);
+        // Cleanup and maintenance
+        void cleanupOldNotifications(int daysToKeep);
+
+        // Statistics
+        Map<String, Long> getNotificationStats(UUID userId);
 }

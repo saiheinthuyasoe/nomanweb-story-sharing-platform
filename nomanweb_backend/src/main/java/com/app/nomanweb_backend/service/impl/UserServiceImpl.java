@@ -5,6 +5,7 @@ import com.app.nomanweb_backend.entity.UserFollow;
 import com.app.nomanweb_backend.repository.*;
 import com.app.nomanweb_backend.service.UserService;
 import com.app.nomanweb_backend.service.SearchService;
+import com.app.nomanweb_backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final ReadingProgressRepository readingProgressRepository;
     private final CoinTransactionRepository coinTransactionRepository;
     private final SearchService searchService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -135,6 +137,9 @@ public class UserServiceImpl implements UserService {
 
         userFollowRepository.save(userFollow);
         log.info("User {} started following user {}", followerId, followingId);
+        
+        // Send notification to the followed user
+        notificationService.notifyNewFollower(followingId, followerId);
     }
 
     @Override

@@ -14,8 +14,8 @@ import java.util.UUID;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-    // Find comments by story
-    Page<Comment> findByStoryIdAndParentCommentIsNullAndModerationStatusOrderByCreatedAtDesc(
+    // Find comments by story (excluding chapter comments)
+    Page<Comment> findByStoryIdAndChapterIsNullAndParentCommentIsNullAndModerationStatusOrderByCreatedAtDesc(
             UUID storyId, Comment.ModerationStatus status, Pageable pageable);
 
     // Find comments by chapter
@@ -32,8 +32,8 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     // Find comments by moderation status
     Page<Comment> findByModerationStatusOrderByCreatedAtDesc(Comment.ModerationStatus status, Pageable pageable);
 
-    // Count comments by story
-    long countByStoryIdAndModerationStatus(UUID storyId, Comment.ModerationStatus status);
+    // Count comments by story (excluding chapter comments)
+    long countByStoryIdAndChapterIsNullAndModerationStatus(UUID storyId, Comment.ModerationStatus status);
 
     // Count comments by chapter
     long countByChapterIdAndModerationStatus(UUID chapterId, Comment.ModerationStatus status);
@@ -41,8 +41,8 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     // Count replies to a comment
     long countByParentCommentIdAndModerationStatus(UUID parentCommentId, Comment.ModerationStatus status);
 
-    // Find pinned comments for story
-    List<Comment> findByStoryIdAndIsPinnedTrueAndModerationStatusOrderByCreatedAtDesc(
+    // Find pinned comments for story (excluding chapter comments)
+    List<Comment> findByStoryIdAndChapterIsNullAndIsPinnedTrueAndModerationStatusOrderByCreatedAtDesc(
             UUID storyId, Comment.ModerationStatus status);
 
     // Find pinned comments for chapter

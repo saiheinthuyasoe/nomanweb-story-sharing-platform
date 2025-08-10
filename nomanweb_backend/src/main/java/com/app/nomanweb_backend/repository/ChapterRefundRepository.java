@@ -4,6 +4,8 @@ import com.app.nomanweb_backend.entity.ChapterRefund;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.Story;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -60,9 +62,23 @@ public interface ChapterRefundRepository extends JpaRepository<ChapterRefund, UU
     List<ChapterRefund> findByBookPurchase(com.app.nomanweb_backend.entity.BookPurchase bookPurchase);
 
     /**
+     * Find all chapter refunds received by a user (paginated).
+     * Used for refunds earned history.
+     */
+    Page<ChapterRefund> findByUserOrderByRefundedAtDesc(User user, Pageable pageable);
+
+    /**
+     * Find all chapter refunds paid by an author (paginated).
+     * Used for refunds paid history.
+     */
+    @Query("SELECT cr FROM ChapterRefund cr WHERE cr.story.author = :author ORDER BY cr.refundedAt DESC")
+    Page<ChapterRefund> findByStoryAuthorOrderByRefundedAtDesc(@Param("author") User author, Pageable pageable);
+
+    /**
      * Delete all chapter refunds for a specific chapter.
      * Used when a chapter is permanently deleted.
-     * @return 
+     * 
+     * @return
      */
     @Modifying
     @Transactional

@@ -17,43 +17,43 @@ import java.util.UUID;
 @Repository
 public interface CoinTransactionRepository extends JpaRepository<CoinTransaction, UUID> {
 
-    // Find transactions by user
-    Page<CoinTransaction> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
+        // Find transactions by user
+        Page<CoinTransaction> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 
-    // Find transactions by user and type
-    List<CoinTransaction> findByUserAndTransactionType(User user, CoinTransaction.TransactionType transactionType);
+        // Find transactions by user and type
+        List<CoinTransaction> findByUserAndTransactionType(User user, CoinTransaction.TransactionType transactionType);
 
-    // Find transactions by reference
-    List<CoinTransaction> findByReferenceTypeAndReferenceId(CoinTransaction.ReferenceType referenceType,
-            UUID referenceId);
+        // Find transactions by reference
+        List<CoinTransaction> findByReferenceTypeAndReferenceId(CoinTransaction.ReferenceType referenceType,
+                        UUID referenceId);
 
-    // Check if user has purchased specific item
-    boolean existsByUserIdAndReferenceIdAndReferenceTypeAndTransactionTypeAndStatus(
-            UUID userId,
-            UUID referenceId,
-            CoinTransaction.ReferenceType referenceType,
-            CoinTransaction.TransactionType transactionType,
-            CoinTransaction.Status status);
+        // Check if user has purchased specific item
+        boolean existsByUserIdAndReferenceIdAndReferenceTypeAndTransactionTypeAndStatus(
+                        UUID userId,
+                        UUID referenceId,
+                        CoinTransaction.ReferenceType referenceType,
+                        CoinTransaction.TransactionType transactionType,
+                        CoinTransaction.Status status);
 
-    // Get user's total earnings
-    @Query("SELECT COALESCE(SUM(ct.amount), 0) FROM CoinTransaction ct WHERE ct.user.id = :userId AND ct.transactionType = :transactionType AND ct.status = :status")
-    BigDecimal getTotalAmountByUserAndType(@Param("userId") UUID userId,
-            @Param("transactionType") CoinTransaction.TransactionType transactionType,
-            @Param("status") CoinTransaction.Status status);
+        // Get user's total earnings
+        @Query("SELECT COALESCE(SUM(ct.amount), 0) FROM CoinTransaction ct WHERE ct.user.id = :userId AND ct.transactionType = :transactionType AND ct.status = :status")
+        BigDecimal getTotalAmountByUserAndType(@Param("userId") UUID userId,
+                        @Param("transactionType") CoinTransaction.TransactionType transactionType,
+                        @Param("status") CoinTransaction.Status status);
 
-    // Get transactions in date range
-    @Query("SELECT ct FROM CoinTransaction ct WHERE ct.user = :user AND ct.createdAt BETWEEN :startDate AND :endDate ORDER BY ct.createdAt DESC")
-    List<CoinTransaction> findByUserAndDateRange(@Param("user") User user,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+        // Get transactions in date range
+        @Query("SELECT ct FROM CoinTransaction ct WHERE ct.user = :user AND ct.createdAt BETWEEN :startDate AND :endDate ORDER BY ct.createdAt DESC")
+        List<CoinTransaction> findByUserAndDateRange(@Param("user") User user,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-    // Get recent transactions
-    List<CoinTransaction> findTop10ByUserOrderByCreatedAtDesc(User user);
+        // Get recent transactions
+        List<CoinTransaction> findTop10ByUserOrderByCreatedAtDesc(User user);
 
-    // Find transactions by status
-    Page<CoinTransaction> findByStatus(CoinTransaction.Status status, Pageable pageable);
+        // Find transactions by status
+        Page<CoinTransaction> findByStatus(CoinTransaction.Status status, Pageable pageable);
 
-    // Get user's coin balance history
-    @Query("SELECT ct FROM CoinTransaction ct WHERE ct.user = :user ORDER BY ct.createdAt ASC")
-    List<CoinTransaction> findUserTransactionHistory(@Param("user") User user);
+        // Get user's coin balance history
+        @Query("SELECT ct FROM CoinTransaction ct WHERE ct.user = :user ORDER BY ct.createdAt ASC")
+        List<CoinTransaction> findUserTransactionHistory(@Param("user") User user);
 }

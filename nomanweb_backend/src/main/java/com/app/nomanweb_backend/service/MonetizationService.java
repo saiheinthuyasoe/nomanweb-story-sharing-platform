@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.service;
 
 import com.app.nomanweb_backend.dto.monetization.*;
+import com.app.nomanweb_backend.dto.refund.RefundTransactionResponse;
 import com.app.nomanweb_backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,4 +52,9 @@ public interface MonetizationService {
 
     // User's own purchase history (formatted for frontend)
     Page<PurchaseHistoryResponse> getUserPurchaseHistory(User user, Pageable pageable);
+
+    // Refund History
+    Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable);
+
+    Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable);
 }

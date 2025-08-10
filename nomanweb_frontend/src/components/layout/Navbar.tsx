@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useHydrated } from '@/hooks/useHydrated';
-import { 
-  Search, 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  PlusIcon, 
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter, usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useHydrated } from "@/hooks/useHydrated";
+import {
+  Search,
+  Menu,
+  X,
+  User,
+  LogOut,
+  PlusIcon,
   Home,
   BookOpen,
   Coins,
@@ -22,27 +22,36 @@ import {
   BookmarkIcon,
   Library,
   Users,
-  LogIn
-} from 'lucide-react';
-import { ActiveCollaborators } from '@/components/collaboration/ActiveCollaborators';
+  LogIn,
+} from "lucide-react";
+import { ActiveCollaborators } from "@/components/collaboration/ActiveCollaborators";
+import { useUnreadCount } from "@/hooks/useNotifications";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const isHydrated = useHydrated();
-  
+  const { data: unreadCountData } = useUnreadCount();
+
   // Check if on chapter edit page
-  const isChapterEditPage = pathname?.includes('/chapters/') && pathname?.includes('/edit');
+  const isChapterEditPage =
+    pathname?.includes("/chapters/") && pathname?.includes("/edit");
   // Extract chapter ID from URL like /stories/[storyId]/chapters/[chapterNumber]/edit
   const getChapterIdFromPath = () => {
     if (!isChapterEditPage) return null;
-    const pathParts = pathname?.split('/') || [];
-    const storyIndex = pathParts.findIndex((part: string) => part === 'stories');
-    if (storyIndex !== -1 && pathParts[storyIndex + 1] && pathParts[storyIndex + 3]) {
+    const pathParts = pathname?.split("/") || [];
+    const storyIndex = pathParts.findIndex(
+      (part: string) => part === "stories"
+    );
+    if (
+      storyIndex !== -1 &&
+      pathParts[storyIndex + 1] &&
+      pathParts[storyIndex + 3]
+    ) {
       // For now, we can't get the actual chapter ID from URL since it's story/chapter number
       // We'll need to get it from the edit page component context
-      return 'edit-page-chapter'; // placeholder
+      return "edit-page-chapter"; // placeholder
     }
     return null;
   };
@@ -50,9 +59,9 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'stories' | 'users'>('stories');
-  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState<"stories" | "users">("stories");
+
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -61,38 +70,44 @@ export default function Navbar() {
     const handleClickOutside = (event: MouseEvent) => {
       // Only handle desktop dropdowns on desktop view
       if (window.innerWidth >= 1024) {
-        if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        if (
+          userDropdownRef.current &&
+          !userDropdownRef.current.contains(event.target as Node)
+        ) {
           setIsUserDropdownOpen(false);
         }
-        if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        if (
+          searchRef.current &&
+          !searchRef.current.contains(event.target as Node)
+        ) {
           setIsSearchOpen(false);
         }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Close mobile menu on escape key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setIsMobileMenuOpen(false);
       }
     };
 
     if (isMobileMenuOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
       // Prevent body scrolling when menu is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
 
@@ -100,7 +115,7 @@ export default function Navbar() {
     logout();
     setIsMobileMenuOpen(false);
     setIsUserDropdownOpen(false);
-    router.push('/');
+    router.push("/");
   };
 
   const toggleMobileMenu = () => {
@@ -120,7 +135,7 @@ export default function Navbar() {
     setIsSearchOpen(!isSearchOpen);
     if (!isSearchOpen) {
       setTimeout(() => {
-        const input = document.getElementById('search-input');
+        const input = document.getElementById("search-input");
         if (input) input.focus();
       }, 100);
     }
@@ -129,9 +144,11 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}&type=${searchType}`);
+      router.push(
+        `/search?q=${encodeURIComponent(searchQuery.trim())}&type=${searchType}`
+      );
       setIsSearchOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
       closeMobileMenu();
     }
   };
@@ -159,7 +176,9 @@ export default function Navbar() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-base sm:text-lg font-bold text-white">NOMANWEB</span>
+              <span className="text-base sm:text-lg font-bold text-white">
+                NOMANWEB
+              </span>
             </div>
           </div>
         </div>
@@ -172,7 +191,6 @@ export default function Navbar() {
       <nav className="navbar-fixed">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-15">
-            
             {/* Left Section - Logo */}
             <div className="flex items-center flex-shrink-0">
               {/* Logo */}
@@ -189,33 +207,51 @@ export default function Navbar() {
 
               {/* Desktop Navigation Links */}
               <div className="hidden lg:flex items-center space-x-1 ml-4 xl:ml-6">
-                <NavLink href="/" active={isActive('/')} icon={Home}>
+                <NavLink href="/" active={isActive("/")} icon={Home}>
                   Home
                 </NavLink>
-                <NavLink href="/search" active={isActive('/search')} icon={Search}>
+                <NavLink
+                  href="/search"
+                  active={isActive("/search")}
+                  icon={Search}
+                >
                   Search
                 </NavLink>
-                <NavLink href="/stories" active={isActive('/stories')} icon={BookOpen}>
+                <NavLink
+                  href="/stories"
+                  active={isActive("/stories")}
+                  icon={BookOpen}
+                >
                   Browse
                 </NavLink>
-                
+
                 {user && (
                   <>
-                    <NavLink href="/stories/create" active={isActive('/stories/create')} icon={PlusIcon}>
+                    <NavLink
+                      href="/stories/create"
+                      active={isActive("/stories/create")}
+                      icon={PlusIcon}
+                    >
                       Write
                     </NavLink>
-                    <NavLink href="/dashboard" active={isActive('/dashboard')} icon={BookmarkIcon}>
+                    <NavLink
+                      href="/dashboard"
+                      active={isActive("/dashboard")}
+                      icon={BookmarkIcon}
+                    >
                       Dashboard
                     </NavLink>
                   </>
                 )}
               </div>
-              
+
               {/* Active Collaborators for Chapter Edit Pages */}
               {isChapterEditPage && (
                 <div className="hidden lg:flex items-center ml-6 px-3 py-1 bg-white/10 rounded-lg">
                   <Users className="w-4 h-4 text-white mr-2" />
-                  <span className="text-white text-sm font-medium">Collaborating</span>
+                  <span className="text-white text-sm font-medium">
+                    Collaborating
+                  </span>
                   {/* Note: We would need the actual chapter ID here for real functionality */}
                   {/* <ActiveCollaborators chapterId={actualChapterId} /> */}
                 </div>
@@ -224,7 +260,10 @@ export default function Navbar() {
 
             {/* Center Section - Mobile Search */}
             <div className="flex-1 mx-1 sm:mx-2 lg:hidden max-w-xs">
-              <form onSubmit={handleSearch} className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm">
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm"
+              >
                 <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 ml-2" />
                 <input
                   type="text"
@@ -235,7 +274,9 @@ export default function Navbar() {
                 />
                 <select
                   value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as 'stories' | 'users')}
+                  onChange={(e) =>
+                    setSearchType(e.target.value as "stories" | "users")
+                  }
                   className="bg-transparent text-gray-900 px-1 sm:px-2 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border-l border-gray-200"
                 >
                   <option value="stories">Stories</option>
@@ -246,11 +287,13 @@ export default function Navbar() {
 
             {/* Right Section */}
             <div className="flex items-center space-x-3">
-              
               {/* Desktop Search */}
               <div className="hidden lg:block relative" ref={searchRef}>
                 {isSearchOpen ? (
-                  <form onSubmit={handleSearch} className="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <form
+                    onSubmit={handleSearch}
+                    className="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm"
+                  >
                     <input
                       id="search-input"
                       type="text"
@@ -262,7 +305,9 @@ export default function Navbar() {
                     <div className="flex items-center border-l border-gray-200">
                       <select
                         value={searchType}
-                        onChange={(e) => setSearchType(e.target.value as 'stories' | 'users')}
+                        onChange={(e) =>
+                          setSearchType(e.target.value as "stories" | "users")
+                        }
                         className="bg-transparent text-gray-900 px-3 py-2 text-sm focus:outline-none border-r border-gray-200"
                       >
                         <option value="stories">Stories</option>
@@ -298,7 +343,7 @@ export default function Navbar() {
               {user ? (
                 <div className="hidden lg:flex items-center space-x-3">
                   {/* Library */}
-                  <Link 
+                  <Link
                     href="/library"
                     className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                     title="Library"
@@ -307,10 +352,21 @@ export default function Navbar() {
                   </Link>
 
                   {/* Notifications */}
-                  <button className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative">
+                  <Link
+                    href="/dashboard/notifications"
+                    className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative"
+                    title="Notifications"
+                  >
                     <Bell className="h-5 w-5" />
-                    {/* Notification badge could be added here */}
-                  </button>
+                    {unreadCountData?.unreadCount &&
+                      unreadCountData.unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                          {unreadCountData.unreadCount > 99
+                            ? "99+"
+                            : unreadCountData.unreadCount}
+                        </span>
+                      )}
+                  </Link>
 
                   {/* User Avatar Dropdown */}
                   <div className="relative" ref={userDropdownRef}>
@@ -356,20 +412,24 @@ export default function Navbar() {
                               <div className="font-semibold text-gray-900">
                                 {user.displayName || user.username}
                               </div>
-                              <div className="text-sm text-gray-500">@{user.username}</div>
+                              <div className="text-sm text-gray-500">
+                                @{user.username}
+                              </div>
                             </div>
                           </div>
-                          
+
                           {/* Coin Balance */}
                           <div className="flex items-center justify-between mt-3 bg-yellow-50 rounded-lg p-2">
                             <div className="flex items-center space-x-2">
                               <Coins className="h-4 w-4 text-yellow-600" />
-                              <span className="text-sm font-medium text-gray-700">{user.coinBalance}</span>
+                              <span className="text-sm font-medium text-gray-700">
+                                {user.coinBalance}
+                              </span>
                             </div>
-                            <button 
+                            <button
                               onClick={() => {
                                 setIsUserDropdownOpen(false);
-                                router.push('/buy-coins');
+                                router.push("/buy-coins");
                               }}
                               className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md hover:bg-yellow-200 transition-colors"
                             >
@@ -383,7 +443,10 @@ export default function Navbar() {
                           <DropdownLink href="/profile" icon={User}>
                             Profile
                           </DropdownLink>
-                          <DropdownLink href="/dashboard/my-stories" icon={BookOpen}>
+                          <DropdownLink
+                            href="/dashboard/my-stories"
+                            icon={BookOpen}
+                          >
                             My Stories
                           </DropdownLink>
                           <DropdownLink href="/library" icon={Library}>
@@ -437,16 +500,18 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Offcanvas Menu */}
-      <div 
+      <div
         className={`fixed inset-y-0 right-0 w-72 sm:w-80 md:w-84 bg-nomanweb-gradient shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-                    {/* Header */}
+          {/* Header */}
           <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/20">
             <div className="flex items-center space-x-2">
-                <span className="text-base sm:text-lg font-bold text-white">NOMANWEB</span>
+              <span className="text-base sm:text-lg font-bold text-white">
+                NOMANWEB
+              </span>
             </div>
             <button
               onClick={closeMobileMenu}
@@ -481,7 +546,9 @@ export default function Navbar() {
                       <div className="text-xs sm:text-sm font-medium text-white truncate">
                         {user.displayName || user.username}
                       </div>
-                      <div className="text-xs text-white/70 truncate">@{user.username}</div>
+                      <div className="text-xs text-white/70 truncate">
+                        @{user.username}
+                      </div>
                     </div>
                   </div>
 
@@ -489,12 +556,14 @@ export default function Navbar() {
                   <div className="flex items-center justify-between mt-2 sm:mt-3 bg-yellow-500/20 rounded-md sm:rounded-lg p-1.5 sm:p-2">
                     <div className="flex items-center space-x-1.5 sm:space-x-2">
                       <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-300" />
-                      <span className="text-xs sm:text-sm font-medium text-white">{user.coinBalance}</span>
+                      <span className="text-xs sm:text-sm font-medium text-white">
+                        {user.coinBalance}
+                      </span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         closeMobileMenu();
-                        router.push('/buy-coins');
+                        router.push("/buy-coins");
                       }}
                       className="text-xs bg-yellow-400/30 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-sm sm:rounded-md hover:bg-yellow-400/40 transition-colors"
                     >
@@ -509,48 +578,96 @@ export default function Navbar() {
           {/* Navigation Links */}
           <div className="flex-1 py-3 sm:py-4 overflow-y-auto">
             <div className="space-y-1.5 sm:space-y-2 px-3 sm:px-4">
-              <MobileNavLink href="/" active={isActive('/')} icon={Home} onClick={closeMobileMenu}>
+              <MobileNavLink
+                href="/"
+                active={isActive("/")}
+                icon={Home}
+                onClick={closeMobileMenu}
+              >
                 Home
               </MobileNavLink>
-              <MobileNavLink href="/search" active={isActive('/search')} icon={Search} onClick={closeMobileMenu}>
+              <MobileNavLink
+                href="/search"
+                active={isActive("/search")}
+                icon={Search}
+                onClick={closeMobileMenu}
+              >
                 Search
               </MobileNavLink>
-              <MobileNavLink href="/dashboard/my-stories" active={isActive('/dashboard/my-stories')} icon={BookOpen} onClick={closeMobileMenu}>
+              <MobileNavLink
+                href="/dashboard/my-stories"
+                active={isActive("/dashboard/my-stories")}
+                icon={BookOpen}
+                onClick={closeMobileMenu}
+              >
                 Browse
               </MobileNavLink>
-              
+
               {user ? (
                 <>
-                  <MobileNavLink href="/profile" active={isActive('/profile')} icon={User} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/profile"
+                    active={isActive("/profile")}
+                    icon={User}
+                    onClick={closeMobileMenu}
+                  >
                     Profile
                   </MobileNavLink>
-                  <MobileNavLink href="/stories/create" active={isActive('/stories/create')} icon={PlusIcon} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/stories/create"
+                    active={isActive("/stories/create")}
+                    icon={PlusIcon}
+                    onClick={closeMobileMenu}
+                  >
                     Write
                   </MobileNavLink>
-                  <MobileNavLink href="/dashboard" active={isActive('/dashboard')} icon={BookmarkIcon} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/dashboard"
+                    active={isActive("/dashboard")}
+                    icon={BookmarkIcon}
+                    onClick={closeMobileMenu}
+                  >
                     Dashboard
                   </MobileNavLink>
-                  <MobileNavLink href="/purchase-history" icon={History} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/purchase-history"
+                    icon={History}
+                    onClick={closeMobileMenu}
+                  >
                     Purchase History
                   </MobileNavLink>
-                  <MobileNavLink href="/stories" icon={BookOpen} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/stories"
+                    icon={BookOpen}
+                    onClick={closeMobileMenu}
+                  >
                     Stories
                   </MobileNavLink>
-                  <MobileNavLink href="/library" icon={Library} onClick={closeMobileMenu}>
+                  <MobileNavLink
+                    href="/library"
+                    icon={Library}
+                    onClick={closeMobileMenu}
+                  >
                     Library
                   </MobileNavLink>
-                  
+
                   {/* Logout Button */}
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth bg-red-500/20 text-white hover:bg-red-500/30 border border-red-400/30 mt-1.5 sm:mt-2"
                   >
                     <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-sm sm:text-base font-medium">Logout</span>
+                    <span className="text-sm sm:text-base font-medium">
+                      Logout
+                    </span>
                   </button>
                 </>
               ) : (
-                <MobileNavLink href="/login" active={isActive('/login')} onClick={closeMobileMenu}>
+                <MobileNavLink
+                  href="/login"
+                  active={isActive("/login")}
+                  onClick={closeMobileMenu}
+                >
                   Sign in
                 </MobileNavLink>
               )}
@@ -572,14 +689,14 @@ export default function Navbar() {
 }
 
 // Desktop Navigation Link Component
-function NavLink({ 
-  href, 
-  children, 
-  active = false, 
-  icon: Icon 
-}: { 
-  href: string; 
-  children: React.ReactNode; 
+function NavLink({
+  href,
+  children,
+  active = false,
+  icon: Icon,
+}: {
+  href: string;
+  children: React.ReactNode;
   active?: boolean;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
@@ -587,9 +704,7 @@ function NavLink({
     <Link
       href={href}
       className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition-all-smooth ${
-        active
-          ? 'text-white'
-          : 'text-white/90 hover:text-white'
+        active ? "text-white" : "text-white/90 hover:text-white"
       }`}
     >
       {Icon && <Icon className="h-4 w-4" />}
@@ -604,15 +719,15 @@ function NavLink({
 }
 
 // Mobile Navigation Link Component
-function MobileNavLink({ 
-  href, 
-  children, 
-  active = false, 
+function MobileNavLink({
+  href,
+  children,
+  active = false,
   icon: Icon,
-  onClick 
-}: { 
-  href: string; 
-  children: React.ReactNode; 
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
   active?: boolean;
   icon?: React.ComponentType<{ className?: string }>;
   onClick?: () => void;
@@ -622,9 +737,7 @@ function MobileNavLink({
       href={href}
       onClick={onClick}
       className={`relative flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth ${
-        active
-          ? 'text-white'
-          : 'text-white/90 hover:text-white'
+        active ? "text-white" : "text-white/90 hover:text-white"
       }`}
     >
       {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5" />}
@@ -639,13 +752,13 @@ function MobileNavLink({
 }
 
 // Dropdown Link Component
-function DropdownLink({ 
-  href, 
-  children, 
-  icon: Icon 
-}: { 
-  href: string; 
-  children: React.ReactNode; 
+function DropdownLink({
+  href,
+  children,
+  icon: Icon,
+}: {
+  href: string;
+  children: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
@@ -657,4 +770,4 @@ function DropdownLink({
       <span>{children}</span>
     </Link>
   );
-} 
+}

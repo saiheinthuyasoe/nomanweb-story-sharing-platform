@@ -99,6 +99,39 @@ interface PurchaseHistory {
   status: "completed" | "pending" | "failed";
 }
 
+interface RefundEarned {
+  id: string;
+  refundType: "chapter" | "book";
+  storyId: string;
+  storyTitle: string;
+  storyAuthor: string;
+  chapterId?: string;
+  chapterTitle?: string;
+  chapterNumber?: number;
+  refundAmount: number;
+  originalAmount: number;
+  reason: string;
+  createdAt: string;
+  status: "completed" | "pending" | "processing";
+}
+
+interface RefundPaid {
+  id: string;
+  refundType: "chapter" | "book";
+  storyId: string;
+  storyTitle: string;
+  readerName: string;
+  readerUsername: string;
+  chapterId?: string;
+  chapterTitle?: string;
+  chapterNumber?: number;
+  refundAmount: number;
+  originalAmount: number;
+  reason: string;
+  createdAt: string;
+  status: "completed" | "pending" | "processing";
+}
+
 export default function MonetizationPage() {
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState<RevenueAnalytics | null>(null);
@@ -106,9 +139,11 @@ export default function MonetizationPage() {
   const [sentGifts, setSentGifts] = useState<GiftTransaction[]>([]);
   const [earnedMoney, setEarnedMoney] = useState<EarnedMoney[]>([]);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
+  const [refundsEarned, setRefundsEarned] = useState<RefundEarned[]>([]);
+  const [refundsPaid, setRefundsPaid] = useState<RefundPaid[]>([]);
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "earned" | "received" | "sent" | "purchases"
+    "overview" | "earned" | "received" | "sent" | "purchases" | "refunds-earned" | "refunds-paid"
   >("overview");
   const [loading, setLoading] = useState(true);
   const [previousBalance, setPreviousBalance] = useState<number>(0);
@@ -229,6 +264,26 @@ export default function MonetizationPage() {
         setPurchaseHistory(purchaseResponse.data.content || []);
       } catch (error) {
         console.error("Failed to fetch purchase history:", error);
+      }
+
+      // Fetch refunds earned (refunds received by user as reader)
+      try {
+        const refundsEarnedResponse = await apiClient.get(
+          "/monetization/refunds/earned?page=0&size=20"
+        );
+        setRefundsEarned(refundsEarnedResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch refunds earned:", error);
+      }
+
+      // Fetch refunds paid (refunds given by user as writer)
+      try {
+        const refundsPaidResponse = await apiClient.get(
+          "/monetization/refunds/paid?page=0&size=20"
+        );
+        setRefundsPaid(refundsPaidResponse.data.content || []);
+      } catch (error) {
+        console.error("Failed to fetch refunds paid:", error);
       }
     } catch (error) {
       console.error("Error fetching monetization data:", error);
@@ -370,6 +425,8 @@ export default function MonetizationPage() {
             { key: "received", label: "Gifts Received", icon: Gift },
             { key: "sent", label: "Gifts Sent", icon: Gift },
             { key: "purchases", label: "Purchases", icon: ShoppingBag },
+            { key: "refunds-earned", label: "Refunds Earned", icon: RotateCcw },
+            { key: "refunds-paid", label: "Refunds Paid", icon: RotateCcw },
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -1056,7 +1113,9 @@ export default function MonetizationPage() {
                           <h4 className="font-medium text-gray-900">
                             {purchase.purchaseType === "book"
                               ? purchase.storyTitle
-                              : `Chapter ${purchase.chapterNumber || 'N/A'}: ${purchase.chapterTitle || 'Untitled'}`}
+                              : `Chapter ${purchase.chapterNumber || "N/A"}: ${
+                                  purchase.chapterTitle || "Untitled"
+                                }`}
                           </h4>
                           <p className="text-sm text-gray-600">
                             {purchase.purchaseType === "book"
@@ -1185,6 +1244,476 @@ export default function MonetizationPage() {
                           </div>
                           <div className="text-xs text-gray-500">
                             Total spent
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Refunds Earned Tab */}
+      {activeTab === "refunds-earned" && (
+        <div className="space-y-6">
+          {/* Refunds Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Refunds Received
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(
+                    refundsEarned.reduce(
+                      (sum, refund) => sum + refund.refundAmount,
+                      0
+                    )
+                  )}{" "}
+                  Coins
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Money returned to you
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Refunds
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {refundsEarned.length}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Refund transactions
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Book Refunds
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {
+                    refundsEarned.filter((r) => r.refundType === "book")
+                      .length
+                  }
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Complete book refunds
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Chapter Refunds
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {
+                    refundsEarned.filter((r) => r.refundType === "chapter")
+                      .length
+                  }
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Individual chapter refunds
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Refunds Earned History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Refunds Received History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {refundsEarned.length === 0 ? (
+                  <div className="text-center py-8">
+                    <RotateCcw className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">
+                      No refunds received yet
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Refunds from authors will appear here
+                    </p>
+                  </div>
+                ) : (
+                  refundsEarned.slice(0, 15).map((refund) => (
+                    <div
+                      key={refund.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            refund.refundType === "book"
+                              ? "bg-gradient-to-r from-green-500 to-blue-500"
+                              : "bg-gradient-to-r from-blue-500 to-purple-500"
+                          }`}
+                        >
+                          {refund.refundType === "book" ? (
+                            <BookOpen className="h-5 w-5 text-white" />
+                          ) : (
+                            <Star className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {refund.refundType === "book"
+                              ? refund.storyTitle
+                              : `Chapter ${refund.chapterNumber || "N/A"}: ${
+                                  refund.chapterTitle || "Untitled"
+                                }`}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {refund.refundType === "book"
+                              ? `Complete Book by ${refund.storyAuthor}`
+                              : `${refund.storyTitle} by ${refund.storyAuthor}`}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Reason: {refund.reason}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge
+                              variant={
+                                refund.refundType === "book"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {refund.refundType === "book"
+                                ? "Complete Book"
+                                : "Chapter"}
+                            </Badge>
+                            <Badge
+                              variant={
+                                refund.status === "completed"
+                                  ? "default"
+                                  : refund.status === "pending"
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                              className="text-xs"
+                            >
+                              {refund.status
+                                ? refund.status.charAt(0).toUpperCase() +
+                                  refund.status.slice(1)
+                                : "Unknown"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatDate(refund.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-600">
+                          +{formatCurrency(refund.refundAmount)} Coins
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Original: {formatCurrency(refund.originalAmount)} Coins
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {refundsEarned.length > 15 && (
+                <div className="text-center mt-4">
+                  <Button variant="outline" size="sm">
+                    Load More Refunds
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Refunds Paid Tab */}
+      {activeTab === "refunds-paid" && (
+        <div className="space-y-6">
+          {/* Refunds Paid Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Refunds Paid
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {formatCurrency(
+                    refundsPaid.reduce(
+                      (sum, refund) => sum + refund.refundAmount,
+                      0
+                    )
+                  )}{" "}
+                  Coins
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Money refunded to readers
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Refunds
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {refundsPaid.length}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Refund transactions
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Unique Readers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {new Set(refundsPaid.map((r) => r.readerUsername)).size}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Readers refunded
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  This Month
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(
+                    refundsPaid
+                      .filter(
+                        (r) =>
+                          new Date(r.createdAt).getMonth() ===
+                          new Date().getMonth()
+                      )
+                      .reduce((sum, refund) => sum + refund.refundAmount, 0)
+                  )}{" "}
+                  Coins
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Current month refunds
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Refunds Paid History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Refunds Paid History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {refundsPaid.length === 0 ? (
+                  <div className="text-center py-8">
+                    <RotateCcw className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">
+                      No refunds paid yet
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Refunds you've given to readers will appear here
+                    </p>
+                  </div>
+                ) : (
+                  refundsPaid.slice(0, 15).map((refund) => (
+                    <div
+                      key={refund.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            refund.refundType === "book"
+                              ? "bg-gradient-to-r from-red-500 to-pink-500"
+                              : "bg-gradient-to-r from-orange-500 to-red-500"
+                          }`}
+                        >
+                          {refund.refundType === "book" ? (
+                            <BookOpen className="h-5 w-5 text-white" />
+                          ) : (
+                            <Star className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {refund.refundType === "book"
+                              ? refund.storyTitle
+                              : `Chapter ${refund.chapterNumber || "N/A"}: ${
+                                  refund.chapterTitle || "Untitled"
+                                }`}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {refund.refundType === "book"
+                              ? `Complete Book`
+                              : `${refund.storyTitle}`}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Reader: {refund.readerName} (@{refund.readerUsername})
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Reason: {refund.reason}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge
+                              variant={
+                                refund.refundType === "book"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {refund.refundType === "book"
+                                ? "Complete Book"
+                                : "Chapter"}
+                            </Badge>
+                            <Badge
+                              variant={
+                                refund.status === "completed"
+                                  ? "default"
+                                  : refund.status === "pending"
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                              className="text-xs"
+                            >
+                              {refund.status
+                                ? refund.status.charAt(0).toUpperCase() +
+                                  refund.status.slice(1)
+                                : "Unknown"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatDate(refund.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-red-600">
+                          -{formatCurrency(refund.refundAmount)} Coins
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Original: {formatCurrency(refund.originalAmount)} Coins
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {refundsPaid.length > 15 && (
+                <div className="text-center mt-4">
+                  <Button variant="outline" size="sm">
+                    Load More Refunds
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Refunded Stories */}
+          {refundsPaid.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  Most Refunded Stories
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(
+                    refundsPaid.reduce((acc, refund) => {
+                      if (!acc[refund.storyTitle]) {
+                        acc[refund.storyTitle] = {
+                          totalRefunds: 0,
+                          refundCount: 0,
+                        };
+                      }
+                      acc[refund.storyTitle].totalRefunds +=
+                        refund.refundAmount;
+                      acc[refund.storyTitle].refundCount += 1;
+                      return acc;
+                    }, {} as Record<string, { totalRefunds: number; refundCount: number }>)
+                  )
+                    .sort(([, a], [, b]) => b.totalRefunds - a.totalRefunds)
+                    .slice(0, 5)
+                    .map(([storyTitle, data], index) => (
+                      <div
+                        key={storyTitle}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm ${
+                              index === 0
+                                ? "bg-red-500"
+                                : index === 1
+                                ? "bg-orange-500"
+                                : index === 2
+                                ? "bg-yellow-500"
+                                : "bg-gray-500"
+                            }`}
+                          >
+                            {index + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {storyTitle}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {data.refundCount} refunds
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-red-600">
+                            {formatCurrency(data.totalRefunds)} Coins
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Avg:{" "}
+                            {formatCurrency(
+                              data.totalRefunds / data.refundCount
+                            )}{" "}
+                            per refund
                           </div>
                         </div>
                       </div>

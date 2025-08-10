@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.service.impl;
 
 import com.app.nomanweb_backend.dto.monetization.*;
+import com.app.nomanweb_backend.dto.refund.RefundTransactionResponse;
 import com.app.nomanweb_backend.entity.*;
 import com.app.nomanweb_backend.repository.*;
 import com.app.nomanweb_backend.service.MonetizationService;
@@ -196,9 +197,11 @@ public class MonetizationServiceImpl implements MonetizationService {
         if (!userBookPurchases.isEmpty()) {
             BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous pricing changes
+                // For WHOLE_BOOK pricing, check if there's a chapter limit from previous
+                // pricing changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing
+                    // change)
                     if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
                         return chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
                     }
@@ -215,19 +218,22 @@ public class MonetizationServiceImpl implements MonetizationService {
             }
         }
 
-        // For WHOLE_BOOK pricing: Grant full access to users who previously bought individual chapters
-        // This handles the case where pricing changed from PAID_PER_CHAPTER to WHOLE_BOOK
+        // For WHOLE_BOOK pricing: Grant full access to users who previously bought
+        // individual chapters
+        // This handles the case where pricing changed from PAID_PER_CHAPTER to
+        // WHOLE_BOOK
         if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
             List<ChapterPurchase> userChapterPurchases = chapterPurchaseRepository.findByUserAndStory(user,
                     chapter.getStory());
             List<ChapterPurchase> activeChapterPurchases = userChapterPurchases.stream()
                     .filter(ChapterPurchase::isActive)
                     .collect(Collectors.toList());
-            
+
             // If user has ANY active chapter purchases, grant access to ALL chapters
-            // This ensures fairness when pricing changes from PAID_PER_CHAPTER to WHOLE_BOOK
+            // This ensures fairness when pricing changes from PAID_PER_CHAPTER to
+            // WHOLE_BOOK
             if (!activeChapterPurchases.isEmpty()) {
-                log.info("User {} has {} active chapter purchases for WHOLE_BOOK story {}, granting full access.", 
+                log.info("User {} has {} active chapter purchases for WHOLE_BOOK story {}, granting full access.",
                         user.getId(), activeChapterPurchases.size(), chapter.getStory().getId());
                 return true;
             }
@@ -272,9 +278,11 @@ public class MonetizationServiceImpl implements MonetizationService {
         if (!userBookPurchases.isEmpty()) {
             BookPurchase mostRecentBookPurchase = userBookPurchases.get(0);
             if (mostRecentBookPurchase.isActive()) {
-                // For WHOLE_BOOK, check if there's a chapter limit from previous pricing changes
+                // For WHOLE_BOOK, check if there's a chapter limit from previous pricing
+                // changes
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing
+                    // change)
                     if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
                         return chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase();
                     }
@@ -345,7 +353,8 @@ public class MonetizationServiceImpl implements MonetizationService {
             if (mostRecentBookPurchase.isActive()) {
                 // If story is currently WHOLE_BOOK, check if user has access to this chapter
                 if (chapter.getStory().getPricingType() == Story.PricingType.WHOLE_BOOK) {
-                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing change)
+                    // If chaptersAtPurchase is set, respect the limit (user bought before pricing
+                    // change)
                     if (mostRecentBookPurchase.getChaptersAtPurchase() != null) {
                         if (chapter.getChapterNumber() <= mostRecentBookPurchase.getChaptersAtPurchase()) {
                             return GiftTransactionResponse.builder()
@@ -858,15 +867,17 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Transactional(readOnly = true)
     public Page<EarnedMoneyResponse> getUserEarnings(User user, Pageable pageable) {
         List<EarnedMoneyResponse> earnings = new ArrayList<>();
-        
+
         // Get chapter purchase earnings
-        List<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByChapter_Story_AuthorOrderByCreatedAtDesc(user);
+        List<ChapterPurchase> chapterPurchases = chapterPurchaseRepository
+                .findByChapter_Story_AuthorOrderByCreatedAtDesc(user);
         for (ChapterPurchase purchase : chapterPurchases) {
             EarnedMoneyResponse earning = EarnedMoneyResponse.builder()
                     .id(purchase.getId())
                     .transactionType("chapter_purchase")
                     .amount(purchase.getCoinsSpent())
-                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName() : purchase.getUser().getUsername())
+                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName()
+                            : purchase.getUser().getUsername())
                     .readerUsername(purchase.getUser().getUsername())
                     .storyTitle(purchase.getStory().getTitle())
                     .chapterTitle(purchase.getChapter().getTitle())
@@ -877,7 +888,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .build();
             earnings.add(earning);
         }
-        
+
         // Get book purchase earnings
         List<BookPurchase> bookPurchases = bookPurchaseRepository.findByStory_AuthorOrderByCreatedAtDesc(user);
         for (BookPurchase purchase : bookPurchases) {
@@ -885,7 +896,8 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .id(purchase.getId())
                     .transactionType("story_purchase")
                     .amount(purchase.getCoinsSpent())
-                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName() : purchase.getUser().getUsername())
+                    .readerName(purchase.getUser().getDisplayName() != null ? purchase.getUser().getDisplayName()
+                            : purchase.getUser().getUsername())
                     .readerUsername(purchase.getUser().getUsername())
                     .storyTitle(purchase.getStory().getTitle())
                     .chapterTitle(null)
@@ -896,15 +908,15 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .build();
             earnings.add(earning);
         }
-        
+
         // Sort by creation date descending
         earnings.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-        
+
         // Apply pagination
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), earnings.size());
         List<EarnedMoneyResponse> paginatedEarnings = earnings.subList(start, end);
-        
+
         return new PageImpl<>(paginatedEarnings, pageable, earnings.size());
     }
 
@@ -912,14 +924,15 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Transactional(readOnly = true)
     public Page<PurchaseHistoryResponse> getUserPurchaseHistory(User user, Pageable pageable) {
         // Get chapter purchases
-        Page<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
-        
+        Page<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user,
+                pageable);
+
         // Get book purchases
         Page<BookPurchase> bookPurchases = bookPurchaseRepository.findByUserOrderByPurchasedAtDesc(user, pageable);
-        
+
         // Combine and sort all purchases by date
         List<PurchaseHistoryResponse> allPurchases = new ArrayList<>();
-        
+
         // Add chapter purchases
         chapterPurchases.getContent().forEach(purchase -> {
             allPurchases.add(PurchaseHistoryResponse.builder()
@@ -927,8 +940,9 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .purchaseType("chapter")
                     .storyId(purchase.getStory().getId())
                     .storyTitle(purchase.getStory().getTitle())
-                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null ? 
-                        purchase.getStory().getAuthor().getDisplayName() : purchase.getStory().getAuthor().getUsername())
+                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null
+                            ? purchase.getStory().getAuthor().getDisplayName()
+                            : purchase.getStory().getAuthor().getUsername())
                     .chapterId(purchase.getChapter().getId())
                     .chapterTitle(purchase.getChapter().getTitle())
                     .chapterNumber(purchase.getChapter().getChapterNumber())
@@ -937,7 +951,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .status(purchase.getIsRefunded() ? "refunded" : "completed")
                     .build());
         });
-        
+
         // Add book purchases
         bookPurchases.getContent().forEach(purchase -> {
             allPurchases.add(PurchaseHistoryResponse.builder()
@@ -945,22 +959,60 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .purchaseType("book")
                     .storyId(purchase.getStory().getId())
                     .storyTitle(purchase.getStory().getTitle())
-                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null ? 
-                        purchase.getStory().getAuthor().getDisplayName() : purchase.getStory().getAuthor().getUsername())
+                    .storyAuthor(purchase.getStory().getAuthor().getDisplayName() != null
+                            ? purchase.getStory().getAuthor().getDisplayName()
+                            : purchase.getStory().getAuthor().getUsername())
                     .amount(purchase.getCoinsSpent())
                     .createdAt(purchase.getPurchasedAt())
                     .status(purchase.getIsRefunded() ? "refunded" : "completed")
                     .build());
         });
-        
+
         // Sort by creation date (most recent first)
         allPurchases.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-        
+
         // Apply pagination
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), allPurchases.size());
         List<PurchaseHistoryResponse> pageContent = allPurchases.subList(start, end);
-        
+
         return new PageImpl<>(pageContent, pageable, allPurchases.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable) {
+        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByUserOrderByRefundedAtDesc(user, pageable);
+        
+        return chapterRefunds.map(this::convertToRefundTransactionResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable) {
+        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user, pageable);
+        
+        return chapterRefunds.map(this::convertToRefundTransactionResponse);
+    }
+
+    private RefundTransactionResponse convertToRefundTransactionResponse(ChapterRefund chapterRefund) {
+        return RefundTransactionResponse.builder()
+                .id(chapterRefund.getId())
+                .userId(chapterRefund.getUser().getId())
+                .authorId(chapterRefund.getStory().getAuthor().getId())
+                .storyId(chapterRefund.getStory().getId())
+                .storyTitle(chapterRefund.getStory().getTitle())
+                .chapterId(chapterRefund.getChapter().getId())
+                .chapterTitle(chapterRefund.getChapter().getTitle())
+                .chapterNumber(chapterRefund.getChapter().getChapterNumber())
+                .refundType("chapter")
+                .originalPurchaseType("book")
+                .refundAmount(chapterRefund.getRefundAmount())
+                .originalAmount(chapterRefund.getBookPurchase().getCoinsSpent())
+                .refundReason(chapterRefund.getReason())
+                .status("completed")
+                .processedAt(chapterRefund.getRefundedAt())
+                .createdAt(chapterRefund.getRefundedAt())
+                .build();
     }
 }

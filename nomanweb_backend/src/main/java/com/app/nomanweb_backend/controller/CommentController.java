@@ -59,9 +59,17 @@ public class CommentController {
     public ResponseEntity<Comment> replyToComment(
             @PathVariable UUID commentId,
             @RequestBody CreateReplyRequest request,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID userId = UUID.fromString(userIdStr);
 
         Comment reply = commentService.createReply(userId, commentId, request.getContent());
@@ -130,24 +138,43 @@ public class CommentController {
     @Operation(summary = "Toggle like on a comment")
     public ResponseEntity<Map<String, Object>> toggleCommentLike(
             @PathVariable UUID commentId,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
+        
+        try {
+            // Check authentication first
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("error", "Authentication required to like comments"));
+            }
 
-        String userIdStr = principal.getName();
-        UUID userId = UUID.fromString(userIdStr);
+            String userIdStr = authentication.getName();
+            if (userIdStr == null || userIdStr.isEmpty()) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("error", "Invalid authentication token"));
+            }
 
-        boolean alreadyLiked = commentService.hasUserLikedComment(commentId, userId);
+            UUID userId = UUID.fromString(userIdStr);
 
-        if (alreadyLiked) {
-            commentService.unlikeComment(commentId, userId);
-        } else {
-            commentService.likeComment(commentId, userId);
+            boolean alreadyLiked = commentService.hasUserLikedComment(commentId, userId);
+
+            if (alreadyLiked) {
+                commentService.unlikeComment(commentId, userId);
+            } else {
+                commentService.likeComment(commentId, userId);
+            }
+
+            boolean liked = !alreadyLiked;
+
+            return ResponseEntity.ok(Map.of(
+                    "liked", liked,
+                    "message", liked ? "Comment liked" : "Comment unliked"));
+                    
+        } catch (Exception e) {
+            System.err.println("Error in toggleCommentLike: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to toggle comment like: " + e.getMessage()));
         }
-
-        boolean liked = !alreadyLiked;
-
-        return ResponseEntity.ok(Map.of(
-                "liked", liked,
-                "message", liked ? "Comment liked" : "Comment unliked"));
     }
 
     @PutMapping("/{commentId}")
@@ -189,9 +216,17 @@ public class CommentController {
     @Operation(summary = "Pin a comment")
     public ResponseEntity<Comment> pinComment(
             @PathVariable UUID commentId,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID userId = UUID.fromString(userIdStr);
 
         Comment comment = commentService.pinComment(userId, commentId);
@@ -202,9 +237,17 @@ public class CommentController {
     @Operation(summary = "Unpin a comment")
     public ResponseEntity<Comment> unpinComment(
             @PathVariable UUID commentId,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID userId = UUID.fromString(userIdStr);
 
         Comment comment = commentService.unpinComment(userId, commentId);
@@ -216,9 +259,17 @@ public class CommentController {
     public ResponseEntity<Comment> flagComment(
             @PathVariable UUID commentId,
             @RequestBody FlagCommentRequest request,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID userId = UUID.fromString(userIdStr);
 
         Comment comment = commentService.flagComment(userId, commentId, request.getReason());
@@ -282,9 +333,17 @@ public class CommentController {
     @Operation(summary = "Approve a comment (Admin only)")
     public ResponseEntity<Comment> approveComment(
             @PathVariable UUID commentId,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID moderatorId = UUID.fromString(userIdStr);
 
         Comment comment = commentService.approveComment(commentId, moderatorId);
@@ -296,9 +355,17 @@ public class CommentController {
     public ResponseEntity<Comment> rejectComment(
             @PathVariable UUID commentId,
             @RequestBody RejectCommentRequest request,
-            @AuthenticationPrincipal Principal principal) {
+            Authentication authentication) {
 
-        String userIdStr = principal.getName();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String userIdStr = authentication.getName();
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
         UUID moderatorId = UUID.fromString(userIdStr);
 
         Comment comment = commentService.rejectComment(commentId, moderatorId, request.getReason());

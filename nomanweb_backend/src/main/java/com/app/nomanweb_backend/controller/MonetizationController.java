@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.dto.monetization.*;
+import com.app.nomanweb_backend.dto.refund.RefundTransactionResponse;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.MonetizationService;
 import com.app.nomanweb_backend.service.AuthService;
@@ -207,6 +208,36 @@ public class MonetizationController {
         Page<PurchaseHistoryResponse> purchases = monetizationService.getUserPurchaseHistory(currentUser, pageable);
 
         return ResponseEntity.ok(purchases);
+    }
+
+    @GetMapping("/refunds/earned")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get refunds earned by current user")
+    public ResponseEntity<Page<RefundTransactionResponse>> getRefundsEarned(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<RefundTransactionResponse> refunds = monetizationService.getRefundsEarned(currentUser, pageable);
+
+        return ResponseEntity.ok(refunds);
+    }
+
+    @GetMapping("/refunds/paid")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get refunds paid by current user")
+    public ResponseEntity<Page<RefundTransactionResponse>> getRefundsPaid(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<RefundTransactionResponse> refunds = monetizationService.getRefundsPaid(currentUser, pageable);
+
+        return ResponseEntity.ok(refunds);
     }
 
     private User getCurrentUser(HttpServletRequest request) {

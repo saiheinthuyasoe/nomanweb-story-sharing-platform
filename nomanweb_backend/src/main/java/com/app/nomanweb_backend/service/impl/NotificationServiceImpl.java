@@ -4,11 +4,13 @@ import com.app.nomanweb_backend.entity.Notification;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.Comment;
 import com.app.nomanweb_backend.repository.NotificationRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.repository.UserFollowRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.ChapterRepository;
+import com.app.nomanweb_backend.repository.CommentRepository;
 import com.app.nomanweb_backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserFollowRepository userFollowRepository;
     private final StoryRepository storyRepository;
     private final ChapterRepository chapterRepository;
+    private final CommentRepository commentRepository;
 
     @Override
     @Transactional
@@ -192,14 +195,55 @@ public class NotificationServiceImpl implements NotificationService {
                     .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
             String title = "Chapter Liked";
-            String message = String.format("%s liked your chapter: %s",
+            String message = String.format("%s liked your chapter: %s from story: %s",
                     liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
-                    chapter.getTitle());
+                    chapter.getTitle(),
+                    chapter.getStory().getTitle());
 
             createNotification(chapterAuthorId, Notification.NotificationType.LIKE,
                     title, message, Notification.RelatedType.CHAPTER, chapterId);
         } catch (Exception e) {
             log.error("Failed to send chapter like notification", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void notifyCommentLike(UUID commentAuthorId, UUID likerId, UUID commentId) {
+        try {
+            // Don't notify if user likes their own comment
+            if (commentAuthorId.equals(likerId)) {
+                return;
+            }
+
+            User liker = userRepository.findById(likerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Liker not found"));
+            Comment comment = commentRepository.findById(commentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
+
+            String title;
+            String message;
+            String commentPreview = comment.getContent().length() > 50 ? 
+                    comment.getContent().substring(0, 50) + "..." : comment.getContent();
+            
+            if (comment.getChapter() != null) {
+                title = "Chapter Comment Liked";
+                message = String.format("%s liked your comment \"%s\" on chapter: %s",
+                        liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
+                        commentPreview,
+                        comment.getChapter().getTitle());
+            } else {
+                title = "Story Comment Liked";
+                message = String.format("%s liked your comment \"%s\" on story: %s",
+                        liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
+                        commentPreview,
+                        comment.getStory().getTitle());
+            }
+
+            createNotification(commentAuthorId, Notification.NotificationType.LIKE,
+                    title, message, Notification.RelatedType.COMMENT, commentId);
+        } catch (Exception e) {
+            log.error("Failed to send comment like notification", e);
         }
     }
 
@@ -215,7 +259,7 @@ public class NotificationServiceImpl implements NotificationService {
             User commenter = userRepository.findById(commenterId)
                     .orElseThrow(() -> new IllegalArgumentException("Commenter not found"));
 
-            String title = "New Comment";
+            String title;
             String message;
             Notification.RelatedType relatedType;
             UUID relatedId;
@@ -223,6 +267,7 @@ public class NotificationServiceImpl implements NotificationService {
             if (chapterId != null) {
                 Chapter chapter = chapterRepository.findById(chapterId)
                         .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+                title = "Chapter Comment";
                 message = String.format("%s commented on your chapter: %s",
                         commenter.getDisplayName() != null ? commenter.getDisplayName() : commenter.getUsername(),
                         chapter.getTitle());
@@ -231,6 +276,7 @@ public class NotificationServiceImpl implements NotificationService {
             } else {
                 Story story = storyRepository.findById(storyId)
                         .orElseThrow(() -> new IllegalArgumentException("Story not found"));
+                title = "Story Comment";
                 message = String.format("%s commented on your story: %s",
                         commenter.getDisplayName() != null ? commenter.getDisplayName() : commenter.getUsername(),
                         story.getTitle());

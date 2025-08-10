@@ -159,8 +159,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Page<Comment> getStoryComments(UUID storyId, Pageable pageable) {
-        return commentRepository.findByStoryIdAndParentCommentIsNullAndModerationStatusOrderByCreatedAtDesc(
-                storyId, Comment.ModerationStatus.APPROVED, pageable);
+        return commentRepository
+                .findByStoryIdAndChapterIsNullAndParentCommentIsNullAndModerationStatusOrderByCreatedAtDesc(
+                        storyId, Comment.ModerationStatus.APPROVED, pageable);
     }
 
     @Override
@@ -182,7 +183,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public long getStoryCommentCount(UUID storyId) {
-        return commentRepository.countByStoryIdAndModerationStatus(storyId, Comment.ModerationStatus.APPROVED);
+        return commentRepository.countByStoryIdAndChapterIsNullAndModerationStatus(storyId,
+                Comment.ModerationStatus.APPROVED);
     }
 
     @Override
@@ -305,6 +307,9 @@ public class CommentServiceImpl implements CommentService {
         comment.incrementLikes();
         commentRepository.save(comment);
 
+        // Send notification to comment author
+        notificationService.notifyCommentLike(comment.getUser().getId(), userId, commentId);
+
         log.info("User {} liked comment {}", userId, commentId);
     }
 
@@ -341,8 +346,9 @@ public class CommentServiceImpl implements CommentService {
             return commentRepository.findByChapterIdAndIsPinnedTrueAndModerationStatusOrderByCreatedAtDesc(
                     chapterId, Comment.ModerationStatus.APPROVED);
         } else if (storyId != null) {
-            return commentRepository.findByStoryIdAndIsPinnedTrueAndModerationStatusOrderByCreatedAtDesc(
-                    storyId, Comment.ModerationStatus.APPROVED);
+            return commentRepository
+                    .findByStoryIdAndChapterIsNullAndIsPinnedTrueAndModerationStatusOrderByCreatedAtDesc(
+                            storyId, Comment.ModerationStatus.APPROVED);
         }
         return List.of();
     }

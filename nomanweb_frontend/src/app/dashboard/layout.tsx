@@ -1,25 +1,45 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { 
-  BarChart3, 
-  BookOpen, 
-  DollarSign, 
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
+import Link from "next/link";
+import {
+  BarChart3,
+  BookOpen,
+  DollarSign,
   Bell,
   ChevronRight,
   User,
-  LogOut
-} from 'lucide-react';
+  LogOut,
+} from "lucide-react";
 
 // Dashboard Sidebar Navigation Items
 const sidebarItems = [
-  { id: 'statistics', label: 'Statistics Centre', icon: BarChart3, href: '/dashboard' },
-  { id: 'stories', label: 'Stories', icon: BookOpen, href: '/dashboard/my-stories' },
-  { id: 'monetization', label: 'Monetization', icon: DollarSign, href: '/dashboard/monetization' },
-  { id: 'alert', label: 'Alert', icon: Bell, href: '/dashboard/alerts' },
+  {
+    id: "statistics",
+    label: "Statistics Centre",
+    icon: BarChart3,
+    href: "/dashboard",
+  },
+  {
+    id: "stories",
+    label: "Stories",
+    icon: BookOpen,
+    href: "/dashboard/my-stories",
+  },
+  {
+    id: "monetization",
+    label: "Monetization",
+    icon: DollarSign,
+    href: "/dashboard/monetization",
+  },
+  {
+    id: "notification",
+    label: "Notification",
+    icon: Bell,
+    href: "/dashboard/notifications",
+  },
 ];
 
 export default function DashboardLayout({
@@ -32,19 +52,27 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    console.log('🔍 Dashboard layout auth check:', { loading, user: user ? 'present' : 'null' });
-    
+    console.log("🔍 Dashboard layout auth check:", {
+      loading,
+      user: user ? "present" : "null",
+    });
+
     // Check if we have tokens in cookies even if user state is not set yet
-    const token = document.cookie.includes('token=');
-    const refreshToken = document.cookie.includes('refreshToken=');
-    
-    console.log('🔍 Cookie check:', { hasToken: token, hasRefreshToken: refreshToken });
-    
+    const token = document.cookie.includes("token=");
+    const refreshToken = document.cookie.includes("refreshToken=");
+
+    console.log("🔍 Cookie check:", {
+      hasToken: token,
+      hasRefreshToken: refreshToken,
+    });
+
     if (!loading && !user && !token) {
-      console.log('🚨 No user and no token found, redirecting to login');
-      router.push('/login');
+      console.log("🚨 No user and no token found, redirecting to login");
+      router.push("/login");
     } else if (!loading && !user && token) {
-      console.log('⚠️ User state not set but token exists, waiting for auth to complete...');
+      console.log(
+        "⚠️ User state not set but token exists, waiting for auth to complete..."
+      );
       // Don't redirect immediately if we have tokens but user state isn't set yet
       // This can happen during OAuth flow
     }
@@ -67,19 +95,19 @@ export default function DashboardLayout({
 
   // Determine active tab based on current pathname
   const getActiveTab = () => {
-    if (pathname === '/dashboard') return 'statistics';
-    if (pathname.includes('/my-stories')) return 'stories';
-    if (pathname.includes('/monetization')) return 'monetization';
-    if (pathname.includes('/alerts')) return 'alert';
-    return 'statistics';
+    if (pathname === "/dashboard") return "statistics";
+    if (pathname.includes("/my-stories")) return "stories";
+    if (pathname.includes("/monetization")) return "monetization";
+    if (pathname.includes("/notifications")) return "notification";
+    return "statistics";
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/');
+      router.push("/");
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -91,7 +119,7 @@ export default function DashboardLayout({
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-              {user.displayName?.charAt(0) || user.username?.charAt(0) || 'U'}
+              {user.displayName?.charAt(0) || user.username?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold text-gray-900 truncate">
@@ -114,15 +142,25 @@ export default function DashboardLayout({
                       href={item.href}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
-                                              <div className="flex items-center space-x-2.5">
-                          <item.icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                          <span className="text-sm font-medium">{item.label}</span>
+                      <div className="flex items-center space-x-2.5">
+                        <item.icon
+                          className={`h-4 w-4 ${
+                            isActive ? "text-blue-600" : "text-gray-500"
+                          }`}
+                        />
+                        <span className="text-sm font-medium">
+                          {item.label}
+                        </span>
                       </div>
-                                              <ChevronRight className={`h-3 w-3 transition-transform ${isActive ? 'rotate-90 text-blue-600' : 'text-gray-400'}`} />
+                      <ChevronRight
+                        className={`h-3 w-3 transition-transform ${
+                          isActive ? "rotate-90 text-blue-600" : "text-gray-400"
+                        }`}
+                      />
                     </Link>
                   </li>
                 );
@@ -137,9 +175,9 @@ export default function DashboardLayout({
             <Link
               href="/profile"
               className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                          >
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium">Profile Settings</span>
+            >
+              <User className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium">Profile Settings</span>
             </Link>
             <button
               onClick={handleLogout}
@@ -153,9 +191,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        {children}
-      </div>
+      <div className="flex-1 overflow-hidden">{children}</div>
     </div>
   );
-} 
+}

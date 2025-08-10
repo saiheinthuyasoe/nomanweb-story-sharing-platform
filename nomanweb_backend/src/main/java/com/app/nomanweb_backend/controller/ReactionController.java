@@ -8,6 +8,7 @@ import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,6 +29,7 @@ public class ReactionController {
         private final StoryRepository storyRepository;
         private final ChapterRepository chapterRepository;
         private final UserRepository userRepository;
+        private final NotificationService notificationService;
 
         @PostMapping("/story/{storyId}/like")
         @Transactional
@@ -80,6 +82,10 @@ public class ReactionController {
                                 reactionRepository.save(reaction);
                                 story.incrementLikes();
                                 storyRepository.save(story);
+
+                                // Send notification to story author
+                                notificationService.notifyStoryLike(story.getAuthor().getId(), user.getId(), storyId);
+
                                 response.put("liked", true);
                                 response.put("message", "Story liked");
                                 System.out.println("User " + user.getUsername() + " liked story: " + storyId);
@@ -133,6 +139,11 @@ public class ReactionController {
                                 reactionRepository.save(reaction);
                                 chapter.incrementLikes();
                                 chapterRepository.save(chapter);
+
+                                // Send notification to chapter author
+                                notificationService.notifyChapterLike(chapter.getStory().getAuthor().getId(),
+                                                user.getId(), chapterId);
+
                                 response.put("liked", true);
                                 response.put("message", "Chapter liked");
                         }
