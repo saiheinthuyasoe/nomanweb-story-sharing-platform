@@ -8,7 +8,8 @@ import {
   HeartIcon, 
   BookOpenIcon,
   StarIcon,
-  UserIcon 
+  UserIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 interface StoryCardProps {
@@ -19,30 +20,36 @@ interface StoryCardProps {
 
 export function StoryCard({ story, showAuthor = true, className = '' }: StoryCardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden ${className}`}>
+    <div className={`bg-white/90 backdrop-blur-xl rounded-2xl border border-white/50 hover:border-[#18243c]/30 transition-all duration-300 overflow-hidden group hover:shadow-xl hover:shadow-[#18243c]/10 ${className}`}>
       <Link href={`/stories/${story.id}`}>
-        <div className="relative aspect-[16/9] bg-gray-200">
+        <div className="relative aspect-[16/9] bg-gray-200 overflow-hidden">
           {story.coverImageUrl ? (
             <Image
               src={story.coverImageUrl}
               alt={story.title}
               fill
-              className="object-cover"
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
             />
           ) : (
-            <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 to-indigo-100">
-              <BookOpenIcon className="w-16 h-16 text-gray-400" />
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-[#18243c]/5 to-[#22325a]/5">
+              <div className="text-center">
+                <BookOpenIcon className="w-12 h-12 text-[#18243c]/40 mx-auto mb-2" />
+                <p className="text-xs text-[#18243c]/60 font-medium">No Cover Image</p>
+              </div>
             </div>
           )}
           
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
           {/* Status badge */}
-          <div className="absolute top-2 left-2">
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          <div className="absolute top-3 left-3">
+            <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg ${
               story.status === 'PUBLISHED' 
-                ? 'bg-green-100 text-green-800' 
+                ? 'bg-green-500 text-white' 
                 : story.status === 'DRAFT'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-gray-100 text-gray-800'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-gray-500 text-white'
             }`}>
               {story.status}
             </span>
@@ -50,19 +57,21 @@ export function StoryCard({ story, showAuthor = true, className = '' }: StoryCar
 
           {/* Featured badge */}
           {story.isFeatured && (
-            <div className="absolute top-2 right-2">
-              <StarIcon className="w-5 h-5 text-yellow-500 fill-current" />
+            <div className="absolute top-3 right-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
+                <StarIcon className="w-4 h-4 text-white fill-current" />
+              </div>
             </div>
           )}
 
           {/* Pricing type badge */}
-          <div className="absolute bottom-2 right-2">
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          <div className="absolute bottom-3 right-3">
+            <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg ${
               story.pricingType === 'FREE' 
-                ? 'bg-green-100 text-green-800' 
+                ? 'bg-green-500 text-white' 
                 : story.pricingType === 'PAID_PER_CHAPTER'
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-purple-100 text-purple-800'
+                ? 'bg-gradient-to-r from-[#18243c] to-[#22325a] text-white'
+                : 'bg-purple-500 text-white'
             }`}>
               {story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 
                story.pricingType === 'WHOLE_BOOK' ? 'WHOLE BOOK' : 
@@ -72,51 +81,63 @@ export function StoryCard({ story, showAuthor = true, className = '' }: StoryCar
         </div>
       </Link>
 
-      <div className="p-4">
+      <div className="p-5">
         <Link href={`/stories/${story.id}`}>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 hover:text-[#18243c] transition-colors duration-200 group-hover:underline">
             {story.title}
           </h3>
         </Link>
 
         {story.description && (
-          <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
             {story.description}
           </p>
         )}
 
         {/* Author info */}
         {showAuthor && (
-          <div className="flex items-center mb-3">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center mb-4 p-3 bg-gray-50/50 rounded-xl">
+            <div className="flex items-center space-x-3">
               {story.author.profileImageUrl ? (
-                <Image
-                  src={story.author.profileImageUrl}
-                  alt={story.author.displayName || story.author.username}
-                  width={24}
-                  height={24}
-                  className="rounded-full"
-                />
+                <div className="relative">
+                  <Image
+                    src={story.author.profileImageUrl}
+                    alt={story.author.displayName || story.author.username}
+                    width={32}
+                    height={32}
+                    className="rounded-full border-2 border-white shadow-sm"
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                </div>
               ) : (
-                <UserIcon className="w-6 h-6 text-gray-400" />
+                <div className="relative">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#18243c] to-[#22325a] rounded-full flex items-center justify-center">
+                    <UserIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                </div>
               )}
-              <Link 
-                href={`/authors/${story.author.id}`}
-                className="text-sm font-medium text-gray-700 hover:text-blue-600"
-              >
-                {story.author.displayName || story.author.username}
-              </Link>
+              <div>
+                <Link 
+                  href={`/authors/${story.author.id}`}
+                  className="text-sm font-semibold text-gray-800 hover:text-[#18243c] transition-colors duration-200"
+                >
+                  {story.author.displayName || story.author.username}
+                </Link>
+                <p className="text-xs text-gray-500">Author</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Category */}
         {story.category && (
-          <div className="mb-3">
+          <div className="mb-4">
             <Link 
               href={`/categories/${story.category.id}`}
-              className="inline-block px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100"
+              className="inline-flex items-center px-3 py-1 text-xs font-bold text-[#18243c] bg-[#18243c]/10 rounded-full hover:bg-[#18243c]/20 transition-colors duration-200 border border-[#18243c]/20"
             >
+              <SparklesIcon className="w-3 h-3 mr-1" />
               {story.category.name}
             </Link>
           </div>
@@ -124,43 +145,43 @@ export function StoryCard({ story, showAuthor = true, className = '' }: StoryCar
 
         {/* Tags */}
         {story.tags && story.tags.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-1">
-            {story.tags.slice(0, 3).map((tag) => (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {story.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full"
+                className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full font-medium"
               >
                 #{tag}
               </span>
             ))}
-            {story.tags.length > 3 && (
-              <span className="px-2 py-1 text-xs text-gray-500">
-                +{story.tags.length - 3} more
+            {story.tags.length > 2 && (
+              <span className="px-2 py-1 text-xs text-gray-500 bg-gray-50 rounded-full">
+                +{story.tags.length - 2} more
               </span>
             )}
           </div>
         )}
 
         {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               <EyeIcon className="w-4 h-4" />
-              <span>{story.totalViews.toLocaleString()}</span>
+              <span className="font-medium">{story.totalViews.toLocaleString()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <HeartIcon className="w-4 h-4" />
-              <span>{story.totalLikes.toLocaleString()}</span>
+              <span className="font-medium">{story.totalLikes.toLocaleString()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <BookOpenIcon className="w-4 h-4" />
-              <span>{story.totalChapters} chapters</span>
+              <span className="font-medium">{story.totalChapters}</span>
             </div>
           </div>
         </div>
 
         {/* Date */}
-        <div className="mt-2 text-xs text-gray-400">
+        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
           {story.publishedAt 
             ? `Published ${formatDistanceToNow(new Date(story.publishedAt), { addSuffix: true })}`
             : `Created ${formatDistanceToNow(new Date(story.createdAt), { addSuffix: true })}`

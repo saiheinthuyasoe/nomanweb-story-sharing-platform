@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Mail, User, Lock } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RegisterForm {
   email: string;
@@ -27,7 +27,7 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterForm>();
 
-  const password = watch('password');
+  const password = watch("password");
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
@@ -46,98 +46,118 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center p-4">
-      <div className="max-w-sm w-full bg-white rounded-xl shadow-xl p-6 border border-purple-100">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
-          <p className="text-gray-600">Join NoManWeb and start sharing your stories</p>
+      <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: "url(/mountain.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      <div className="max-w-sm w-full bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-4 border border-white/30">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+            Create Account
+          </h1>
+          <p className="text-white/80 text-sm">
+            Join NoManWeb today
+          </p>
         </div>
-        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+
+        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
+              <Mail className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
-                {...register('email', {
-                  required: 'Email is required',
+                {...register("email", {
+                  required: "Email is required",
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
+                    message: "Invalid email address",
                   },
                 })}
                 type="email"
                 autoComplete="email"
-                className="w-full pl-10 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-purple-500 transition-colors placeholder-gray-400"
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
                 placeholder="Email"
               />
             </div>
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">
+                {errors.email.message}
+              </p>
             )}
 
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
+              <User className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
-                {...register('username', {
-                  required: 'Username is required',
+                {...register("username", {
+                  required: "Username is required",
                   minLength: {
                     value: 3,
-                    message: 'Username must be at least 3 characters',
+                    message: "Username must be at least 3 characters",
                   },
                   maxLength: {
                     value: 50,
-                    message: 'Username must be less than 50 characters',
+                    message: "Username must be less than 50 characters",
                   },
                   pattern: {
                     value: /^[a-zA-Z0-9_]+$/,
-                    message: 'Username can only contain letters, numbers, and underscores',
+                    message:
+                      "Username can only contain letters, numbers, and underscores",
                   },
                 })}
                 type="text"
                 autoComplete="username"
-                className="w-full pl-10 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-purple-500 transition-colors placeholder-gray-400"
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
                 placeholder="Username"
               />
             </div>
             {errors.username && (
-              <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">
+                {errors.username.message}
+              </p>
             )}
 
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
+              <User className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
-                {...register('displayName', {
+                {...register("displayName", {
                   maxLength: {
                     value: 100,
-                    message: 'Display name must be less than 100 characters',
+                    message: "Display name must be less than 100 characters",
                   },
                 })}
                 type="text"
-                className="w-full pl-10 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-purple-500 transition-colors placeholder-gray-400"
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
                 placeholder="Display Name (Optional)"
               />
             </div>
             {errors.displayName && (
-              <p className="mt-1 text-sm text-red-600">{errors.displayName.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">
+                {errors.displayName.message}
+              </p>
             )}
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
+              <Lock className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
-                {...register('password', {
-                  required: 'Password is required',
+                {...register("password", {
+                  required: "Password is required",
                   minLength: {
                     value: 6,
-                    message: 'Password must be at least 6 characters',
+                    message: "Password must be at least 6 characters",
                   },
                 })}
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
-                className="w-full pl-10 pr-10 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-purple-500 transition-colors placeholder-gray-400"
+                className="w-full pl-8 pr-12 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
                 placeholder="Password"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-600 transition-colors"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
@@ -148,25 +168,27 @@ export default function RegisterPage() {
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">
+                {errors.password.message}
+              </p>
             )}
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
+              <Lock className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
+                {...register("confirmPassword", {
+                  required: "Please confirm your password",
                   validate: (value) =>
-                    value === password || 'Passwords do not match',
+                    value === password || "Passwords do not match",
                 })}
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
-                className="w-full pl-10 pr-10 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-purple-500 transition-colors placeholder-gray-400"
+                className="w-full pl-8 pr-12 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
                 placeholder="Confirm Password"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-600 transition-colors"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? (
@@ -177,41 +199,40 @@ export default function RegisterPage() {
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">
+                {errors.confirmPassword.message}
+              </p>
             )}
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-xl hover:scale-[1.02]"
-            >
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link href="/login" className="font-medium text-purple-600 hover:text-purple-500 transition-colors">
-                Sign in here
-              </Link>
-            </p>
-          </div>
-          
-          <div className="text-xs text-gray-500 text-center">
-            By creating an account, you agree to our{' '}
-            <Link href="/terms" className="text-purple-600 hover:text-purple-500">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="text-purple-600 hover:text-purple-500">
-              Privacy Policy
-            </Link>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-3 px-4 mt-6 border border-white/30 rounded-xl shadow-lg text-sm font-semibold text-white bg-[#20243c] hover:bg-[#23274a] focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-xl"
+          >
+            {isLoading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                Creating account...
+              </div>
+            ) : (
+              "Create account"
+            )}
+          </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <p className="text-xs text-white/80">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-white hover:text-white/80 transition-colors"
+            >
+              Sign in here
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
-} 
+}

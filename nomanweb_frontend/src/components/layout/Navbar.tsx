@@ -166,7 +166,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-15">
             {/* Placeholder content during SSR */}
             <div className="flex items-center flex-shrink-0">
-              <div className="relative w-20 h-15 sm:w-20 sm:h-20 md:w-25 md:h-25 lg:w-30 lg:h-30">
+              <div className="relative w-20 h-15 sm:w-18 sm:h-18 md:w-22 md:h-22 lg:w-20 lg:h-20">
                 <Image
                   src="/logo.png"
                   alt="NoManWeb Logo"
@@ -195,7 +195,7 @@ export default function Navbar() {
             <div className="flex items-center flex-shrink-0">
               {/* Logo */}
               <Link href="/" className="flex items-center group">
-                <div className="relative w-20 h-20 sm:w-20 sm:h-20 md:w-25 md:h-25 lg:w-30 lg:h-30">
+                <div className="relative w-18 h-18 sm:w-20 sm:h-20 md:w-22 md:h-22 lg:w-40 lg:h-40">
                   <Image
                     src="/logo.png"
                     alt="NoManWeb Logo"
@@ -210,13 +210,7 @@ export default function Navbar() {
                 <NavLink href="/" active={isActive("/")} icon={Home}>
                   Home
                 </NavLink>
-                <NavLink
-                  href="/search"
-                  active={isActive("/search")}
-                  icon={Search}
-                >
-                  Search
-                </NavLink>
+                
                 <NavLink
                   href="/stories"
                   active={isActive("/stories")}

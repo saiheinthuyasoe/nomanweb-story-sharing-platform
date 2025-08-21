@@ -58,10 +58,10 @@ export default function CreateStoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-slate-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading...</p>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export default function CreateStoryPage() {
   console.log('✅ CreateStoryPage: User authenticated, rendering form');
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <StoryForm 
           onSubmit={handleSubmit}
@@ -86,4 +86,4 @@ export default function CreateStoryPage() {
       </div>
     </div>
   );
-} 
+}

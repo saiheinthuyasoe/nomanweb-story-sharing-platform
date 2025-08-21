@@ -60,7 +60,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/websocket/health").permitAll()
                         .requestMatchers("/api/oauth/**").permitAll()
-                        .requestMatchers("/api/upload/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/stories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
@@ -80,6 +79,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/chapters/moderation").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/stories/*/moderate").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/stories/moderation").hasRole("ADMIN")
+
+                        // Upload endpoints - require authentication
+                        .requestMatchers("/api/upload/**").authenticated()
 
                         // Authenticated endpoints
                         .requestMatchers(HttpMethod.POST, "/api/stories/**").authenticated()

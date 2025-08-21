@@ -14,7 +14,7 @@ interface ProfileImageUploadProps {
   onRemove?: () => void;
   disabled?: boolean;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   acceptedFileTypes?: string[];
   maxFileSize?: number; // in MB
   placeholder?: string;
@@ -36,6 +36,7 @@ const sizeConfig = {
   sm: { container: 'w-16 h-16', text: 'text-xs', icon: 'w-4 h-4' },
   md: { container: 'w-24 h-24', text: 'text-sm', icon: 'w-6 h-6' },
   lg: { container: 'w-32 h-32', text: 'text-base', icon: 'w-8 h-8' },
+  xl: { container: 'w-40 h-40', text: 'text-lg', icon: 'w-10 h-10' },
 };
 
 export function ProfileImageUpload({
@@ -59,7 +60,7 @@ export function ProfileImageUpload({
   const [imageToCrop, setImageToCrop] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const config = sizeConfig[size];
+  const config = sizeConfig[size] || sizeConfig.lg;
 
   const validateFile = useCallback((file: File): string | null => {
     if (!acceptedFileTypes.includes(file.type)) {
@@ -280,19 +281,19 @@ export function ProfileImageUpload({
             {/* Loading state */}
             {!imageLoaded && !imageError && (
               <div className={`${config.container} border-2 border-gray-200 rounded-full bg-gray-50 flex items-center justify-center`}>
-                <Loader2 className={`${config.icon} animate-spin text-blue-500`} />
+                <Loader2 className={`${config.icon} animate-spin text-[#18243c]`} />
               </div>
             )}
 
             {/* Error state - show default avatar for OAuth errors, X for other errors */}
             {imageError && (
               <div 
-                className={`${config.container} border-2 ${isExternalOAuth ? 'border-blue-300 bg-blue-50' : 'border-red-300 bg-red-50'} rounded-full flex items-center justify-center cursor-pointer ${isExternalOAuth ? 'hover:bg-blue-100' : 'hover:bg-red-100'}`}
+                className={`${config.container} border-2 ${isExternalOAuth ? 'border-[#18243c]/30 bg-[#18243c]/5' : 'border-red-300 bg-red-50'} rounded-full flex items-center justify-center cursor-pointer ${isExternalOAuth ? 'hover:bg-[#18243c]/10' : 'hover:bg-red-100'}`}
                 onClick={openModal}
                 title={isExternalOAuth ? "Social media image temporarily unavailable - click to upload a new one" : "Image failed to load - click to try again"}
               >
                 {isExternalOAuth ? (
-                  <User className={`${config.icon} text-blue-400`} />
+                  <User className={`${config.icon} text-[#18243c]`} />
                 ) : (
                   <X className={`${config.icon} text-red-400`} />
                 )}
@@ -307,11 +308,11 @@ export function ProfileImageUpload({
 
             {/* Profile image display - only show if successfully preloaded */}
             {!imageError && value && imageLoaded && (
-              <div className={`${config.container} border-2 border-gray-200 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden`}>
+              <div className={`${config.container} border-2 border-gray-200 rounded-full overflow-hidden group-hover:border-[#18243c]/30 transition-colors duration-300`}>
                 <img 
                   src={value} 
                   alt="Profile"
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                   loading="eager"
@@ -324,10 +325,10 @@ export function ProfileImageUpload({
             {(imageLoaded || (imageError && isExternalOAuth)) && (
               <button
                 onClick={openModal}
-                className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg transition-colors flex items-center justify-center"
+                className="absolute -bottom-1.5 -right-1.5 w-9 h-9 bg-gradient-to-r from-[#18243c] to-[#22325a] text-white rounded-full hover:from-[#22325a] hover:to-[#2d4574] transition-all duration-300 flex items-center justify-center transform hover:scale-110"
                 title="Change profile image"
               >
-                <Edit3 size={12} />
+                <Edit3 size={13} />
               </button>
             )}
           </div>
@@ -346,7 +347,7 @@ export function ProfileImageUpload({
                   <div className="space-y-1">
                     {isExternalOAuth ? (
                       <div className="text-center">
-                        <p className="text-xs text-blue-600 mb-1">
+                        <p className="text-xs text-[#18243c] mb-1">
                           Social media image temporarily unavailable
                         </p>
                         <p className="text-xs text-gray-500">
@@ -361,7 +362,7 @@ export function ProfileImageUpload({
                     <div className="space-x-2">
                       <button
                         onClick={openModal}
-                        className={`text-xs ${isExternalOAuth ? 'text-blue-500 hover:text-blue-700' : 'text-blue-500 hover:text-blue-700'}`}
+                        className={`text-xs ${isExternalOAuth ? 'text-[#18243c] hover:text-[#22325a]' : 'text-[#18243c] hover:text-[#22325a]'}`}
                       >
                         {isExternalOAuth ? 'Upload new image' : 'Try again'}
                       </button>
@@ -397,12 +398,12 @@ export function ProfileImageUpload({
       <div className="text-center">
         <div 
           onClick={openModal} 
-          className={`${config.container} border-2 border-dashed border-gray-300 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 hover:border-blue-400 hover:from-blue-50 hover:to-blue-100 transition-all duration-300 mx-auto cursor-pointer flex items-center justify-center`}
+          className={`${config.container} border-2 border-dashed border-gray-300 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 hover:border-[#18243c] hover:from-[#18243c]/5 hover:to-[#22325a]/5 transition-all duration-300 mx-auto cursor-pointer flex items-center justify-center group`}
         >
           <div className="text-center">
-            <Plus className={`${config.icon} text-gray-500 mx-auto`} />
+            <Plus className={`${config.icon} text-gray-500 mx-auto group-hover:text-[#18243c] transition-colors duration-300`} />
             {size === 'lg' && (
-              <p className="text-xs text-gray-500 mt-1">Add Photo</p>
+              <p className="text-xs text-gray-500 mt-1 group-hover:text-[#18243c] transition-colors duration-300">Add Photo</p>
             )}
           </div>
         </div>
@@ -418,7 +419,7 @@ export function ProfileImageUpload({
   const ModeSelector = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#18243c] to-[#22325a] rounded-full flex items-center justify-center mx-auto mb-4">
           <User className="w-8 h-8 text-white" />
         </div>
         <h3 className="text-xl font-bold text-gray-900 mb-2">Add Profile Picture</h3>
@@ -428,11 +429,11 @@ export function ProfileImageUpload({
       <div className="grid grid-cols-1 gap-4">
         <button
           onClick={() => setMode('file')}
-          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 text-left"
+          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
         >
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 group-hover:bg-blue-200 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
-              <Camera className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-[#18243c]/10 group-hover:bg-[#18243c]/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
+              <Camera className="w-6 h-6 text-[#18243c]" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">Upload from Device</h4>
@@ -445,11 +446,11 @@ export function ProfileImageUpload({
 
         <button
           onClick={() => setMode('url')}
-          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all duration-300 text-left"
+          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
         >
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 group-hover:bg-green-200 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
-              <Link className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 bg-[#18243c]/10 group-hover:bg-[#18243c]/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
+              <Link className="w-6 h-6 text-[#18243c]" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">Add from URL</h4>
@@ -488,7 +489,7 @@ export function ProfileImageUpload({
         className={cn(
           'relative border-2 border-dashed rounded-xl transition-all duration-300 aspect-square w-full max-w-sm mx-auto',
           {
-            'border-blue-400 bg-blue-50': isDragging && !disabled,
+            'border-[#18243c] bg-[#18243c]/5': isDragging && !disabled,
             'border-gray-300 hover:border-gray-400 bg-gray-50': !isDragging && !disabled,
             'border-gray-200 cursor-not-allowed opacity-50': disabled,
           }
@@ -500,13 +501,13 @@ export function ProfileImageUpload({
       >
         {isUploading ? (
           <div className="absolute inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center rounded-xl">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="w-16 h-16 bg-[#18243c]/10 rounded-full flex items-center justify-center mb-4">
+              <Loader2 className="w-8 h-8 animate-spin text-[#18243c]" />
             </div>
             <h4 className="text-lg font-semibold text-gray-900 mb-2">Uploading...</h4>
             <div className="w-64 bg-gray-200 rounded-full h-3 mb-2">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-[#18243c] to-[#22325a] h-3 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -516,7 +517,7 @@ export function ProfileImageUpload({
           <div className="flex flex-col items-center justify-center h-full p-8 text-center cursor-pointer">
             <div className={cn(
               'w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300',
-              isDragging ? 'bg-blue-200 text-blue-700' : 'bg-gray-200 text-gray-500'
+              isDragging ? 'bg-[#18243c]/20 text-[#18243c]' : 'bg-gray-200 text-gray-500'
             )}>
               <Upload className="w-8 h-8" />
             </div>
@@ -561,7 +562,7 @@ export function ProfileImageUpload({
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com/profile.jpg"
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200"
           />
           <p className="text-xs text-gray-500 mt-2">
             Enter a direct link to an image file
@@ -597,7 +598,7 @@ export function ProfileImageUpload({
         <button
           onClick={handleUrlSubmit}
           disabled={!urlInput.trim()}
-          className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+          className="w-full px-6 py-3 bg-gradient-to-r from-[#18243c] to-[#22325a] text-white rounded-xl hover:from-[#22325a] hover:to-[#2d4574] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all duration-200"
         >
           Add Profile Picture
         </button>
@@ -612,7 +613,7 @@ export function ProfileImageUpload({
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
             <div className="p-6">
               {mode === 'choose' ? <ModeSelector /> :
                mode === 'file' ? <FileUploadMode /> :

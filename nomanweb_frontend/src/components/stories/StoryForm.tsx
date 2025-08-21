@@ -7,7 +7,6 @@ import { toast } from "react-hot-toast";
 import { StoryCoverUpload } from "@/components/upload/StoryCoverUpload";
 import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
 
-
 interface StoryFormProps {
   story?: Story;
   onSubmit: (data: CreateStoryRequest | UpdateStoryRequest) => void;
@@ -29,10 +28,13 @@ export function StoryForm({
   const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
   const [editingTagValue, setEditingTagValue] = useState("");
   const [showRefundModal, setShowRefundModal] = useState(false);
-  const [refundData, setRefundData] = useState<any>({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
+  const [refundData, setRefundData] = useState<any>({
+    hasPurchases: false,
+    totalRefundAmount: 0,
+    affectedPurchasers: 0,
+  });
   const [isCalculatingRefund, setIsCalculatingRefund] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<any>(null);
-
 
   const {
     register,
@@ -164,7 +166,9 @@ export function StoryForm({
     }
   };
 
-  const onFormSubmit = async (data: CreateStoryRequest | UpdateStoryRequest) => {
+  const onFormSubmit = async (
+    data: CreateStoryRequest | UpdateStoryRequest
+  ) => {
     const submissionData = { ...data, tags: selectedTags };
 
     // Only include pricing fields when relevant to pricing type
@@ -181,9 +185,11 @@ export function StoryForm({
     }
 
     // Check if this is an edit and pricing is changing to free
-    const isPaidToFree = isEdit && 
-      story && 
-      (story.pricingType === "PAID_PER_CHAPTER" || story.pricingType === "WHOLE_BOOK") && 
+    const isPaidToFree =
+      isEdit &&
+      story &&
+      (story.pricingType === "PAID_PER_CHAPTER" ||
+        story.pricingType === "WHOLE_BOOK") &&
       data.pricingType === "FREE";
 
     if (isPaidToFree && story?.id) {
@@ -206,38 +212,58 @@ export function StoryForm({
       onSubmit(pendingFormData);
       setShowRefundModal(false);
       setPendingFormData(null);
-      setRefundData({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
+      setRefundData({
+        hasPurchases: false,
+        totalRefundAmount: 0,
+        affectedPurchasers: 0,
+      });
     }
   };
 
   const handleRefundCancel = () => {
     setShowRefundModal(false);
     setPendingFormData(null);
-    setRefundData({ hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 });
+    setRefundData({
+      hasPurchases: false,
+      totalRefundAmount: 0,
+      affectedPurchasers: 0,
+    });
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-slate-800">
           {isEdit ? "Edit Story" : "Create New Story"}
         </h2>
-        <p className="text-gray-600 mt-1">
+        <p className="text-slate-500 mt-2">
           {isEdit
             ? "Update your story details"
             : "Share your story with the world"}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        {/* Title */}
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
+        {/* Cover Image - Moved to top */}
         <div>
-          <label
-            htmlFor="title"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Title *
+          <label className="block text-sm font-medium text-slate-700 mb-4">
+            Story Cover Image
           </label>
+          <div className="flex justify-center">
+            <StoryCoverUpload
+              storyId={story?.id || "new"}
+              value={watchedCoverImage}
+              onChange={handleCoverImageChange}
+              onRemove={handleCoverImageRemove}
+              disabled={isLoading}
+              placeholder="Upload your story cover"
+            />
+          </div>
+        
+        </div>
+
+        {/* Title */}
+        <div className="relative">
           <input
             type="text"
             id="title"
@@ -248,77 +274,59 @@ export function StoryForm({
                 message: "Title must not exceed 255 characters",
               },
             })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter your story title..."
+            className="w-full px-0 py-3 text-lg bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+            placeholder="Story Title *"
           />
           {errors.title && (
-            <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+            <p className="mt-2 text-sm text-red-500">{errors.title.message}</p>
           )}
         </div>
 
         {/* Description */}
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Description
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Description *
           </label>
           <textarea
-            id="description"
-            rows={4}
-            {...register("description", {
-              maxLength: {
-                value: 1000,
-                message: "Description must not exceed 1000 characters",
-              },
-            })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            {...register('description', { required: 'Description is required' })}
             placeholder="Describe your story..."
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50 resize-none"
           />
           {errors.description && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.description.message}
-            </p>
+            <p className="text-red-500 text-sm">{errors.description.message}</p>
           )}
         </div>
 
         {/* Category, Content Type, and Content Status Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Category */}
-          <div>
-            <label
-              htmlFor="categoryId"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Category
-            </label>
+          <div className="relative">
             <select
               id="categoryId"
               {...register("categoryId")}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
             >
-              <option value="">Select a category</option>
+              <option value="">Select Category</option>
               {categories?.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
           {/* Pricing Type */}
-          <div>
-            <label
-              htmlFor="pricingType"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Pricing Type
-            </label>
+          <div className="relative">
             <select
               id="pricingType"
               {...register("pricingType")}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
               onChange={(e) => {
                 const newPricingType = e.target.value;
 
@@ -331,6 +339,11 @@ export function StoryForm({
               <option value="PAID_PER_CHAPTER">Paid per Chapter</option>
               <option value="WHOLE_BOOK">Whole Book</option>
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
 
             {/* One-Time Purchase Protection Message for Paid-to-Paid Changes */}
             {isEdit &&
@@ -340,16 +353,16 @@ export function StoryForm({
                 story.pricingType === "WHOLE_BOOK") &&
               (watchedPricingType === "PAID_PER_CHAPTER" ||
                 watchedPricingType === "WHOLE_BOOK") && (
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mt-2 p-3 bg-slate-100 border border-slate-200 rounded-lg">
                   <div className="flex items-start space-x-2">
                     <div className="flex-shrink-0">
-                      <span className="text-blue-500 text-sm">🛡️</span>
+                      <span className="text-slate-600 text-sm">🛡️</span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-blue-900">
-                        One-Time Purchase Protection
+                      <h4 className="text-sm font-medium text-slate-800">
+                        Paid Per Chapter Information
                       </h4>
-                      <p className="text-xs text-blue-700 mt-1">
+                      <p className="text-xs text-slate-600 mt-1">
                         Readers who already purchased will maintain access
                         regardless of pricing model changes. No restrictions for
                         switching between paid pricing models.
@@ -361,42 +374,35 @@ export function StoryForm({
           </div>
 
           {/* Book Status */}
-          <div>
-            <label
-              htmlFor="bookStatus"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Book Status
-            </label>
+          <div className="relative">
             <select
               id="bookStatus"
               {...register("bookStatus")}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
             >
               <option value="ONGOING">Ongoing</option>
               <option value="COMPLETED">Completed</option>
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
 
         {/* Pricing Section - Only show for paid content */}
         {(watchedPricingType === "PAID_PER_CHAPTER" ||
           watchedPricingType === "WHOLE_BOOK") && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <span className="text-yellow-500 mr-2">💰</span>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+            <h3 className="text-lg font-medium text-slate-800 mb-6 flex items-center">
+              <span className="text-slate-600 mr-2">💰</span>
               Pricing Settings
             </h3>
 
             {/* Whole Book Price - Only show for WHOLE_BOOK type */}
             {watchedPricingType === "WHOLE_BOOK" && (
-              <div className="mb-6">
-                <label
-                  htmlFor="bookPrice"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Book Price (Coins) *
-                </label>
+              <div className="mb-6 relative max-w-xs">
                 <input
                   type="number"
                   id="bookPrice"
@@ -421,15 +427,15 @@ export function StoryForm({
                       return true;
                     },
                   })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-xs"
-                  placeholder="Enter book price in coins"
+                  className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+                  placeholder="Book Price (Coins) *"
                 />
                 {errors.bookPrice && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-2 text-sm text-red-500">
                     {errors.bookPrice.message}
                   </p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 mt-2">
                   Readers will pay this price once to access all chapters
                 </p>
               </div>
@@ -437,20 +443,20 @@ export function StoryForm({
 
             {/* Paid Per Chapter Information - Only show for PAID_PER_CHAPTER */}
             {watchedPricingType === "PAID_PER_CHAPTER" && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-6 p-4 bg-slate-100 border border-slate-200 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <span className="text-blue-500 text-lg">📝</span>
+                    <span className="text-slate-600 text-lg">📝</span>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-blue-900 mb-2">
+                    <h4 className="text-sm font-medium text-slate-800 mb-2">
                       Chapter Pricing
                     </h4>
-                    <p className="text-sm text-blue-700 mb-2">
+                    <p className="text-sm text-slate-600 mb-2">
                       You'll set the price for each chapter individually when
                       you create or edit chapters.
                     </p>
-                    <p className="text-xs text-blue-600">
+                    <p className="text-xs text-slate-500">
                       This gives you flexibility to price chapters based on
                       their content and length.
                     </p>
@@ -460,11 +466,11 @@ export function StoryForm({
             )}
 
             {/* Pricing Information */}
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h4 className="text-sm font-medium text-green-900 mb-2">
+            <div className="mt-4 p-4 bg-slate-100 border border-slate-200 rounded-lg">
+              <h4 className="text-sm font-medium text-slate-800 mb-2">
                 💡 Pricing Information
               </h4>
-              <ul className="text-xs text-green-700 space-y-1">
+              <ul className="text-xs text-slate-600 space-y-1">
                 <li>• You earn 70% of each transaction (platform takes 30%)</li>
                 <li>• Readers can send you gifts regardless of pricing type</li>
                 {watchedPricingType === "WHOLE_BOOK" && (
@@ -484,48 +490,26 @@ export function StoryForm({
           </div>
         )}
 
-        {/* Cover Image */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Story Cover Image
-          </label>
-          <div className="flex justify-center">
-            <StoryCoverUpload
-              storyId={story?.id || "new"}
-              value={watchedCoverImage}
-              onChange={handleCoverImageChange}
-              onRemove={handleCoverImageRemove}
-              disabled={isLoading}
-              placeholder="Upload your story cover"
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Upload a cover image from your device or enter an image URL.
-            Recommended size: 800×1200px (3:4 ratio)
-          </p>
-        </div>
-
         {/* Tags */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tags (Optional)
-          </label>
-          <div className="space-y-3">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={handleTagInputKeyPress}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter a tag and press Enter"
-                maxLength={30}
-              />
+          <div className="space-y-4">
+            <div className="flex space-x-3 items-end">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={handleTagInputKeyPress}
+                  className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+                  placeholder="Add Tags (Optional)"
+                  maxLength={30}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleAddTag}
                 disabled={!tagInput.trim() || selectedTags.length >= 10}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 Add
               </button>
@@ -540,7 +524,7 @@ export function StoryForm({
                     className="inline-flex items-center"
                   >
                     {editingTagIndex === index ? (
-                      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 border border-yellow-300">
+                      <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 border border-slate-300">
                         <span className="mr-1">#</span>
                         <input
                           type="text"
@@ -555,7 +539,7 @@ export function StoryForm({
                         <button
                           type="button"
                           onClick={handleSaveTagEdit}
-                          className="ml-1 text-green-600 hover:text-green-800 rounded-full p-0.5"
+                          className="ml-1 text-slate-600 hover:text-slate-800 rounded-full p-0.5"
                           title="Save changes"
                         >
                           <svg
@@ -573,19 +557,19 @@ export function StoryForm({
                         <button
                           type="button"
                           onClick={handleCancelTagEdit}
-                          className="ml-1 text-red-600 hover:text-red-800 rounded-full p-0.5"
+                          className="ml-1 text-slate-500 hover:text-slate-700 rounded-full p-0.5"
                           title="Cancel editing"
                         >
                           <XMarkIcon className="w-3 h-3" />
                         </button>
                       </div>
                     ) : (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 group">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-slate-100 text-slate-700 group">
                         #{tag}
                         <button
                           type="button"
                           onClick={() => handleEditTag(index)}
-                          className="ml-2 text-blue-600 hover:text-blue-800 rounded-full p-0.5 transition-colors duration-200"
+                          className="ml-2 text-slate-500 hover:text-slate-700 rounded-full p-0.5 transition-colors duration-200"
                           title={`Edit ${tag} tag`}
                         >
                           <svg
@@ -599,7 +583,7 @@ export function StoryForm({
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          className="ml-1 text-blue-600 hover:text-red-600 hover:bg-red-100 rounded-full p-0.5 transition-colors duration-200"
+                          className="ml-1 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors duration-200"
                           title={`Remove ${tag} tag`}
                         >
                           <XMarkIcon className="w-3 h-3" />
@@ -611,11 +595,11 @@ export function StoryForm({
               </div>
             )}
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               {selectedTags.length}/10 tags used. Tags help readers discover
               your story.
               <br />
-              <span className="text-blue-600">
+              <span className="text-slate-600">
                 Click the edit icon to modify tags, or the × icon to remove
                 them.
               </span>
@@ -624,19 +608,19 @@ export function StoryForm({
         </div>
 
         {/* Form Actions */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <div className="flex justify-end space-x-4 pt-6 border-t border-slate-200">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
           >
             {isLoading && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

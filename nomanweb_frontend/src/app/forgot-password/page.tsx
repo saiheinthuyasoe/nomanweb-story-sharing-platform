@@ -39,32 +39,37 @@ export default function ForgotPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 p-8">
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          backgroundImage: 'url(/mountain.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="max-w-sm w-full bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-4">
           <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h2>
-            <p className="text-gray-600 mb-6">
+            <CheckCircle className="mx-auto h-12 w-12 text-green-400 mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
+            <p className="text-white/80 mb-6">
               We've sent a password reset link to <strong>{getValues('email')}</strong>
             </p>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-white/60 mb-6">
               The link will expire in 24 hours. If you don't see the email, please check your spam folder.
             </p>
-            
             <div className="space-y-3">
               <Link
                 href="/login"
-                className="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200"
+                className="w-full inline-flex justify-center items-center py-4 px-4 border border-white/30 rounded-xl shadow-lg text-base font-semibold text-white bg-[#20243c] hover:bg-[#23274a] focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 hover:shadow-xl"
               >
                 Back to Login
               </Link>
-              
               <button
                 onClick={() => {
                   setIsSuccess(false);
                   forgotPasswordMutation.reset();
                 }}
-                className="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200"
+                className="w-full inline-flex justify-center items-center py-4 px-4 border border-white/30 rounded-xl shadow-lg text-base font-semibold text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300 hover:shadow-xl"
               >
                 Send Another Email
               </button>
@@ -76,30 +81,32 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 p-8">
-        <div className="mb-6">
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: 'url(/mountain.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div className="max-w-sm w-full bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-4">
+        <div className="mb-4">
           <Link
             href="/login"
-            className="inline-flex items-center text-sm text-primary hover:text-primary/80 mb-4 transition-colors duration-200"
+            className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4 transition-colors duration-200"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Login
           </Link>
-          
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Forgot Password?</h2>
+          <p className="text-white/80 text-sm">
             No worries! Enter your email address and we'll send you a link to reset your password.
           </p>
         </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Mail className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
                 {...register('email', {
                   required: 'Email is required',
@@ -109,23 +116,22 @@ export default function ForgotPasswordPage() {
                   },
                 })}
                 type="email"
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
-                placeholder="Enter your email address"
+                className="w-full pl-8 pr-4 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white"
+                placeholder="Email"
               />
             </div>
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="mt-2 text-sm text-red-300 drop-shadow-sm">{errors.email.message}</p>
             )}
           </div>
-
           <button
             type="submit"
             disabled={forgotPasswordMutation.isPending}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full flex justify-center py-3 px-4 border border-white/30 rounded-xl shadow-lg text-sm font-semibold text-white bg-[#20243c] hover:bg-[#23274a] focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-xl"
           >
             {forgotPasswordMutation.isPending ? (
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 Sending Email...
               </div>
             ) : (
@@ -133,11 +139,10 @@ export default function ForgotPasswordPage() {
             )}
           </button>
         </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="mt-4 text-center">
+          <p className="text-xs text-white/80">
             Remember your password?{' '}
-            <Link href="/login" className="font-medium text-primary hover:text-primary/80 transition-colors duration-200">
+            <Link href="/login" className="font-medium text-white hover:text-white/80 transition-colors">
               Sign in here
             </Link>
           </p>
@@ -145,4 +150,4 @@ export default function ForgotPasswordPage() {
       </div>
     </div>
   );
-} 
+}

@@ -59,36 +59,44 @@ export default function VerifyEmailPendingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <Mail className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: "url(/mountain.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      <div className="max-w-sm w-full bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-4 border border-white/30 text-center">
+        <Mail className="h-12 w-12 text-white mx-auto mb-3 drop-shadow-lg" />
         
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+        <h1 className="text-xl font-bold text-white mb-3 drop-shadow-lg">
           Check Your Email
         </h1>
         
-        <p className="text-gray-600 mb-6">
+        <p className="text-white/80 mb-4 text-sm">
           We've sent a verification email to{' '}
           {email && <strong>{email}</strong>}
           {!email && <strong>your email address</strong>}.
           Please click the verification link in the email to activate your account.
         </p>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-          <p className="text-sm text-blue-800">
+        <div className="bg-white/20 border border-white/30 rounded-md p-3 mb-4 backdrop-blur-sm">
+          <p className="text-xs text-white">
             <strong>Important:</strong> You must verify your email before you can log in to your account.
           </p>
         </div>
 
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">
+        <div className="space-y-2">
+          <p className="text-xs text-white/70">
             Didn't receive the email? Check your spam folder or
           </p>
           
           <button
             onClick={handleResendVerification}
             disabled={isLoading || !email || !canResend}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 py-2 bg-[#20243c] text-white rounded-md hover:bg-[#23274a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {isLoading ? (
               <>
@@ -109,17 +117,17 @@ export default function VerifyEmailPendingPage() {
           </button>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-4 border-t border-white/30">
           <Link
             href="/login"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
+            className="inline-flex items-center text-white/80 hover:text-white text-xs"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-3 w-3 mr-1" />
             Back to Login
           </Link>
         </div>
 
-        <div className="mt-4 text-xs text-gray-500">
+        <div className="mt-3 text-xs text-white/60">
           <p>
             The verification link will expire in 48 hours.
           </p>
@@ -127,4 +135,4 @@ export default function VerifyEmailPendingPage() {
       </div>
     </div>
   );
-} 
+}
