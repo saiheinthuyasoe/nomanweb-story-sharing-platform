@@ -223,9 +223,9 @@ public class NotificationServiceImpl implements NotificationService {
 
             String title;
             String message;
-            String commentPreview = comment.getContent().length() > 50 ? 
-                    comment.getContent().substring(0, 50) + "..." : comment.getContent();
-            
+            String commentPreview = comment.getContent().length() > 50 ? comment.getContent().substring(0, 50) + "..."
+                    : comment.getContent();
+
             if (comment.getChapter() != null) {
                 title = "Chapter Comment Liked";
                 message = String.format("%s liked your comment \"%s\" on chapter: %s",

@@ -24,6 +24,7 @@ import {
   useMarkAsRead,
   useMarkAllAsRead,
 } from "@/hooks/useNotifications";
+import { useEnhancedNotifications } from "@/hooks/useEnhancedNotifications";
 import { Notification } from "@/types/user";
 import { format } from "date-fns";
 
@@ -46,6 +47,13 @@ export default function NotificationsPage() {
 
   const notifications = notificationsData?.content || [];
   const unreadCount = unreadCountData?.unreadCount || 0;
+
+  // Enhanced notifications with additional data
+  const {
+    enhancedNotifications,
+    isLoading: isEnhancing,
+    error: enhanceError,
+  } = useEnhancedNotifications(notifications);
 
   // Get icon for notification type
   const getNotificationIcon = (type: string) => {
@@ -90,7 +98,7 @@ export default function NotificationsPage() {
   };
 
   // Convert backend notifications to display format
-  const notificationItems = notifications.map((notification: Notification) => ({
+  const notificationItems = enhancedNotifications.map((notification) => ({
     id: notification.id,
     type: notification.type.toLowerCase(),
     title: notification.title,
@@ -101,6 +109,9 @@ export default function NotificationsPage() {
     color: getNotificationColor(notification.type),
     relatedType: notification.relatedType,
     relatedId: notification.relatedId,
+    storyTitle: notification.storyTitle,
+    commentContent: notification.commentContent,
+    chapterTitle: notification.chapterTitle,
   }));
 
   // Handle mark as read
@@ -155,18 +166,20 @@ export default function NotificationsPage() {
     },
     {
       id: "system",
-      label: "System",
+      label: "Purchases",
       count: notificationItems.filter((a) => a.type === "system").length,
     },
   ];
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || isEnhancing) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading notifications...</p>
+          <p className="text-gray-600">
+            {isLoading ? "Loading notifications..." : "Enhancing notifications..."}
+          </p>
         </div>
       </div>
     );
@@ -352,12 +365,36 @@ function AlertCard({
 
           <p className="text-gray-700 mb-3">{alert.message}</p>
 
-          {alert.storyTitle && (
-            <div className="mb-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+          {/* Display story title for chapter-related notifications */}
+          {alert.storyTitle && (alert.type.includes('chapter') || alert.type.includes('story')) && (
+            <div className="mb-3">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
                 <BookOpen className="h-3 w-3 mr-1" />
-                {alert.storyTitle}
+                Story: {alert.storyTitle}
               </span>
+            </div>
+          )}
+
+          {/* Display chapter title for chapter-related notifications */}
+          {alert.chapterTitle && alert.type.includes('chapter') && (
+            <div className="mb-3">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                <BookOpen className="h-3 w-3 mr-1" />
+                Chapter: {alert.chapterTitle}
+              </span>
+            </div>
+          )}
+
+          {/* Display comment content for comment notifications */}
+          {alert.commentContent && alert.type.includes('comment') && (
+            <div className="mb-3 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+              <div className="flex items-start space-x-2">
+                <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Comment:</p>
+                  <p className="text-sm text-gray-600 italic">"{alert.commentContent}"</p>
+                </div>
+              </div>
             </div>
           )}
 
