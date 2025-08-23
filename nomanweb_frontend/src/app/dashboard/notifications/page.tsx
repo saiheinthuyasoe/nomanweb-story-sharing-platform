@@ -336,6 +336,9 @@ function NotificationWithStoryTitle({
       alert.relatedId) ||
     (alert.isLikeNotification &&
       alert.relatedType === "CHAPTER" &&
+      alert.relatedId) ||
+    (alert.type === "new_chapter" &&
+      alert.relatedType === "CHAPTER" &&
       alert.relatedId);
   const shouldFetchStory =
     (alert.isCommentNotification &&
@@ -346,6 +349,12 @@ function NotificationWithStoryTitle({
       alert.relatedId) ||
     (alert.isLikeNotification &&
       alert.relatedType === "STORY" &&
+      alert.relatedId) ||
+    (alert.type === "new_story" &&
+      alert.relatedType === "STORY" &&
+      alert.relatedId) ||
+    (alert.type === "new_chapter" &&
+      alert.relatedType === "CHAPTER" &&
       alert.relatedId);
   const shouldFetchComment =
     alert.isCommentNotification &&

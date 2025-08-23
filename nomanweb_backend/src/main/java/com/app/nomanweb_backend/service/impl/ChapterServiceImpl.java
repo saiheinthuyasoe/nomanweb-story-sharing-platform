@@ -25,6 +25,7 @@ import com.app.nomanweb_backend.service.CollaborationService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.MonetizationService;
+import com.app.nomanweb_backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -62,6 +63,7 @@ public class ChapterServiceImpl implements ChapterService {
     private final ViewTrackingService viewTrackingService;
     private final PurchaseProtectionService purchaseProtectionService;
     private final MonetizationService monetizationService;
+    private final NotificationService notificationService;
 
     private static final int WORDS_PER_MINUTE = 200; // Average reading speed
 
@@ -256,6 +258,15 @@ public class ChapterServiceImpl implements ChapterService {
         // Update library status for users if chapter was just published
         if (wasJustPublished) {
             updateLibraryStatusForNewChapter(chapter.getStory());
+            
+            // Notify followers about new chapter publication
+            try {
+                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(), chapter.getId());
+                log.info("Notifications sent to followers for new chapter: {}", chapterId);
+            } catch (Exception e) {
+                log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
+                // Don't fail the chapter update if notification fails
+            }
         }
 
         // Log the saved chapter state
@@ -429,6 +440,15 @@ public class ChapterServiceImpl implements ChapterService {
 
         // Update library status for users who had completed this story
         updateLibraryStatusForNewChapter(chapter.getStory());
+
+        // Notify followers about new chapter publication
+        try {
+            notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(), chapter.getId());
+            log.info("Notifications sent to followers for new chapter: {}", chapterId);
+        } catch (Exception e) {
+            log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
+            // Don't fail the chapter publishing if notification fails
+        }
 
         log.info("Chapter published: {}", chapterId);
         return mapToChapterResponse(chapter, authorId);
@@ -1225,6 +1245,17 @@ public class ChapterServiceImpl implements ChapterService {
         // Update library status for users since new chapters were published
         if (!draftChapters.isEmpty()) {
             updateLibraryStatusForNewChapter(story);
+        }
+
+        // Notify followers about each newly published chapter
+        for (Chapter publishedChapter : draftChapters) {
+            try {
+                notificationService.notifyNewChapter(publishedChapter.getStory().getAuthor().getId(), publishedChapter.getStory().getId(), publishedChapter.getId());
+                log.info("Notifications sent to followers for bulk published chapter: {}", publishedChapter.getId());
+            } catch (Exception e) {
+                log.warn("Failed to send notifications for bulk published chapter: {} - {}", publishedChapter.getId(), e.getMessage());
+                // Don't fail the bulk publish if notification fails
+            }
         }
 
         log.info("Successfully published {} chapters for story: {}", draftChapters.size(), storyId);

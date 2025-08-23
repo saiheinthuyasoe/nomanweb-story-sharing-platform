@@ -16,6 +16,7 @@ import com.app.nomanweb_backend.service.SearchIndexingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.PurchaseProtectionException;
 import com.app.nomanweb_backend.service.ChapterService;
+import com.app.nomanweb_backend.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ public class StoryServiceImpl implements StoryService {
     private final BookPurchaseRepository bookPurchaseRepository;
     private final ChapterPurchaseRepository chapterPurchaseRepository;
     private final MonetizationService monetizationService;
+    private final NotificationService notificationService;
 
     @Override
     public StoryResponse createStory(CreateStoryRequest request, UUID authorId) {
@@ -908,6 +910,17 @@ public class StoryServiceImpl implements StoryService {
         story = storyRepository.save(story);
 
         log.info("Story published successfully: {}", storyId);
+
+        // Notify followers about new story publication (only for initial publications)
+        if (story.getPublishedAt() != null && !isRepublishAfterRefunds) {
+            try {
+                notificationService.notifyNewStory(story.getAuthor().getId(), story.getId());
+                log.info("Notifications sent to followers for new story: {}", storyId);
+            } catch (Exception e) {
+                log.warn("Failed to send notifications for new story: {} - {}", storyId, e.getMessage());
+                // Don't fail the story publishing if notification fails
+            }
+        }
 
         // Automatically publish all draft chapters when story is published (only if
         // autoPublishChapters is true)
