@@ -24,9 +24,18 @@ import {
   useMarkAsRead,
   useMarkAllAsRead,
 } from "@/hooks/useNotifications";
-import { useEnhancedNotifications } from "@/hooks/useEnhancedNotifications";
+import { useStory } from "@/hooks/useStories";
+import { useChapter } from "@/hooks/useChapters";
+import {
+  useComment,
+  useChapterComments,
+  useStoryComments,
+} from "@/hooks/useComments";
+import { useUser } from "@/hooks/useUser";
+import { useGiftTransaction } from "@/hooks/useGiftTransaction";
 import { Notification } from "@/types/user";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -47,13 +56,6 @@ export default function NotificationsPage() {
 
   const notifications = notificationsData?.content || [];
   const unreadCount = unreadCountData?.unreadCount || 0;
-
-  // Enhanced notifications with additional data
-  const {
-    enhancedNotifications,
-    isLoading: isEnhancing,
-    error: enhanceError,
-  } = useEnhancedNotifications(notifications);
 
   // Get icon for notification type
   const getNotificationIcon = (type: string) => {
@@ -98,7 +100,7 @@ export default function NotificationsPage() {
   };
 
   // Convert backend notifications to display format
-  const notificationItems = enhancedNotifications.map((notification) => ({
+  const notificationItems = notifications.map((notification: Notification) => ({
     id: notification.id,
     type: notification.type.toLowerCase(),
     title: notification.title,
@@ -109,9 +111,10 @@ export default function NotificationsPage() {
     color: getNotificationColor(notification.type),
     relatedType: notification.relatedType,
     relatedId: notification.relatedId,
-    storyTitle: notification.storyTitle,
-    commentContent: notification.commentContent,
-    chapterTitle: notification.chapterTitle,
+    // For comment notifications, we'll fetch the story title separately
+    isCommentNotification: notification.type.toLowerCase() === "comment",
+    // For like notifications, we'll fetch the story title and modify the message
+    isLikeNotification: notification.type.toLowerCase() === "like",
   }));
 
   // Handle mark as read
@@ -172,14 +175,12 @@ export default function NotificationsPage() {
   ];
 
   // Show loading state
-  if (isLoading || isEnhancing) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">
-            {isLoading ? "Loading notifications..." : "Enhancing notifications..."}
-          </p>
+          <p className="text-gray-600">Loading notifications...</p>
         </div>
       </div>
     );
@@ -285,7 +286,7 @@ export default function NotificationsPage() {
             <div className="space-y-4">
               {filteredNotifications.length > 0 ? (
                 filteredNotifications.map((item) => (
-                  <AlertCard
+                  <NotificationWithStoryTitle
                     key={item.id}
                     alert={item}
                     onMarkAsRead={handleMarkAsRead}
@@ -313,8 +314,8 @@ export default function NotificationsPage() {
   );
 }
 
-// Alert Card Component
-function AlertCard({
+// Component to handle fetching story title and comment content for comment notifications
+function NotificationWithStoryTitle({
   alert,
   onMarkAsRead,
   isMarkingAsRead,
@@ -322,6 +323,174 @@ function AlertCard({
   alert: any;
   onMarkAsRead: (id: string) => void;
   isMarkingAsRead: boolean;
+}) {
+  const router = useRouter();
+  
+  // For chapter comment notifications, chapter purchased notifications, and chapter liked notifications, we need to fetch chapter data first to get the story
+  const shouldFetchChapter =
+    (alert.isCommentNotification &&
+      alert.relatedType === "CHAPTER" &&
+      alert.relatedId) ||
+    (alert.type === "system" &&
+      alert.relatedType === "CHAPTER" &&
+      alert.relatedId) ||
+    (alert.isLikeNotification &&
+      alert.relatedType === "CHAPTER" &&
+      alert.relatedId);
+  const shouldFetchStory =
+    (alert.isCommentNotification &&
+      alert.relatedType === "STORY" &&
+      alert.relatedId) ||
+    (alert.type === "system" &&
+      alert.relatedType === "STORY" &&
+      alert.relatedId) ||
+    (alert.isLikeNotification &&
+      alert.relatedType === "STORY" &&
+      alert.relatedId);
+  const shouldFetchComment =
+    alert.isCommentNotification &&
+    alert.relatedType === "COMMENT" &&
+    alert.relatedId;
+  const shouldFetchUser =
+    alert.type === "follow" &&
+    alert.relatedType === "USER" &&
+    alert.relatedId;
+  const shouldFetchGiftTransaction =
+    alert.type === "gift_received" &&
+    alert.relatedType === "GIFT" &&
+    alert.relatedId;
+
+  // Fetch chapter data if it's a chapter comment
+  const { data: chapterData } = useChapter(
+    alert.relatedId || "",
+    !!shouldFetchChapter
+  );
+
+  // Fetch comment data if it's a comment reply notification (relatedId is the comment ID)
+  const { data: commentData } = useComment(
+    alert.relatedId || "",
+    !!shouldFetchComment
+  );
+
+  // Fetch recent comments for chapter/story to get the latest comment content
+  const { data: chapterCommentsData } = useChapterComments(
+    alert.relatedId || "",
+    0,
+    1,
+    !!shouldFetchChapter
+  );
+
+  const { data: storyCommentsData } = useStoryComments(
+    alert.relatedId || "",
+    0,
+    1,
+    !!shouldFetchStory
+  );
+
+  // Fetch user data for follower notifications
+  const { data: userData } = useUser(
+    alert.relatedId || "",
+    !!shouldFetchUser
+  );
+
+  // Fetch gift transaction data for gift received notifications
+  const { data: giftTransactionData } = useGiftTransaction(
+    shouldFetchGiftTransaction ? alert.relatedId : null
+  );
+
+  // Fetch story data either directly or from chapter's story
+  const storyId =
+    shouldFetchStory && alert.relatedType === "STORY"
+      ? alert.relatedId
+      : chapterData?.story?.id || "";
+  const { data: storyData } = useStory(
+    storyId,
+    !!(shouldFetchStory || (shouldFetchChapter && chapterData?.story?.id))
+  );
+
+  // Get the latest comment content (but not for like notifications or system notifications like purchases)
+  let latestCommentContent = undefined;
+  if (!alert.isLikeNotification && alert.type !== 'system') {
+    if (shouldFetchComment && commentData) {
+      latestCommentContent = commentData.content;
+    } else if (shouldFetchChapter && chapterCommentsData?.content?.[0]) {
+      latestCommentContent = chapterCommentsData.content[0].content;
+    } else if (shouldFetchStory && storyCommentsData?.content?.[0]) {
+      latestCommentContent = storyCommentsData.content[0].content;
+    }
+  }
+
+  // Extract liker name for like notifications and create simplified message
+  let simplifiedMessage = alert.message;
+  if (alert.isLikeNotification && alert.message) {
+    // Handle story liked notifications: "[Name] liked your story: [Story Title]"
+    const storyLikeMatch = alert.message.match(/^(.+?) liked your story:/);
+    if (storyLikeMatch) {
+      const likerName = storyLikeMatch[1];
+      simplifiedMessage = `${likerName} liked your story`;
+    } else {
+      // Handle chapter liked notifications: "[Name] liked your chapter: [Chapter Title] from story: [Story Title]"
+      const chapterLikeMatch = alert.message.match(
+        /^(.+?) liked your chapter: (.+?) from story:/
+      );
+      if (chapterLikeMatch) {
+        const likerName = chapterLikeMatch[1];
+        const chapterTitle = chapterLikeMatch[2];
+        simplifiedMessage = `${likerName} liked your chapter: ${chapterTitle}`;
+      }
+    }
+  }
+
+  // Handle follower notifications
+  let followerData = null;
+  if (alert.type === "follow" && userData) {
+    followerData = {
+      id: userData.id,
+      displayName: userData.displayName || userData.username,
+      username: userData.username,
+    };
+  }
+
+  // Handle gift transaction data
+  let giftData = null;
+  if (alert.type === "gift_received" && giftTransactionData) {
+    giftData = {
+      totalCoins: giftTransactionData.totalCoins,
+      senderName: giftTransactionData.sender.displayName || giftTransactionData.sender.username,
+      giftName: giftTransactionData.gift?.name || "Custom Gift",
+    };
+  }
+
+  // Add story title and comment content to alert if available
+  const alertWithEnhancedData = {
+    ...alert,
+    storyTitle: storyData ? storyData.title : undefined,
+    commentContent: latestCommentContent,
+    message: simplifiedMessage,
+    followerData: followerData,
+    giftData: giftData,
+  };
+
+  return (
+    <AlertCard
+      alert={alertWithEnhancedData}
+      onMarkAsRead={onMarkAsRead}
+      isMarkingAsRead={isMarkingAsRead}
+      router={router}
+    />
+  );
+}
+
+function AlertCard({
+  alert,
+  onMarkAsRead,
+  isMarkingAsRead,
+  router,
+}: {
+  alert: any;
+  onMarkAsRead: (id: string) => void;
+  isMarkingAsRead: boolean;
+  router?: any;
 }) {
   const getColorClasses = (color: string) => {
     const colors = {
@@ -363,38 +532,44 @@ function AlertCard({
             </div>
           </div>
 
-          <p className="text-gray-700 mb-3">{alert.message}</p>
+          {/* Message with clickable follower name for follow notifications */}
+          {alert.type === "follow" && alert.followerData ? (
+            <p className="text-gray-700 mb-3">
+              <button
+                onClick={() => router?.push(`/authors/${alert.followerData.id}`)}
+                className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              >
+                {alert.followerData.displayName}
+              </button>
+              {" started following you"}
+            </p>
+          ) : alert.type === "gift_received" && alert.giftData ? (
+            <p className="text-gray-700 mb-3">
+              {alert.giftData.senderName} sent you {alert.giftData.giftName}
+              <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                <DollarSign className="h-3 w-3 mr-1" />
+                {alert.giftData.totalCoins} coins
+              </span>
+            </p>
+          ) : (
+            <p className="text-gray-700 mb-3">{alert.message}</p>
+          )}
 
-          {/* Display story title for chapter-related notifications */}
-          {alert.storyTitle && (alert.type.includes('chapter') || alert.type.includes('story')) && (
-            <div className="mb-3">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+          {alert.storyTitle && (
+            <div className="mb-4">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                 <BookOpen className="h-3 w-3 mr-1" />
-                Story: {alert.storyTitle}
+                {alert.storyTitle}
               </span>
             </div>
           )}
 
-          {/* Display chapter title for chapter-related notifications */}
-          {alert.chapterTitle && alert.type.includes('chapter') && (
-            <div className="mb-3">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                <BookOpen className="h-3 w-3 mr-1" />
-                Chapter: {alert.chapterTitle}
-              </span>
-            </div>
-          )}
-
-          {/* Display comment content for comment notifications */}
-          {alert.commentContent && alert.type.includes('comment') && (
-            <div className="mb-3 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
-              <div className="flex items-start space-x-2">
-                <MessageSquare className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">Comment:</p>
-                  <p className="text-sm text-gray-600 italic">"{alert.commentContent}"</p>
-                </div>
-              </div>
+          {alert.commentContent && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+              <p className="text-sm text-gray-600 mb-1 font-medium">Comment:</p>
+              <p className="text-sm text-gray-800 italic">
+                "{alert.commentContent}"
+              </p>
             </div>
           )}
 
