@@ -114,6 +114,24 @@ export const useDeleteNotification = () => {
   });
 };
 
+// Bulk delete notifications
+export const useBulkDeleteNotifications = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (notificationIds: string[]) => notificationsApi.bulkDeleteNotifications(notificationIds),
+    onSuccess: (data, notificationIds) => {
+      // Remove from all notification queries
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      
+      toast.success(`${notificationIds.length} notifications deleted`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to delete notifications');
+    },
+  });
+};
+
 // Send system notification (admin/testing)
 export const useSendSystemNotification = () => {
   const queryClient = useQueryClient();

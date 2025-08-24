@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/client';
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api/client";
 
 interface GiftTransaction {
   id: string;
@@ -30,19 +30,21 @@ interface GiftTransaction {
 // we'll fetch from received gifts and find the specific transaction
 export const useGiftTransaction = (transactionId: string | null) => {
   return useQuery({
-    queryKey: ['giftTransaction', transactionId],
+    queryKey: ["giftTransaction", transactionId],
     queryFn: async (): Promise<GiftTransaction | null> => {
       if (!transactionId) return null;
-      
+
       // Fetch received gifts and find the specific transaction
       // We'll fetch a larger page size to increase chances of finding the transaction
-      const response = await apiClient.get('/monetization/gifts/received', {
-        params: { page: 0, size: 100 }
+      const response = await apiClient.get("/monetization/gifts/received", {
+        params: { page: 0, size: 100 },
       });
-      
+
       const transactions = response.data.content;
-      const transaction = transactions.find((t: GiftTransaction) => t.id === transactionId);
-      
+      const transaction = transactions.find(
+        (t: GiftTransaction) => t.id === transactionId
+      );
+
       return transaction || null;
     },
     enabled: !!transactionId,

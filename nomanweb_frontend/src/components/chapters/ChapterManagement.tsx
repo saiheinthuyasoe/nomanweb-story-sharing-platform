@@ -238,7 +238,10 @@ export default function ChapterManagement({
     return { hasPurchases: false, totalRefundAmount: 0, affectedPurchasers: 0 };
   };
 
-  const handleUnpublishClick = async (chapterId: string, chapterTitle: string) => {
+  const handleUnpublishClick = async (
+    chapterId: string,
+    chapterTitle: string
+  ) => {
     // For WHOLE_BOOK pricing, calculate refunds
     if (story?.pricingType === "WHOLE_BOOK") {
       const refundInfo = await calculateRefund(chapterId, chapterTitle);
@@ -515,7 +518,9 @@ export default function ChapterManagement({
               chapter={chapter}
               storyId={storyId}
               onPublish={handlePublish}
-              onUnpublish={() => handleUnpublishClick(chapter.id, chapter.title)}
+              onUnpublish={() =>
+                handleUnpublishClick(chapter.id, chapter.title)
+              }
               onDelete={() => {
                 if (activeTab === "trash") {
                   setShowPermanentDeleteConfirm(chapter.id);
@@ -778,7 +783,10 @@ export default function ChapterManagement({
       )}
 
       {/* Unpublish Confirmation Modal */}
-      <Dialog open={!!unpublishConfirm} onOpenChange={() => setUnpublishConfirm(null)}>
+      <Dialog
+        open={!!unpublishConfirm}
+        onOpenChange={() => setUnpublishConfirm(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -786,7 +794,8 @@ export default function ChapterManagement({
               <span>Unpublish Chapter</span>
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to unpublish this chapter? It will be moved to drafts.
+              Are you sure you want to unpublish this chapter? It will be moved
+              to drafts.
             </DialogDescription>
           </DialogHeader>
 
@@ -800,8 +809,8 @@ export default function ChapterManagement({
                       Refund Warning
                     </h4>
                     <p className="text-sm text-yellow-700">
-                      If this chapter was paid, unpublishing it may refund the users.
-                      This action cannot be undone.
+                      If this chapter was paid, unpublishing it may refund the
+                      users. This action cannot be undone.
                     </p>
                     {refundData && refundData.hasPurchases && (
                       <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
@@ -810,7 +819,8 @@ export default function ChapterManagement({
                             Total Refund Amount:
                           </span>
                           <span className="text-lg font-bold text-yellow-900">
-                            ${refundData.totalRefundAmount?.toFixed(2) || '0.00'}
+                            $
+                            {refundData.totalRefundAmount?.toFixed(2) || "0.00"}
                           </span>
                         </div>
                         <div className="flex items-center justify-between mt-1">
@@ -839,7 +849,9 @@ export default function ChapterManagement({
                     <li>• The chapter will be moved to drafts</li>
                     <li>• Readers will lose access to this chapter</li>
                     {story?.pricingType === "WHOLE_BOOK" && (
-                      <li>• Affected users may receive refunds automatically</li>
+                      <li>
+                        • Affected users may receive refunds automatically
+                      </li>
                     )}
                     <li>• You can republish later if needed</li>
                   </ul>

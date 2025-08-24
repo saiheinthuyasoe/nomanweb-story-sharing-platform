@@ -53,6 +53,14 @@ export const notificationsApi = {
     await apiClient.delete(`/notifications/${notificationId}`);
   },
 
+  // Bulk delete notifications
+  async bulkDeleteNotifications(notificationIds: string[]): Promise<{ message: string }> {
+    const response = await apiClient.delete('/notifications/bulk', {
+      data: { notificationIds }
+    });
+    return response.data;
+  },
+
   // Get notification statistics
   async getNotificationStats(): Promise<NotificationStats> {
     const response = await apiClient.get('/notifications/stats');
@@ -67,4 +75,4 @@ export const notificationsApi = {
     });
     return response.data;
   }
-}; 
+};

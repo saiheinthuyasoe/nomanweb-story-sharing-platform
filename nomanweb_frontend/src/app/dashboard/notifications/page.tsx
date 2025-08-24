@@ -23,6 +23,8 @@ import {
   useUnreadCount,
   useMarkAsRead,
   useMarkAllAsRead,
+  useDeleteNotification,
+  useBulkDeleteNotifications,
 } from "@/hooks/useNotifications";
 import { useStory } from "@/hooks/useStories";
 import { useChapter } from "@/hooks/useChapters";
@@ -42,6 +44,8 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState("all");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [page, setPage] = useState(0);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
   const pageSize = 20;
 
   // API hooks
@@ -53,6 +57,8 @@ export default function NotificationsPage() {
   const { data: unreadCountData } = useUnreadCount();
   const markAsReadMutation = useMarkAsRead();
   const markAllAsReadMutation = useMarkAllAsRead();
+  const deleteNotificationMutation = useDeleteNotification();
+  const bulkDeleteMutation = useBulkDeleteNotifications();
 
   const notifications = notificationsData?.content || [];
   const unreadCount = unreadCountData?.unreadCount || 0;
@@ -125,6 +131,52 @@ export default function NotificationsPage() {
   // Handle mark all as read
   const handleMarkAllAsRead = () => {
     markAllAsReadMutation.mutate();
+  };
+
+  // Handle individual delete
+  const handleDeleteNotification = (notificationId: string) => {
+    deleteNotificationMutation.mutate(notificationId);
+    setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    if (selectedNotifications.length > 0) {
+      bulkDeleteMutation.mutate(selectedNotifications);
+      setSelectedNotifications([]);
+      setSelectAll(false);
+    }
+  };
+
+  // Handle select all toggle
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedNotifications([]);
+      setSelectAll(false);
+    } else {
+      const allIds = filteredNotifications.map(item => item.id);
+      setSelectedNotifications(allIds);
+      setSelectAll(true);
+    }
+  };
+
+  // Handle individual selection
+  const handleSelectNotification = (notificationId: string) => {
+    setSelectedNotifications(prev => {
+      if (prev.includes(notificationId)) {
+        const newSelection = prev.filter(id => id !== notificationId);
+        if (newSelection.length === 0) {
+          setSelectAll(false);
+        }
+        return newSelection;
+      } else {
+        const newSelection = [...prev, notificationId];
+        if (newSelection.length === filteredNotifications.length) {
+          setSelectAll(true);
+        }
+        return newSelection;
+      }
+    });
   };
 
   // Filter notifications based on current filters
@@ -230,6 +282,46 @@ export default function NotificationsPage() {
           </div>
         </div>
 
+        {/* Selection and Bulk Actions */}
+        {filteredNotifications.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Select All ({filteredNotifications.length})
+                  </span>
+                </label>
+                {selectedNotifications.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {selectedNotifications.length} selected
+                  </span>
+                )}
+              </div>
+              {selectedNotifications.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleteMutation.isPending}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {bulkDeleteMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  <span>Delete Selected ({selectedNotifications.length})</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}
           <div className="lg:col-span-1">
@@ -291,6 +383,10 @@ export default function NotificationsPage() {
                     alert={item}
                     onMarkAsRead={handleMarkAsRead}
                     isMarkingAsRead={markAsReadMutation.isPending}
+                    isSelected={selectedNotifications.includes(item.id)}
+                    onSelect={handleSelectNotification}
+                    onDelete={handleDeleteNotification}
+                    isDeleting={deleteNotificationMutation.isPending && deleteNotificationMutation.variables === item.id}
                   />
                 ))
               ) : (
@@ -319,13 +415,21 @@ function NotificationWithStoryTitle({
   alert,
   onMarkAsRead,
   isMarkingAsRead,
+  isSelected,
+  onSelect,
+  onDelete,
+  isDeleting,
 }: {
   alert: any;
   onMarkAsRead: (id: string) => void;
   isMarkingAsRead: boolean;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
 }) {
   const router = useRouter();
-  
+
   // For chapter comment notifications, chapter purchased notifications, and chapter liked notifications, we need to fetch chapter data first to get the story
   const shouldFetchChapter =
     (alert.isCommentNotification &&
@@ -361,9 +465,7 @@ function NotificationWithStoryTitle({
     alert.relatedType === "COMMENT" &&
     alert.relatedId;
   const shouldFetchUser =
-    alert.type === "follow" &&
-    alert.relatedType === "USER" &&
-    alert.relatedId;
+    alert.type === "follow" && alert.relatedType === "USER" && alert.relatedId;
   const shouldFetchGiftTransaction =
     alert.type === "gift_received" &&
     alert.relatedType === "GIFT" &&
@@ -397,10 +499,7 @@ function NotificationWithStoryTitle({
   );
 
   // Fetch user data for follower notifications
-  const { data: userData } = useUser(
-    alert.relatedId || "",
-    !!shouldFetchUser
-  );
+  const { data: userData } = useUser(alert.relatedId || "", !!shouldFetchUser);
 
   // Fetch gift transaction data for gift received notifications
   const { data: giftTransactionData } = useGiftTransaction(
@@ -419,7 +518,7 @@ function NotificationWithStoryTitle({
 
   // Get the latest comment content (but not for like notifications or system notifications like purchases)
   let latestCommentContent = undefined;
-  if (!alert.isLikeNotification && alert.type !== 'system') {
+  if (!alert.isLikeNotification && alert.type !== "system") {
     if (shouldFetchComment && commentData) {
       latestCommentContent = commentData.content;
     } else if (shouldFetchChapter && chapterCommentsData?.content?.[0]) {
@@ -465,7 +564,9 @@ function NotificationWithStoryTitle({
   if (alert.type === "gift_received" && giftTransactionData) {
     giftData = {
       totalCoins: giftTransactionData.totalCoins,
-      senderName: giftTransactionData.sender.displayName || giftTransactionData.sender.username,
+      senderName:
+        giftTransactionData.sender.displayName ||
+        giftTransactionData.sender.username,
       giftName: giftTransactionData.gift?.name || "Custom Gift",
     };
   }
@@ -486,6 +587,10 @@ function NotificationWithStoryTitle({
       onMarkAsRead={onMarkAsRead}
       isMarkingAsRead={isMarkingAsRead}
       router={router}
+      isSelected={isSelected}
+      onSelect={onSelect}
+      onDelete={onDelete}
+      isDeleting={isDeleting}
     />
   );
 }
@@ -495,11 +600,19 @@ function AlertCard({
   onMarkAsRead,
   isMarkingAsRead,
   router,
+  isSelected,
+  onSelect,
+  onDelete,
+  isDeleting,
 }: {
   alert: any;
   onMarkAsRead: (id: string) => void;
   isMarkingAsRead: boolean;
   router?: any;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
 }) {
   const getColorClasses = (color: string) => {
     const colors = {
@@ -519,6 +632,16 @@ function AlertCard({
       }`}
     >
       <div className="flex items-start space-x-4">
+        {/* Selection Checkbox */}
+        <div className="flex items-center pt-1">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onSelect(alert.id)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+        </div>
+        
         {/* Icon */}
         <div className={`p-3 rounded-lg ${getColorClasses(alert.color)}`}>
           <alert.icon className="h-5 w-5" />
@@ -545,7 +668,9 @@ function AlertCard({
           {alert.type === "follow" && alert.followerData ? (
             <p className="text-gray-700 mb-3">
               <button
-                onClick={() => router?.push(`/authors/${alert.followerData.id}`)}
+                onClick={() =>
+                  router?.push(`/authors/${alert.followerData.id}`)
+                }
                 className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
                 {alert.followerData.displayName}
@@ -598,8 +723,16 @@ function AlertCard({
                 <span>Mark as read</span>
               </button>
             )}
-            <button className="text-gray-500 hover:text-red-600 text-sm font-medium flex items-center space-x-1">
-              <Trash2 className="h-4 w-4" />
+            <button
+              onClick={() => onDelete(alert.id)}
+              disabled={isDeleting}
+              className="text-gray-500 hover:text-red-600 text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               <span>Delete</span>
             </button>
           </div>

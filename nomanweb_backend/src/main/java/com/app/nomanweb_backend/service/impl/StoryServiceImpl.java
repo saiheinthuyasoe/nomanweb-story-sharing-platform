@@ -1105,7 +1105,8 @@ public class StoryServiceImpl implements StoryService {
         }
 
         // Calculate total earnings from chapter purchases (70% of purchase amount)
-        BigDecimal chapterEarnings = chapterPurchaseRepository.findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story)
+        BigDecimal chapterEarnings = chapterPurchaseRepository
+                .findByStoryAndIsRefundedFalseOrderByPurchasedAtDesc(story)
                 .stream()
                 .map(purchase -> purchase.getCoinsSpent().multiply(new BigDecimal("0.70")))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -1130,7 +1131,7 @@ public class StoryServiceImpl implements StoryService {
         story.setTotalCoinsEarned(totalEarnings);
         storyRepository.save(story);
 
-        log.info("✅ Recalculated earnings for story {}: {} coins (was {} coins)", 
+        log.info("✅ Recalculated earnings for story {}: {} coins (was {} coins)",
                 storyId, totalEarnings, previousEarnings);
 
         // Return detailed breakdown
@@ -1142,8 +1143,7 @@ public class StoryServiceImpl implements StoryService {
         result.put("breakdown", Map.of(
                 "chapterPurchases", chapterEarnings,
                 "bookPurchases", bookEarnings,
-                "gifts", giftEarnings
-        ));
+                "gifts", giftEarnings));
         result.put("message", "Story earnings recalculated successfully");
 
         return result;

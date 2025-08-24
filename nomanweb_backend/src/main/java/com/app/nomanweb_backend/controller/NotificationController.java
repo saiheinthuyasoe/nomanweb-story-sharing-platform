@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -85,6 +86,29 @@ public class NotificationController {
         } catch (Exception e) {
             log.error("Error marking all notifications as read", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @DeleteMapping("/bulk")
+    public ResponseEntity<Map<String, String>> bulkDeleteNotifications(@RequestBody Map<String, Object> request) {
+        try {
+            UUID userId = getCurrentUserId();
+            @SuppressWarnings("unchecked")
+            List<String> notificationIdStrings = (List<String>) request.get("notificationIds");
+            
+            if (notificationIdStrings == null || notificationIdStrings.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No notification IDs provided"));
+            }
+            
+            List<UUID> notificationIds = notificationIdStrings.stream()
+                    .map(UUID::fromString)
+                    .toList();
+            
+            notificationService.bulkDeleteNotifications(notificationIds, userId);
+            return ResponseEntity.ok(Map.of("message", "Notifications deleted successfully"));
+        } catch (Exception e) {
+            log.error("Error bulk deleting notifications", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete notifications"));
         }
     }
 

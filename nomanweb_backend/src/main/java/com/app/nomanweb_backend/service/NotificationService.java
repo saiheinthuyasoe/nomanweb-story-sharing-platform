@@ -27,6 +27,8 @@ public interface NotificationService {
 
         void deleteNotification(UUID notificationId);
 
+        void bulkDeleteNotifications(List<UUID> notificationIds, UUID userId);
+
         // Social notifications
         void notifyNewFollower(UUID followedUserId, UUID followerUserId);
 

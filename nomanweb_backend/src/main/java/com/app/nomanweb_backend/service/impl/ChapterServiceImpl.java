@@ -258,10 +258,11 @@ public class ChapterServiceImpl implements ChapterService {
         // Update library status for users if chapter was just published
         if (wasJustPublished) {
             updateLibraryStatusForNewChapter(chapter.getStory());
-            
+
             // Notify followers about new chapter publication
             try {
-                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(), chapter.getId());
+                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
+                        chapter.getId());
                 log.info("Notifications sent to followers for new chapter: {}", chapterId);
             } catch (Exception e) {
                 log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
@@ -443,7 +444,8 @@ public class ChapterServiceImpl implements ChapterService {
 
         // Notify followers about new chapter publication
         try {
-            notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(), chapter.getId());
+            notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
+                    chapter.getId());
             log.info("Notifications sent to followers for new chapter: {}", chapterId);
         } catch (Exception e) {
             log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
@@ -1250,10 +1252,12 @@ public class ChapterServiceImpl implements ChapterService {
         // Notify followers about each newly published chapter
         for (Chapter publishedChapter : draftChapters) {
             try {
-                notificationService.notifyNewChapter(publishedChapter.getStory().getAuthor().getId(), publishedChapter.getStory().getId(), publishedChapter.getId());
+                notificationService.notifyNewChapter(publishedChapter.getStory().getAuthor().getId(),
+                        publishedChapter.getStory().getId(), publishedChapter.getId());
                 log.info("Notifications sent to followers for bulk published chapter: {}", publishedChapter.getId());
             } catch (Exception e) {
-                log.warn("Failed to send notifications for bulk published chapter: {} - {}", publishedChapter.getId(), e.getMessage());
+                log.warn("Failed to send notifications for bulk published chapter: {} - {}", publishedChapter.getId(),
+                        e.getMessage());
                 // Don't fail the bulk publish if notification fails
             }
         }
