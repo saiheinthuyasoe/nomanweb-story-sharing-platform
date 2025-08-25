@@ -244,7 +244,7 @@ export default function StoryReaderView() {
   const chapterIds = storyChapters.map((chapter: any) => chapter.id);
   const { data: chapterAccess = {} } = useChapterAccessBatch(
     chapterIds,
-    story?.updatedAt || '',
+    story?.updatedAt || "",
     !!user && !isAuthor
   );
   const { mutate: purchaseChapter, isPending: isPurchasing } =
@@ -254,13 +254,11 @@ export default function StoryReaderView() {
   // Book access and purchase hooks
   const { data: hasBookAccess = false } = useBookAccess(
     storyId,
-    story?.updatedAt || '',
+    story?.updatedAt || "",
     !!user && !isAuthor
   );
   const { mutate: purchaseBook, isPending: isPurchasingBook } =
     usePurchaseBook();
-
-
 
   // Debug log for book access status
   console.log(
@@ -511,12 +509,12 @@ export default function StoryReaderView() {
       toast.error("Please log in to rate this story");
       return;
     }
-    
+
     if (!canRate && !hasRated) {
       toast.error("You cannot rate this story");
       return;
     }
-    
+
     setUserRating(rating);
     submitRating(rating);
   };
@@ -764,8 +762,6 @@ export default function StoryReaderView() {
                 </div>
               </div>
 
-
-
               {/* Rating */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1">
@@ -894,17 +890,25 @@ export default function StoryReaderView() {
                             ];
 
                           // Check if this option should be disabled to prevent conflicts
-                          const isReadingActive = bookmarkStatus?.listTypes?.reading;
-                          const isCompletedActive = bookmarkStatus?.listTypes?.completed;
-                          
-                          const isDisabled = 
-                            (option.type === "READING" && isCompletedActive && !isActive) ||
-                            (option.type === "COMPLETED" && isReadingActive && !isActive);
+                          const isReadingActive =
+                            bookmarkStatus?.listTypes?.reading;
+                          const isCompletedActive =
+                            bookmarkStatus?.listTypes?.completed;
+
+                          const isDisabled =
+                            (option.type === "READING" &&
+                              isCompletedActive &&
+                              !isActive) ||
+                            (option.type === "COMPLETED" &&
+                              isReadingActive &&
+                              !isActive);
 
                           return (
                             <button
                               key={option.type}
-                              onClick={() => !isDisabled && handleAddToLibrary(option.type)}
+                              onClick={() =>
+                                !isDisabled && handleAddToLibrary(option.type)
+                              }
                               disabled={isDisabled}
                               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                                 isDisabled
@@ -917,13 +921,17 @@ export default function StoryReaderView() {
                               {isActive ? (
                                 <SolidIcon className="h-5 w-5" />
                               ) : (
-                                <Icon className={`h-5 w-5 ${isDisabled ? "opacity-50" : ""}`} />
+                                <Icon
+                                  className={`h-5 w-5 ${
+                                    isDisabled ? "opacity-50" : ""
+                                  }`}
+                                />
                               )}
                               <span className="flex-1 text-left">
                                 {option.label}
                                 {isDisabled && (
                                   <span className="block text-xs text-gray-400 mt-1">
-                                    {option.type === "READING" 
+                                    {option.type === "READING"
                                       ? "Remove from Completed first"
                                       : "Remove from Reading first"}
                                   </span>
@@ -965,11 +973,13 @@ export default function StoryReaderView() {
                       ? "bg-red-100 text-red-700 border border-red-200"
                       : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   } ${
-                    isBookmarkLoading
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
+                    isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
-                  title={bookmarkStatus?.listTypes?.LIKE ? "Unlike story" : "Like story"}
+                  title={
+                    bookmarkStatus?.listTypes?.LIKE
+                      ? "Unlike story"
+                      : "Like story"
+                  }
                 >
                   <Heart
                     className={`h-5 w-5 transition-all duration-200 ${

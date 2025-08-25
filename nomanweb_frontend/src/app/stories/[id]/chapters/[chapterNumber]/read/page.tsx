@@ -30,7 +30,11 @@ import {
   useChapterReactionStatus,
   useToggleChapterLike,
 } from "@/hooks/useReactions";
-import { useAutoUpdateProgress, useUpdateReadingProgress, useChapterProgress } from "@/hooks/useReadingProgress";
+import {
+  useAutoUpdateProgress,
+  useUpdateReadingProgress,
+  useChapterProgress,
+} from "@/hooks/useReadingProgress";
 import { useChapterAccess } from "@/hooks/useChapterAccess";
 import { useBookAccess } from "@/hooks/useBookPurchase";
 import {
@@ -171,7 +175,10 @@ export default function ChapterReadPage() {
 
   const updateProgress = useAutoUpdateProgress(chapter?.id || "");
   const updateReadingProgress = useUpdateReadingProgress();
-  const { data: currentProgress } = useChapterProgress(chapter?.id || "", !!chapter?.id);
+  const { data: currentProgress } = useChapterProgress(
+    chapter?.id || "",
+    !!chapter?.id
+  );
 
   // Comment hooks
   const { data: commentsData, isLoading: isLoadingComments } =
@@ -190,7 +197,11 @@ export default function ChapterReadPage() {
     if (chapter && user && canAccessChapter() && !isAuthor) {
       // Only trigger initial progress update if there's no existing progress
       // This prevents overwriting completed chapters with 0% progress
-      if (!currentProgress || (!currentProgress.hasProgress && currentProgress.progressPercentage === 0)) {
+      if (
+        !currentProgress ||
+        (!currentProgress.hasProgress &&
+          currentProgress.progressPercentage === 0)
+      ) {
         updateReadingProgress.mutate({
           chapterId: chapter.id,
           progressPercentage: 0,
@@ -210,20 +221,19 @@ export default function ChapterReadPage() {
         const documentHeight = document.documentElement.scrollHeight;
         const windowHeight = window.innerHeight;
         const scrollableHeight = documentHeight - windowHeight;
-        
+
         // Calculate scroll percentage
-        let progressPercent = 
+        let progressPercent =
           scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
-        
+
         // Check if user has reached the bottom (with a small threshold)
-        const isAtBottom = 
-          scrollTop + windowHeight >= documentHeight - 20; // 20px threshold
-        
+        const isAtBottom = scrollTop + windowHeight >= documentHeight - 20; // 20px threshold
+
         // If user has reached the bottom, mark as 100% complete
         if (isAtBottom) {
           progressPercent = 100;
         }
-        
+
         const clampedPercent = Math.min(100, Math.max(0, progressPercent));
         updateProgress(clampedPercent);
       }
@@ -660,10 +670,10 @@ export default function ChapterReadPage() {
               fontSize: `${settings.fontSize}px`,
               lineHeight: settings.lineHeight,
               color: settings.textColor,
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-              hyphens: 'auto',
+              wordWrap: "break-word",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+              hyphens: "auto",
             }}
             dangerouslySetInnerHTML={{ __html: chapter.content }}
           />

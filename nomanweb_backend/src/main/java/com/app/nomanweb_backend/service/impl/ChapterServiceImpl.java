@@ -428,12 +428,17 @@ public class ChapterServiceImpl implements ChapterService {
             throw new IllegalArgumentException("Only the author can publish this chapter");
         }
 
+        Story story = chapter.getStory();
+
         // When a chapter is republished, delete any existing refund records for it
         long deletedRefundsCount = chapterRefundRepository.deleteByChapter(chapter);
         chapterRefundRepository.flush(); // Ensure deletion is committed immediately
         if (deletedRefundsCount > 0) {
             log.info("Deleted {} existing refund records for chapter {}", deletedRefundsCount, chapterId);
         }
+
+        // Note: For PAID_PER_CHAPTER pricing, users must repurchase chapters after refund and republish
+        // Refunded purchases remain refunded and do not automatically regain access
 
         chapter.setStatus(Chapter.Status.PUBLISHED);
         chapter.setPublishedAt(LocalDateTime.now());
@@ -712,17 +717,23 @@ public class ChapterServiceImpl implements ChapterService {
             java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
                     chapter);
             if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
-                // Additional check: purchase must be made after the story's current publish
-                // date
-                // This prevents access from old purchases when a story is republished after
-                // refunds
-                if (chapter.getStory().getPublishedAt() != null &&
-                        chapterPurchase.get().getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
-                    log.info("User {} has valid chapter purchase for chapter {} (purchased after current publish date)",
+                // For PAID_PER_CHAPTER pricing, active purchases always grant access
+                // since users repurchase individual chapters after refunds
+                if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                    log.info("User {} has valid chapter purchase for PAID_PER_CHAPTER chapter {} - access granted",
                             userId, chapterId);
                     return true;
                 }
-                log.info("User {} has chapter purchase for chapter {} but it was made before current publish date",
+                
+                // For WHOLE_BOOK pricing, check purchase date against story publish date
+                // This prevents access from old purchases when a story is republished after refunds
+                if (chapter.getStory().getPublishedAt() != null &&
+                        chapterPurchase.get().getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
+                    log.info("User {} has valid chapter purchase for WHOLE_BOOK chapter {} (purchased after current publish date)",
+                            userId, chapterId);
+                    return true;
+                }
+                log.info("User {} has chapter purchase for WHOLE_BOOK chapter {} but it was made before current publish date",
                         userId, chapterId);
             }
         }
@@ -1370,8 +1381,14 @@ public class ChapterServiceImpl implements ChapterService {
                     monetizationService.deductCoins(author, purchase.getCoinsSpent(),
                             "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
                                     " for: " + purchase.getChapter().getTitle());
-                    // We don't mark as refunded, so the user keeps access
+                    
+                    // Mark as refunded so users lose access to unpublished chapters
+                    // If republished, users must repurchase
+                    purchase.markAsRefunded();
+                    log.info("Marked chapter purchase {} as refunded: isRefunded={}, refundedAt={}", 
+                            purchase.getId(), purchase.getIsRefunded(), purchase.getRefundedAt());
                 }
+                chapterPurchaseRepository.saveAll(allActiveChapterPurchases);
             }
         }
 

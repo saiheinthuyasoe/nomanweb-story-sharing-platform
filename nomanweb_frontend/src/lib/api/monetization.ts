@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface Gift {
   id: string;
@@ -71,42 +71,57 @@ export interface PurchasedBook {
 
 export const monetizationApi = {
   // Chapter purchases
-  async purchaseChapter(request: PurchaseChapterRequest): Promise<PurchaseResponse> {
-    const response = await apiClient.post('/monetization/chapters/purchase', request);
+  async purchaseChapter(
+    request: PurchaseChapterRequest
+  ): Promise<PurchaseResponse> {
+    const response = await apiClient.post(
+      "/monetization/chapters/purchase",
+      request
+    );
     return response.data;
   },
 
   async canAccessChapter(chapterId: string): Promise<boolean> {
-    const response = await apiClient.get(`/monetization/chapters/access/${chapterId}`);
+    const response = await apiClient.get(
+      `/monetization/chapters/access/${chapterId}`
+    );
     return response.data;
   },
 
   // Book purchases
   async purchaseBook(request: PurchaseBookRequest): Promise<PurchaseResponse> {
-    const response = await apiClient.post('/monetization/books/purchase', request);
+    const response = await apiClient.post(
+      "/monetization/books/purchase",
+      request
+    );
     return response.data;
   },
 
   async canAccessBook(storyId: string): Promise<boolean> {
-    const response = await apiClient.get(`/monetization/books/access/${storyId}`);
+    const response = await apiClient.get(
+      `/monetization/books/access/${storyId}`
+    );
     return response.data;
   },
 
   // Purchase history
-  async getPurchaseHistory(page: number = 0, size: number = 20): Promise<{
+  async getPurchaseHistory(
+    page: number = 0,
+    size: number = 20
+  ): Promise<{
     content: PurchaseResponse[];
     totalPages: number;
     totalElements: number;
   }> {
-    const response = await apiClient.get('/monetization/purchases/history', {
-      params: { page, size }
+    const response = await apiClient.get("/monetization/purchases/history", {
+      params: { page, size },
     });
     return response.data;
   },
 
   // Coin balance
   async getCoinBalance(): Promise<number> {
-    const response = await apiClient.get('/monetization/balance');
+    const response = await apiClient.get("/monetization/balance");
     return response.data;
   },
 
@@ -120,12 +135,12 @@ export const monetizationApi = {
     message?: string;
     customAmount?: number;
   }): Promise<any> {
-    const response = await apiClient.post('/monetization/gifts/send', request);
+    const response = await apiClient.post("/monetization/gifts/send", request);
     return response.data;
   },
 
   async getGifts(): Promise<Gift[]> {
-    const response = await apiClient.get('/monetization/gifts');
+    const response = await apiClient.get("/monetization/gifts");
     return response.data;
-  }
+  },
 };

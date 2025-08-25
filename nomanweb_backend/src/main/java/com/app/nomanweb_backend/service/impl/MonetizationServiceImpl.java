@@ -185,9 +185,9 @@ public class MonetizationServiceImpl implements MonetizationService {
         }
 
         // Check if user has purchased the chapter directly (active, not refunded)
-        java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
+        java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findActiveByUserAndChapter(user,
                 chapter);
-        if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
+        if (chapterPurchase.isPresent()) {
             return true; // An active chapter purchase grants access.
         }
 
@@ -266,10 +266,21 @@ public class MonetizationServiceImpl implements MonetizationService {
         }
 
         // Check if user has purchased this chapter (active, not refunded)
-        java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findByUserAndChapter(user,
+        java.util.Optional<ChapterPurchase> chapterPurchase = chapterPurchaseRepository.findActiveByUserAndChapter(user,
                 chapter);
-        if (chapterPurchase.isPresent() && chapterPurchase.get().isActive()) {
-            return true;
+        if (chapterPurchase.isPresent()) {
+            // For PAID_PER_CHAPTER pricing, active purchases always grant access
+            // since users repurchase individual chapters after refunds
+            if (chapter.getStory().getPricingType() == Story.PricingType.PAID_PER_CHAPTER) {
+                return true;
+            }
+
+            // For WHOLE_BOOK pricing, check purchase date against story publish date
+            // to prevent access from old purchases after republishing
+            if (chapter.getStory().getPublishedAt() != null &&
+                    chapterPurchase.get().getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
+                return true;
+            }
         }
 
         // Also check if user purchased the whole book (active, not refunded)
@@ -339,11 +350,18 @@ public class MonetizationServiceImpl implements MonetizationService {
         // Check if already purchased and not refunded (either directly or through whole
         // book)
         java.util.Optional<ChapterPurchase> existingChapterPurchase = chapterPurchaseRepository
-                .findByUserAndChapter(user, chapter);
-        if (existingChapterPurchase.isPresent() && existingChapterPurchase.get().isActive()) {
+                .findActiveByUserAndChapter(user, chapter);
+        if (existingChapterPurchase.isPresent()) {
             throw new RuntimeException("Chapter already purchased");
         }
-        // If refunded, allow repurchase
+        // For PAID_PER_CHAPTER pricing: If refunded, allow repurchase
+        // For WHOLE_BOOK pricing: Refunded purchases should not allow individual chapter repurchase
+        if (existingChapterPurchase.isPresent() && existingChapterPurchase.get().getIsRefunded()) {
+            if (chapter.getStory().getPricingType() != Story.PricingType.PAID_PER_CHAPTER) {
+                throw new RuntimeException("Cannot repurchase individual chapters for WHOLE_BOOK pricing");
+            }
+            // For PAID_PER_CHAPTER: Allow repurchase of refunded chapters
+        }
 
         // Check if user has purchased the whole book
         List<BookPurchase> existingBookPurchases = bookPurchaseRepository.findByUserAndStoryOrderByPurchasedAtDesc(user,
@@ -983,15 +1001,16 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Transactional(readOnly = true)
     public Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable) {
         Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByUserOrderByRefundedAtDesc(user, pageable);
-        
+
         return chapterRefunds.map(this::convertToRefundTransactionResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable) {
-        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user, pageable);
-        
+        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user,
+                pageable);
+
         return chapterRefunds.map(this::convertToRefundTransactionResponse);
     }
 

@@ -23,24 +23,38 @@ export const usePurchaseBook = () => {
   });
 };
 
-export const useBookAccess = (storyId: string, storyUpdatedAt: string, enabled: boolean = true) => {
+export const useBookAccess = (
+  storyId: string,
+  storyUpdatedAt: string,
+  enabled: boolean = true
+) => {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: ["bookAccess", storyId, user?.id, storyUpdatedAt], // Include story updatedAt to force refetch on story change
     queryFn: async () => {
       if (!user) {
-        console.log('🔍 No user authenticated, returning false for book access');
+        console.log(
+          "🔍 No user authenticated, returning false for book access"
+        );
         return false;
       }
       try {
-        console.log('🔍 Fetching book access for story:', storyId, 'user:', user.id);
+        console.log(
+          "🔍 Fetching book access for story:",
+          storyId,
+          "user:",
+          user.id
+        );
         const result = await monetizationApi.canAccessBook(storyId);
-        console.log('🔍 Book access result:', result);
+        console.log("🔍 Book access result:", result);
         return result;
       } catch (error: any) {
         // If API call fails (e.g., authentication error), return false
-        console.log('❌ Book access API call failed:', error.response?.data?.message || error.message);
+        console.log(
+          "❌ Book access API call failed:",
+          error.response?.data?.message || error.message
+        );
         return false;
       }
     },
@@ -51,6 +65,6 @@ export const useBookAccess = (storyId: string, storyUpdatedAt: string, enabled: 
     refetchOnWindowFocus: true, // Refetch when window gains focus
     refetchOnReconnect: true, // Refetch when network reconnects
     retry: false, // Don't retry failed requests to avoid showing stale data
-    networkMode: 'always', // Always make network requests
+    networkMode: "always", // Always make network requests
   });
 };

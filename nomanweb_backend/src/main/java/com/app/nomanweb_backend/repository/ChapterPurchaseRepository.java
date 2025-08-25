@@ -25,6 +25,10 @@ public interface ChapterPurchaseRepository extends JpaRepository<ChapterPurchase
 
     Optional<ChapterPurchase> findByUserAndChapter(User user, Chapter chapter);
 
+    // Find the most recent active (non-refunded) purchase for a user and chapter
+    @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.user = :user AND cp.chapter = :chapter AND cp.isRefunded = false ORDER BY cp.purchasedAt DESC")
+    Optional<ChapterPurchase> findActiveByUserAndChapter(@Param("user") User user, @Param("chapter") Chapter chapter);
+
     // Find all purchases by a user
     Page<ChapterPurchase> findByUserOrderByPurchasedAtDesc(User user, Pageable pageable);
 
@@ -33,6 +37,9 @@ public interface ChapterPurchaseRepository extends JpaRepository<ChapterPurchase
 
     // Find all purchases for a chapter
     List<ChapterPurchase> findByChapterOrderByPurchasedAtDesc(Chapter chapter);
+
+    // Find all refunded purchases for a chapter
+    List<ChapterPurchase> findByChapterAndIsRefundedTrueOrderByPurchasedAtDesc(Chapter chapter);
 
     // Calculate total earnings for a story author
     @Query("SELECT COALESCE(SUM(cp.coinsSpent * 0.7), 0) FROM ChapterPurchase cp WHERE cp.story.author.id = :authorId")

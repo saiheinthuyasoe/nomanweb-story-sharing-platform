@@ -242,8 +242,8 @@ export default function ChapterManagement({
     chapterId: string,
     chapterTitle: string
   ) => {
-    // For WHOLE_BOOK pricing, calculate refunds
-    if (story?.pricingType === "WHOLE_BOOK") {
+    // For both WHOLE_BOOK and PAID_PER_CHAPTER pricing, calculate refunds
+    if (story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") {
       const refundInfo = await calculateRefund(chapterId, chapterTitle);
       setRefundData(refundInfo);
     } else {
@@ -800,7 +800,7 @@ export default function ChapterManagement({
           </DialogHeader>
 
           <div className="space-y-4">
-            {story?.pricingType === "WHOLE_BOOK" && (
+            {(story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
@@ -809,8 +809,10 @@ export default function ChapterManagement({
                       Refund Warning
                     </h4>
                     <p className="text-sm text-yellow-700">
-                      If this chapter was paid, unpublishing it may refund the
-                      users. This action cannot be undone.
+                      {story?.pricingType === "WHOLE_BOOK" 
+                        ? "If this chapter was paid, unpublishing it may refund the users. This action cannot be undone."
+                        : "Unpublishing this chapter will refund all users who purchased it. This action cannot be undone."
+                      }
                     </p>
                     {refundData && refundData.hasPurchases && (
                       <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
@@ -868,7 +870,7 @@ export default function ChapterManagement({
             >
               Cancel
             </Button>
-            {story?.pricingType === "WHOLE_BOOK" ? (
+            {(story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") && refundData?.hasPurchases ? (
               <>
                 <Button
                   onClick={() => handleUnpublish(unpublishConfirm, true)}

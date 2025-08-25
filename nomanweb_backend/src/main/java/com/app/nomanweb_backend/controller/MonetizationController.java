@@ -112,10 +112,15 @@ public class MonetizationController {
             @PathVariable String chapterId,
             HttpServletRequest httpRequest) {
 
-        User currentUser = getCurrentUser(httpRequest);
-        boolean canAccess = monetizationService.canAccessChapter(currentUser, java.util.UUID.fromString(chapterId));
-
-        return ResponseEntity.ok(canAccess);
+        try {
+            User currentUser = getCurrentUser(httpRequest);
+            UUID chapterUuid = UUID.fromString(chapterId);
+            boolean canAccess = monetizationService.canAccessChapter(currentUser, chapterUuid);
+            return ResponseEntity.ok(canAccess);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid chapter ID format: {}", chapterId, e);
+            return ResponseEntity.badRequest().body(false);
+        }
     }
 
     @PostMapping("/books/purchase")

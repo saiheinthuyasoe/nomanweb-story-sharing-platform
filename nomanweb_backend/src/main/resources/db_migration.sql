@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS chapter_purchases (
     story_id UUID NOT NULL,
     coins_spent DECIMAL(8,2) NOT NULL,
     purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_refunded BOOLEAN DEFAULT FALSE,
+    refunded_at TIMESTAMP,
     
     CONSTRAINT fk_chapter_purchases_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_chapter_purchases_chapter FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
