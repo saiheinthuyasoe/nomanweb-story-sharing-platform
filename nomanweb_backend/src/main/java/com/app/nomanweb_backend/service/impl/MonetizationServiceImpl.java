@@ -1000,18 +1000,93 @@ public class MonetizationServiceImpl implements MonetizationService {
     @Override
     @Transactional(readOnly = true)
     public Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable) {
+        // Get refunds from chapter_refunds table (WHOLE_BOOK pricing refunds)
         Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByUserOrderByRefundedAtDesc(user, pageable);
-
-        return chapterRefunds.map(this::convertToRefundTransactionResponse);
+        
+        // Get refunded purchases from chapter_purchases table (PAID_PER_CHAPTER pricing refunds)
+        Page<ChapterPurchase> refundedChapterPurchases = chapterPurchaseRepository
+                .findByUserAndIsRefundedTrueOrderByRefundedAtDesc(user, pageable);
+        
+        // Get refunded purchases from book_purchases table
+        Page<BookPurchase> refundedBookPurchases = bookPurchaseRepository
+                .findByUserAndIsRefundedTrueOrderByRefundedAtDesc(user, pageable);
+        
+        // Combine all refunds into a single list
+        List<RefundTransactionResponse> allRefunds = new ArrayList<>();
+        
+        // Add chapter refunds (from chapter_refunds table)
+        chapterRefunds.getContent().forEach(refund -> 
+            allRefunds.add(convertToRefundTransactionResponse(refund)));
+        
+        // Add refunded chapter purchases
+        refundedChapterPurchases.getContent().forEach(purchase -> 
+            allRefunds.add(convertChapterPurchaseToRefundResponse(purchase)));
+        
+        // Add refunded book purchases
+        refundedBookPurchases.getContent().forEach(purchase -> 
+            allRefunds.add(convertBookPurchaseToRefundResponse(purchase)));
+        
+        // Sort by refunded date (most recent first)
+        allRefunds.sort((a, b) -> b.getProcessedAt().compareTo(a.getProcessedAt()));
+        
+        // Calculate total elements across all sources
+        long totalElements = chapterRefunds.getTotalElements() + 
+                           refundedChapterPurchases.getTotalElements() + 
+                           refundedBookPurchases.getTotalElements();
+        
+        // Create paginated result
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allRefunds.size());
+        List<RefundTransactionResponse> pageContent = start < allRefunds.size() ? 
+            allRefunds.subList(start, end) : new ArrayList<>();
+        
+        return new PageImpl<>(pageContent, pageable, totalElements);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable) {
-        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user,
-                pageable);
-
-        return chapterRefunds.map(this::convertToRefundTransactionResponse);
+        // Get refunds from chapter_refunds table (WHOLE_BOOK pricing refunds paid by author)
+        Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user, pageable);
+        
+        // Get refunded purchases from chapter_purchases table for stories authored by user
+        Page<ChapterPurchase> refundedChapterPurchases = chapterPurchaseRepository
+                .findByChapter_Story_AuthorAndIsRefundedTrueOrderByRefundedAtDesc(user, pageable);
+        
+        // Get refunded purchases from book_purchases table for stories authored by user
+        Page<BookPurchase> refundedBookPurchases = bookPurchaseRepository
+                .findByStory_AuthorAndIsRefundedTrueOrderByRefundedAtDesc(user, pageable);
+        
+        // Combine all refunds into a single list
+        List<RefundTransactionResponse> allRefunds = new ArrayList<>();
+        
+        // Add chapter refunds (from chapter_refunds table)
+        chapterRefunds.getContent().forEach(refund -> 
+            allRefunds.add(convertToRefundTransactionResponse(refund)));
+        
+        // Add refunded chapter purchases
+        refundedChapterPurchases.getContent().forEach(purchase -> 
+            allRefunds.add(convertChapterPurchaseToRefundResponse(purchase)));
+        
+        // Add refunded book purchases
+        refundedBookPurchases.getContent().forEach(purchase -> 
+            allRefunds.add(convertBookPurchaseToRefundResponse(purchase)));
+        
+        // Sort by refunded date (most recent first)
+        allRefunds.sort((a, b) -> b.getProcessedAt().compareTo(a.getProcessedAt()));
+        
+        // Calculate total elements across all sources
+        long totalElements = chapterRefunds.getTotalElements() + 
+                           refundedChapterPurchases.getTotalElements() + 
+                           refundedBookPurchases.getTotalElements();
+        
+        // Create paginated result
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allRefunds.size());
+        List<RefundTransactionResponse> pageContent = start < allRefunds.size() ? 
+            allRefunds.subList(start, end) : new ArrayList<>();
+        
+        return new PageImpl<>(pageContent, pageable, totalElements);
     }
 
     private RefundTransactionResponse convertToRefundTransactionResponse(ChapterRefund chapterRefund) {
@@ -1032,6 +1107,48 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .status("completed")
                 .processedAt(chapterRefund.getRefundedAt())
                 .createdAt(chapterRefund.getRefundedAt())
+                .build();
+    }
+
+    private RefundTransactionResponse convertChapterPurchaseToRefundResponse(ChapterPurchase chapterPurchase) {
+        return RefundTransactionResponse.builder()
+                .id(chapterPurchase.getId())
+                .userId(chapterPurchase.getUser().getId())
+                .authorId(chapterPurchase.getStory().getAuthor().getId())
+                .storyId(chapterPurchase.getStory().getId())
+                .storyTitle(chapterPurchase.getStory().getTitle())
+                .chapterId(chapterPurchase.getChapter().getId())
+                .chapterTitle(chapterPurchase.getChapter().getTitle())
+                .chapterNumber(chapterPurchase.getChapter().getChapterNumber())
+                .refundType("chapter")
+                .originalPurchaseType("chapter")
+                .refundAmount(chapterPurchase.getCoinsSpent())
+                .originalAmount(chapterPurchase.getCoinsSpent())
+                .refundReason("Chapter unpublished")
+                .status("completed")
+                .processedAt(chapterPurchase.getRefundedAt())
+                .createdAt(chapterPurchase.getPurchasedAt())
+                .build();
+    }
+
+    private RefundTransactionResponse convertBookPurchaseToRefundResponse(BookPurchase bookPurchase) {
+        return RefundTransactionResponse.builder()
+                .id(bookPurchase.getId())
+                .userId(bookPurchase.getUser().getId())
+                .authorId(bookPurchase.getStory().getAuthor().getId())
+                .storyId(bookPurchase.getStory().getId())
+                .storyTitle(bookPurchase.getStory().getTitle())
+                .chapterId(null) // Book purchases don't have specific chapters
+                .chapterTitle(null)
+                .chapterNumber(null)
+                .refundType("book")
+                .originalPurchaseType("book")
+                .refundAmount(bookPurchase.getCoinsSpent())
+                .originalAmount(bookPurchase.getCoinsSpent())
+                .refundReason("Book unpublished")
+                .status("completed")
+                .processedAt(bookPurchase.getRefundedAt())
+                .createdAt(bookPurchase.getPurchasedAt())
                 .build();
     }
 }

@@ -18,7 +18,7 @@ import {
   Users,
   RotateCcw,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { apiClient } from "@/lib/api/client";
 
 interface RevenueAnalytics {
@@ -101,35 +101,40 @@ interface PurchaseHistory {
 
 interface RefundEarned {
   id: string;
-  refundType: "chapter" | "book";
+  userId: string;
+  authorId: string;
   storyId: string;
   storyTitle: string;
-  storyAuthor: string;
   chapterId?: string;
   chapterTitle?: string;
   chapterNumber?: number;
+  refundType: string;
+  originalPurchaseType: string;
   refundAmount: number;
   originalAmount: number;
-  reason: string;
+  refundReason: string;
+  status: string;
+  processedAt: string;
   createdAt: string;
-  status: "completed" | "pending" | "processing";
 }
 
 interface RefundPaid {
   id: string;
-  refundType: "chapter" | "book";
+  userId: string;
+  authorId: string;
   storyId: string;
   storyTitle: string;
-  readerName: string;
-  readerUsername: string;
   chapterId?: string;
   chapterTitle?: string;
   chapterNumber?: number;
+  refundType: string;
+  originalPurchaseType: string;
   refundAmount: number;
   originalAmount: number;
-  reason: string;
+  refundReason: string;
+  status: string;
+  processedAt: string;
   createdAt: string;
-  status: "completed" | "pending" | "processing";
 }
 
 export default function MonetizationPage() {
@@ -152,6 +157,8 @@ export default function MonetizationPage() {
   useEffect(() => {
     if (user) {
       fetchMonetizationData();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -268,9 +275,11 @@ export default function MonetizationPage() {
 
       // Fetch refunds earned (refunds received by user as reader)
       try {
+        console.log("Fetching refunds earned...");
         const refundsEarnedResponse = await apiClient.get(
           "/monetization/refunds/earned?page=0&size=20"
         );
+        console.log("Refunds earned response:", refundsEarnedResponse.data);
         setRefundsEarned(refundsEarnedResponse.data.content || []);
       } catch (error) {
         console.error("Failed to fetch refunds earned:", error);
@@ -278,9 +287,11 @@ export default function MonetizationPage() {
 
       // Fetch refunds paid (refunds given by user as writer)
       try {
+        console.log("Fetching refunds paid...");
         const refundsPaidResponse = await apiClient.get(
           "/monetization/refunds/paid?page=0&size=20"
         );
+        console.log("Refunds paid response:", refundsPaidResponse.data);
         setRefundsPaid(refundsPaidResponse.data.content || []);
       } catch (error) {
         console.error("Failed to fetch refunds paid:", error);
@@ -364,6 +375,26 @@ export default function MonetizationPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle className="text-center">Authentication Required</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-gray-600 mb-4">
+              Please log in to view your monetization dashboard and refund data.
+            </p>
+            <Button onClick={() => window.location.href = '/login'} className="w-full">
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -1387,11 +1418,11 @@ export default function MonetizationPage() {
                           </h4>
                           <p className="text-sm text-gray-600">
                             {refund.refundType === "book"
-                              ? `Complete Book by ${refund.storyAuthor}`
-                              : `${refund.storyTitle} by ${refund.storyAuthor}`}
+                              ? `Complete Book: ${refund.storyTitle}`
+                              : `${refund.storyTitle}`}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
-                            Reason: {refund.reason}
+                            Reason: {refund.refundReason}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge
@@ -1589,10 +1620,10 @@ export default function MonetizationPage() {
                               : `${refund.storyTitle}`}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Reader: {refund.readerName} (@{refund.readerUsername})
+                            User ID: {refund.userId}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
-                            Reason: {refund.reason}
+                            Reason: {refund.refundReason}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge

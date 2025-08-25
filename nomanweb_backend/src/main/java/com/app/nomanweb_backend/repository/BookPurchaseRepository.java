@@ -64,4 +64,12 @@ public interface BookPurchaseRepository extends JpaRepository<BookPurchase, UUID
     // Find all book purchases for stories authored by a specific user
     @Query("SELECT bp FROM BookPurchase bp WHERE bp.story.author = :author ORDER BY bp.purchasedAt DESC")
     List<BookPurchase> findByStory_AuthorOrderByCreatedAtDesc(@Param("author") User author);
+
+    // Find all refunded book purchases by user (paginated)
+    @Query("SELECT bp FROM BookPurchase bp WHERE bp.user = :user AND bp.isRefunded = true ORDER BY bp.refundedAt DESC")
+    Page<BookPurchase> findByUserAndIsRefundedTrueOrderByRefundedAtDesc(@Param("user") User user, Pageable pageable);
+
+    // Find all refunded book purchases for stories authored by a specific user (paginated)
+    @Query("SELECT bp FROM BookPurchase bp WHERE bp.story.author = :author AND bp.isRefunded = true ORDER BY bp.refundedAt DESC")
+    Page<BookPurchase> findByStory_AuthorAndIsRefundedTrueOrderByRefundedAtDesc(@Param("author") User author, Pageable pageable);
 }
