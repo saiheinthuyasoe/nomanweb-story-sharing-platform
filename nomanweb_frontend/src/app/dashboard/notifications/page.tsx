@@ -44,7 +44,9 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState("all");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [page, setPage] = useState(0);
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>(
+    []
+  );
   const [selectAll, setSelectAll] = useState(false);
   const pageSize = 20;
 
@@ -136,7 +138,9 @@ export default function NotificationsPage() {
   // Handle individual delete
   const handleDeleteNotification = (notificationId: string) => {
     deleteNotificationMutation.mutate(notificationId);
-    setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
+    setSelectedNotifications((prev) =>
+      prev.filter((id) => id !== notificationId)
+    );
   };
 
   // Handle bulk delete
@@ -154,7 +158,7 @@ export default function NotificationsPage() {
       setSelectedNotifications([]);
       setSelectAll(false);
     } else {
-      const allIds = filteredNotifications.map(item => item.id);
+      const allIds = filteredNotifications.map((item) => item.id);
       setSelectedNotifications(allIds);
       setSelectAll(true);
     }
@@ -162,9 +166,9 @@ export default function NotificationsPage() {
 
   // Handle individual selection
   const handleSelectNotification = (notificationId: string) => {
-    setSelectedNotifications(prev => {
+    setSelectedNotifications((prev) => {
       if (prev.includes(notificationId)) {
-        const newSelection = prev.filter(id => id !== notificationId);
+        const newSelection = prev.filter((id) => id !== notificationId);
         if (newSelection.length === 0) {
           setSelectAll(false);
         }
@@ -386,7 +390,10 @@ export default function NotificationsPage() {
                     isSelected={selectedNotifications.includes(item.id)}
                     onSelect={handleSelectNotification}
                     onDelete={handleDeleteNotification}
-                    isDeleting={deleteNotificationMutation.isPending && deleteNotificationMutation.variables === item.id}
+                    isDeleting={
+                      deleteNotificationMutation.isPending &&
+                      deleteNotificationMutation.variables === item.id
+                    }
                   />
                 ))
               ) : (
@@ -641,7 +648,7 @@ function AlertCard({
             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
         </div>
-        
+
         {/* Icon */}
         <div className={`p-3 rounded-lg ${getColorClasses(alert.color)}`}>
           <alert.icon className="h-5 w-5" />

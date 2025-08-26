@@ -56,4 +56,7 @@ public interface CoinTransactionRepository extends JpaRepository<CoinTransaction
         // Get user's coin balance history
         @Query("SELECT ct FROM CoinTransaction ct WHERE ct.user = :user ORDER BY ct.createdAt ASC")
         List<CoinTransaction> findUserTransactionHistory(@Param("user") User user);
+
+        // Check if payment reference already exists with completed status (for duplicate prevention)
+        boolean existsByPaymentReferenceAndStatus(String paymentReference, CoinTransaction.Status status);
 }

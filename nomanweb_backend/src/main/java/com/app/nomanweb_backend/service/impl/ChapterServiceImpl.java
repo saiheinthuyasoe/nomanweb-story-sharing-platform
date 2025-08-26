@@ -437,7 +437,8 @@ public class ChapterServiceImpl implements ChapterService {
             log.info("Deleted {} existing refund records for chapter {}", deletedRefundsCount, chapterId);
         }
 
-        // Note: For PAID_PER_CHAPTER pricing, users must repurchase chapters after refund and republish
+        // Note: For PAID_PER_CHAPTER pricing, users must repurchase chapters after
+        // refund and republish
         // Refunded purchases remain refunded and do not automatically regain access
 
         chapter.setStatus(Chapter.Status.PUBLISHED);
@@ -724,16 +725,19 @@ public class ChapterServiceImpl implements ChapterService {
                             userId, chapterId);
                     return true;
                 }
-                
+
                 // For WHOLE_BOOK pricing, check purchase date against story publish date
-                // This prevents access from old purchases when a story is republished after refunds
+                // This prevents access from old purchases when a story is republished after
+                // refunds
                 if (chapter.getStory().getPublishedAt() != null &&
                         chapterPurchase.get().getPurchasedAt().isAfter(chapter.getStory().getPublishedAt())) {
-                    log.info("User {} has valid chapter purchase for WHOLE_BOOK chapter {} (purchased after current publish date)",
+                    log.info(
+                            "User {} has valid chapter purchase for WHOLE_BOOK chapter {} (purchased after current publish date)",
                             userId, chapterId);
                     return true;
                 }
-                log.info("User {} has chapter purchase for WHOLE_BOOK chapter {} but it was made before current publish date",
+                log.info(
+                        "User {} has chapter purchase for WHOLE_BOOK chapter {} but it was made before current publish date",
                         userId, chapterId);
             }
         }
@@ -1381,11 +1385,11 @@ public class ChapterServiceImpl implements ChapterService {
                     monetizationService.deductCoins(author, purchase.getCoinsSpent(),
                             "Chapter refund to " + purchase.getUser().getDisplayNameOrUsername() +
                                     " for: " + purchase.getChapter().getTitle());
-                    
+
                     // Mark as refunded so users lose access to unpublished chapters
                     // If republished, users must repurchase
                     purchase.markAsRefunded();
-                    log.info("Marked chapter purchase {} as refunded: isRefunded={}, refundedAt={}", 
+                    log.info("Marked chapter purchase {} as refunded: isRefunded={}, refundedAt={}",
                             purchase.getId(), purchase.getIsRefunded(), purchase.getRefundedAt());
                 }
                 chapterPurchaseRepository.saveAll(allActiveChapterPurchases);

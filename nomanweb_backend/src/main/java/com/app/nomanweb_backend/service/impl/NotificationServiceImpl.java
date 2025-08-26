@@ -104,15 +104,15 @@ public class NotificationServiceImpl implements NotificationService {
                 .stream()
                 .filter(notification -> notification.getUser().getId().equals(userId))
                 .toList();
-        
+
         if (userNotifications.size() != notificationIds.size()) {
             log.warn("Some notifications do not belong to user {} or do not exist", userId);
         }
-        
+
         List<UUID> validNotificationIds = userNotifications.stream()
                 .map(Notification::getId)
                 .toList();
-        
+
         notificationRepository.deleteAllById(validNotificationIds);
         log.info("Bulk deleted {} notifications for user {}", validNotificationIds.size(), userId);
     }

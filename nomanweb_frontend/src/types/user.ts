@@ -6,8 +6,8 @@ export interface User {
   profileImageUrl?: string;
   coverImageUrl?: string;
   bio?: string;
-  role: 'user' | 'admin';
-  status: 'active' | 'suspended' | 'banned';
+  role: "user" | "admin";
+  status: "active" | "suspended" | "banned";
   coinBalance: number;
   totalEarnedCoins: number;
   lineUserId?: string;
@@ -30,10 +30,17 @@ export interface AuthResponse {
 export interface Notification {
   id: string;
   user: User;
-  type: 'NEW_CHAPTER' | 'NEW_STORY' | 'GIFT_RECEIVED' | 'COMMENT' | 'LIKE' | 'FOLLOW' | 'SYSTEM';
+  type:
+    | "NEW_CHAPTER"
+    | "NEW_STORY"
+    | "GIFT_RECEIVED"
+    | "COMMENT"
+    | "LIKE"
+    | "FOLLOW"
+    | "SYSTEM";
   title: string;
   message: string;
-  relatedType?: 'STORY' | 'CHAPTER' | 'USER' | 'GIFT' | 'COMMENT';
+  relatedType?: "STORY" | "CHAPTER" | "USER" | "GIFT" | "COMMENT";
   relatedId?: string;
   isRead: boolean;
   sentViaLine: boolean;
@@ -66,4 +73,4 @@ export interface FollowStats {
   followersCount: number;
   followingCount: number;
   isFollowing: boolean;
-} 
+}

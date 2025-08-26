@@ -56,9 +56,26 @@ public class CoinTransaction {
     @Builder.Default
     private Status status = Status.COMPLETED;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "payment_reference")
+    private String paymentReference;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "processed_by")
+    private User processedBy;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
 
     // Enums
     public enum TransactionType {
@@ -71,6 +88,10 @@ public class CoinTransaction {
 
     public enum Status {
         PENDING, COMPLETED, FAILED, CANCELLED
+    }
+
+    public enum PaymentMethod {
+        LINE_PAY, PROMPTPAY, ADMIN_TRANSFER, STRIPE
     }
 
     // Helper methods

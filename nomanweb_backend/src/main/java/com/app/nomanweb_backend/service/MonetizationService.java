@@ -36,6 +36,8 @@ public interface MonetizationService {
     // Coin Management
     void addCoins(User user, BigDecimal amount, String description);
 
+    void addCoins(User user, BigDecimal amount, String description, String paymentReference);
+
     void deductCoins(User user, BigDecimal amount, String description);
 
     BigDecimal getUserCoinBalance(UUID userId);

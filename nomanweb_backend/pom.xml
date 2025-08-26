@@ -68,7 +68,6 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- Search Engine - Typesense -->
@@ -202,6 +201,13 @@
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>bucket4j-redis</artifactId>
             <version>7.6.0</version>
+        </dependency>
+
+        <!-- Stripe Payment Processing -->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>24.16.0</version>
         </dependency>
 
         <!-- Environment Variables Support -->
