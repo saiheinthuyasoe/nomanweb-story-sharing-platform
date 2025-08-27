@@ -100,6 +100,39 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    // Notification Preferences
+    @Column(name = "email_notifications_enabled")
+    @Builder.Default
+    private Boolean emailNotificationsEnabled = true;
+
+    @Column(name = "line_notifications_enabled")
+    @Builder.Default
+    private Boolean lineNotificationsEnabled = true;
+
+    @Column(name = "notify_new_followers")
+    @Builder.Default
+    private Boolean notifyNewFollowers = true;
+
+    @Column(name = "notify_new_stories")
+    @Builder.Default
+    private Boolean notifyNewStories = true;
+
+    @Column(name = "notify_new_chapters")
+    @Builder.Default
+    private Boolean notifyNewChapters = true;
+
+    @Column(name = "notify_likes")
+    @Builder.Default
+    private Boolean notifyLikes = true;
+
+    @Column(name = "notify_comments")
+    @Builder.Default
+    private Boolean notifyComments = true;
+
+    @Column(name = "notify_system_messages")
+    @Builder.Default
+    private Boolean notifySystemMessages = true;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -18,4 +18,12 @@ public interface EmailService {
 
     void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
             String role, String invitationUrl, String customMessage);
+
+    void sendSocialNotificationEmail(String email, String username, String title, String message);
+
+    void sendContentNotificationEmail(String email, String username, String title, String message);
+
+    void sendSystemNotificationEmail(String email, String username, String title, String message);
+
+    void sendGeneralNotificationEmail(String email, String username, String title, String message);
 }

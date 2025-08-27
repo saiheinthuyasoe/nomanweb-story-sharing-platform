@@ -137,7 +137,7 @@ public class UserServiceImpl implements UserService {
 
         userFollowRepository.save(userFollow);
         log.info("User {} started following user {}", followerId, followingId);
-        
+
         // Send notification to the followed user
         notificationService.notifyNewFollower(followingId, followerId);
     }
@@ -257,5 +257,31 @@ public class UserServiceImpl implements UserService {
             log.warn("Could not get total likes for user {}: {}", userId, e.getMessage());
             return 0;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+    }
+
+    @Override
+    @Transactional
+    public User updateUser(User user) {
+        if (user.getId() == null) {
+            throw new IllegalArgumentException("User ID cannot be null for update operation");
+        }
+
+        // Verify user exists
+        if (!userRepository.existsById(user.getId())) {
+            throw new IllegalArgumentException("User not found with ID: " + user.getId());
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        User savedUser = userRepository.save(user);
+
+        log.info("User updated successfully: {}", user.getId());
+        return savedUser;
     }
 }

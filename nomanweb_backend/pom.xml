@@ -68,6 +68,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Search Engine - Typesense -->
@@ -208,6 +209,15 @@
             <groupId>com.stripe</groupId>
             <artifactId>stripe-java</artifactId>
             <version>24.16.0</version>
+        </dependency>
+
+        <!-- LINE Bot SDK for messaging -->
+        <!-- https://mvnrepository.com/artifact/com.linecorp.bot/line-bot-api-client -->
+        <dependency>
+            <groupId>com.linecorp.bot</groupId>
+            <artifactId>line-bot-api-client</artifactId>
+            <version>6.0.0</version>
+            <scope>compile</scope>
         </dependency>
 
         <!-- Environment Variables Support -->

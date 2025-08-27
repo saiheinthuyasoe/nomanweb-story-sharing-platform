@@ -248,4 +248,117 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Failed to send collaboration invitation email", e);
         }
     }
+
+    @Override
+    public void sendSocialNotificationEmail(String email, String username, String title, String message) {
+        try {
+            log.info("Sending social notification email to: {}", email);
+
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
+            mailMessage.setTo(email);
+            mailMessage.setFrom(fromEmail);
+            mailMessage.setSubject("NoManWeb - " + title);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "%s\n\n" +
+                            "Visit NoManWeb: %s\n\n" +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    username, message, frontendUrl);
+
+            mailMessage.setText(emailBody);
+            mailSender.send(mailMessage);
+
+            log.info("Social notification email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send social notification email to: {}", email, e);
+            throw new RuntimeException("Failed to send social notification email", e);
+        }
+    }
+
+    @Override
+    public void sendContentNotificationEmail(String email, String username, String title, String message) {
+        try {
+            log.info("Sending content notification email to: {}", email);
+
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
+            mailMessage.setTo(email);
+            mailMessage.setFrom(fromEmail);
+            mailMessage.setSubject("NoManWeb - " + title);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "%s\n\n" +
+                            "Check it out: %s\n\n" +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    username, message, frontendUrl);
+
+            mailMessage.setText(emailBody);
+            mailSender.send(mailMessage);
+
+            log.info("Content notification email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send content notification email to: {}", email, e);
+            throw new RuntimeException("Failed to send content notification email", e);
+        }
+    }
+
+    @Override
+    public void sendSystemNotificationEmail(String email, String username, String title, String message) {
+        try {
+            log.info("Sending system notification email to: {}", email);
+
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
+            mailMessage.setTo(email);
+            mailMessage.setFrom(fromEmail);
+            mailMessage.setSubject("NoManWeb - System Notification: " + title);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "%s\n\n" +
+                            "If you have any questions, please contact our support team.\n\n" +
+                            "Visit NoManWeb: %s\n\n" +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    username, message, frontendUrl);
+
+            mailMessage.setText(emailBody);
+            mailSender.send(mailMessage);
+
+            log.info("System notification email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send system notification email to: {}", email, e);
+            throw new RuntimeException("Failed to send system notification email", e);
+        }
+    }
+
+    @Override
+    public void sendGeneralNotificationEmail(String email, String username, String title, String message) {
+        try {
+            log.info("Sending general notification email to: {}", email);
+
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
+            mailMessage.setTo(email);
+            mailMessage.setFrom(fromEmail);
+            mailMessage.setSubject("NoManWeb - " + title);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n" +
+                            "%s\n\n" +
+                            "Visit NoManWeb: %s\n\n" +
+                            "Best regards,\n" +
+                            "The NoManWeb Team",
+                    username, message, frontendUrl);
+
+            mailMessage.setText(emailBody);
+            mailSender.send(mailMessage);
+
+            log.info("General notification email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send general notification email to: {}", email, e);
+            throw new RuntimeException("Failed to send general notification email", e);
+        }
+    }
 }

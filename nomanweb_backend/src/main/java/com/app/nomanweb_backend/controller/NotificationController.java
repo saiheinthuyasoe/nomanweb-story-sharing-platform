@@ -1,7 +1,9 @@
 package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.entity.Notification;
+import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.NotificationService;
+import com.app.nomanweb_backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<Page<Notification>> getNotifications(
@@ -95,15 +98,15 @@ public class NotificationController {
             UUID userId = getCurrentUserId();
             @SuppressWarnings("unchecked")
             List<String> notificationIdStrings = (List<String>) request.get("notificationIds");
-            
+
             if (notificationIdStrings == null || notificationIdStrings.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "No notification IDs provided"));
             }
-            
+
             List<UUID> notificationIds = notificationIdStrings.stream()
                     .map(UUID::fromString)
                     .toList();
-            
+
             notificationService.bulkDeleteNotifications(notificationIds, userId);
             return ResponseEntity.ok(Map.of("message", "Notifications deleted successfully"));
         } catch (Exception e) {
@@ -153,6 +156,110 @@ public class NotificationController {
         } catch (Exception e) {
             log.error("Error sending system notification", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get current user's notification preferences
+    @GetMapping("/preferences")
+    public ResponseEntity<Map<String, Object>> getNotificationPreferences() {
+        try {
+            UUID userId = getCurrentUserId();
+            User user = userService.getUserById(userId);
+
+            Map<String, Object> preferences = Map.of(
+                    "emailNotificationsEnabled", user.getEmailNotificationsEnabled(),
+                    "lineNotificationsEnabled", user.getLineNotificationsEnabled());
+
+            return ResponseEntity.ok(preferences);
+        } catch (Exception e) {
+            log.error("Error getting notification preferences", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Update current user's notification preferences
+    @PutMapping("/preferences")
+    public ResponseEntity<Map<String, Object>> updateNotificationPreferences(
+            @RequestBody Map<String, Boolean> preferences) {
+        try {
+            UUID userId = getCurrentUserId();
+
+            Boolean emailEnabled = preferences.get("emailNotificationsEnabled");
+            Boolean lineEnabled = preferences.get("lineNotificationsEnabled");
+
+            if (emailEnabled == null && lineEnabled == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "At least one preference must be specified"));
+            }
+
+            User user = userService.getUserById(userId);
+
+            if (emailEnabled != null) {
+                user.setEmailNotificationsEnabled(emailEnabled);
+            }
+            if (lineEnabled != null) {
+                user.setLineNotificationsEnabled(lineEnabled);
+            }
+
+            User updatedUser = userService.updateUser(user);
+
+            Map<String, Object> response = Map.of(
+                    "message", "Notification preferences updated successfully",
+                    "preferences", Map.of(
+                            "emailNotificationsEnabled", updatedUser.getEmailNotificationsEnabled(),
+                            "lineNotificationsEnabled", updatedUser.getLineNotificationsEnabled()));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error updating notification preferences", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to update notification preferences"));
+        }
+    }
+
+    // Update specific notification preference
+    @PatchMapping("/preferences/{preferenceType}")
+    public ResponseEntity<Map<String, Object>> updateSpecificPreference(
+            @PathVariable String preferenceType,
+            @RequestBody Map<String, Boolean> request) {
+        try {
+            UUID userId = getCurrentUserId();
+            Boolean enabled = request.get("enabled");
+
+            if (enabled == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "'enabled' field is required"));
+            }
+
+            User user = userService.getUserById(userId);
+
+            switch (preferenceType.toLowerCase()) {
+                case "email":
+                    user.setEmailNotificationsEnabled(enabled);
+                    break;
+                case "line":
+                    user.setLineNotificationsEnabled(enabled);
+                    break;
+                default:
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Invalid preference type. Use 'email' or 'line'"));
+            }
+
+            User updatedUser = userService.updateUser(user);
+
+            Map<String, Object> response = Map.of(
+                    "message", String.format("%s notifications %s",
+                            preferenceType.substring(0, 1).toUpperCase() + preferenceType.substring(1),
+                            enabled ? "enabled" : "disabled"),
+                    "preferences", Map.of(
+                            "emailNotificationsEnabled", updatedUser.getEmailNotificationsEnabled(),
+                            "lineNotificationsEnabled", updatedUser.getLineNotificationsEnabled()));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error updating specific notification preference", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to update notification preference"));
         }
     }
 

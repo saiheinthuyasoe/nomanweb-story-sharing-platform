@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.service;
 
 import com.app.nomanweb_backend.entity.Notification;
+import com.app.nomanweb_backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -14,6 +15,12 @@ public interface NotificationService {
         Notification createNotification(UUID userId, Notification.NotificationType type,
                         String title, String message,
                         Notification.RelatedType relatedType, UUID relatedId);
+
+        Notification createNotification(User user, Notification.NotificationType type,
+                        String title, String message,
+                        Notification.RelatedType relatedType, UUID relatedId);
+
+        Notification updateNotification(Notification notification);
 
         Page<Notification> getUserNotifications(UUID userId, Pageable pageable);
 

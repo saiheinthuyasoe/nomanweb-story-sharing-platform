@@ -37,6 +37,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final ChapterRepository chapterRepository;
     private final CommentRepository commentRepository;
 
+
+
     @Override
     @Transactional
     public Notification createNotification(UUID userId, Notification.NotificationType type,
@@ -57,6 +59,34 @@ public class NotificationServiceImpl implements NotificationService {
 
         notification = notificationRepository.save(notification);
         log.info("Created notification for user {}: {}", userId, type);
+        return notification;
+    }
+
+    @Override
+    @Transactional
+    public Notification createNotification(User user, Notification.NotificationType type,
+            String title, String message,
+            Notification.RelatedType relatedType, UUID relatedId) {
+        Notification notification = Notification.builder()
+                .user(user)
+                .type(type)
+                .title(title)
+                .message(message)
+                .relatedType(relatedType)
+                .relatedId(relatedId)
+                .isRead(false)
+                .build();
+
+        notification = notificationRepository.save(notification);
+        log.info("Created notification for user {}: {}", user.getId(), type);
+        return notification;
+    }
+
+    @Override
+    @Transactional
+    public Notification updateNotification(Notification notification) {
+        notification = notificationRepository.save(notification);
+        log.debug("Updated notification {}", notification.getId());
         return notification;
     }
 
@@ -121,6 +151,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void notifyNewFollower(UUID followedUserId, UUID followerUserId) {
         try {
+            User followedUser = userRepository.findById(followedUserId)
+                    .orElseThrow(() -> new IllegalArgumentException("Followed user not found"));
             User follower = userRepository.findById(followerUserId)
                     .orElseThrow(() -> new IllegalArgumentException("Follower not found"));
 
@@ -128,7 +160,7 @@ public class NotificationServiceImpl implements NotificationService {
             String message = String.format("%s is now following you!",
                     follower.getDisplayName() != null ? follower.getDisplayName() : follower.getUsername());
 
-            createNotification(followedUserId, Notification.NotificationType.FOLLOW,
+            createNotification(followedUser, Notification.NotificationType.FOLLOW,
                     title, message, Notification.RelatedType.USER, followerUserId);
         } catch (Exception e) {
             log.error("Failed to send new follower notification", e);
@@ -184,6 +216,8 @@ public class NotificationServiceImpl implements NotificationService {
                 return;
             }
 
+            User storyAuthor = userRepository.findById(storyAuthorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Story author not found"));
             User liker = userRepository.findById(likerId)
                     .orElseThrow(() -> new IllegalArgumentException("Liker not found"));
             Story story = storyRepository.findById(storyId)
@@ -194,7 +228,7 @@ public class NotificationServiceImpl implements NotificationService {
                     liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
                     story.getTitle());
 
-            createNotification(storyAuthorId, Notification.NotificationType.LIKE,
+            createNotification(storyAuthor, Notification.NotificationType.LIKE,
                     title, message, Notification.RelatedType.STORY, storyId);
         } catch (Exception e) {
             log.error("Failed to send story like notification", e);
@@ -210,6 +244,8 @@ public class NotificationServiceImpl implements NotificationService {
                 return;
             }
 
+            User chapterAuthor = userRepository.findById(chapterAuthorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Chapter author not found"));
             User liker = userRepository.findById(likerId)
                     .orElseThrow(() -> new IllegalArgumentException("Liker not found"));
             Chapter chapter = chapterRepository.findById(chapterId)
@@ -221,7 +257,8 @@ public class NotificationServiceImpl implements NotificationService {
                     chapter.getTitle(),
                     chapter.getStory().getTitle());
 
-            createNotification(chapterAuthorId, Notification.NotificationType.LIKE,
+            createNotification(chapterAuthor,
+                    Notification.NotificationType.LIKE,
                     title, message, Notification.RelatedType.CHAPTER, chapterId);
         } catch (Exception e) {
             log.error("Failed to send chapter like notification", e);
@@ -342,18 +379,19 @@ public class NotificationServiceImpl implements NotificationService {
             Notification.RelatedType relatedType, UUID relatedId) {
         try {
             // Get all followers of the author
-            List<UUID> followerIds = userFollowRepository.findFollowersByUserId(authorId, Pageable.unpaged())
+            List<User> followers = userFollowRepository.findFollowersByUserId(authorId, Pageable.unpaged())
                     .getContent()
                     .stream()
-                    .map(follow -> follow.getFollower().getId())
+                    .map(follow -> follow.getFollower())
                     .toList();
 
-            // Create notifications for all followers
-            for (UUID followerId : followerIds) {
-                createNotification(followerId, type, title, message, relatedType, relatedId);
+            // Send notifications to all followers
+            for (User follower : followers) {
+                createNotification(follower, type,
+                        title, message, relatedType, relatedId);
             }
 
-            log.info("Sent {} notifications to {} followers of user {}", type, followerIds.size(), authorId);
+            log.info("Sent {} notifications to {} followers of user {}", type, followers.size(), authorId);
         } catch (Exception e) {
             log.error("Failed to send notifications to followers", e);
         }
@@ -362,7 +400,15 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void sendSystemNotification(UUID userId, String title, String message) {
-        createNotification(userId, Notification.NotificationType.SYSTEM, title, message, null, null);
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            createNotification(user, Notification.NotificationType.SYSTEM,
+                    title, message, null, null);
+        } catch (Exception e) {
+            log.error("Failed to send system notification", e);
+        }
     }
 
     @Override
