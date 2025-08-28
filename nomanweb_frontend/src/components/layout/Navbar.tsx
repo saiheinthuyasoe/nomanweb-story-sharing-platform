@@ -210,7 +210,7 @@ export default function Navbar() {
                 <NavLink href="/" active={isActive("/")} icon={Home}>
                   Home
                 </NavLink>
-                
+
                 <NavLink
                   href="/stories"
                   active={isActive("/stories")}
@@ -339,7 +339,7 @@ export default function Navbar() {
                   {/* Library */}
                   <Link
                     href="/library"
-                    className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
+                    className="p-2 text-white rounded-lg hover:bg-white/20 transition-all-smooth"
                     title="Library"
                   >
                     <Library className="h-5 w-5" />
@@ -348,37 +348,36 @@ export default function Navbar() {
                   {/* Notifications */}
                   <Link
                     href="/dashboard/notifications"
-                    className="p-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative"
+                    className="p-2 text-white rounded-lg hover:bg-white/20 transition-all-smooth relative"
                     title="Notifications"
                   >
                     <Bell className="h-5 w-5" />
-                    {unreadCountData?.unreadCount &&
-                      unreadCountData.unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                          {unreadCountData.unreadCount > 99
-                            ? "99+"
-                            : unreadCountData.unreadCount}
-                        </span>
-                      )}
+                    {unreadCountData?.unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                        {unreadCountData.unreadCount > 99
+                          ? "99+"
+                          : unreadCountData.unreadCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* User Avatar Dropdown */}
                   <div className="relative" ref={userDropdownRef}>
                     <button
                       onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                      className="flex items-center space-x-2 bg-white/10 text-white rounded-lg px-3 py-2 hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
+                      className="flex items-center space-x-2 text-white rounded-lg px-3 py-2 hover:bg-white/20 transition-all-smooth"
                     >
-                      <div className="w-8 h-8 bg-white/30 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
                         {user.profileImageUrl ? (
                           <Image
                             src={user.profileImageUrl}
                             alt="Profile"
-                            width={32}
-                            height={32}
+                            width={40}
+                            height={40}
                             className="rounded-full"
                           />
                         ) : (
-                          <User className="h-4 w-4" />
+                          <User className="h-5 w-5" />
                         )}
                       </div>
                     </button>
@@ -476,9 +475,19 @@ export default function Navbar() {
               {/* Mobile: Notification & Menu Button */}
               <div className="lg:hidden flex items-center space-x-1 flex-shrink-0">
                 {user && (
-                  <button className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative">
+                  <Link
+                    href="/dashboard/notifications"
+                    className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative"
+                  >
                     <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
+                    {unreadCountData?.unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                        {unreadCountData.unreadCount > 99
+                          ? "99+"
+                          : unreadCountData.unreadCount}
+                      </span>
+                    )}
+                  </Link>
                 )}
                 <button
                   onClick={toggleMobileMenu}

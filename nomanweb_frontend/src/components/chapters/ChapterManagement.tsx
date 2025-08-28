@@ -243,7 +243,10 @@ export default function ChapterManagement({
     chapterTitle: string
   ) => {
     // For both WHOLE_BOOK and PAID_PER_CHAPTER pricing, calculate refunds
-    if (story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") {
+    if (
+      story?.pricingType === "WHOLE_BOOK" ||
+      story?.pricingType === "PAID_PER_CHAPTER"
+    ) {
       const refundInfo = await calculateRefund(chapterId, chapterTitle);
       setRefundData(refundInfo);
     } else {
@@ -331,10 +334,7 @@ export default function ChapterManagement({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <DocumentTextIcon className="w-5 h-5 text-nomanweb-primary" />
-          <h3 className="text-lg font-semibold text-nomanweb-primary">
-            Chapter Management
-          </h3>
+          <h3 className="text-xl font-medium text-black">Chapter Management</h3>
           {isUploading && (
             <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -346,10 +346,14 @@ export default function ChapterManagement({
         <div className="flex items-center space-x-3">
           <Link
             href={`/dashboard/stories/${storyId}/chapters/bulk-edit`}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 text-sm"
+            className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+            style={{
+              backgroundColor: "#18243c",
+              ":hover": { backgroundColor: "#0f1a2e" },
+            }}
           >
             <Cog6ToothIcon className="w-4 h-4" />
-            <span>Bulk Edit</span>
+            <span>Multi Edit</span>
           </Link>
 
           <button
@@ -357,10 +361,14 @@ export default function ChapterManagement({
               setShowBulkUpload(true);
               setIsUploading(true);
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 text-sm"
+            className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+            style={{
+              backgroundColor: "#18243c",
+              ":hover": { backgroundColor: "#0f1a2e" },
+            }}
           >
             <CloudArrowUpIcon className="w-4 h-4" />
-            <span>Bulk Upload</span>
+            <span>Multi Upload</span>
           </button>
 
           {isAuthor && (
@@ -380,9 +388,14 @@ export default function ChapterManagement({
             onClick={() => setActiveTab("all")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "all"
-                ? "bg-white text-nomanweb-primary shadow-sm"
+                ? "shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "all"
+                ? { backgroundColor: "#18243c", color: "#ffffff" }
+                : {}
+            }
           >
             All ({chapters.length})
           </button>
@@ -390,9 +403,14 @@ export default function ChapterManagement({
             onClick={() => setActiveTab("published")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
               activeTab === "published"
-                ? "bg-white text-nomanweb-primary shadow-sm"
+                ? "shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "published"
+                ? { backgroundColor: "#18243c", color: "#ffffff" }
+                : {}
+            }
           >
             <GlobeAltIcon className="w-4 h-4" />
             <span>Published ({publishedChapters.length})</span>
@@ -401,9 +419,14 @@ export default function ChapterManagement({
             onClick={() => setActiveTab("draft")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
               activeTab === "draft"
-                ? "bg-white text-nomanweb-primary shadow-sm"
+                ? "shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "draft"
+                ? { backgroundColor: "#18243c", color: "#ffffff" }
+                : {}
+            }
           >
             <ClockIcon className="w-4 h-4" />
             <span>Drafts ({draftChapters.length})</span>
@@ -412,9 +435,14 @@ export default function ChapterManagement({
             onClick={() => setActiveTab("trash")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
               activeTab === "trash"
-                ? "bg-white text-red-600 shadow-sm"
+                ? "shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            style={
+              activeTab === "trash"
+                ? { backgroundColor: "#18243c", color: "#ffffff" }
+                : {}
+            }
           >
             <TrashIcon className="w-4 h-4" />
             <span>Trash ({trashChapters.length})</span>
@@ -800,7 +828,8 @@ export default function ChapterManagement({
           </DialogHeader>
 
           <div className="space-y-4">
-            {(story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") && (
+            {(story?.pricingType === "WHOLE_BOOK" ||
+              story?.pricingType === "PAID_PER_CHAPTER") && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
                   <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
@@ -809,10 +838,9 @@ export default function ChapterManagement({
                       Refund Warning
                     </h4>
                     <p className="text-sm text-yellow-700">
-                      {story?.pricingType === "WHOLE_BOOK" 
+                      {story?.pricingType === "WHOLE_BOOK"
                         ? "If this chapter was paid, unpublishing it may refund the users. This action cannot be undone."
-                        : "Unpublishing this chapter will refund all users who purchased it. This action cannot be undone."
-                      }
+                        : "Unpublishing this chapter will refund all users who purchased it. This action cannot be undone."}
                     </p>
                     {refundData && refundData.hasPurchases && (
                       <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
@@ -870,7 +898,9 @@ export default function ChapterManagement({
             >
               Cancel
             </Button>
-            {(story?.pricingType === "WHOLE_BOOK" || story?.pricingType === "PAID_PER_CHAPTER") && refundData?.hasPurchases ? (
+            {(story?.pricingType === "WHOLE_BOOK" ||
+              story?.pricingType === "PAID_PER_CHAPTER") &&
+            refundData?.hasPurchases ? (
               <>
                 <Button
                   onClick={() => handleUnpublish(unpublishConfirm, true)}
@@ -1089,7 +1119,7 @@ function ChapterContent({
           <span
             className={`px-2 py-1 text-xs font-medium rounded-full ${
               chapter.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800"
+                ? "bg-blue-100 text-blue-800"
                 : "bg-yellow-100 text-yellow-800"
             }`}
           >
@@ -1184,7 +1214,7 @@ function ChapterContent({
         </div>
 
         {/* Chapter Title */}
-        <h4 className="text-lg font-semibold text-nomanweb-primary mb-2 truncate">
+        <h4 className="text-lg font-semibold text-black mb-2 truncate">
           {chapter.title}
         </h4>
 
@@ -1242,7 +1272,7 @@ function ChapterContent({
             {/* Edit */}
             <Link
               href={`/stories/${storyId}/chapters/${chapter.chapterNumber}/edit`}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-black hover:bg-gray-50 rounded-lg transition-colors"
               title="Edit Chapter"
             >
               <PencilIcon className="w-4 h-4" />
@@ -1270,9 +1300,7 @@ function ChapterContent({
                 className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
                 disabled={isUnpublishing}
                 variant="outline"
-              >
-                <ArchiveBoxIcon className="w-4 h-4" />
-              </ProtectedActionButton>
+              />
             )}
 
             {/* Move to Trash */}
@@ -1287,9 +1315,7 @@ function ChapterContent({
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
               disabled={isDeleting}
               variant="outline"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </ProtectedActionButton>
+            />
           </>
         )}
       </div>

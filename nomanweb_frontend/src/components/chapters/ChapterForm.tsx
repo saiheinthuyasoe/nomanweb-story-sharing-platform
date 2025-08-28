@@ -46,7 +46,6 @@ export function ChapterForm({
   story,
   onTypingStart,
 }: ChapterFormProps) {
-
   const [content, setContent] = useState(initialData?.content || "");
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
@@ -594,13 +593,13 @@ export function ChapterForm({
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
         {/* Chapter Settings Panel */}
         {showSettings && (
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-            <h3 className="font-medium text-gray-900">Chapter Settings</h3>
+          <div className="bg-white border border-gray-200 rounded-md p-6 space-y-6">
+            <h3 className="text-lg font-semibold text-gray-800">Settings</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Chapter Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Chapter Number
                 </label>
                 <input
@@ -619,7 +618,7 @@ export function ChapterForm({
                     valueAsNumber: true,
                     setValueAs: (value: string) => parseInt(value) || 1,
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                   placeholder="Enter chapter number"
                 />
                 {errors.chapterNumber && (
@@ -627,15 +626,11 @@ export function ChapterForm({
                     {errors.chapterNumber.message}
                   </p>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Current value: {watchedValues.chapterNumber}
-                </p>
               </div>
 
               {/* Pricing - Based on Story Pricing Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Coins size={16} className="inline mr-1" />
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Chapter Price
                 </label>
                 {story?.pricingType === "PAID_PER_CHAPTER" ? (
@@ -651,7 +646,7 @@ export function ChapterForm({
                         min: { value: 0, message: "Price cannot be negative" },
                         valueAsNumber: true,
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 disabled:bg-gray-50"
                       placeholder="Enter chapter price"
                     />
                     {errors.coinPrice && (
@@ -659,9 +654,6 @@ export function ChapterForm({
                         {errors.coinPrice.message}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">
-                      Current value: {watchedValues.coinPrice || 0} coins
-                    </p>
                   </>
                 ) : story?.pricingType === "WHOLE_BOOK" ? (
                   // Show book price for WHOLE_BOOK
@@ -716,11 +708,11 @@ export function ChapterForm({
 
             {/* Story Pricing Information */}
             {story && (
-              <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">
-                  📖 Story Pricing Information
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                  Story Pricing Information
                 </h4>
-                <div className="text-xs text-gray-700 space-y-1">
+                <div className="text-sm text-gray-600 space-y-2">
                   {story.pricingType === "FREE" && (
                     <p>
                       • This is a{" "}
@@ -768,13 +760,13 @@ export function ChapterForm({
             )}
 
             {/* Editor preferences */}
-            <div className="flex items-center space-x-4">
+            <div className="pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
               >
-                {isDarkMode ? "Light Mode" : "Dark Mode"}
+                {isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               </button>
             </div>
           </div>
@@ -837,15 +829,15 @@ export function ChapterForm({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+          <div className="flex items-center space-x-3">
             <button
               type="button"
               onClick={handleSaveDraft}
               disabled={isLoading}
-              className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-50"
+              className="flex items-center px-4 py-2 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md disabled:opacity-50 transition-colors"
             >
-              <Save size={16} className="mr-2" />
+              <Save size={14} className="mr-2" />
               Save Draft
             </button>
 
@@ -853,19 +845,29 @@ export function ChapterForm({
               type="button"
               onClick={handlePublish}
               disabled={isLoading}
-              className="flex items-center px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg disabled:opacity-50"
+              className="flex items-center px-6 py-2 text-white rounded-md disabled:opacity-50 transition-colors"
+              style={{
+                backgroundColor: "#18243c",
+                ":hover": { backgroundColor: "#0f1a2e" },
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#0f1a2e")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#18243c")
+              }
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
               ) : (
-                <Save size={16} className="mr-2" />
+                <Save size={14} className="mr-2" />
               )}
               {isEditing ? "Update & Publish" : "Publish Chapter"}
             </button>
           </div>
 
-          <div className="text-sm text-gray-500">
-            {isDirty ? "You have unsaved changes" : "All changes saved"}
+          <div className="text-xs text-gray-400">
+            {isDirty ? "Unsaved changes" : "All changes saved"}
           </div>
         </div>
       </form>

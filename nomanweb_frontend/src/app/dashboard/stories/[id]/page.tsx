@@ -73,8 +73,8 @@ export default function StoryDetailPage() {
 
   if (error || !story) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center card-elevated p-8 max-w-md mx-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md mx-4">
           <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <BookOpenIcon className="w-8 h-8 text-red-600" />
           </div>
@@ -188,77 +188,93 @@ export default function StoryDetailPage() {
     });
   };
 
-  const handleShare = () => {
-    const currentUrl = window.location.href;
-    navigator.clipboard.writeText(currentUrl);
-    toast.success("Link copied to clipboard!");
+  const handleShare = async () => {
+    // Create the public story URL instead of the dashboard URL
+    const publicUrl = `${window.location.origin}/stories/${storyId}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: story?.title || "Story",
+          text: story?.description || "Check out this story!",
+          url: publicUrl,
+        });
+      } catch (error) {
+        // User cancelled sharing
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(publicUrl);
+      toast.success("Link copied to clipboard!");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* Story Header */}
-        <div className="card-elevated overflow-hidden mb-8">
-          <div className="md:flex">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-8">
+          <div className="flex flex-col md:flex-row">
             {/* Cover Image */}
-            <div className="md:w-1/3">
-              <div className="relative aspect-[3/4] bg-gradient-to-br from-gray-200 to-gray-300">
+            <div className="flex flex-col justify-center md:justify-start p-6 md:p-8">
+              <div className="relative w-[210px] h-[280px] bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg overflow-hidden shadow-md">
                 {story.coverImageUrl ? (
                   <Image
                     src={story.coverImageUrl}
                     alt={story.title}
-                    fill
-                    className="object-cover"
+                    width={210}
+                    height={280}
+                    className="object-cover w-full h-full"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full bg-nomanweb-gradient">
-                    <BookOpenIcon className="w-24 h-24 text-white/80" />
+                  <div className="flex items-center justify-center h-full bg-gray-100">
+                    <BookOpenIcon className="w-24 h-24 text-gray-400" />
                   </div>
                 )}
-
-                {/* Status Badges */}
-                <div className="absolute top-4 left-4 space-y-2">
-                  <span
-                    className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
-                      story.publishStatus === "PUBLISHED"
-                        ? "bg-green-500/90 text-white"
-                        : story.publishStatus === "DRAFT"
-                        ? "bg-yellow-500/90 text-white"
-                        : story.publishStatus === "COMPLETED"
-                        ? "bg-blue-500/90 text-white"
-                        : "bg-red-500/90 text-white"
-                    }`}
-                  >
-                    {story.publishStatus}
-                  </span>
-
-                  {/* Book Status Badge */}
-                  <span
-                    className={`px-3 py-1 text-sm font-semibold rounded-full backdrop-blur-sm ${
-                      story.bookStatus === "ONGOING"
-                        ? "bg-blue-500/90 text-white"
-                        : "bg-purple-500/90 text-white"
-                    }`}
-                  >
-                    {story.bookStatus}
-                  </span>
-                </div>
 
                 {/* Featured Badge */}
                 {story.isFeatured && (
                   <div className="absolute top-4 right-4">
-                    <div className="bg-yellow-500/90 backdrop-blur-sm p-2 rounded-full">
-                      <StarIcon className="w-5 h-5 text-white fill-current" />
+                    <div className="bg-yellow-100 border border-yellow-200 p-2 rounded">
+                      <StarIcon className="w-5 h-5 text-yellow-600" />
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Status Badges - Now under the cover image */}
+              <div className="mt-3 space-y-2 w-[210px]">
+                <span
+                  className={`inline-block px-4 py-2 text-sm font-medium rounded ${
+                    story.publishStatus === "PUBLISHED"
+                      ? "bg-blue-100 text-blue-600"
+                      : story.publishStatus === "DRAFT"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : story.publishStatus === "COMPLETED"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {story.publishStatus}
+                </span>
+
+                {/* Book Status Badge */}
+                <span
+                  className={`inline-block ml-3 px-2 py-2 text-sm font-medium rounded ${
+                    story.bookStatus === "ONGOING"
+                      ? "bg-green-100 text-green-600"
+                      : "bg-purple-100 text-purple-800"
+                  }`}
+                >
+                  {story.bookStatus}
+                </span>
+              </div>
             </div>
 
             {/* Story Info */}
-            <div className="md:w-2/3 p-6 lg:p-8">
+            <div className="flex-1 p-6 md:p-8 lg:p-10">
               <div className="mb-4">
-                <h1 className="text-3xl lg:text-4xl font-bold text-nomanweb-primary mb-4">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-black mb-4 leading-tight">
                   {story.title}
                 </h1>
 
@@ -267,18 +283,18 @@ export default function StoryDetailPage() {
                   <div>
                     <Link
                       href={`/authors/${story.author.id}`}
-                      className="text-lg font-semibold text-nomanweb-primary hover:text-nomanweb-secondary transition-colors"
+                      className="text-xl font-semibold text-black hover:text-gray-700 transition-colors"
                     >
                       {story.author.displayName || story.author.username}
                     </Link>
-                    <p className="text-sm text-gray-500">Author</p>
+                    <p className="text-sm text-gray-600 mt-1">Author</p>
                   </div>
                 </div>
 
                 {/* Description */}
                 {story.description && (
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <p className="text-gray-700 leading-relaxed">
+                  <div className="border-l-4 border-gray-200 pl-4 mb-6">
+                    <p className="text-gray-600 leading-relaxed">
                       {story.description}
                     </p>
                   </div>
@@ -289,7 +305,7 @@ export default function StoryDetailPage() {
                   <div className="mb-4">
                     <Link
                       href={`/categories/${story.category.id}`}
-                      className="inline-block px-4 py-2 text-sm font-medium text-white bg-nomanweb-gradient rounded-full hover:scale-105 transition-transform"
+                      className="inline-block px-3 py-1 text-sm font-medium text-black bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
                     >
                       {story.category.name}
                     </Link>
@@ -301,7 +317,7 @@ export default function StoryDetailPage() {
                   <div className="mb-6">
                     <div className="flex items-center space-x-2 mb-3">
                       <TagIcon className="w-4 h-4 text-nomanweb-primary" />
-                      <span className="text-sm font-medium text-nomanweb-primary">
+                      <span className="text-sm font-medium text-black">
                         Tags
                       </span>
                     </div>
@@ -309,7 +325,7 @@ export default function StoryDetailPage() {
                       {story.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="px-3 py-1 text-xs text-nomanweb-primary bg-blue-50 rounded-full border border-blue-200"
+                          className="px-3 py-1 text-xs text-black bg-blue-50 rounded-full border border-blue-200"
                         >
                           #{tag}
                         </span>
@@ -317,70 +333,6 @@ export default function StoryDetailPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Stats */}
-                <div
-                  className={`grid grid-cols-2 gap-4 mb-6 ${
-                    story.pricingType === "WHOLE_BOOK"
-                      ? "md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8"
-                      : "md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
-                  }`}
-                >
-                  <StatCard
-                    icon={EyeIcon}
-                    value={story.totalViews.toLocaleString()}
-                    label="Views"
-                    gradient="from-blue-500 to-purple-600"
-                  />
-                  <StatCard
-                    icon={HeartIcon}
-                    value={story.totalLikes.toLocaleString()}
-                    label="Likes"
-                    gradient="from-pink-500 to-red-600"
-                  />
-                  <StatCard
-                    icon={BookOpenIcon}
-                    value={story.totalChapters.toString()}
-                    label="Chapters"
-                    gradient="from-green-500 to-teal-600"
-                  />
-                  <StatCard
-                    icon={CalendarIcon}
-                    value={story.totalComments.toLocaleString()}
-                    label="Comments"
-                    gradient="from-yellow-500 to-orange-600"
-                  />
-                  
-                  {/* Library Statistics */}
-                  <StatCard
-                    icon={BookmarkIcon}
-                    value={(story.totalWantToRead || 0).toLocaleString()}
-                    label="Want to Read"
-                    gradient="from-indigo-500 to-blue-600"
-                  />
-                  <StatCard
-                    icon={BookOpenIcon}
-                    value={(story.totalCurrentlyReading || 0).toLocaleString()}
-                    label="Currently Reading"
-                    gradient="from-amber-500 to-yellow-600"
-                  />
-                  <StatCard
-                    icon={CheckCircleIcon}
-                    value={(story.totalCompleted || 0).toLocaleString()}
-                    label="Completed"
-                    gradient="from-emerald-500 to-green-600"
-                  />
-
-                  {/* Book Price Stat - Only for WHOLE_BOOK stories */}
-                  {story.pricingType === "WHOLE_BOOK" && (
-                    <StatCard
-                      icon={Coins}
-                      value={`${story.bookPrice || 0}`}
-                      label="Book Price (Coins)"
-                      gradient="from-purple-500 to-indigo-600"
-                    />
-                  )}
-                </div>
 
                 {/* Dates */}
                 <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
@@ -412,13 +364,13 @@ export default function StoryDetailPage() {
                   {story.totalChapters > 0 ? (
                     <Link
                       href={`/stories/${story.id}/chapters/1`}
-                      className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift flex items-center space-x-2"
+                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center space-x-2 text-sm"
                     >
                       <EyeIcon className="w-4 h-4" />
                       <span>Preview</span>
                     </Link>
                   ) : (
-                    <div className="px-6 py-3 bg-gray-300 text-gray-600 rounded-lg font-medium cursor-not-allowed">
+                    <div className="px-3 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed text-sm">
                       No Chapters Yet
                     </div>
                   )}
@@ -429,11 +381,12 @@ export default function StoryDetailPage() {
                       <QuickCreateChapter
                         storyId={story.id}
                         totalChapters={story.totalChapters || 0}
+                        className="text-sm px-3 py-2"
                       />
 
                       <Link
                         href={`/dashboard/stories/${story.id}/edit`}
-                        className="px-4 py-3 border-2 border-nomanweb-primary text-nomanweb-primary rounded-lg hover:bg-nomanweb-primary hover:text-white transition-colors flex items-center space-x-2"
+                        className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center space-x-2 text-sm"
                       >
                         <PencilIcon className="w-4 h-4" />
                         <span>Edit Story</span>
@@ -443,7 +396,7 @@ export default function StoryDetailPage() {
                         <button
                           onClick={handlePublish}
                           disabled={isPublishing}
-                          className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] disabled:opacity-50 transition-colors text-sm"
                         >
                           {isPublishing ? "Publishing..." : "Publish Story"}
                         </button>
@@ -476,7 +429,6 @@ export default function StoryDetailPage() {
                         onAction={handleDelete}
                         disabled={isDeleting}
                       >
-                        <TrashIcon className="mr-2 h-4 w-4" />
                         {isDeleting ? "Deleting..." : "Delete Story"}
                       </ProtectedActionButton>
                     </>
@@ -485,7 +437,7 @@ export default function StoryDetailPage() {
                   {/* Public Actions */}
                   <button
                     onClick={handleShare}
-                    className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                    className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center space-x-2 text-sm"
                   >
                     <ShareIcon className="w-4 h-4" />
                     <span>Share</span>
@@ -495,7 +447,7 @@ export default function StoryDetailPage() {
                   {!isAuthor && (
                     <button
                       onClick={() => setShowGiftModal(true)}
-                      className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center space-x-2 text-sm"
                     >
                       <LucideGift className="w-4 h-4" />
                       <span>Send Gift</span>
@@ -507,100 +459,127 @@ export default function StoryDetailPage() {
           </div>
         </div>
 
-        {/* Content Type and Moderation Status */}
-        <div className="card-elevated p-6 mb-8">
-          <h3 className="text-lg font-semibold text-nomanweb-primary mb-6 flex items-center space-x-2">
-            <BookOpenIcon className="w-5 h-5" />
-            <span>Story Details</span>
+        {/* Story Details - Minimalist */}
+        <div className="bg-white rounded-lg p-4 mb-8">
+          <h3 className="text-xl font-medium text-gray-900 mb-4">
+            Story Overview
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <DetailCard
-              title="Publish Status"
-              value={story.publishStatus}
-              color={
-                story.publishStatus === "PUBLISHED"
-                  ? "green"
-                  : story.publishStatus === "DRAFT"
-                  ? "yellow"
-                  : story.publishStatus === "COMPLETED"
-                  ? "blue"
-                  : "red"
-              }
-            />
-            <DetailCard
-              title="Book Status"
-              value={story.bookStatus}
-              color={story.bookStatus === "ONGOING" ? "green" : "blue"}
-            />
-            <DetailCard
-              title="Pricing Type"
-              value={
-                story.pricingType === "PAID_PER_CHAPTER"
-                  ? "PAID PER CHAPTER"
+
+          {/* Essential Details */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <span className="text-xs text-gray-500">Status</span>
+              <p
+                className={`text-sm font-medium ${
+                  story.publishStatus === "PUBLISHED"
+                    ? "text-blue-600"
+                    : story.publishStatus === "DRAFT"
+                    ? "text-yellow-600"
+                    : story.publishStatus === "COMPLETED"
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {story.publishStatus}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-gray-500">Type</span>
+              <p
+                className={`text-sm font-medium ${
+                  story.pricingType === "FREE"
+                    ? "text-green-600"
+                    : story.pricingType === "PAID_PER_CHAPTER"
+                    ? "text-blue-600"
+                    : "text-purple-600"
+                }`}
+              >
+                {story.pricingType === "PAID_PER_CHAPTER"
+                  ? "Per Chapter"
                   : story.pricingType === "WHOLE_BOOK"
-                  ? `WHOLE BOOK (${story.bookPrice || 0} coins)`
-                  : story.pricingType
-              }
-              color={
-                story.pricingType === "FREE"
-                  ? "green"
-                  : story.pricingType === "PAID_PER_CHAPTER"
-                  ? "blue"
-                  : "purple"
-              }
-            />
-
-            {/* Book Price - Only show for WHOLE_BOOK pricing */}
-            {story.pricingType === "WHOLE_BOOK" && (
-              <BookPriceCard
-                title="Book Price"
-                value={`${story.bookPrice || 0} coins`}
-                color="purple"
-              />
-            )}
-
-            <DetailCard
-              title="Moderation Status"
-              value={story.moderationStatus}
-              color={
-                story.moderationStatus === "APPROVED"
-                  ? "green"
-                  : story.moderationStatus === "PENDING"
-                  ? "yellow"
-                  : "red"
-              }
-            />
-            {/* Total Earnings with Recalculate Button */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-yellow-800">Total Earnings</h3>
-                {isAuthor && (
-                  <button
-                    onClick={() => recalculateEarnings(storyId)}
-                    disabled={isRecalculating}
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium text-yellow-700 bg-yellow-200 border border-yellow-300 rounded-md hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    title="Recalculate earnings from all purchases and gifts"
-                  >
-                    {isRecalculating ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Calculating...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Recalculate
-                      </>
-                    )}
-                  </button>
-                )}
+                  ? "Whole Book"
+                  : "Free"}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-gray-500">Progress</span>
+              <p
+                className={`text-sm font-medium ${
+                  story.bookStatus === "ONGOING"
+                    ? "text-green-600"
+                    : "text-blue-600"
+                }`}
+              >
+                {story.bookStatus}
+              </p>
+            </div>
+            {isAuthor && (
+              <div>
+                <span className="text-xs text-gray-500">Earnings</span>
+                <p
+                  className={`text-sm font-medium ${
+                    story.totalCoinsEarned > 0
+                      ? "text-green-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {story.totalCoinsEarned} coins
+                </p>
               </div>
-              <p className="text-2xl font-bold text-yellow-900">{story.totalCoinsEarned} coins</p>
+            )}
+          </div>
+
+          {/* Statistics */}
+          <div className="border-t pt-4">
+            <div
+              className={`grid gap-1 grid-cols-3 sm:grid-cols-4 ${
+                story.pricingType === "WHOLE_BOOK"
+                  ? "md:grid-cols-8"
+                  : "md:grid-cols-7"
+              }`}
+            >
+              <StatCard
+                icon={EyeIcon}
+                value={story.totalViews.toLocaleString()}
+                label="Views"
+              />
+              <StatCard
+                icon={HeartIcon}
+                value={story.totalLikes.toLocaleString()}
+                label="Likes"
+              />
+              <StatCard
+                icon={BookOpenIcon}
+                value={story.totalChapters.toString()}
+                label="Chapters"
+              />
+              <StatCard
+                icon={CalendarIcon}
+                value={story.totalComments.toLocaleString()}
+                label="Comments"
+              />
+              <StatCard
+                icon={BookmarkIcon}
+                value={(story.totalWantToRead || 0).toLocaleString()}
+                label="Want to Read"
+              />
+              <StatCard
+                icon={BookOpenIcon}
+                value={(story.totalCurrentlyReading || 0).toLocaleString()}
+                label="Reading"
+              />
+              <StatCard
+                icon={CheckCircleIcon}
+                value={(story.totalCompleted || 0).toLocaleString()}
+                label="Completed"
+              />
+              {story.pricingType === "WHOLE_BOOK" && (
+                <StatCard
+                  icon={Coins}
+                  value={`${story.bookPrice || 0}`}
+                  label="Price"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -653,22 +632,20 @@ function StatCard({
   icon: Icon,
   value,
   label,
-  gradient,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   value: string;
   label: string;
-  gradient: string;
 }) {
   return (
-    <div className="text-center">
-      <div
-        className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${gradient} text-white mb-2`}
-      >
-        <Icon className="w-5 h-5" />
+    <div className="text-center p-2 bg-gray-50 border border-gray-200 rounded min-h-[70px] flex flex-col justify-center">
+      <div className="inline-flex items-center justify-center w-6 h-6 rounded mb-1 mx-auto">
+        <Icon className="w-4 h-4" />
       </div>
-      <div className="text-2xl font-bold text-nomanweb-primary">{value}</div>
-      <div className="text-sm text-gray-500">{label}</div>
+      <div className="text-xs font-semibold text-gray-900 truncate">
+        {value}
+      </div>
+      <div className="text-xs text-gray-500 truncate">{label}</div>
     </div>
   );
 }
@@ -683,24 +660,10 @@ function DetailCard({
   value: string;
   color: string;
 }) {
-  const colorClasses = {
-    green: "bg-green-100 text-green-800",
-    blue: "bg-blue-100 text-blue-800",
-    purple: "bg-purple-100 text-purple-800",
-    yellow: "bg-yellow-100 text-yellow-800",
-    red: "bg-red-100 text-red-800",
-  };
-
   return (
-    <div>
-      <h4 className="text-sm font-medium text-gray-700 mb-2">{title}</h4>
-      <span
-        className={`px-3 py-1 text-sm font-medium rounded-full ${
-          colorClasses[color as keyof typeof colorClasses]
-        }`}
-      >
-        {value}
-      </span>
+    <div className="space-y-1">
+      <h4 className="text-sm font-medium text-gray-600">{title}</h4>
+      <p className="text-sm font-semibold text-gray-900">{value}</p>
     </div>
   );
 }
@@ -715,26 +678,11 @@ function BookPriceCard({
   value: string;
   color: string;
 }) {
-  const colorClasses = {
-    green: "bg-green-100 text-green-800 border-green-200",
-    blue: "bg-blue-100 text-blue-800 border-blue-200",
-    purple: "bg-purple-100 text-purple-800 border-purple-200",
-    yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    red: "bg-red-100 text-red-800 border-red-200",
-  };
-
   return (
-    <div
-      className={`p-4 rounded-lg border-2 ${
-        colorClasses[color as keyof typeof colorClasses]
-      }`}
-    >
-      <div className="flex items-center space-x-2 mb-2">
-        <span className="text-2xl">💰</span>
-        <h4 className="text-sm font-medium text-gray-700">{title}</h4>
-      </div>
-      <div className="text-xl font-bold text-purple-900">{value}</div>
-      <p className="text-xs text-purple-700 mt-1">
+    <div className="p-4 bg-white border border-gray-200 rounded-lg">
+      <h4 className="text-sm font-medium text-gray-600 mb-2">{title}</h4>
+      <div className="text-xl font-semibold text-gray-900">{value}</div>
+      <p className="text-xs text-gray-500 mt-1">
         Readers pay this price once for full access
       </p>
     </div>
@@ -743,14 +691,14 @@ function BookPriceCard({
 
 function StoryDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="card-elevated overflow-hidden animate-pulse">
-          <div className="md:flex">
-            <div className="md:w-1/3">
-              <div className="aspect-[3/4] bg-gray-200" />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
+          <div className="flex flex-col md:flex-row">
+            <div className="flex justify-center md:justify-start p-6 md:p-8">
+              <div className="w-[210px] h-[280px] bg-gray-200 rounded-lg" />
             </div>
-            <div className="md:w-2/3 p-6 lg:p-8">
+            <div className="flex-1 p-6 md:p-8 lg:p-10">
               <div className="h-8 bg-gray-200 rounded mb-4" />
               <div className="h-4 bg-gray-200 rounded w-3/4 mb-6" />
               <div className="h-20 bg-gray-200 rounded mb-6" />

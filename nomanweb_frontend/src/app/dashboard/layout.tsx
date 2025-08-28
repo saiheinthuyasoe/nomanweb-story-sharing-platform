@@ -9,8 +9,6 @@ import {
   BookOpen,
   DollarSign,
   Bell,
-  ChevronRight,
-  User,
   LogOut,
 } from "lucide-react";
 
@@ -96,7 +94,7 @@ export default function DashboardLayout({
   // Determine active tab based on current pathname
   const getActiveTab = () => {
     if (pathname === "/dashboard") return "statistics";
-    if (pathname.includes("/my-stories")) return "stories";
+    if (pathname.includes("/stories") || pathname.includes("/my-stories")) return "stories";
     if (pathname.includes("/monetization")) return "monetization";
     if (pathname.includes("/notifications")) return "notification";
     return "statistics";
@@ -114,18 +112,18 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="w-50 bg-white shadow-xl border-r border-gray-200 flex flex-col">
+      <div className="w-48 bg-white shadow-sm border-r border-gray-100 flex flex-col">
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+        <div className="p-3 border-b border-gray-100">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-white font-medium text-xs">
               {user.displayName?.charAt(0) || user.username?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-semibold text-gray-900 truncate">
+              <h2 className="text-sm font-medium text-gray-900 truncate">
                 {user.displayName || user.username}
               </h2>
-              <p className="text-xs text-gray-600">Writer Dashboard</p>
+              <p className="text-xs text-gray-500">Dashboard</p>
             </div>
           </div>
         </div>
@@ -133,34 +131,27 @@ export default function DashboardLayout({
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto">
           <nav className="p-3">
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {sidebarItems.map((item) => {
                 const isActive = getActiveTab() === item.id;
                 return (
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      className={`w-full flex items-center px-3 py-3 rounded-md transition-colors duration-150 ${
                         isActive
-                          ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5">
-                        <item.icon
-                          className={`h-4 w-4 ${
-                            isActive ? "text-blue-600" : "text-gray-500"
-                          }`}
-                        />
-                        <span className="text-sm font-medium">
-                          {item.label}
-                        </span>
-                      </div>
-                      <ChevronRight
-                        className={`h-3 w-3 transition-transform ${
-                          isActive ? "rotate-90 text-blue-600" : "text-gray-400"
+                      <item.icon
+                        className={`h-4 w-4 mr-3 ${
+                          isActive ? "text-white" : "text-gray-400"
                         }`}
                       />
+                      <span className="text-sm font-medium">
+                        {item.label}
+                      </span>
                     </Link>
                   </li>
                 );
@@ -170,23 +161,14 @@ export default function DashboardLayout({
         </div>
 
         {/* Sidebar Footer */}
-        <div className="p-3 border-t border-gray-200">
-          <div className="space-y-2">
-            <Link
-              href="/profile"
-              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Profile Settings</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors"
-            >
-              <LogOut className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
-          </div>
+        <div className="p-2 border-t border-gray-100">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2 rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            <LogOut className="h-4 w-4 mr-3 text-gray-400" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
         </div>
       </div>
 

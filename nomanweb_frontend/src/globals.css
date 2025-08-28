@@ -29,7 +29,7 @@ body {
 
 /* Reading Mode Font Families */
 .font-georgia {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .font-merriweather {
@@ -37,7 +37,7 @@ body {
 }
 
 .font-times {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
 }
 
 .font-arial {
@@ -45,12 +45,13 @@ body {
 }
 
 .font-opensans {
-  font-family: var(--font-open-sans), 'Open Sans', sans-serif;
+  font-family: var(--font-open-sans), "Open Sans", sans-serif;
 }
 
 /* Lexical Editor Styles */
 .lexical-editor-container {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .lexical-content-editable {
@@ -95,7 +96,7 @@ body {
   background-color: rgb(240, 242, 245);
   padding: 1px 4px;
   border-radius: 3px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 0.9em;
 }
 
@@ -662,7 +663,7 @@ ul[style*="text-align:left"] li {
   border: 1px solid #e1e4e8;
   border-radius: 6px;
   padding: 16px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 14px;
   line-height: 1.45;
   overflow-x: auto;
@@ -709,11 +710,11 @@ ul[style*="text-align:left"] li {
   .editor-heading-h1 {
     font-size: 2em;
   }
-  
+
   .editor-heading-h2 {
     font-size: 1.5em;
   }
-  
+
   .editor-heading-h3 {
     font-size: 1.25em;
   }
@@ -765,7 +766,8 @@ ul[style*="text-align:left"] li {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 4px;
   opacity: 0;
   pointer-events: none;
@@ -824,4 +826,4 @@ ul[style*="text-align:left"] li {
 .dark .floating-text-toolbar button.active {
   background-color: #1e40af;
   color: #93c5fd;
-} 
+}

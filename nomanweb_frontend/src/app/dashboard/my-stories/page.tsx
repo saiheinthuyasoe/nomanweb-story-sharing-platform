@@ -154,10 +154,10 @@ export default function MyStoriesPage() {
   const getBookStatusBadge = (bookStatus: "ONGOING" | "COMPLETED") => {
     // Map book status from database
     const statusConfig = {
-      ONGOING: { text: "Ongoing", className: "bg-yellow-100 text-yellow-700" },
+      ONGOING: { text: "Ongoing", className: "bg-green-100 text-green-700" },
       COMPLETED: {
         text: "Completed",
-        className: "bg-green-100 text-green-700",
+        className: "bg-blue-100 text-blue-700",
       },
     };
 
@@ -277,10 +277,13 @@ export default function MyStoriesPage() {
 
   if (isLoading || (activeTab === "trash" && isLoadingAll)) {
     return (
-      <div className="min-h-screen bg-gray-50 overflow-y-auto">
+      <div className="min-h-screen bg-white overflow-y-auto">
         <div className="p-8">
           <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2"
+              style={{ borderBottomColor: "#18243c" }}
+            ></div>
           </div>
         </div>
       </div>
@@ -289,7 +292,7 @@ export default function MyStoriesPage() {
 
   if (error || (activeTab === "trash" && allStoriesPage === undefined)) {
     return (
-      <div className="min-h-screen bg-gray-50 overflow-y-auto">
+      <div className="min-h-screen bg-white overflow-y-auto">
         <div className="p-8">
           <div className="text-center text-red-600">
             Error loading your stories. Please try again.
@@ -300,19 +303,28 @@ export default function MyStoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="min-h-screen bg-white overflow-y-auto">
       <div className="p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Stories</h1>
+            <h1 className="text-3xl font-bold" style={{ color: "#18243c" }}>
+              Stories
+            </h1>
             <p className="text-gray-600 mt-2">
               Manage your stories, drafts, and publications
             </p>
           </div>
           <button
             onClick={handleCreateNew}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className="text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            style={{ backgroundColor: "#18243c" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0f1729")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#18243c")
+            }
           >
             <Plus className="h-4 w-4" />
             <span>Create a Story</span>
@@ -321,7 +333,7 @@ export default function MyStoriesPage() {
 
         {/* Tab Navigation */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
+          <div className="flex items-center justify-between border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {[
                 {
@@ -353,22 +365,20 @@ export default function MyStoriesPage() {
                   onClick={() => setActiveTab(tab.id as StoryTab)}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
+                      ? "border-transparent"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
+                  style={{
+                    borderBottomColor: activeTab === tab.id ? '#18243c' : 'transparent',
+                    color: activeTab === tab.id ? '#18243c' : undefined
+                  }}
                 >
-                  {tab.label}
-                  {tab.count > 0 && (
-                    <span
-                      className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab.id
-                          ? "bg-blue-100 text-blue-600"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
+                  <div className="flex items-center space-x-2">
+                    <span>{tab.label}</span>
+                    <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
                       {tab.count}
                     </span>
-                  )}
+                  </div>
                 </button>
               ))}
             </nav>
@@ -415,7 +425,16 @@ export default function MyStoriesPage() {
                           {activeTab !== "trash" && (
                             <button
                               onClick={handleCreateNew}
-                              className="ant-btn ant-btn-primary"
+                              className="px-6 py-3 text-white font-medium rounded-lg transition-colors"
+                              style={{ backgroundColor: "#18243c" }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#0f1729")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#18243c")
+                              }
                             >
                               Create Your First Story
                             </button>
@@ -619,17 +638,24 @@ export default function MyStoriesPage() {
                               {/* Operation Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">
                                 <div className="flex items-center justify-center gap-2">
-                                  {/* Explorer Button */}
+                                  {/* View Button */}
                                   <button
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleExplore(story.id);
                                     }}
-                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                                    className="text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                                    style={{ backgroundColor: "#18243c" }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor = "#0f1729")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor = "#18243c")
+                                    }
                                   >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    Explorer
+                                    <Eye className="h-4 w-4" />
+                                    <span>View</span>
                                   </button>
 
                                   {/* Dropdown Menu */}
@@ -671,7 +697,7 @@ export default function MyStoriesPage() {
                                               className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
                                             >
                                               <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
-                                              <span>Settings</span>
+                                              <span>Edit Story</span>
                                             </button>
 
                                             <hr className="my-1 border-gray-100" />
@@ -717,18 +743,27 @@ export default function MyStoriesPage() {
                                                   itemType="story"
                                                   itemTitle={story.title}
                                                   actionType="moveToTrash"
-                                                  currentPublishStatus={story.publishStatus}
-                                                  currentPricingType={story.pricingType}
+                                                  currentPublishStatus={
+                                                    story.publishStatus
+                                                  }
+                                                  currentPricingType={
+                                                    story.pricingType
+                                                  }
                                                   onAction={() => {
                                                     setOpenDropdown(null);
-                                                    handleMoveToTrashClick(story.id);
+                                                    handleMoveToTrashClick(
+                                                      story.id
+                                                    );
                                                   }}
                                                   disabled={isMovingToTrash}
-                                                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-0 bg-transparent justify-start h-auto p-0"
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-0 bg-transparent justify-start h-auto"
                                                   variant="destructive"
                                                 >
-                                                  <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
-                                                  <span>{isMovingToTrash ? "Moving to trash..." : "Move to Trash"}</span>
+                                                  <span className="ml-2">
+                                                    {isMovingToTrash
+                                                      ? "Moving to trash..."
+                                                      : "Move to Trash"}
+                                                  </span>
                                                 </ProtectedActionButton>
                                               </div>
                                             )}

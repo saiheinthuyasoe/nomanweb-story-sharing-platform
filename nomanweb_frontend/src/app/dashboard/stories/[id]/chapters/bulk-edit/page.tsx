@@ -467,8 +467,8 @@ export default function BulkEditChaptersPage() {
                 <ArrowLeftIcon className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-nomanweb-primary">
-                  Bulk Edit Chapters
+                <h1 className="text-2xl font-bold" style={{color: '#18243c'}}>
+                  Multi Edit Chapters
                 </h1>
                 <p className="text-gray-600 mt-1">
                   Edit chapter information for all chapters at once
@@ -531,14 +531,18 @@ export default function BulkEditChaptersPage() {
                 onClick={() => setActiveTab("published")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "published"
-                    ? "border-nomanweb-primary text-nomanweb-primary"
+                    ? "border-transparent"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
+                style={{
+                  borderBottomColor: activeTab === "published" ? '#18243c' : 'transparent',
+                  color: activeTab === "published" ? '#18243c' : undefined
+                }}
               >
                 <div className="flex items-center space-x-2">
                   <GlobeAltIcon className="w-4 h-4" />
                   <span>Published Chapters</span>
-                  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
                     {publishedChapters.length}
                   </span>
                   {publishedChapters.some((ch) => ch.hasChanges) && (
@@ -554,14 +558,18 @@ export default function BulkEditChaptersPage() {
                 onClick={() => setActiveTab("draft")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "draft"
-                    ? "border-nomanweb-primary text-nomanweb-primary"
+                    ? "border-transparent"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
+                style={{
+                  borderBottomColor: activeTab === "draft" ? '#18243c' : 'transparent',
+                  color: activeTab === "draft" ? '#18243c' : undefined
+                }}
               >
                 <div className="flex items-center space-x-2">
                   <ClockIcon className="w-4 h-4" />
                   <span>Draft Chapters</span>
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
                     {draftChapters.length}
                   </span>
                   {draftChapters.some((ch) => ch.hasChanges) && (
@@ -774,7 +782,7 @@ function ChapterEditCard({
                 <>
                   <button
                     onClick={() => onStartEdit(chapter.id)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2 text-black hover:bg-gray-50 rounded-lg transition-colors"
                     title="Edit chapter"
                   >
                     <PencilSquareIcon className="w-4 h-4" />

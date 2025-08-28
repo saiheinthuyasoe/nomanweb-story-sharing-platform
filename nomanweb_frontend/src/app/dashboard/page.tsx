@@ -60,7 +60,7 @@ export default function WriterDashboard() {
         </div>
 
         {/* Dashboard Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-8">
           <DashboardCard
             title="Total Stories"
             value={totalStories}
@@ -128,51 +128,99 @@ export default function WriterDashboard() {
         </div>
 
         {/* Analytics Chart Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Analytics Overview
-            </h3>
-            <div className="flex items-center space-x-2">
-              {chartFilters.map((filter) => (
-                <button
-                  key={filter.value}
-                  onClick={() => setChartFilter(filter.value)}
-                  className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-                    chartFilter === filter.value
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 overflow-hidden relative">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full opacity-20 transform translate-x-16 -translate-y-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-100 to-blue-100 rounded-full opacity-20 transform -translate-x-12 translate-y-12"></div>
 
-          {/* Chart Placeholder */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 h-64 flex items-center justify-center border-2 border-dashed border-blue-200">
-            <div className="text-center">
-              <BarChart3 className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-              <h4 className="text-lg font-semibold text-blue-700 mb-2">
-                Analytics Chart
-              </h4>
-              <p className="text-blue-600">
-                Story views, earnings, and engagement metrics for{" "}
-                {chartFilters
-                  .find((f) => f.value === chartFilter)
-                  ?.label.toLowerCase()}
-              </p>
+          <div className="relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+              <div className="mb-4 sm:mb-0">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Analytics Overview
+                </h3>
+                <p className="text-gray-600">Performance insights</p>
+              </div>
+              <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+                {chartFilters.map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setChartFilter(filter.value)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      chartFilter === filter.value ? "shadow-sm" : ""
+                    }`}
+                    style={{
+                      backgroundColor:
+                        chartFilter === filter.value ? "#18243c" : "#f9fafb",
+                      color:
+                        chartFilter === filter.value ? "#ffffff" : "#18243c",
+                      border: "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (chartFilter !== filter.value) {
+                        e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (chartFilter !== filter.value) {
+                        e.currentTarget.style.backgroundColor = "#f9fafb";
+                      }
+                    }}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart Placeholder */}
+            <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-xl p-6 h-48 flex items-center justify-center border border-gray-200 shadow-inner relative overflow-hidden">
+              {/* Chart background pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="grid grid-cols-8 h-full">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="border-r border-gray-400 last:border-r-0"
+                    ></div>
+                  ))}
+                </div>
+                <div className="absolute inset-0 grid grid-rows-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-gray-400 last:border-b-0"
+                    ></div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-center relative z-10">
+                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-2 inline-block mb-3 shadow-lg">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-lg font-bold text-gray-800 mb-2">
+                  Analytics Overview
+                </h4>
+                <p className="text-sm text-gray-600 max-w-xs mx-auto">
+                  Performance insights for{" "}
+                  <span className="font-semibold" style={{ color: "#18243c" }}>
+                    {chartFilters
+                      .find((f) => f.value === chartFilter)
+                      ?.label.toLowerCase()}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Quick Actions
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <QuickAction
               href="/write"
               icon={PlusIcon}
@@ -218,41 +266,32 @@ function DashboardCard({
   trend: string;
 }) {
   const colorClasses = {
-    blue: "from-blue-500 to-blue-600 text-blue-600 bg-blue-50",
-    green: "from-green-500 to-green-600 text-green-600 bg-green-50",
-    yellow: "from-yellow-500 to-yellow-600 text-yellow-600 bg-yellow-50",
-    purple: "from-purple-500 to-purple-600 text-purple-600 bg-purple-50",
-    pink: "from-pink-500 to-pink-600 text-pink-600 bg-pink-50",
-    red: "from-red-500 to-red-600 text-red-600 bg-red-50",
-    orange: "from-orange-500 to-orange-600 text-orange-600 bg-orange-50",
-    indigo: "from-indigo-500 to-indigo-600 text-indigo-600 bg-indigo-50",
+    blue: "text-blue-600 bg-blue-50",
+    green: "text-green-600 bg-green-50",
+    yellow: "text-yellow-600 bg-yellow-50",
+    purple: "text-purple-600 bg-purple-50",
+    pink: "text-pink-600 bg-pink-50",
+    red: "text-red-600 bg-red-50",
+    orange: "text-orange-600 bg-orange-50",
+    indigo: "text-indigo-600 bg-indigo-50",
   };
 
-  const [gradientClass, iconColorClass, bgClass] =
+  const [iconColorClass, bgClass] =
     colorClasses[color as keyof typeof colorClasses].split(" ");
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <div className="flex items-start justify-between mb-4">
-        <div
-          className={`p-3 rounded-lg bg-gradient-to-r ${gradientClass} text-white`}
-        >
-          <Icon className="h-6 w-6" />
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all duration-200">
+      <div className="flex items-center space-x-4">
+        <div className={`p-2.5 rounded-md ${bgClass}`}>
+          <Icon className={`h-6 w-6 ${iconColorClass}`} />
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium text-gray-600 truncate">
+            {title}
+          </h3>
+          <p className="text-2xl font-bold text-gray-900 truncate">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-sm text-gray-600">{description}</p>
-        <div
-          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${bgClass} ${iconColorClass}`}
-        >
-          {trend}
         </div>
       </div>
     </div>
@@ -274,31 +313,27 @@ function QuickAction({
   color: string;
 }) {
   const colorClasses = {
-    green:
-      "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
-    blue: "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
-    purple:
-      "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700",
+    green: "bg-green-100 text-green-700 hover:bg-green-200",
+    blue: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+    purple: "bg-purple-100 text-purple-700 hover:bg-purple-200",
   };
 
-  const gradientClass = colorClasses[color as keyof typeof colorClasses];
+  const colorClass = colorClasses[color as keyof typeof colorClasses];
 
   return (
     <Link
       href={href}
-      className="block p-6 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-100 transition-all duration-200 group"
+      className="block p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors duration-200 group"
     >
-      <div className="flex items-center space-x-4">
+      <div className="flex items-start space-x-3">
         <div
-          className={`p-3 rounded-lg bg-gradient-to-r ${gradientClass} text-white group-hover:scale-110 transition-transform duration-200`}
+          className={`p-2 rounded-lg ${colorClass} transition-colors duration-200`}
         >
-          <Icon className="h-6 w-6" />
+          <Icon className="h-5 w-5" />
         </div>
-        <div>
-          <h4 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700">
-            {title}
-          </h4>
-          <p className="text-sm text-gray-600">{description}</p>
+        <div className="flex-1">
+          <h4 className="text-sm font-medium text-gray-900 mb-1">{title}</h4>
+          <p className="text-xs text-gray-600">{description}</p>
         </div>
       </div>
     </Link>

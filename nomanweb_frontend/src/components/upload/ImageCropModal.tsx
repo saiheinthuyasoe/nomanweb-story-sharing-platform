@@ -107,7 +107,7 @@ export function ImageCropModal({
         containerDimensions.height
       );
       setScale(fitScale);
-      
+
       // Center the image in the container
       const scaledWidth = width * fitScale;
       const scaledHeight = height * fitScale;
@@ -300,25 +300,22 @@ export function ImageCropModal({
     if (imgRef.current) {
       try {
         setIsProcessing(true);
-        
+
         let cropToUse = completedCrop;
-        
+
         // If no crop area is selected, use the entire image
         if (!completedCrop) {
           const { width, height } = imgRef.current;
           cropToUse = {
-            unit: 'px' as const,
+            unit: "px" as const,
             x: 0,
             y: 0,
             width: width,
-            height: height
+            height: height,
           };
         }
-        
-        const croppedImageFile = await getCroppedImg(
-          imgRef.current,
-          cropToUse
-        );
+
+        const croppedImageFile = await getCroppedImg(imgRef.current, cropToUse);
         onCrop(croppedImageFile);
         onClose();
       } catch (error) {
@@ -343,7 +340,7 @@ export function ImageCropModal({
         containerDimensions.height
       );
       setScale(fitScale);
-      
+
       // Center the image in the container
       const scaledWidth = imageDimensions.width * fitScale;
       const scaledHeight = imageDimensions.height * fitScale;
@@ -359,11 +356,7 @@ export function ImageCropModal({
 
     // Reset crop area to undefined - let user manually select if needed
     setCrop(undefined);
-  }, [
-    imageDimensions,
-    containerDimensions,
-    calculateFitScale,
-  ]);
+  }, [imageDimensions, containerDimensions, calculateFitScale]);
 
   const getScaleLimits = useCallback(() => {
     if (
@@ -428,30 +421,28 @@ export function ImageCropModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg border border-gray-200 max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#18243c] to-[#18243c]/90 px-6 py-4 text-white">
+        <div className="bg-gray-800 px-4 py-3 text-white border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <CropIcon className="w-5 h-5" />
-              </div>
+            <div className="flex items-center space-x-2">
+              <CropIcon className="w-4 h-4" />
               <div>
-                <h2 className="text-lg font-bold">{title}</h2>
-                <p className="text-blue-100 text-xs mt-0.5">
+                <h2 className="text-base font-medium">{title}</h2>
+                <p className="text-gray-300 text-xs">
                   {mode === "crop"
-                    ? "Drag corners to crop • Switch to move mode"
-                    : "Drag image to move • Switch to crop mode"}
+                    ? "Drag corners to crop"
+                    : "Drag image to move"}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 group"
+              className="p-1 hover:bg-gray-700 rounded"
               aria-label="Close crop modal"
             >
-              <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -459,33 +450,29 @@ export function ImageCropModal({
         {/* Main Content */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Crop Area */}
-          <div className="flex-1 p-4 bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="flex-1 p-4 bg-gray-50">
             <div className="h-full flex flex-col">
               {/* Instructions */}
-              <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <ImageIcon className="w-3 h-3 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xs font-semibold text-blue-900">
-                      Instructions
-                    </h3>
-                    <p className="text-xs text-blue-700">
-                      {mode === "crop"
-                        ? "Drag corners to resize crop area • Switch to move mode to reposition image"
-                        : "Drag image to move it around • Switch to crop mode to adjust crop area"}
-                    </p>
+              <div className="mb-3 p-3 bg-white border border-gray-200 rounded">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ImageIcon className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-800">
+                        {mode === "crop" ? "Crop Mode" : "Move Mode"}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {mode === "crop"
+                          ? "Drag corners to resize crop area"
+                          : "Drag image to reposition"}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={toggleMode}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      mode === "move"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-blue-700 border border-blue-200 hover:bg-blue-50"
-                    }`}
+                    className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-gray-700"
                   >
-                    {mode === "crop" ? "Move Mode" : "Crop Mode"}
+                    {mode === "crop" ? "Move" : "Crop"}
                   </button>
                 </div>
               </div>
@@ -493,7 +480,7 @@ export function ImageCropModal({
               {/* Crop Container */}
               <div
                 ref={containerRef}
-                className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto relative"
+                className="flex-1 bg-white rounded border border-gray-200 overflow-auto relative"
               >
                 <div className="min-h-full min-w-full flex items-center justify-center p-3">
                   <div
@@ -547,27 +534,15 @@ export function ImageCropModal({
                     </ReactCrop>
 
                     {/* Mode indicator */}
-                    <div
-                      className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
-                        mode === "move"
-                          ? isDragging
-                            ? "bg-green-500 text-white"
-                            : "bg-blue-500 text-white"
-                          : "bg-orange-500 text-white"
-                      }`}
-                    >
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-gray-800 text-white rounded text-xs">
                       {mode === "move"
                         ? isDragging
-                          ? "Dragging..."
-                          : "Move Mode - Click & Drag"
-                        : "Crop Mode - Drag corners"}
+                          ? "Moving"
+                          : "Move Mode"
+                        : "Crop Mode"}
                     </div>
 
-                    {/* Position debug */}
-                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                      Pos: ({imagePosition.x.toFixed(0)},{" "}
-                      {imagePosition.y.toFixed(0)})
-                    </div>
+
                   </div>
                 </div>
               </div>
@@ -575,15 +550,13 @@ export function ImageCropModal({
           </div>
 
           {/* Controls Panel */}
-          <div className="w-full lg:w-72 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+          <div className="w-full lg:w-64 bg-white border-l border-gray-200 p-4 overflow-y-auto">
             <div className="space-y-4">
               {/* Scale Controls */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3 border border-purple-200">
+              <div className="bg-gray-50 rounded p-3 border border-gray-200">
                 <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <ZoomIn className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-semibold text-gray-900">Scale</h3>
+                  <ZoomIn className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-800">Scale</h3>
                 </div>
 
                 <div className="space-y-2">
@@ -591,10 +564,10 @@ export function ImageCropModal({
                     <button
                       onClick={handleZoomOut}
                       disabled={scale <= scaleLimits.min}
-                      className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Zoom out"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-4 h-4" />
                     </button>
                     <input
                       type="range"
@@ -605,15 +578,15 @@ export function ImageCropModal({
                       onChange={(e) =>
                         handleScaleChange(Number(e.target.value))
                       }
-                      className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      className="flex-1 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
                     />
                     <button
                       onClick={handleZoomIn}
                       disabled={scale >= scaleLimits.max}
-                      className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Zoom in"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="text-center">
@@ -625,12 +598,10 @@ export function ImageCropModal({
               </div>
 
               {/* Rotation Controls */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200">
+              <div className="bg-gray-50 rounded p-3 border border-gray-200">
                 <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                    <RotateCw className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-semibold text-gray-900">
+                  <RotateCw className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-800">
                     Rotation
                   </h3>
                 </div>
@@ -639,10 +610,10 @@ export function ImageCropModal({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={handleRotateLeft}
-                      className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                      className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
                       aria-label="Rotate left"
                     >
-                      <RotateCcwIcon className="w-3 h-3" />
+                      <RotateCcwIcon className="w-4 h-4" />
                     </button>
                     <input
                       type="range"
@@ -652,18 +623,18 @@ export function ImageCropModal({
                       onChange={(e) =>
                         handleRotateChange(Number(e.target.value))
                       }
-                      className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      className="flex-1 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
                     />
                     <button
                       onClick={handleRotateRight}
-                      className="p-1.5 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                      className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
                       aria-label="Rotate right"
                     >
-                      <RotateCw className="w-3 h-3" />
+                      <RotateCw className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="text-center">
-                    <span className="text-xs font-medium text-gray-700 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                    <span className="text-sm text-gray-700 bg-white px-2 py-1 rounded border border-gray-200">
                       {rotate}°
                     </span>
                   </div>
@@ -671,32 +642,61 @@ export function ImageCropModal({
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-3 border border-orange-200">
+              <div className="bg-gray-50 rounded p-3 border border-gray-200">
                 <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                    <RotateCcw className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-semibold text-gray-900">
+                  <RotateCcw className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-800">
                     Quick Actions
                   </h3>
                 </div>
 
                 <button
                   onClick={handleReset}
-                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 text-xs font-medium text-gray-700"
+                  className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-4 h-4" />
                   <span>Reset All</span>
                 </button>
               </div>
 
+              {/* Mode Toggle */}
+              <div className="bg-gray-50 rounded p-3 border border-gray-200">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Move className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-800">Mode</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setMode("move")}
+                    className={`p-2 rounded text-sm ${
+                      mode === "move"
+                        ? "bg-gray-800 text-white"
+                        : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Move className="w-4 h-4 mx-auto mb-1" />
+                    Move
+                  </button>
+                  <button
+                    onClick={() => setMode("crop")}
+                    className={`p-2 rounded text-sm ${
+                      mode === "crop"
+                        ? "bg-gray-800 text-white"
+                        : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <CropIcon className="w-4 h-4 mx-auto mb-1" />
+                    Crop
+                  </button>
+                </div>
+              </div>
+
               {/* Aspect Ratio Info */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-200">
+              <div className="bg-gray-50 rounded p-3 border border-gray-200">
                 <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                    <Maximize2 className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-xs font-semibold text-gray-900">
+                  <Maximize2 className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-medium text-gray-800">
                     Aspect Ratio
                   </h3>
                 </div>
@@ -752,7 +752,7 @@ export function ImageCropModal({
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>{completedCrop ? 'Apply Crop' : 'Use Image'}</span>
+                    <span>{completedCrop ? "Apply Crop" : "Use Image"}</span>
                   </>
                 )}
               </button>

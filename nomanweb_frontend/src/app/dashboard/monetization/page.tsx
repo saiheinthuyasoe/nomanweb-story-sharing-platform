@@ -148,7 +148,13 @@ export default function MonetizationPage() {
   const [refundsPaid, setRefundsPaid] = useState<RefundPaid[]>([]);
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "earned" | "received" | "sent" | "purchases" | "refunds-earned" | "refunds-paid"
+    | "overview"
+    | "earned"
+    | "received"
+    | "sent"
+    | "purchases"
+    | "refunds-earned"
+    | "refunds-paid"
   >("overview");
   const [loading, setLoading] = useState(true);
   const [previousBalance, setPreviousBalance] = useState<number>(0);
@@ -384,13 +390,18 @@ export default function MonetizationPage() {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
           <CardHeader>
-            <CardTitle className="text-center">Authentication Required</CardTitle>
+            <CardTitle className="text-center">
+              Authentication Required
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-gray-600 mb-4">
               Please log in to view your monetization dashboard and refund data.
             </p>
-            <Button onClick={() => window.location.href = '/login'} className="w-full">
+            <Button
+              onClick={() => (window.location.href = "/login")}
+              className="w-full"
+            >
               Go to Login
             </Button>
           </CardContent>
@@ -401,55 +412,59 @@ export default function MonetizationPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Monetization Dashboard
-        </h1>
-        <p className="text-gray-600">
-          Track your earnings and manage your coins
-        </p>
-      </div>
 
-      {/* Coin Balance Card */}
-      <div className="mb-8">
-        <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Coins className="h-6 w-6" />
-              Current Coin Balance
-              {coinBalance !== user?.coinBalance && (
-                <div className="ml-2 px-2 py-1 bg-white/20 rounded-full text-xs animate-pulse">
-                  Updating...
-                </div>
-              )}
-              <div
-                className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                  sseConnected ? "bg-green-500/20" : "bg-red-500/20"
-                }`}
-              >
-                {sseConnected ? "🟢 Live" : "🔴 Offline"}
+
+      {/* Header with Coin Balance */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Monetization Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Track your earnings and manage your coins
+          </p>
+        </div>
+        
+        {/* Compact Coin Balance Card */}
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-3 w-64 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-yellow-100 rounded-lg">
+                <Coins className="h-4 w-4 text-yellow-700" />
               </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold">
-                {formatCurrency(coinBalance)} Coins
+              <div>
+                <p className="text-xs font-medium text-yellow-700">Coin Balance</p>
+                <p className="text-base font-bold text-yellow-900">
+                  {formatCurrency(coinBalance)}
+                </p>
               </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                sseConnected ? "bg-green-500" : "bg-gray-400"
+              }`}></div>
               <Button
                 onClick={() => (window.location.href = "/buy-coins")}
-                className="bg-white text-orange-600 hover:bg-gray-100 border border-orange-200"
+                size="sm"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 text-xs h-6 rounded-md font-medium"
               >
-                Buy More
+                + Buy
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          {coinBalance !== user?.coinBalance && (
+            <div className="mt-1">
+              <span className="text-xs text-yellow-600 animate-pulse font-medium">
+                Updating...
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="mb-6">
-        <div className="flex space-x-1 border-b">
+        <div className="bg-gray-100 p-1 rounded-lg inline-flex flex-wrap gap-1">
           {[
             { key: "overview", label: "Overview", icon: TrendingUp },
             { key: "earned", label: "Earned Money", icon: DollarSign },
@@ -462,14 +477,26 @@ export default function MonetizationPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key as any)}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
-                activeTab === key
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center space-x-2`}
+              style={{
+                backgroundColor: activeTab === key ? "#18243c" : "transparent",
+                color: activeTab === key ? "#ffffff" : "#6b7280",
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== key) {
+                  e.currentTarget.style.backgroundColor = "#f3f4f6";
+                  e.currentTarget.style.color = "#374151";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== key) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#6b7280";
+                }
+              }}
             >
               <Icon className="h-4 w-4" />
-              {label}
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -479,61 +506,70 @@ export default function MonetizationPage() {
       {activeTab === "overview" && analytics && (
         <div className="space-y-6">
           {/* Earnings Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Earnings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(analytics.totalEarnings)} Coins
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-md bg-green-50">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-600 truncate">
+                    Total Earnings
+                  </h3>
+                  <p className="text-xl font-bold text-gray-900 truncate">
+                    {formatCurrency(analytics.totalEarnings)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Chapter Sales
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(analytics.totalChapterSales)} Coins
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-md bg-blue-50">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-600 truncate">
+                    Chapter Sales
+                  </h3>
+                  <p className="text-xl font-bold text-gray-900 truncate">
+                    {formatCurrency(analytics.totalChapterSales)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Gift Earnings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(analytics.totalGiftEarnings)} Coins
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-md bg-purple-50">
+                  <Gift className="h-5 w-5 text-purple-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-600 truncate">
+                    Gift Earnings
+                  </h3>
+                  <p className="text-xl font-bold text-gray-900 truncate">
+                    {formatCurrency(analytics.totalGiftEarnings)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  This Month
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(analytics.currentMonthEarnings)} Coins
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-md bg-orange-50">
+                  <Calendar className="h-5 w-5 text-orange-600" />
                 </div>
-                <div className="text-sm text-gray-500">
-                  Last month: {formatCurrency(analytics.lastMonthEarnings)}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-600 truncate">
+                    This Month
+                  </h3>
+                  <p className="text-xl font-bold text-gray-900 truncate">
+                    {formatCurrency(analytics.currentMonthEarnings)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Top Earning Chapters */}
@@ -622,85 +658,79 @@ export default function MonetizationPage() {
       {activeTab === "earned" && (
         <div className="space-y-6">
           {/* Earnings Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Earned
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(
-                    earnedMoney.reduce(
-                      (sum, earning) => sum + earning.netEarnings,
-                      0
-                    )
-                  )}{" "}
-                  Coins
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Net after platform fees
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Purchases
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {earnedMoney.length}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Chapters & Stories sold
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Unique Readers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {new Set(earnedMoney.map((e) => e.readerUsername)).size}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Different buyers
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  This Month
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(
-                    earnedMoney
-                      .filter(
-                        (e) =>
-                          new Date(e.createdAt).getMonth() ===
-                          new Date().getMonth()
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Earned</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {formatCurrency(
+                      earnedMoney.reduce(
+                        (sum, earning) => sum + earning.netEarnings,
+                        0
                       )
-                      .reduce((sum, earning) => sum + earning.netEarnings, 0)
-                  )}{" "}
-                  Coins
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">Net after platform fees</p>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Current month earnings
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ShoppingBag className="h-5 w-5 text-blue-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Purchases</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {earnedMoney.length}
+                  </p>
+                  <p className="text-xs text-gray-500">Chapters & Stories sold</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Users className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Unique Readers</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {new Set(earnedMoney.map((e) => e.readerUsername)).size}
+                  </p>
+                  <p className="text-xs text-gray-500">Different buyers</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Calendar className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-lg font-bold text-orange-600">
+                    {formatCurrency(
+                      earnedMoney
+                        .filter(
+                          (e) =>
+                            new Date(e.createdAt).getMonth() ===
+                            new Date().getMonth()
+                        )
+                        .reduce((sum, earning) => sum + earning.netEarnings, 0)
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">Current month earnings</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Earnings History */}
@@ -1024,80 +1054,77 @@ export default function MonetizationPage() {
       {activeTab === "purchases" && (
         <div className="space-y-6">
           {/* Purchase Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Spent
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(
-                    purchaseHistory.reduce(
-                      (sum, purchase) => sum + purchase.amount,
-                      0
-                    )
-                  )}{" "}
-                  Coins
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Coins className="h-5 w-5 text-red-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  All-time spending
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                  <p className="text-lg font-bold text-red-600">
+                    {formatCurrency(
+                      purchaseHistory.reduce(
+                        (sum, purchase) => sum + purchase.amount,
+                        0
+                      )
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">All-time spending</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Purchases
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {purchaseHistory.length}
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ShoppingBag className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Chapters & Books
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Purchases</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {purchaseHistory.length}
+                  </p>
+                  <p className="text-xs text-gray-500">Chapters & Books</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Books Owned
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {
-                    purchaseHistory.filter((p) => p.purchaseType === "book")
-                      .length
-                  }
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-purple-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Complete books</div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Books Owned</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {
+                      purchaseHistory.filter((p) => p.purchaseType === "book")
+                        .length
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500">Complete books</p>
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Chapters Owned
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {
-                    purchaseHistory.filter((p) => p.purchaseType === "chapter")
-                      .length
-                  }
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Individual chapters
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Chapters Owned</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {
+                      purchaseHistory.filter((p) => p.purchaseType === "chapter")
+                        .length
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500">Individual chapters</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Purchase History */}
@@ -1290,82 +1317,74 @@ export default function MonetizationPage() {
       {activeTab === "refunds-earned" && (
         <div className="space-y-6">
           {/* Refunds Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Refunds Received
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(
-                    refundsEarned.reduce(
-                      (sum, refund) => sum + refund.refundAmount,
-                      0
-                    )
-                  )}{" "}
-                  Coins
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <RotateCcw className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Money returned to you
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Refunds Received</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {formatCurrency(
+                      refundsEarned.reduce(
+                        (sum, refund) => sum + refund.refundAmount,
+                        0
+                      )
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">Money returned to you</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Refunds
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {refundsEarned.length}
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <RotateCcw className="h-5 w-5 text-blue-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Refund transactions
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Refunds</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {refundsEarned.length}
+                  </p>
+                  <p className="text-xs text-gray-500">Refund transactions</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Book Refunds
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {
-                    refundsEarned.filter((r) => r.refundType === "book")
-                      .length
-                  }
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-purple-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Complete book refunds
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Book Refunds</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {refundsEarned.filter((r) => r.refundType === "book").length}
+                  </p>
+                  <p className="text-xs text-gray-500">Complete book refunds</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Chapter Refunds
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {
-                    refundsEarned.filter((r) => r.refundType === "chapter")
-                      .length
-                  }
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Star className="h-5 w-5 text-orange-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Individual chapter refunds
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Chapter Refunds</p>
+                  <p className="text-lg font-bold text-orange-600">
+                    {
+                      refundsEarned.filter((r) => r.refundType === "chapter")
+                        .length
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500">Individual chapter refunds</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Refunds Earned History */}
@@ -1462,7 +1481,8 @@ export default function MonetizationPage() {
                           +{formatCurrency(refund.refundAmount)} Coins
                         </div>
                         <div className="text-xs text-gray-500">
-                          Original: {formatCurrency(refund.originalAmount)} Coins
+                          Original: {formatCurrency(refund.originalAmount)}{" "}
+                          Coins
                         </div>
                       </div>
                     </div>
@@ -1485,85 +1505,79 @@ export default function MonetizationPage() {
       {activeTab === "refunds-paid" && (
         <div className="space-y-6">
           {/* Refunds Paid Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Refunds Paid
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(
-                    refundsPaid.reduce(
-                      (sum, refund) => sum + refund.refundAmount,
-                      0
-                    )
-                  )}{" "}
-                  Coins
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <RotateCcw className="h-5 w-5 text-red-600" />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Money refunded to readers
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Refunds
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {refundsPaid.length}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Refund transactions
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Unique Readers
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">
-                  {new Set(refundsPaid.map((r) => r.readerUsername)).size}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Readers refunded
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  This Month
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(
-                    refundsPaid
-                      .filter(
-                        (r) =>
-                          new Date(r.createdAt).getMonth() ===
-                          new Date().getMonth()
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Refunds Paid</p>
+                  <p className="text-lg font-bold text-red-600">
+                    {formatCurrency(
+                      refundsPaid.reduce(
+                        (sum, refund) => sum + refund.refundAmount,
+                        0
                       )
-                      .reduce((sum, refund) => sum + refund.refundAmount, 0)
-                  )}{" "}
-                  Coins
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">Money refunded to readers</p>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Current month refunds
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <RotateCcw className="h-5 w-5 text-blue-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total Refunds</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {refundsPaid.length}
+                  </p>
+                  <p className="text-xs text-gray-500">Refund transactions</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Users className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Unique Readers</p>
+                  <p className="text-lg font-bold text-purple-600">
+                    {new Set(refundsPaid.map((r) => r.readerUsername)).size}
+                  </p>
+                  <p className="text-xs text-gray-500">Readers refunded</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Calendar className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-lg font-bold text-orange-600">
+                    {formatCurrency(
+                      refundsPaid
+                        .filter(
+                          (r) =>
+                            new Date(r.createdAt).getMonth() ===
+                            new Date().getMonth()
+                        )
+                        .reduce((sum, refund) => sum + refund.refundAmount, 0)
+                    )} Coins
+                  </p>
+                  <p className="text-xs text-gray-500">Current month refunds</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Refunds Paid History */}
@@ -1663,7 +1677,8 @@ export default function MonetizationPage() {
                           -{formatCurrency(refund.refundAmount)} Coins
                         </div>
                         <div className="text-xs text-gray-500">
-                          Original: {formatCurrency(refund.originalAmount)} Coins
+                          Original: {formatCurrency(refund.originalAmount)}{" "}
+                          Coins
                         </div>
                       </div>
                     </div>

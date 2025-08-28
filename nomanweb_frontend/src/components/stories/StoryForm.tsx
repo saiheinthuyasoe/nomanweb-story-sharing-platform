@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { CreateStoryRequest, UpdateStoryRequest, Story } from "@/types/story";
 import { useCategories } from "@/hooks/useStories";
 import { XMarkIcon } from "@heroicons/react/24/outline";
@@ -57,16 +57,27 @@ export function StoryForm({
     },
   });
 
-  const watchedCoverImage = watch("coverImageUrl");
-  const watchedPricingType = watch("pricingType");
-
-  // Debug logging for cover image
+  const watchedPricingType = useWatch({ control, name: "pricingType" });
+  
+  // Use a more stable reference for cover image to prevent unnecessary re-renders
+  const [stableCoverImage, setStableCoverImage] = useState(story?.coverImageUrl || "");
+  const currentCoverImageRef = useRef(story?.coverImageUrl || "");
+  
+  // Track cover image changes without causing re-renders
+  const coverImageValue = useWatch({ control, name: "coverImageUrl" });
+  
   useEffect(() => {
-    console.log(
-      "🖼️ StoryForm: watchedCoverImage changed to:",
-      watchedCoverImage
-    );
-  }, [watchedCoverImage]);
+    if (coverImageValue !== currentCoverImageRef.current) {
+      console.log(
+        "🖼️ StoryForm: Cover image value changed from:",
+        currentCoverImageRef.current,
+        "to:",
+        coverImageValue
+      );
+      currentCoverImageRef.current = coverImageValue;
+      setStableCoverImage(coverImageValue);
+    }
+  }, [coverImageValue]);
 
   useEffect(() => {
     setValue("tags", selectedTags);
@@ -131,14 +142,16 @@ export function StoryForm({
     }
   };
 
-  const handleCoverImageChange = (url: string) => {
+  const handleCoverImageChange = useCallback((url: string) => {
     console.log("🖼️ StoryForm: handleCoverImageChange called with URL:", url);
     setValue("coverImageUrl", url);
-  };
+    setStableCoverImage(url);
+  }, [setValue]);
 
-  const handleCoverImageRemove = () => {
+  const handleCoverImageRemove = useCallback(() => {
     setValue("coverImageUrl", "");
-  };
+    setStableCoverImage("");
+  }, [setValue]);
 
   const calculateRefund = async (storyId: string) => {
     try {
@@ -252,14 +265,13 @@ export function StoryForm({
           <div className="flex justify-center">
             <StoryCoverUpload
               storyId={story?.id || "new"}
-              value={watchedCoverImage}
+              value={stableCoverImage}
               onChange={handleCoverImageChange}
               onRemove={handleCoverImageRemove}
               disabled={isLoading}
               placeholder="Upload your story cover"
             />
           </div>
-        
         </div>
 
         {/* Title */}
@@ -288,7 +300,9 @@ export function StoryForm({
             Description *
           </label>
           <textarea
-            {...register('description', { required: 'Description is required' })}
+            {...register("description", {
+              required: "Description is required",
+            })}
             placeholder="Describe your story..."
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50 resize-none"
@@ -315,8 +329,18 @@ export function StoryForm({
               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
@@ -340,37 +364,22 @@ export function StoryForm({
               <option value="WHOLE_BOOK">Whole Book</option>
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
 
-            {/* One-Time Purchase Protection Message for Paid-to-Paid Changes */}
-            {isEdit &&
-              story &&
-              story.pricingType !== watchedPricingType &&
-              (story.pricingType === "PAID_PER_CHAPTER" ||
-                story.pricingType === "WHOLE_BOOK") &&
-              (watchedPricingType === "PAID_PER_CHAPTER" ||
-                watchedPricingType === "WHOLE_BOOK") && (
-                <div className="mt-2 p-3 bg-slate-100 border border-slate-200 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                    <div className="flex-shrink-0">
-                      <span className="text-slate-600 text-sm">🛡️</span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-800">
-                        Paid Per Chapter Information
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1">
-                        Readers who already purchased will maintain access
-                        regardless of pricing model changes. No restrictions for
-                        switching between paid pricing models.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+
           </div>
 
           {/* Book Status */}
@@ -384,8 +393,18 @@ export function StoryForm({
               <option value="COMPLETED">Completed</option>
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>

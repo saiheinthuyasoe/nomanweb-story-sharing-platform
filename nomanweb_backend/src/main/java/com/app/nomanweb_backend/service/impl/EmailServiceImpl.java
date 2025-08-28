@@ -28,17 +28,17 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(user.getEmail());
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Verify Your Email Address");
+            message.setSubject("Nomanweb - Verify Your Email Address");
 
             String verificationUrl = frontendUrl + "/verify-email?token=" + verificationToken;
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "Welcome to NoManWeb! Please verify your email address by clicking the link below:\n\n" +
+                            "Welcome to Nomanweb! Please verify your email address by clicking the link below:\n\n" +
                             "%s\n\n" +
                             "This link will expire in 48 hours.\n\n" +
-                            "If you didn't create an account with NoManWeb, please ignore this email.\n\n" +
+                            "If you didn't create an account with Nomanweb, please ignore this email.\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                     verificationUrl);
 
@@ -58,19 +58,19 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(user.getEmail());
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Password Reset Request");
+            message.setSubject("Nomanweb - Password Reset Request");
 
             String resetUrl = frontendUrl + "/reset-password?token=" + resetToken;
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "You requested a password reset for your NoManWeb account. Click the link below to reset your password:\n\n"
+                            "You requested a password reset for your Nomanweb account. Click the link below to reset your password:\n\n"
                             +
                             "%s\n\n" +
                             "This link will expire in 24 hours.\n\n" +
                             "If you didn't request a password reset, please ignore this email and your password will remain unchanged.\n\n"
                             +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                     resetUrl);
 
@@ -90,11 +90,11 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(user.getEmail());
             message.setFrom(fromEmail);
-            message.setSubject("Welcome to NoManWeb!");
+            message.setSubject("Welcome to Nomanweb!");
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "Welcome to NoManWeb! Your email has been verified and your account is now active.\n\n" +
+                            "Welcome to Nomanweb! Your email has been verified and your account is now active.\n\n" +
                             "You can now:\n" +
                             "- Create and publish your stories\n" +
                             "- Follow your favorite authors\n" +
@@ -102,7 +102,7 @@ public class EmailServiceImpl implements EmailService {
                             "- Join our vibrant community\n\n" +
                             "Start your storytelling journey: %s\n\n" +
                             "Happy writing!\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                     frontendUrl + "/dashboard");
 
@@ -121,14 +121,14 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(user.getEmail());
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Password Changed");
+            message.setSubject("Nomanweb - Password Changed");
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "Your NoManWeb account password has been successfully changed.\n\n" +
+                            "Your Nomanweb account password has been successfully changed.\n\n" +
                             "If you didn't make this change, please contact our support team immediately.\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
 
             message.setText(emailBody);
@@ -146,14 +146,14 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(oldEmail);
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Email Address Changed");
+            message.setSubject("Nomanweb - Email Address Changed");
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "Your NoManWeb account email address has been successfully changed from %s to %s.\n\n" +
+                            "Your Nomanweb account email address has been successfully changed from %s to %s.\n\n" +
                             "If you didn't make this change, please contact our support team immediately.\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                     oldEmail,
                     user.getEmail());
@@ -173,19 +173,19 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(newEmail);
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Verify Your New Email Address");
+            message.setSubject("Nomanweb - Verify Your New Email Address");
 
             String verificationUrl = frontendUrl + "/verify-email-change?token=" + verificationToken;
             String emailBody = String.format(
                     "Hello %s,\n\n" +
-                            "You requested to change your NoManWeb account email address to this email.\n\n" +
+                            "You requested to change your Nomanweb account email address to this email.\n\n" +
                             "Please click the link below to verify this email address:\n\n" +
                             "%s\n\n" +
                             "This link will expire in 24 hours.\n\n" +
                             "If you didn't request this change, please ignore this email and your email address will remain unchanged.\n\n"
                             +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                     verificationUrl);
 
@@ -208,7 +208,7 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(invitee.getEmail());
             message.setFrom(fromEmail);
-            message.setSubject("NoManWeb - Collaboration Invitation - " + chapterTitle);
+            message.setSubject("Nomanweb - Collaboration Invitation - " + chapterTitle);
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
@@ -218,7 +218,7 @@ public class EmailServiceImpl implements EmailService {
                             "Click here to accept the invitation: %s\n\n" +
                             "This invitation will expire in 7 days.\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     invitee.getDisplayName() != null ? invitee.getDisplayName() : invitee.getUsername(),
                     inviter != null ? inviter.getDisplayName() : "Someone",
                     chapterTitle,
@@ -257,14 +257,14 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(email);
             mailMessage.setFrom(fromEmail);
-            mailMessage.setSubject("NoManWeb - " + title);
+            mailMessage.setSubject("Nomanweb - " + title);
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
                             "%s\n\n" +
-                            "Visit NoManWeb: %s\n\n" +
+                            "Visit Nomanweb: %s\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     username, message, frontendUrl);
 
             mailMessage.setText(emailBody);
@@ -285,14 +285,14 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(email);
             mailMessage.setFrom(fromEmail);
-            mailMessage.setSubject("NoManWeb - " + title);
+            mailMessage.setSubject("Nomanweb - " + title);
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
                             "%s\n\n" +
                             "Check it out: %s\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     username, message, frontendUrl);
 
             mailMessage.setText(emailBody);
@@ -313,15 +313,15 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(email);
             mailMessage.setFrom(fromEmail);
-            mailMessage.setSubject("NoManWeb - System Notification: " + title);
+            mailMessage.setSubject("Nomanweb - System Notification: " + title);
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
                             "%s\n\n" +
                             "If you have any questions, please contact our support team.\n\n" +
-                            "Visit NoManWeb: %s\n\n" +
+                            "Visit Nomanweb: %s\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     username, message, frontendUrl);
 
             mailMessage.setText(emailBody);
@@ -342,14 +342,14 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(email);
             mailMessage.setFrom(fromEmail);
-            mailMessage.setSubject("NoManWeb - " + title);
+            mailMessage.setSubject("Nomanweb - " + title);
 
             String emailBody = String.format(
                     "Hello %s,\n\n" +
                             "%s\n\n" +
-                            "Visit NoManWeb: %s\n\n" +
+                            "Visit Nomanweb: %s\n\n" +
                             "Best regards,\n" +
-                            "The NoManWeb Team",
+                            "The Nomanweb Team",
                     username, message, frontendUrl);
 
             mailMessage.setText(emailBody);

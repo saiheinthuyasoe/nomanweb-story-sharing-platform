@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useChapterByStoryAndNumber, useUpdateChapter, useAutoSaveChapter } from '@/hooks/useChapters';
-import { useStory } from '@/hooks/useStories';
-import { useAuth } from '@/contexts/AuthContext';
-import { ChapterForm } from '@/components/chapters/ChapterForm';
-import { UpdateChapterRequest } from '@/lib/api/chapters';
-import Link from 'next/link';
-import { 
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  useChapterByStoryAndNumber,
+  useUpdateChapter,
+  useAutoSaveChapter,
+} from "@/hooks/useChapters";
+import { useStory } from "@/hooks/useStories";
+import { useAuth } from "@/contexts/AuthContext";
+import { ChapterForm } from "@/components/chapters/ChapterForm";
+import { UpdateChapterRequest } from "@/lib/api/chapters";
+import Link from "next/link";
+import {
   ArrowLeftIcon,
   BookOpenIcon,
   PencilIcon,
@@ -19,68 +23,79 @@ import {
   UserPlusIcon,
   StarIcon,
   ClockIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
-import { CollaborationResponse } from '@/lib/api/collaborations';
-import Image from 'next/image';
+  EyeIcon,
+} from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
+import { CollaborationResponse } from "@/lib/api/collaborations";
+import Image from "next/image";
 
 export default function EditChapterPage() {
   const params = useParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('idle');
+  const [saveStatus, setSaveStatus] = useState<
+    "saved" | "saving" | "error" | "idle"
+  >("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'EDIT' | 'VIEW'>('VIEW');
-  const [inviteMessage, setInviteMessage] = useState('');
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"EDIT" | "VIEW">("VIEW");
+  const [inviteMessage, setInviteMessage] = useState("");
   const [hasUserStartedTyping, setHasUserStartedTyping] = useState(false);
-  
+
   const storyId = params.id as string;
   const chapterNumber = parseInt(params.chapterNumber as string);
-  
+
   const { data: story, isLoading: storyLoading } = useStory(storyId);
-  const { data: chapter, isLoading: chapterLoading, error } = useChapterByStoryAndNumber(
-    storyId, 
-    chapterNumber, 
-    true
-  );
+  const {
+    data: chapter,
+    isLoading: chapterLoading,
+    error,
+  } = useChapterByStoryAndNumber(storyId, chapterNumber, true);
   const { mutate: updateChapter, isPending } = useUpdateChapter();
   const { mutate: autoSaveChapter } = useAutoSaveChapter();
-
 
   // Check if user is authorized - wait for loading to complete
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
   }, [user, loading, router]);
 
   // Auto-save status indicator
   useEffect(() => {
-    if (saveStatus === 'saved') {
-      const timer = setTimeout(() => setSaveStatus('idle'), 3000);
+    if (saveStatus === "saved") {
+      const timer = setTimeout(() => setSaveStatus("idle"), 3000);
       return () => clearTimeout(timer);
     }
   }, [saveStatus]);
 
   // Auto-focus on title if it's "Untitled Chapter" - only on initial load and if user hasn't started typing
   useEffect(() => {
-    if (chapter && chapter.title === 'Untitled Chapter' && !hasUserStartedTyping) {
+    if (
+      chapter &&
+      chapter.title === "Untitled Chapter" &&
+      !hasUserStartedTyping
+    ) {
       // Focus on title input after a short delay to ensure form is rendered
       const timer = setTimeout(() => {
-        const titleInput = document.querySelector('input[name="title"]') as HTMLInputElement;
-        const editorElement = document.querySelector('[data-lexical-editor="true"]') as HTMLElement;
-        
+        const titleInput = document.querySelector(
+          'input[name="title"]'
+        ) as HTMLInputElement;
+        const editorElement = document.querySelector(
+          '[data-lexical-editor="true"]'
+        ) as HTMLElement;
+
         // Only auto-focus if:
         // 1. Title input exists and is not already focused
         // 2. Editor is not currently focused
         // 3. User hasn't started typing yet
-        if (titleInput && 
-            !titleInput.matches(':focus') && 
-            (!editorElement || !editorElement.matches(':focus-within'))) {
+        if (
+          titleInput &&
+          !titleInput.matches(":focus") &&
+          (!editorElement || !editorElement.matches(":focus-within"))
+        ) {
           titleInput.focus();
           titleInput.select();
         }
@@ -88,8 +103,6 @@ export default function EditChapterPage() {
       return () => clearTimeout(timer);
     }
   }, [chapter, hasUserStartedTyping]);
-
-
 
   const handleSubmit = async (data: {
     storyId: string;
@@ -102,77 +115,83 @@ export default function EditChapterPage() {
   }) => {
     if (!chapter) return;
 
-    setSaveStatus('saving');
+    setSaveStatus("saving");
 
-    console.log('EditPage - Original chapter data:', {
+    console.log("EditPage - Original chapter data:", {
       id: chapter.id,
       title: chapter.title,
       contentLength: chapter.content?.length || 0,
       coinPrice: chapter.coinPrice,
       isFree: chapter.isFree,
-      status: chapter.status
+      status: chapter.status,
     });
 
-    console.log('EditPage - Form data received:', {
+    console.log("EditPage - Form data received:", {
       title: data.title,
       contentLength: data.content?.length || 0,
-      contentPreview: data.content?.substring(0, 100) + '...',
+      contentPreview: data.content?.substring(0, 100) + "...",
       coinPrice: data.coinPrice,
       isFree: data.isFree,
       isDraft: data.isDraft,
-      chapterNumber: data.chapterNumber
+      chapterNumber: data.chapterNumber,
     });
 
     const updateData: UpdateChapterRequest = {
       title: data.title && data.title.trim() ? data.title : undefined,
       content: data.content && data.content.trim() ? data.content : undefined,
-      coinPrice: data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
+      coinPrice:
+        data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
       isFree: data.isFree !== chapter.isFree ? data.isFree : undefined,
-      chapterNumber: data.chapterNumber !== chapter.chapterNumber ? data.chapterNumber : undefined,
-      shouldPublish: !data.isDraft && chapter.status === 'DRAFT' ? true : undefined,
+      chapterNumber:
+        data.chapterNumber !== chapter.chapterNumber
+          ? data.chapterNumber
+          : undefined,
+      shouldPublish:
+        !data.isDraft && chapter.status === "DRAFT" ? true : undefined,
     };
 
-    console.log('EditPage - Update data being sent:', updateData);
+    console.log("EditPage - Update data being sent:", updateData);
 
     updateChapter(
       { id: chapter.id, data: updateData },
       {
         onSuccess: (updatedChapter) => {
-          console.log('EditPage - Update successful, received:', {
+          console.log("EditPage - Update successful, received:", {
             id: updatedChapter.id,
             title: updatedChapter.title,
             contentLength: updatedChapter.content?.length || 0,
-            status: updatedChapter.status
+            status: updatedChapter.status,
           });
-          setSaveStatus('saved');
+          setSaveStatus("saved");
           setLastSaved(new Date());
           router.push(`/dashboard/stories/${storyId}`);
         },
         onError: (error) => {
-          console.error('EditPage - Update failed:', error);
-          setSaveStatus('error');
-          toast.error('Failed to save changes');
-        }
+          console.error("EditPage - Update failed:", error);
+          setSaveStatus("error");
+          toast.error("Failed to save changes");
+        },
       }
     );
   };
 
   const handleAutoSave = async (data: Partial<any>) => {
     if (!chapter || !data.content) return;
-    
-    setSaveStatus('saving');
-    
+
+    setSaveStatus("saving");
+
     try {
       const autoSaveData: UpdateChapterRequest = {
         content: data.content,
         // Include other form fields in auto-save to prevent them from being overwritten
         title: data.title !== chapter.title ? data.title : undefined,
-        coinPrice: data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
+        coinPrice:
+          data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
         isFree: data.isFree !== chapter.isFree ? data.isFree : undefined,
         isAutoSave: true,
       };
 
-      console.log('EditPage - Auto-saving chapter:', {
+      console.log("EditPage - Auto-saving chapter:", {
         chapterId: chapter.id,
         contentLength: data.content?.length || 0,
         title: data.title,
@@ -184,17 +203,17 @@ export default function EditChapterPage() {
         { id: chapter.id, data: autoSaveData },
         {
           onSuccess: () => {
-            setSaveStatus('saved');
+            setSaveStatus("saved");
             setLastSaved(new Date());
           },
           onError: () => {
-            setSaveStatus('error');
-          }
+            setSaveStatus("error");
+          },
         }
       );
     } catch (error) {
-      console.error('EditPage - Auto-save failed:', error);
-      setSaveStatus('error');
+      console.error("EditPage - Auto-save failed:", error);
+      setSaveStatus("error");
     }
   };
 
@@ -214,16 +233,29 @@ export default function EditChapterPage() {
 
   if (error || !chapter) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center card-elevated p-8 max-w-md mx-4">
-          <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <BookOpenIcon className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center bg-white border border-gray-100 rounded-lg p-8 max-w-md mx-4">
+          <div className="bg-red-50 p-3 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <BookOpenIcon className="w-6 h-6 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">Chapter Not Found</h2>
-          <p className="text-gray-600 mb-6">The chapter you're trying to edit doesn't exist or has been removed.</p>
-          <Link 
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Chapter Not Found
+          </h2>
+          <p className="text-gray-500 mb-6 text-sm">
+            The chapter you're trying to edit doesn't exist or has been removed.
+          </p>
+          <Link
             href={`/stories/${storyId}`}
-            className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift inline-flex items-center space-x-2"
+            className="inline-flex items-center space-x-2 px-6 py-3 text-white rounded-md font-medium transition-colors"
+            style={{
+              backgroundColor: "#18243c",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0f1a2e")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#18243c")
+            }
           >
             <ArrowLeftIcon className="w-4 h-4" />
             <span>Back to Story</span>
@@ -240,16 +272,29 @@ export default function EditChapterPage() {
   // Check authorization - only story author can edit
   if (user?.id !== story.author.id) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center card-elevated p-8 max-w-md mx-4">
-          <div className="bg-yellow-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <PencilIcon className="w-8 h-8 text-yellow-600" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center bg-white border border-gray-100 rounded-lg p-8 max-w-md mx-4">
+          <div className="bg-yellow-50 p-3 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <PencilIcon className="w-6 h-6 text-yellow-500" />
           </div>
-          <h2 className="text-2xl font-bold text-nomanweb-primary mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You don't have permission to edit this chapter.</p>
-          <Link 
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Access Denied
+          </h2>
+          <p className="text-gray-500 mb-6 text-sm">
+            You don't have permission to edit this chapter.
+          </p>
+          <Link
             href={`/stories/${storyId}`}
-            className="btn-gradient px-6 py-3 rounded-lg font-semibold hover-lift inline-flex items-center space-x-2"
+            className="inline-flex items-center space-x-2 px-6 py-3 text-white rounded-md font-medium transition-colors"
+            style={{
+              backgroundColor: "#18243c",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0f1a2e")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#18243c")
+            }
           >
             <ArrowLeftIcon className="w-4 h-4" />
             <span>Back to Story</span>
@@ -260,28 +305,27 @@ export default function EditChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Google Docs-style Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+    <div className="min-h-screen bg-white">
+      {/* Minimalist Header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex items-center justify-between h-12">
             {/* Left side */}
-            <div className="flex items-center space-x-4">
-              <Link 
+            <div className="flex items-center space-x-3">
+              <Link
                 href={`/dashboard/stories/${storyId}`}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-50 rounded-md transition-colors"
                 title="Back to story"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+                <ArrowLeftIcon className="w-4 h-4 text-gray-500" />
               </Link>
-              
+
               <div className="flex items-center space-x-2">
-                <BookOpenIcon className="w-5 h-5 text-blue-600" />
                 <div>
-                  <h1 className="text-lg font-medium text-gray-900 truncate max-w-md">
-                    {chapter.title || 'Untitled Chapter'}
+                  <h1 className="text-sm font-medium text-gray-900 truncate max-w-md">
+                    {chapter.title || "Untitled Chapter"}
                   </h1>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     {story.title} • Chapter {chapter.chapterNumber}
                   </p>
                 </div>
@@ -289,25 +333,25 @@ export default function EditChapterPage() {
             </div>
 
             {/* Right side - Save status */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               {/* Auto-save Status */}
-              <div className="flex items-center space-x-2">
-                {saveStatus === 'saving' && (
+              <div className="flex items-center space-x-1.5">
+                {saveStatus === "saving" && (
                   <>
-                    <CloudIcon className="w-4 h-4 text-blue-500 animate-pulse" />
-                    <span className="text-sm text-blue-600">Saving...</span>
+                    <CloudIcon className="w-3.5 h-3.5 text-gray-400 animate-pulse" />
+                    <span className="text-xs text-gray-500">Saving...</span>
                   </>
                 )}
-                {saveStatus === 'saved' && (
+                {saveStatus === "saved" && (
                   <>
-                    <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-green-600">Saved</span>
+                    <CheckCircleIcon className="w-3.5 h-3.5 text-green-500" />
+                    <span className="text-xs text-green-600">Saved</span>
                   </>
                 )}
-                {saveStatus === 'error' && (
+                {saveStatus === "error" && (
                   <>
-                    <ExclamationCircleIcon className="w-4 h-4 text-red-500" />
-                    <span className="text-sm text-red-600">Error</span>
+                    <ExclamationCircleIcon className="w-3.5 h-3.5 text-red-500" />
+                    <span className="text-xs text-red-600">Error</span>
                   </>
                 )}
               </div>
@@ -317,8 +361,8 @@ export default function EditChapterPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
+      <div className="max-w-4xl mx-auto px-6 py-6">
+        <div className="bg-white">
           <ChapterForm
             storyId={storyId}
             chapterId={chapter.id}
@@ -327,7 +371,7 @@ export default function EditChapterPage() {
               content: chapter.content,
               coinPrice: chapter.coinPrice,
               isFree: chapter.isFree,
-              isDraft: chapter.status === 'DRAFT',
+              isDraft: chapter.status === "DRAFT",
               chapterNumber: chapter.chapterNumber,
             }}
             onSubmit={handleSubmit}
@@ -336,64 +380,55 @@ export default function EditChapterPage() {
             isEditing={true}
             story={{
               pricingType: story.pricingType,
-              bookPrice: story.bookPrice
+              bookPrice: story.bookPrice,
             }}
             onTypingStart={handleTypingStart}
           />
         </div>
       </div>
-
-
     </div>
   );
 }
 
 function EditChapterSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="animate-pulse">
-          {/* Header Skeleton */}
-          <div className="mb-8">
-            <div className="h-4 bg-gray-200 rounded w-32 mb-4"></div>
+    <div className="min-h-screen bg-white">
+      {/* Header Skeleton */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex items-center justify-between h-12">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+              <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
               <div>
-                <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-64"></div>
+                <div className="h-4 bg-gray-200 rounded w-32 mb-1 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
               </div>
             </div>
+            <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
           </div>
+        </div>
+      </div>
 
-          {/* Form Skeleton */}
-          <div className="card-elevated p-8">
-            <div className="space-y-6">
-              <div>
-                <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
-              <div>
-                <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                <div className="h-64 bg-gray-200 rounded"></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                  <div className="h-10 bg-gray-200 rounded"></div>
-                </div>
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
-                  <div className="h-10 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <div className="h-10 bg-gray-200 rounded w-24"></div>
-                <div className="h-10 bg-gray-200 rounded w-32"></div>
-              </div>
+      {/* Content Skeleton */}
+      <div className="max-w-4xl mx-auto px-6 py-6">
+        <div className="animate-pulse space-y-6">
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+            <div className="flex space-x-3">
+              <div className="h-9 bg-gray-200 rounded w-24"></div>
+              <div className="h-9 bg-gray-200 rounded w-32"></div>
             </div>
+            <div className="h-3 bg-gray-200 rounded w-20"></div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}

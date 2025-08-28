@@ -334,42 +334,28 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-nomanweb-gradient p-4 sm:p-6 text-white flex-shrink-0">
+        <div className="bg-white border-b border-gray-200 p-4 sm:p-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <CloudArrowUpIcon className="w-6 h-6" />
-              </div>
+              <CloudArrowUpIcon className="w-6 h-6" style={{ color: '#18243c' }} />
               <div>
-                <h2 className="text-2xl font-bold">Bulk Chapter Upload</h2>
-                <p className="text-white/90 text-sm mt-1">
+                <h2 className="text-2xl font-bold" style={{ color: '#18243c' }}>Multi Chapter Upload</h2>
+                <p className="text-gray-600 text-sm mt-1">
                   Upload multiple chapters and convert them automatically
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors hover:bg-white/10 p-2 rounded-lg"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
-          
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-              <p className="text-sm font-medium text-white/90">Best Support</p>
-              <p className="text-xs text-white/70">TXT, HTML, Markdown</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-              <p className="text-sm font-medium text-white/90">Basic Support</p>
-              <p className="text-xs text-white/70">DOC, DOCX, PDF, RTF, ODT</p>
-            </div>
-          </div>
         </div>
 
         {/* Upload Area */}
-        <div className="p-4 sm:p-6 bg-gray-50 flex-shrink-0">
+        <div className="p-4 sm:p-6 bg-white flex-shrink-0">
           <input
             ref={fileInputRef}
             type="file"
@@ -380,42 +366,35 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
           />
 
           <div
-            className={`border-2 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all cursor-pointer hover-lift ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
               isDragging
-                ? 'border-nomanweb-secondary bg-gradient-to-br from-blue-50 to-nomanweb-secondary/10 scale-105'
-                : 'border-gray-300 hover:border-nomanweb-secondary bg-white hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50'
+                ? 'border-gray-400 bg-gray-50'
+                : 'border-gray-300 hover:border-gray-400 bg-white'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full flex items-center justify-center transition-all ${
-              isDragging 
-                ? 'bg-nomanweb-gradient text-white scale-110' 
-                : 'bg-gray-100 text-gray-400 hover:bg-nomanweb-gradient hover:text-white'
-            }`}>
-              <CloudArrowUpIcon className="w-8 h-8 sm:w-10 sm:h-10" />
-            </div>
+            <CloudArrowUpIcon 
+              className="w-12 h-12 mx-auto mb-4 text-gray-400" 
+              style={{ color: isDragging ? '#18243c' : undefined }}
+            />
             
-            <h3 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
-              isDragging ? 'text-nomanweb-primary' : 'text-gray-900'
-            }`}>
+            <h3 className="text-lg font-medium mb-2 text-gray-900">
               {isDragging ? 'Drop your files here!' : 'Upload Chapter Files'}
             </h3>
             
-            <p className="text-sm sm:text-base text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               {isDragging 
                 ? 'Release to upload your chapters' 
                 : `Drag & drop up to ${MAX_FILES} files, or click to browse`
               }
             </p>
             
-            <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500">
-              <span className="px-2 sm:px-3 py-1 bg-white rounded-full border">Max 50MB</span>
-              <span className="px-2 sm:px-3 py-1 bg-white rounded-full border">Auto-convert</span>
-              <span className="px-2 sm:px-3 py-1 bg-white rounded-full border">Saved as drafts</span>
-            </div>
+            <p className="text-xs text-gray-500">
+              Supports: TXT, DOC, DOCX, PDF, RTF, ODT, HTML, MD • Max 50MB per file
+            </p>
           </div>
         </div>
 
@@ -441,15 +420,7 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
               {files.map((file) => (
                 <div
                   key={file.id}
-                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:shadow-md ${
-                    file.status === 'success' 
-                      ? 'bg-green-50 border-green-200' 
-                      : file.status === 'error' 
-                      ? 'bg-red-50 border-red-200' 
-                      : file.status === 'uploading'
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'bg-gray-50 border-gray-200 hover:border-nomanweb-secondary'
-                  }`}
+                  className="flex items-center justify-between p-4 rounded-lg border border-gray-200 transition-all hover:border-gray-300 bg-white"
                 >
                   <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                     <div className="flex-shrink-0">
@@ -470,11 +441,14 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
                         <div className="mt-2">
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-nomanweb-gradient h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${file.progress}%` }}
+                              className="h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${file.progress}%`,
+                                backgroundColor: '#18243c'
+                              }}
                             />
                           </div>
-                          <p className="text-xs text-blue-600 mt-1">Uploading... {file.progress}%</p>
+                          <p className="text-xs mt-1" style={{ color: '#18243c' }}>Uploading... {file.progress}%</p>
                         </div>
                       )}
                       
@@ -493,7 +467,10 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
                     {file.status === 'error' && (
                       <button
                         onClick={() => retryUpload(file.id)}
-                        className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
+                        className="px-3 py-1 text-xs font-medium text-white rounded-full transition-colors"
+                        style={{
+                          backgroundColor: '#18243c'
+                        }}
                       >
                         Retry
                       </button>
@@ -514,7 +491,7 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
         )}
 
         {/* Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0">
+        <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div className="flex items-center justify-center sm:justify-start">
               {files.length > 0 && (
@@ -538,7 +515,7 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
             <div className="flex items-center justify-center sm:justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="px-4 sm:px-6 py-2.5 text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
+                className="px-4 sm:px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
                 disabled={isUploading}
               >
                 Cancel
@@ -546,7 +523,11 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
               <button
                 onClick={startUpload}
                 disabled={files.filter(f => f.status === 'pending').length === 0 || isUploading}
-                className="px-6 sm:px-8 py-2.5 bg-nomanweb-gradient text-white rounded-lg hover-lift disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold shadow-lg"
+                className="px-6 sm:px-8 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+                style={{ 
+                  backgroundColor: '#18243c',
+                  ':hover': { backgroundColor: '#0f1a2e' }
+                }}
               >
                 {isUploading ? (
                   <div className="flex items-center space-x-2">
@@ -573,4 +554,4 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
   );
 
   return createPortal(modalContent, document.body);
-} 
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { Upload, X, Loader2, Link, Image as ImageIcon, Camera, Plus, Edit3, Trash2, Sparkles, BookOpen, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ interface StoryCoverUploadProps {
 
 type UploadMode = 'choose' | 'file' | 'url';
 
-export function StoryCoverUpload({
+function StoryCoverUploadComponent({
   storyId,
   value,
   onChange,
@@ -237,15 +237,24 @@ export function StoryCoverUpload({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
 
+    const previousValueRef = useRef(value);
+    
     useEffect(() => {
-      if (value) {
-        setImageLoaded(false);
-        setImageError(false);
+      // Only reset image state if the URL actually changed
+      if (value !== previousValueRef.current) {
+        if (value) {
+          setImageLoaded(false);
+          setImageError(false);
+        }
+        previousValueRef.current = value;
       }
     }, [value]);
 
     const handleImageLoad = () => {
-      console.log('✅ Image loaded successfully');
+      // Only log if this is a new image load, not a re-render
+      if (!imageLoaded) {
+        console.log('✅ StoryCoverUpload: Image loaded successfully');
+      }
       setImageLoaded(true);
       setImageError(false);
     };
@@ -263,13 +272,10 @@ export function StoryCoverUpload({
           <div className="inline-block relative group">
             {/* Loading state */}
             {!imageLoaded && !imageError && (
-              <div className="w-56 h-80 border-2 border-gray-200 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-lg">
+              <div className="w-56 h-80 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="relative">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#18243c] mx-auto mb-3" />
-                    <div className="absolute inset-0 w-8 h-8 animate-ping rounded-full bg-[#18243c]/20"></div>
-                  </div>
-                  <p className="text-sm font-medium text-[#18243c]/70">Loading cover...</p>
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-600 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">Loading cover...</p>
                 </div>
               </div>
             )}
@@ -277,14 +283,12 @@ export function StoryCoverUpload({
             {/* Error state */}
             {imageError && (
               <div 
-                className="w-56 h-80 border-2 border-red-200 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center cursor-pointer hover:from-red-100 hover:to-red-200 transition-all duration-300 shadow-lg"
+                className="w-56 h-80 border border-red-200 rounded-lg bg-red-50 flex items-center justify-center cursor-pointer hover:bg-red-100"
                 onClick={openModal}
               >
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <X className="w-6 h-6 text-red-500" />
-                  </div>
-                  <p className="text-sm font-medium text-red-700">Failed to load</p>
+                  <X className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                  <p className="text-sm text-red-700">Failed to load</p>
                   <p className="text-xs text-red-600 mt-1">Click to retry</p>
                 </div>
               </div>
@@ -295,18 +299,18 @@ export function StoryCoverUpload({
               <img 
                 src={value} 
                 alt="Story cover"
-                className={`w-56 h-80 object-cover rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`w-56 h-80 object-cover rounded-lg ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
               
               {/* Hover overlay with actions - only show when image is loaded */}
               {imageLoaded && (
-                <div className="absolute inset-0 bg-transparent rounded-2xl transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="flex space-x-2">
                     <button
                       onClick={openModal}
-                      className="p-2 bg-white/90 backdrop-blur-sm text-gray-800 rounded-lg hover:bg-white transition-all duration-200 shadow-lg"
+                      className="p-2 bg-white text-gray-800 rounded hover:bg-gray-100"
                       title="Change cover"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -314,7 +318,7 @@ export function StoryCoverUpload({
                     {onRemove && !disabled && (
                       <button
                         onClick={handleRemove}
-                        className="p-2 bg-red-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-lg"
+                        className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
                         title="Remove cover"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -326,58 +330,48 @@ export function StoryCoverUpload({
             </div>
           </div>
           
-          {/* Enhanced controls below the image */}
+          {/* Controls below the image */}
           <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-center space-x-2">
-              <BookOpen className="w-4 h-4 text-[#18243c]" />
-              <p className="text-sm font-semibold text-[#18243c]">Story Cover</p>
-            </div>
+            <p className="text-sm text-gray-700">Story Cover</p>
             
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-2">
               <button
                 onClick={openModal}
-                className="px-4 py-2 bg-gradient-to-r from-[#18243c] to-[#18243c]/80 text-white text-sm font-medium rounded-lg hover:from-[#22325a] hover:to-[#18243c] transition-all duration-200 shadow-md hover:shadow-lg"
+                className="px-3 py-1 bg-gray-800 text-white text-sm rounded hover:bg-gray-700"
               >
                 Change Cover
               </button>
               {onRemove && !disabled && (
                 <button
                   onClick={handleRemove}
-                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-pink-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                 >
                   Remove
                 </button>
               )}
             </div>
             
-            <div className="flex items-center justify-center space-x-1 text-xs text-gray-500">
-              <Sparkles className="w-3 h-3" />
-              <span>{imageError ? 'Click to retry' : 'Cover uploaded successfully'}</span>
-            </div>
+            <p className="text-xs text-gray-500">
+              {imageError ? 'Click to retry' : 'Cover uploaded successfully'}
+            </p>
           </div>
         </div>
       );
     }
 
-    // Enhanced empty state
+    // Empty state
     return (
       <div className="text-center">
         <div 
           onClick={openModal} 
-          className="w-56 h-80 border-2 border-dashed border-[#18243c]/30 rounded-2xl bg-gradient-to-br from-[#18243c]/5 via-[#18243c]/10 to-[#18243c]/15 hover:border-[#18243c] hover:from-[#18243c]/15 hover:via-[#18243c]/20 hover:to-[#18243c]/25 transition-all duration-300 mx-auto cursor-pointer flex items-center justify-center group shadow-lg hover:shadow-xl"
+          className="w-56 h-80 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:border-gray-400 hover:bg-gray-100 mx-auto cursor-pointer flex items-center justify-center"
         >
           <div className="text-center">
-            <div className="relative mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-all duration-300 shadow-lg">
-                <Plus className="w-8 h-8 text-white" />
-              </div>
+            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center mx-auto mb-3">
+              <Plus className="w-6 h-6 text-gray-600" />
             </div>
-            <p className="text-lg font-semibold text-[#18243c] mb-2">Add Cover Image</p>
-            <p className="text-sm text-[#18243c]/70 mb-3">Make your story stand out</p>
-            <div className="flex items-center justify-center space-x-1 text-xs text-[#18243c]/60">
-              <Camera className="w-3 h-3" />
-              <span>Click to upload</span>
-            </div>
+            <p className="text-base font-medium text-gray-700 mb-1">Add Cover Image</p>
+            <p className="text-sm text-gray-500">Click to upload</p>
           </div>
         </div>
       </div>
@@ -388,30 +382,28 @@ export function StoryCoverUpload({
   const ModeSelector = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="relative mb-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#18243c] via-[#18243c]/80 to-[#18243c]/60 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <ImageIcon className="w-10 h-10 text-white" />
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center mx-auto">
+            <ImageIcon className="w-8 h-8 text-gray-600" />
           </div>
-          <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#18243c]/70 rounded-full flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          
         </div>
-        <h3 className="text-2xl font-bold text-[#18243c] mb-2">Add Story Cover</h3>
-        <p className="text-[#18243c]/70">Choose how you'd like to add your cover image</p>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">Add Story Cover</h3>
+        <p className="text-gray-600">Choose how you'd like to add your cover image</p>
       </div>
       
       <div className="grid grid-cols-1 gap-4">
         <button
           onClick={() => setMode('file')}
-          className="group p-6 border-2 border-gray-200 rounded-2xl hover:border-[#18243c] hover:bg-gradient-to-r hover:from-[#18243c]/5 hover:to-[#18243c]/10 transition-all duration-300 text-left shadow-sm hover:shadow-md"
+          className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 text-left w-full"
         >
           <div className="flex items-center">
-            <div className="w-14 h-14 bg-gradient-to-br from-[#18243c]/20 to-[#18243c]/30 group-hover:from-[#18243c]/30 group-hover:to-[#18243c]/40 rounded-2xl flex items-center justify-center mr-4 transition-all duration-300 shadow-sm">
-              <Camera className="w-7 h-7 text-[#18243c]" />
+            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center mr-3">
+              <Camera className="w-5 h-5 text-gray-600" />
             </div>
             <div>
-              <h4 className="font-bold text-[#18243c] mb-1 text-lg">Upload from Device</h4>
-              <p className="text-sm text-[#18243c]/70">
+              <h4 className="font-medium text-gray-800 mb-1">Upload from Device</h4>
+              <p className="text-sm text-gray-600">
                 Choose a file from your computer or drag and drop
               </p>
             </div>
@@ -420,15 +412,15 @@ export function StoryCoverUpload({
 
         <button
           onClick={() => setMode('url')}
-          className="group p-6 border-2 border-gray-200 rounded-2xl hover:border-[#18243c] hover:bg-gradient-to-r hover:from-[#18243c]/5 hover:to-[#18243c]/10 transition-all duration-300 text-left shadow-sm hover:shadow-md"
+          className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 text-left w-full"
         >
           <div className="flex items-center">
-            <div className="w-14 h-14 bg-gradient-to-br from-[#18243c]/20 to-[#18243c]/30 group-hover:from-[#18243c]/30 group-hover:to-[#18243c]/40 rounded-2xl flex items-center justify-center mr-4 transition-all duration-300 shadow-sm">
-              <Link className="w-7 h-7 text-[#18243c]" />
+            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center mr-3">
+              <Link className="w-5 h-5 text-gray-600" />
             </div>
             <div>
-              <h4 className="font-bold text-[#18243c] mb-1 text-lg">Add from URL</h4>
-              <p className="text-sm text-[#18243c]/70">
+              <h4 className="font-medium text-gray-800 mb-1">Add from URL</h4>
+              <p className="text-sm text-gray-600">
                 Enter a direct link to an image on the web
               </p>
             </div>
@@ -439,21 +431,21 @@ export function StoryCoverUpload({
   );
 
   const FileUploadMode = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-xl flex items-center justify-center">
-            <Camera className="w-5 h-5 text-white" />
+    <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+              <Camera className="w-4 h-4 text-gray-600" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-800">Upload Cover Image</h3>
           </div>
-          <h3 className="text-xl font-bold text-[#18243c]">Upload Cover Image</h3>
+          <button
+            onClick={() => setMode('choose')}
+            className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={() => setMode('choose')}
-          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
 
       <input
         ref={fileInputRef}
@@ -466,10 +458,10 @@ export function StoryCoverUpload({
 
               <div
           className={cn(
-            'relative border-2 border-dashed rounded-2xl transition-all duration-300 aspect-[3/2] w-full overflow-hidden',
+            'relative border-2 border-dashed rounded-lg aspect-[3/2] w-full overflow-hidden',
             {
-              'border-[#18243c] bg-gradient-to-br from-[#18243c]/5 to-[#18243c]/10': isDragging && !disabled,
-              'border-[#18243c]/30 hover:border-[#18243c]/50 bg-gradient-to-br from-[#18243c]/5 to-[#18243c]/10': !isDragging && !disabled,
+              'border-gray-400 bg-gray-100': isDragging && !disabled,
+              'border-gray-300 hover:border-gray-400 bg-gray-50': !isDragging && !disabled,
               'border-gray-200 cursor-not-allowed opacity-50': disabled,
             }
           )}
@@ -479,47 +471,42 @@ export function StoryCoverUpload({
           onClick={() => !isUploading && fileInputRef.current?.click()}
         >
         {isUploading ? (
-          <div className="absolute inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center rounded-2xl">
-            <div className="relative mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-2xl flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#18243c]/70 rounded-full flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-white" />
-              </div>
+          <div className="absolute inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center rounded-lg">
+            <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center mb-3">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
             </div>
-            <h4 className="text-lg font-semibold text-[#18243c] mb-3">Uploading Cover...</h4>
-            <div className="w-64 bg-gray-200 rounded-full h-3 mb-3">
+            <h4 className="text-base font-medium text-gray-800 mb-3">Uploading Cover...</h4>
+            <div className="w-48 bg-gray-200 rounded-full h-2 mb-2">
               <div 
-                className="bg-gradient-to-r from-[#18243c] to-[#18243c]/80 h-3 rounded-full transition-all duration-300"
+                className="bg-gray-600 h-2 rounded-full"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
-            <p className="text-sm text-[#18243c]/70 font-medium">{uploadProgress}% complete</p>
+            <p className="text-sm text-gray-600">{uploadProgress}% complete</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center cursor-pointer">
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center cursor-pointer">
             <div className={cn(
-              'w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 shadow-lg',
+              'w-12 h-12 rounded flex items-center justify-center mb-3',
               isDragging 
-                ? 'bg-gradient-to-br from-[#18243c] to-[#18243c]/80 text-white' 
-                : 'bg-gradient-to-br from-[#18243c]/20 to-[#18243c]/30 text-[#18243c]'
+                ? 'bg-gray-600 text-white' 
+                : 'bg-gray-200 text-gray-600'
             )}>
-              <Upload className="w-8 h-8" />
+              <Upload className="w-6 h-6" />
             </div>
             
-            <h4 className="text-xl font-bold text-[#18243c] mb-3">
+            <h4 className="text-base font-medium text-gray-800 mb-2">
               {isDragging ? 'Drop your image here' : 'Upload Story Cover'}
             </h4>
             
-            <p className="text-[#18243c]/70 mb-6 text-lg">
+            <p className="text-gray-600 mb-4 text-sm">
               {isDragging ? 'Release to upload' : 'Drag and drop your image, or click to browse'}
             </p>
       
             
-            <div className="space-y-2 text-sm text-gray-500 bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <p className="font-medium">Supports: {acceptedFileTypes.map(type => type.split('/')[1]).join(', ').toUpperCase()}</p>
-              <p>Max size: {maxFileSize}MB • Recommended: 600×900px (2:3 ratio)</p>
+            <div className="space-y-1 text-xs text-gray-500 bg-gray-100 rounded p-3 border">
+              <p><span className="font-medium">Supported formats:</span> {acceptedFileTypes.map(type => type.split('/')[1]).join(', ').toUpperCase()}</p>
+              <p><span className="font-medium">Maximum size:</span> {maxFileSize}MB</p>
             </div>
           </div>
         )}
@@ -528,80 +515,59 @@ export function StoryCoverUpload({
   );
 
   const UrlInputMode = () => (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#18243c] to-[#18243c]/80 rounded-xl flex items-center justify-center">
-            <Link className="w-5 h-5 text-white" />
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+            <Link className="w-4 h-4 text-gray-600" />
           </div>
-          <h3 className="text-xl font-bold text-[#18243c]">Add Image from URL</h3>
+          <h3 className="text-lg font-medium text-gray-800">Add from URL</h3>
         </div>
         <button
           onClick={() => setMode('choose')}
-          className="p-2 text-[#18243c]/60 hover:text-[#18243c] hover:bg-[#18243c]/10 rounded-lg transition-all duration-200"
+          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <label className="block text-sm font-semibold text-[#18243c] mb-3">
-            Image URL
-          </label>
           <input
             type="url"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-3 border-2 border-[#18243c]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200 text-lg"
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:border-gray-500 focus:outline-none text-gray-800 placeholder-gray-400"
+            disabled={disabled}
           />
-          <p className="text-xs text-[#18243c]/60 mt-2 flex items-center space-x-1">
-            <Link className="w-3 h-3" />
-            <span>Enter a direct link to an image file</span>
-          </p>
-          <p className="text-xs text-slate-500 mt-4 text-center">
-            Upload a cover image from your device or enter an image URL.
-            Recommended size: 800×1200px (3:4 ratio)
-          </p>
         </div>
 
-        {urlInput.trim() && (
-          <div className="p-4 bg-gradient-to-br from-[#18243c]/10 to-[#18243c]/20 rounded-xl border border-[#18243c]/20">
-            <p className="text-sm font-medium text-[#18243c] mb-3 flex items-center space-x-2">
-              <ImageIcon className="w-4 h-4" />
-              <span>Preview:</span>
-            </p>
-            <div className="w-full h-48 bg-white rounded-xl border overflow-hidden shadow-sm">
-              <img
-                src={urlInput}
-                alt="URL Preview"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (nextSibling) {
-                    nextSibling.style.display = 'flex';
-                  }
-                }}
-              />
-              <div className="w-full h-full flex items-center justify-center text-gray-400" style={{display: 'none'}}>
-                <div className="text-center">
-                  <X className="w-8 h-8 mx-auto mb-2" />
-                  <p className="text-sm font-medium">Invalid image URL</p>
-                </div>
-              </div>
-            </div>
+        <div className="bg-blue-50 border border-blue-200 rounded p-3">
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Requirements:</p>
+            <ul className="space-y-1 text-blue-700 text-xs">
+              <li>• Direct link to image file (JPEG, PNG, GIF, WebP)</li>
+              <li>• Image must be publicly accessible</li>
+            </ul>
           </div>
-        )}
+        </div>
 
-        <button
-          onClick={handleUrlSubmit}
-          disabled={!urlInput.trim()}
-          className="w-full px-6 py-4 bg-gradient-to-r from-[#18243c] to-[#18243c]/80 text-white rounded-xl hover:from-[#22325a] hover:to-[#18243c] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all duration-200 shadow-lg hover:shadow-xl text-lg"
-        >
-          Add Cover Image
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={handleUrlSubmit}
+            disabled={!urlInput.trim() || disabled}
+            className="flex-1 px-4 py-2 bg-gray-800 text-white font-medium rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add Cover Image
+          </button>
+          <button
+            onClick={() => setMode('choose')}
+            className="px-4 py-2 border border-gray-300 text-gray-600 font-medium rounded hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -610,10 +576,10 @@ export function StoryCoverUpload({
     <div className={cn('w-full', className)}>
       <CoverDisplay />
 
-      {/* Enhanced Modal */}
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-auto shadow-2xl border border-gray-100">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {mode === 'choose' ? <ModeSelector /> :
                mode === 'file' ? <FileUploadMode /> :
@@ -624,7 +590,7 @@ export function StoryCoverUpload({
               <div className="px-6 pb-6">
                 <button
                   onClick={closeModal}
-                  className="w-full px-4 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-xl transition-all duration-200 font-medium"
+                  className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded font-medium"
                 >
                   Cancel
                 </button>
@@ -646,3 +612,17 @@ export function StoryCoverUpload({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const StoryCoverUpload = memo(StoryCoverUploadComponent, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.storyId === nextProps.storyId &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.className === nextProps.className &&
+    prevProps.placeholder === nextProps.placeholder &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onRemove === nextProps.onRemove
+  );
+});
