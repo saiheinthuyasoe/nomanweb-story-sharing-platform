@@ -5,11 +5,10 @@ import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.EmailService;
 import com.app.nomanweb_backend.service.EnhancedNotificationService;
 import com.app.nomanweb_backend.service.LineMessagingService;
-import com.app.nomanweb_backend.service.NotificationService;
+import com.app.nomanweb_backend.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -20,8 +19,7 @@ import java.util.UUID;
 @Slf4j
 public class EnhancedNotificationServiceImpl implements EnhancedNotificationService {
 
-    @Lazy
-    private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final LineMessagingService lineMessagingService;
 
@@ -46,8 +44,17 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
         }
 
         // Create the notification record
-        Notification notification = notificationService.createNotification(user, type, title, message, relatedType,
-                relatedId);
+        Notification notification = Notification.builder()
+                .user(user)
+                .type(type)
+                .title(title)
+                .message(message)
+                .relatedType(relatedType)
+                .relatedId(relatedId)
+                .isRead(false)
+                .build();
+        
+        notification = notificationRepository.save(notification);
 
         // Generate action URL if not provided
         if (actionUrl == null) {
@@ -64,7 +71,7 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
         if (StringUtils.hasText(lineMessageId)) {
             notification.setSentViaLine(true);
             notification.setLineMessageId(lineMessageId);
-            notificationService.updateNotification(notification);
+            notification = notificationRepository.save(notification);
         }
 
         log.info("Multi-channel notification sent to user {}: email={}, line={}",

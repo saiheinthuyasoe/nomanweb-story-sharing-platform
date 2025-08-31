@@ -12,6 +12,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.CommentRepository;
 import com.app.nomanweb_backend.service.NotificationService;
+import com.app.nomanweb_backend.service.EnhancedNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final StoryRepository storyRepository;
     private final ChapterRepository chapterRepository;
     private final CommentRepository commentRepository;
+    private final EnhancedNotificationService enhancedNotificationService;
 
 
 
@@ -160,8 +162,10 @@ public class NotificationServiceImpl implements NotificationService {
             String message = String.format("%s is now following you!",
                     follower.getDisplayName() != null ? follower.getDisplayName() : follower.getUsername());
 
-            createNotification(followedUser, Notification.NotificationType.FOLLOW,
-                    title, message, Notification.RelatedType.USER, followerUserId);
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(followedUser, 
+                    Notification.NotificationType.FOLLOW, title, message, 
+                    Notification.RelatedType.USER, followerUserId);
         } catch (Exception e) {
             log.error("Failed to send new follower notification", e);
         }
@@ -228,8 +232,10 @@ public class NotificationServiceImpl implements NotificationService {
                     liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
                     story.getTitle());
 
-            createNotification(storyAuthor, Notification.NotificationType.LIKE,
-                    title, message, Notification.RelatedType.STORY, storyId);
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(storyAuthor, 
+                    Notification.NotificationType.LIKE, title, message, 
+                    Notification.RelatedType.STORY, storyId);
         } catch (Exception e) {
             log.error("Failed to send story like notification", e);
         }
@@ -257,7 +263,8 @@ public class NotificationServiceImpl implements NotificationService {
                     chapter.getTitle(),
                     chapter.getStory().getTitle());
 
-            createNotification(chapterAuthor,
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(chapterAuthor,
                     Notification.NotificationType.LIKE,
                     title, message, Notification.RelatedType.CHAPTER, chapterId);
         } catch (Exception e) {
@@ -298,8 +305,13 @@ public class NotificationServiceImpl implements NotificationService {
                         comment.getStory().getTitle());
             }
 
-            createNotification(commentAuthorId, Notification.NotificationType.LIKE,
-                    title, message, Notification.RelatedType.COMMENT, commentId);
+            User commentAuthor = userRepository.findById(commentAuthorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Comment author not found"));
+
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(commentAuthor, 
+                    Notification.NotificationType.LIKE, title, message, 
+                    Notification.RelatedType.COMMENT, commentId);
         } catch (Exception e) {
             log.error("Failed to send comment like notification", e);
         }
@@ -365,8 +377,13 @@ public class NotificationServiceImpl implements NotificationService {
             String message = String.format("%s replied to your comment",
                     replier.getDisplayName() != null ? replier.getDisplayName() : replier.getUsername());
 
-            createNotification(parentCommentAuthorId, Notification.NotificationType.COMMENT,
-                    title, message, Notification.RelatedType.COMMENT, commentId);
+            User parentCommentAuthor = userRepository.findById(parentCommentAuthorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Parent comment author not found"));
+
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(parentCommentAuthor, 
+                    Notification.NotificationType.COMMENT, title, message, 
+                    Notification.RelatedType.COMMENT, commentId);
         } catch (Exception e) {
             log.error("Failed to send comment reply notification", e);
         }
@@ -387,7 +404,8 @@ public class NotificationServiceImpl implements NotificationService {
 
             // Send notifications to all followers
             for (User follower : followers) {
-                createNotification(follower, type,
+                // Send multi-channel notification (email + LINE)
+                enhancedNotificationService.sendMultiChannelNotification(follower, type,
                         title, message, relatedType, relatedId);
             }
 
@@ -404,8 +422,9 @@ public class NotificationServiceImpl implements NotificationService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            createNotification(user, Notification.NotificationType.SYSTEM,
-                    title, message, null, null);
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(user, 
+                    Notification.NotificationType.SYSTEM, title, message, null, null);
         } catch (Exception e) {
             log.error("Failed to send system notification", e);
         }

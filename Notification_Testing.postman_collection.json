@@ -1,0 +1,472 @@
+{
+	"info": {
+		"_postman_id": "notification-testing-collection",
+		"name": "Notification Testing Collection",
+		"description": "Collection for testing Gmail and LINE notifications in the Nomanweb application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"testuser1@gmail.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get JWT token for testing"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification Preferences",
+			"item": [
+				{
+					"name": "Get Notification Preferences",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me/notification-preferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"notification-preferences"
+							]
+						},
+						"description": "Get current user's notification preferences"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Notification Preferences",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emailNotificationsEnabled\": true,\n  \"lineNotificationsEnabled\": true,\n  \"notifyNewFollowers\": true,\n  \"notifyLikes\": true,\n  \"notifyComments\": true,\n  \"notifyNewStories\": true,\n  \"notifyNewChapters\": true,\n  \"notifySystemMessages\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/me/notification-preferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me",
+								"notification-preferences"
+							]
+						},
+						"description": "Update notification preferences for testing"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Social Notifications",
+			"item": [
+				{
+					"name": "Follow User (Triggers Follow Notification)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{target_user_id}}/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{target_user_id}}",
+								"follow"
+							]
+						},
+						"description": "Follow a user to trigger follow notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Like Story (Triggers Like Notification)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/stories/{{story_id}}/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								"{{story_id}}",
+								"like"
+							]
+						},
+						"description": "Like a story to trigger like notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Comment on Story (Triggers Comment Notification)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a test comment to trigger notification!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/stories/{{story_id}}/comments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								"{{story_id}}",
+								"comments"
+							]
+						},
+						"description": "Comment on a story to trigger comment notification"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Content Notifications",
+			"item": [
+				{
+					"name": "Create New Chapter (Triggers New Chapter Notification)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Test Chapter for Notifications\",\n  \"content\": \"This is a test chapter created to verify that new chapter notifications are working correctly. Followers should receive both email and LINE notifications.\",\n  \"isPublished\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/stories/{{story_id}}/chapters",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories",
+								"{{story_id}}",
+								"chapters"
+							]
+						},
+						"description": "Create a new chapter to trigger new chapter notifications to followers"
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Story (Triggers New Story Notification)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Test Story for Notifications\",\n  \"description\": \"This is a test story created to verify that new story notifications work correctly.\",\n  \"genre\": \"FANTASY\",\n  \"isPublished\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/stories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"stories"
+							]
+						},
+						"description": "Create a new story to trigger new story notifications to followers"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "System Notifications",
+			"item": [
+				{
+					"name": "Send System Notification (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Test System Notification\",\n  \"message\": \"This is a test system notification to verify that system-wide notifications are working correctly. All users should receive this via email and LINE.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/notifications/system",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"notifications",
+								"system"
+							]
+						},
+						"description": "Send system notification to all users (requires admin privileges)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Enhanced Notifications",
+			"item": [
+				{
+					"name": "Send Multi-Channel Notification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{target_user_id}}\",\n  \"type\": \"SYSTEM\",\n  \"title\": \"Test Enhanced Notification\",\n  \"message\": \"This is a test of the enhanced multi-channel notification system.\",\n  \"actionUrl\": \"https://your-frontend.com/notifications\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/notifications/enhanced/send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"enhanced",
+								"send"
+							]
+						},
+						"description": "Send enhanced multi-channel notification directly"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification Management",
+			"item": [
+				{
+					"name": "Get User Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications?page=0&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get recent notifications for the current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unread Notifications Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/unread/count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"unread",
+								"count"
+							]
+						},
+						"description": "Get count of unread notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/{{notification_id}}/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"{{notification_id}}",
+								"read"
+							]
+						},
+						"description": "Mark a specific notification as read"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "your-jwt-token-here",
+			"type": "string"
+		},
+		{
+			"key": "admin_jwt_token",
+			"value": "your-admin-jwt-token-here",
+			"type": "string"
+		},
+		{
+			"key": "target_user_id",
+			"value": "target-user-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "story_id",
+			"value": "story-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "notification_id",
+			"value": "notification-uuid-here",
+			"type": "string"
+		}
+	]
+}

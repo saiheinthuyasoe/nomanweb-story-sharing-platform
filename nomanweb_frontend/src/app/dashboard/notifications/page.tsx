@@ -233,10 +233,10 @@ export default function NotificationsPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading notifications...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-black mx-auto mb-4" />
+          <p className="text-black">Loading notifications...</p>
         </div>
       </div>
     );
@@ -245,10 +245,10 @@ export default function NotificationsPage() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-4" />
-          <p className="text-gray-600">
+          <p className="text-black">
             Failed to load notifications. Please try again.
           </p>
         </div>
@@ -257,24 +257,24 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="min-h-screen bg-white overflow-y-auto">
       <div className="p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-black">Notifications</h1>
+            <p className="text-black mt-2">
               Stay updated with your story activities and reader interactions
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="bg-gray-100 text-black px-3 py-1 rounded-full text-sm font-medium">
               {unreadCount} unread
             </div>
             <button
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending || unreadCount === 0}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="bg-[#18243c] text-white px-4 py-2 rounded-lg hover:bg-[#0f1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {markAllAsReadMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -288,7 +288,7 @@ export default function NotificationsPage() {
 
         {/* Selection and Bulk Actions */}
         {filteredNotifications.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
@@ -296,14 +296,14 @@ export default function NotificationsPage() {
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-black">
                     Select All ({filteredNotifications.length})
                   </span>
                 </label>
                 {selectedNotifications.length > 0 && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-black">
                     {selectedNotifications.length} selected
                   </span>
                 )}
@@ -312,7 +312,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={handleBulkDelete}
                   disabled={bulkDeleteMutation.isPending}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="bg-[#18243c] text-white px-4 py-2 rounded-lg hover:bg-[#0f1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   {bulkDeleteMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -329,8 +329,8 @@ export default function NotificationsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sticky top-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-8">
+              <h3 className="text-lg font-semibold text-black mb-4">
                 Filter Notifications
               </h3>
 
@@ -341,9 +341,9 @@ export default function NotificationsPage() {
                     type="checkbox"
                     checked={showUnreadOnly}
                     onChange={(e) => setShowUnreadOnly(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
                   />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-black">
                     Show unread only
                   </span>
                 </label>
@@ -357,16 +357,16 @@ export default function NotificationsPage() {
                     onClick={() => setFilter(type.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
                       filter === type.id
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-[#18243c] text-white"
+                        : "text-black hover:bg-gray-50"
                     }`}
                   >
                     <span className="font-medium">{type.label}</span>
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${
                         filter === type.id
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-white text-[#18243c]"
+                          : "bg-gray-100 text-black"
                       }`}
                     >
                       {type.count}
@@ -397,12 +397,12 @@ export default function NotificationsPage() {
                   />
                 ))
               ) : (
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                   <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-black mb-2">
                     No notifications found
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-black">
                     {showUnreadOnly
                       ? "You don't have any unread notifications at the moment."
                       : "No notifications match your current filter criteria."}
@@ -634,8 +634,8 @@ function AlertCard({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 ${
-        !alert.isRead ? "border-l-4 border-l-blue-500" : ""
+      className={`bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 transition-all duration-300 ${
+        !alert.isRead ? "border-l-4 border-l-[#18243c]" : ""
       }`}
     >
       <div className="flex items-start space-x-4">
@@ -645,7 +645,7 @@ function AlertCard({
             type="checkbox"
             checked={isSelected}
             onChange={() => onSelect(alert.id)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
           />
         </div>
 
@@ -658,14 +658,14 @@ function AlertCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-2">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">
+              <h4 className="text-lg font-semibold text-black">
                 {alert.title}
               </h4>
               {!alert.isRead && (
-                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
+                <span className="inline-block w-2 h-2 bg-[#18243c] rounded-full mt-1"></span>
               )}
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <div className="flex items-center space-x-2 text-sm text-black">
               <Clock className="h-4 w-4" />
               <span>{alert.timestamp}</span>
             </div>
@@ -673,19 +673,19 @@ function AlertCard({
 
           {/* Message with clickable follower name for follow notifications */}
           {alert.type === "follow" && alert.followerData ? (
-            <p className="text-gray-700 mb-3">
+            <p className="text-black mb-3">
               <button
                 onClick={() =>
                   router?.push(`/authors/${alert.followerData.id}`)
                 }
-                className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                className="text-[#18243c] hover:text-[#0f1a2e] font-medium hover:underline"
               >
                 {alert.followerData.displayName}
               </button>
               {" started following you"}
             </p>
           ) : alert.type === "gift_received" && alert.giftData ? (
-            <p className="text-gray-700 mb-3">
+            <p className="text-black mb-3">
               {alert.giftData.senderName} sent you {alert.giftData.giftName}
               <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                 <DollarSign className="h-3 w-3 mr-1" />
@@ -693,12 +693,12 @@ function AlertCard({
               </span>
             </p>
           ) : (
-            <p className="text-gray-700 mb-3">{alert.message}</p>
+            <p className="text-black mb-3">{alert.message}</p>
           )}
 
           {alert.storyTitle && (
             <div className="mb-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-black">
                 <BookOpen className="h-3 w-3 mr-1" />
                 {alert.storyTitle}
               </span>
@@ -707,8 +707,8 @@ function AlertCard({
 
           {alert.commentContent && (
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
-              <p className="text-sm text-gray-600 mb-1 font-medium">Comment:</p>
-              <p className="text-sm text-gray-800 italic">
+              <p className="text-sm text-black mb-1 font-medium">Comment:</p>
+              <p className="text-sm text-black italic">
                 "{alert.commentContent}"
               </p>
             </div>
@@ -720,7 +720,7 @@ function AlertCard({
               <button
                 onClick={() => onMarkAsRead(alert.id)}
                 disabled={isMarkingAsRead}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-[#18243c] text-white px-3 py-1 rounded text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0f1a2e] transition-colors"
               >
                 {isMarkingAsRead ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -733,7 +733,7 @@ function AlertCard({
             <button
               onClick={() => onDelete(alert.id)}
               disabled={isDeleting}
-              className="text-gray-500 hover:text-red-600 text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-black hover:text-red-600 text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isDeleting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
