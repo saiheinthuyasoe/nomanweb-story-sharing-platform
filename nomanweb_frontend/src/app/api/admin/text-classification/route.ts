@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const MODEL_URL = process.env.LANGUAGE_DETECTION_MODEL_URL || 'https://arkar1431-language-detector.hf.space';
+const MODEL_URL = process.env.LANGUAGE_DETECTION_MODEL_URL;
 
 export async function GET(request: NextRequest) {
   try {

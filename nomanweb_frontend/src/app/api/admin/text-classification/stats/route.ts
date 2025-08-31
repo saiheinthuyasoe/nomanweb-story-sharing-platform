@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const MODEL_URL = process.env.LANGUAGE_DETECTION_MODEL_URL || 'https://arkar1431-language-detector.hf.space';
+const MODEL_URL = process.env.LANGUAGE_DETECTION_MODEL_URL;
+const STATS_URL = MODEL_URL?.replace('/predict', '/stats') || MODEL_URL;
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward request to external model stats endpoint
-    const response = await fetch(`${MODEL_URL}/stats`, {
+    const response = await fetch(STATS_URL, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
