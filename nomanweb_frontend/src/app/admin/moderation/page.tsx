@@ -99,10 +99,12 @@ export default function AdminModerationPage() {
       console.log('🔄 Loading stories for moderation...');
       
       // Fetch stories directly from backend
+      const adminToken = localStorage.getItem('adminToken');
       const storiesResponse = await fetch('http://localhost:8080/api/stories?page=0&size=100', {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         }
       });
 
@@ -125,7 +127,8 @@ export default function AdminModerationPage() {
           const chaptersResponse = await fetch(`http://localhost:8080/api/chapters/story/${story.id}`, {
             method: 'GET',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${adminToken}`
             }
           });
 
@@ -223,10 +226,12 @@ export default function AdminModerationPage() {
         console.log(`📄 Using cached plain text content, length: ${plainTextContent.length}`);
       } else {
         // Fetch the chapter content if not already loaded
+        const adminToken = localStorage.getItem('adminToken');
         const contentResponse = await fetch(`http://localhost:8080/api/chapter-content/story/${storyId}/chapter/${chapterNumber}?trackView=false`, {
           method: 'GET',
           headers: {
-            'Accept': 'text/plain'
+            'Accept': 'text/plain',
+            'Authorization': `Bearer ${adminToken}`
           }
         });
 
@@ -260,10 +265,12 @@ export default function AdminModerationPage() {
         textPreview: plainTextContent.substring(0, 100) + '...'
       });
       
+      const adminToken = localStorage.getItem('adminToken');
       const languageDetectionResponse = await fetch('/api/admin/text-classification/predict', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         },
         body: JSON.stringify({
           text: plainTextContent
@@ -329,10 +336,12 @@ export default function AdminModerationPage() {
       try {
         console.log(`📖 Fetching content for chapter ${chapterNumber} of story ${storyId}`);
         
+        const adminToken = localStorage.getItem('adminToken');
         const contentResponse = await fetch(`http://localhost:8080/api/chapter-content/story/${storyId}/chapter/${chapterNumber}?trackView=false`, {
           method: 'GET',
           headers: {
-            'Accept': 'text/plain'
+            'Accept': 'text/plain',
+            'Authorization': `Bearer ${adminToken}`
           }
         });
 
@@ -342,12 +351,15 @@ export default function AdminModerationPage() {
 
         const content = await contentResponse.text();
         console.log(`📝 Content fetched, length: ${content.length}`);
+        console.log(`📝 Raw content preview:`, content.substring(0, 300));
         
         const plainTextContent = stripHtmlTags(content).trim();
         console.log(`📄 Plain text content length: ${plainTextContent.length}`);
+        console.log(`📄 Plain text preview:`, plainTextContent.substring(0, 300));
         
         // Store the plain text content
         setChapterContents(prev => new Map(prev).set(chapterId, plainTextContent));
+        console.log(`💾 Stored content for chapter ${chapterId}, map size:`, chapterContents.size + 1);
         
       } catch (error) {
         console.error(`❌ Error fetching chapter content:`, error);
@@ -426,7 +438,14 @@ export default function AdminModerationPage() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     // Get text content and clean up extra whitespace
-    return tempDiv.textContent || tempDiv.innerText || '';
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    console.log('🔍 HTML stripping debug:', {
+      originalLength: html.length,
+      strippedLength: textContent.length,
+      originalPreview: html.substring(0, 200),
+      strippedPreview: textContent.substring(0, 200)
+    });
+    return textContent;
   };
 
   // ============================================================================
@@ -806,7 +825,15 @@ export default function AdminModerationPage() {
                                     </div>
                                     <div className="max-h-96 overflow-y-auto bg-white p-4 rounded border text-sm">
                                       <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                                        {chapterContents.get(chapter.id) || 'Loading content...'}
+                                        {(() => {
+                                          const content = chapterContents.get(chapter.id) || 'Loading content...';
+                                          console.log(`🖥️ Rendering content for chapter ${chapter.id}:`, {
+                                            hasContent: chapterContents.has(chapter.id),
+                                            contentLength: content.length,
+                                            contentPreview: content.substring(0, 100)
+                                          });
+                                          return content;
+                                        })()}
                                       </div>
                                     </div>
                                     <div className="mt-3 text-xs text-gray-500 flex items-center gap-4">
