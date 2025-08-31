@@ -673,7 +673,7 @@ export default function StoryReaderView() {
             <div className="lg:col-span-1">
               <div className="relative w-full max-w-sm mx-auto">
                 {story.coverImageUrl ? (
-                  <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg shadow-xl border border-gray-300">
+                  <div className="relative w-[308px] h-[412px] overflow-hidden rounded-lg shadow-xl border border-gray-300 mx-auto">
                     <Image
                       src={story.coverImageUrl}
                       alt={story.title}
@@ -686,7 +686,7 @@ export default function StoryReaderView() {
                     <div className="absolute -right-1 top-2 bottom-2 w-3 bg-gradient-to-r from-gray-400/40 to-gray-600/60 rounded-r-lg -z-10"></div>
                   </div>
                 ) : (
-                  <div className="relative w-full aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg shadow-xl border border-gray-300 overflow-hidden">
+                  <div className="relative w-[308px] h-[412px] bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg shadow-xl border border-gray-300 overflow-hidden mx-auto">
                     {/* Book cover design */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100"></div>
                     <div className="absolute top-4 left-4 right-4 bottom-4 border border-blue-200 rounded-md bg-white/50"></div>
@@ -798,7 +798,8 @@ export default function StoryReaderView() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleReadStory}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
+                  className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
+                  style={{ backgroundColor: '#18243c' }}
                 >
                   <BookOpen className="h-5 w-5" />
                   <span>Read</span>
@@ -811,7 +812,8 @@ export default function StoryReaderView() {
                     <button
                       onClick={handleBookPurchase}
                       disabled={isPurchasingBook}
-                      className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2 disabled:opacity-50"
+                      className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2 disabled:opacity-50"
+                      style={{ backgroundColor: '#18243c' }}
                     >
                       <ShoppingBagIcon className="h-5 w-5" />
                       <span>
@@ -850,13 +852,14 @@ export default function StoryReaderView() {
                   <button
                     onClick={() => setShowLibraryDropdown(!showLibraryDropdown)}
                     disabled={isBookmarkLoading}
-                    className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center space-x-2 ${
+                    className={`px-6 py-3 rounded-lg transition-all font-medium flex items-center space-x-2 ${
                       libraryStatus.inLibrary
-                        ? "bg-green-100 text-green-700 border border-green-200"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        ? "text-white"
+                        : "text-white hover:opacity-80"
                     } ${
                       isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
                     }`}
+                    style={{ backgroundColor: '#18243c' }}
                   >
                     <Plus className="h-5 w-5" />
                     <span>
@@ -960,7 +963,8 @@ export default function StoryReaderView() {
                 </div>
                 <button
                   onClick={handleShare}
-                  className="bg-white text-gray-700 px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium flex items-center space-x-2"
+                  className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
+                  style={{ backgroundColor: '#18243c' }}
                 >
                   <Share2 className="h-5 w-5" />
                   <span>Share</span>
@@ -968,13 +972,10 @@ export default function StoryReaderView() {
                 <button
                   onClick={handleLike}
                   disabled={isBookmarkLoading}
-                  className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 ${
-                    bookmarkStatus?.listTypes?.LIKE
-                      ? "bg-red-100 text-red-700 border border-red-200"
-                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                  } ${
+                  className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 text-white hover:opacity-80 ${
                     isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
+                  style={{ backgroundColor: '#18243c' }}
                   title={
                     bookmarkStatus?.listTypes?.LIKE
                       ? "Unlike story"
@@ -1004,7 +1005,8 @@ export default function StoryReaderView() {
                 {!isAuthor && (
                   <button
                     onClick={() => setShowGiftModal(true)}
-                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center space-x-2"
+                    className="px-6 py-3 text-white rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
+                    style={{ backgroundColor: '#18243c' }}
                   >
                     <Gift className="h-5 w-5" />
                     <span>Send Gift</span>
@@ -1030,9 +1032,12 @@ export default function StoryReaderView() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
+                      ? "text-gray-700"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
+                  style={{
+                    borderBottomColor: activeTab === tab.id ? '#18243c' : 'transparent'
+                  }}
                 >
                   {tab.label}
                 </button>

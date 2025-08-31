@@ -32,11 +32,11 @@ public interface GiftTransactionRepository extends JpaRepository<GiftTransaction
     List<GiftTransaction> findByChapterOrderByCreatedAtDesc(Chapter chapter);
 
     // Calculate total earnings for a recipient
-    @Query("SELECT COALESCE(SUM(gt.totalCoins * 0.7), 0) FROM GiftTransaction gt WHERE gt.recipient.id = :recipientId")
+    @Query("SELECT COALESCE(SUM(gt.totalCoins), 0) FROM GiftTransaction gt WHERE gt.recipient.id = :recipientId")
     BigDecimal calculateTotalEarningsForRecipient(@Param("recipientId") UUID recipientId);
 
     // Calculate total earnings for a recipient in date range
-    @Query("SELECT COALESCE(SUM(gt.totalCoins * 0.7), 0) FROM GiftTransaction gt WHERE gt.recipient.id = :recipientId AND gt.createdAt BETWEEN :startDate AND :endDate")
+    @Query("SELECT COALESCE(SUM(gt.totalCoins), 0) FROM GiftTransaction gt WHERE gt.recipient.id = :recipientId AND gt.createdAt BETWEEN :startDate AND :endDate")
     BigDecimal calculateEarningsForPeriod(@Param("recipientId") UUID recipientId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);

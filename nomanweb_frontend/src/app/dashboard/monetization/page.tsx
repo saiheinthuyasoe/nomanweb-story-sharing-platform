@@ -412,8 +412,6 @@ export default function MonetizationPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-
-
       {/* Header with Coin Balance */}
       <div className="flex items-start justify-between mb-8">
         <div>
@@ -424,7 +422,7 @@ export default function MonetizationPage() {
             Track your earnings and manage your coins
           </p>
         </div>
-        
+
         {/* Compact Coin Balance Card */}
         <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-3 w-64 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
@@ -433,16 +431,20 @@ export default function MonetizationPage() {
                 <Coins className="h-4 w-4 text-yellow-700" />
               </div>
               <div>
-                <p className="text-xs font-medium text-yellow-700">Coin Balance</p>
+                <p className="text-xs font-medium text-yellow-700">
+                  Coin Balance
+                </p>
                 <p className="text-base font-bold text-yellow-900">
                   {formatCurrency(coinBalance)}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                sseConnected ? "bg-green-500" : "bg-gray-400"
-              }`}></div>
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${
+                  sseConnected ? "bg-green-500" : "bg-gray-400"
+                }`}
+              ></div>
               <Button
                 onClick={() => (window.location.href = "/buy-coins")}
                 size="sm"
@@ -665,16 +667,21 @@ export default function MonetizationPage() {
                   <DollarSign className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Earned</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Earned
+                  </p>
                   <p className="text-lg font-bold text-green-600">
                     {formatCurrency(
                       earnedMoney.reduce(
                         (sum, earning) => sum + earning.netEarnings,
                         0
                       )
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
-                  <p className="text-xs text-gray-500">Net after platform fees</p>
+                  <p className="text-xs text-gray-500">
+                    Net after platform fees
+                  </p>
                 </div>
               </div>
             </div>
@@ -685,11 +692,15 @@ export default function MonetizationPage() {
                   <ShoppingBag className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Purchases</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Purchases
+                  </p>
                   <p className="text-lg font-bold text-blue-600">
                     {earnedMoney.length}
                   </p>
-                  <p className="text-xs text-gray-500">Chapters & Stories sold</p>
+                  <p className="text-xs text-gray-500">
+                    Chapters & Stories sold
+                  </p>
                 </div>
               </div>
             </div>
@@ -700,7 +711,9 @@ export default function MonetizationPage() {
                   <Users className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Unique Readers</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Unique Readers
+                  </p>
                   <p className="text-lg font-bold text-purple-600">
                     {new Set(earnedMoney.map((e) => e.readerUsername)).size}
                   </p>
@@ -715,7 +728,9 @@ export default function MonetizationPage() {
                   <Calendar className="h-5 w-5 text-orange-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    This Month
+                  </p>
                   <p className="text-lg font-bold text-orange-600">
                     {formatCurrency(
                       earnedMoney
@@ -725,9 +740,12 @@ export default function MonetizationPage() {
                             new Date().getMonth()
                         )
                         .reduce((sum, earning) => sum + earning.netEarnings, 0)
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
-                  <p className="text-xs text-gray-500">Current month earnings</p>
+                  <p className="text-xs text-gray-500">
+                    Current month earnings
+                  </p>
                 </div>
               </div>
             </div>
@@ -958,10 +976,13 @@ export default function MonetizationPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-purple-600">
-                        +{formatCurrency(gift.totalCoins * 0.7)} Coins
+                        +{formatCurrency(gift.totalCoins)} Coins
                       </div>
                       <div className="text-xs text-gray-500">
-                        Cost: {formatCurrency(gift.totalCoins)} Coins
+                        Gift Value: {formatCurrency(gift.totalCoins)} Coins
+                      </div>
+                      <div className="text-xs text-green-600">
+                        No platform fee
                       </div>
                     </div>
                   </div>
@@ -1061,14 +1082,17 @@ export default function MonetizationPage() {
                   <Coins className="h-5 w-5 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Spent
+                  </p>
                   <p className="text-lg font-bold text-red-600">
                     {formatCurrency(
                       purchaseHistory.reduce(
                         (sum, purchase) => sum + purchase.amount,
                         0
                       )
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
                   <p className="text-xs text-gray-500">All-time spending</p>
                 </div>
@@ -1081,7 +1105,9 @@ export default function MonetizationPage() {
                   <ShoppingBag className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Purchases</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Purchases
+                  </p>
                   <p className="text-lg font-bold text-blue-600">
                     {purchaseHistory.length}
                   </p>
@@ -1096,7 +1122,9 @@ export default function MonetizationPage() {
                   <BookOpen className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Books Owned</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Books Owned
+                  </p>
                   <p className="text-lg font-bold text-purple-600">
                     {
                       purchaseHistory.filter((p) => p.purchaseType === "book")
@@ -1114,11 +1142,14 @@ export default function MonetizationPage() {
                   <BookOpen className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Chapters Owned</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Chapters Owned
+                  </p>
                   <p className="text-lg font-bold text-green-600">
                     {
-                      purchaseHistory.filter((p) => p.purchaseType === "chapter")
-                        .length
+                      purchaseHistory.filter(
+                        (p) => p.purchaseType === "chapter"
+                      ).length
                     }
                   </p>
                   <p className="text-xs text-gray-500">Individual chapters</p>
@@ -1324,14 +1355,17 @@ export default function MonetizationPage() {
                   <RotateCcw className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Refunds Received</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Refunds Received
+                  </p>
                   <p className="text-lg font-bold text-green-600">
                     {formatCurrency(
                       refundsEarned.reduce(
                         (sum, refund) => sum + refund.refundAmount,
                         0
                       )
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
                   <p className="text-xs text-gray-500">Money returned to you</p>
                 </div>
@@ -1344,7 +1378,9 @@ export default function MonetizationPage() {
                   <RotateCcw className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Refunds</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Refunds
+                  </p>
                   <p className="text-lg font-bold text-blue-600">
                     {refundsEarned.length}
                   </p>
@@ -1359,9 +1395,14 @@ export default function MonetizationPage() {
                   <BookOpen className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Book Refunds</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Book Refunds
+                  </p>
                   <p className="text-lg font-bold text-purple-600">
-                    {refundsEarned.filter((r) => r.refundType === "book").length}
+                    {
+                      refundsEarned.filter((r) => r.refundType === "book")
+                        .length
+                    }
                   </p>
                   <p className="text-xs text-gray-500">Complete book refunds</p>
                 </div>
@@ -1374,14 +1415,18 @@ export default function MonetizationPage() {
                   <Star className="h-5 w-5 text-orange-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Chapter Refunds</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Chapter Refunds
+                  </p>
                   <p className="text-lg font-bold text-orange-600">
                     {
                       refundsEarned.filter((r) => r.refundType === "chapter")
                         .length
                     }
                   </p>
-                  <p className="text-xs text-gray-500">Individual chapter refunds</p>
+                  <p className="text-xs text-gray-500">
+                    Individual chapter refunds
+                  </p>
                 </div>
               </div>
             </div>
@@ -1512,16 +1557,21 @@ export default function MonetizationPage() {
                   <RotateCcw className="h-5 w-5 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Refunds Paid</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Refunds Paid
+                  </p>
                   <p className="text-lg font-bold text-red-600">
                     {formatCurrency(
                       refundsPaid.reduce(
                         (sum, refund) => sum + refund.refundAmount,
                         0
                       )
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
-                  <p className="text-xs text-gray-500">Money refunded to readers</p>
+                  <p className="text-xs text-gray-500">
+                    Money refunded to readers
+                  </p>
                 </div>
               </div>
             </div>
@@ -1532,7 +1582,9 @@ export default function MonetizationPage() {
                   <RotateCcw className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Total Refunds</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Refunds
+                  </p>
                   <p className="text-lg font-bold text-blue-600">
                     {refundsPaid.length}
                   </p>
@@ -1547,7 +1599,9 @@ export default function MonetizationPage() {
                   <Users className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">Unique Readers</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Unique Readers
+                  </p>
                   <p className="text-lg font-bold text-purple-600">
                     {new Set(refundsPaid.map((r) => r.readerUsername)).size}
                   </p>
@@ -1562,7 +1616,9 @@ export default function MonetizationPage() {
                   <Calendar className="h-5 w-5 text-orange-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    This Month
+                  </p>
                   <p className="text-lg font-bold text-orange-600">
                     {formatCurrency(
                       refundsPaid
@@ -1572,7 +1628,8 @@ export default function MonetizationPage() {
                             new Date().getMonth()
                         )
                         .reduce((sum, refund) => sum + refund.refundAmount, 0)
-                    )} Coins
+                    )}{" "}
+                    Coins
                   </p>
                   <p className="text-xs text-gray-500">Current month refunds</p>
                 </div>

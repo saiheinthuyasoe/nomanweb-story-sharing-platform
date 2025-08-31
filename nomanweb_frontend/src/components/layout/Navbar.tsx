@@ -445,7 +445,7 @@ export default function Navbar() {
                           <DropdownLink href="/library" icon={Library}>
                             Library
                           </DropdownLink>
-                          <DropdownLink href="/purchase-history" icon={History}>
+                          <DropdownLink href="/library?tab=purchased" icon={History}>
                             Purchase History
                           </DropdownLink>
                           <button

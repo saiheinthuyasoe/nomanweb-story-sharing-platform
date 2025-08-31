@@ -19,6 +19,7 @@ import {
   Target,
 } from "lucide-react";
 import { useMyStories } from "@/hooks/useStories";
+import { useUserStats } from "@/hooks/useUserStats";
 
 // Chart Filter Options
 const chartFilters = [
@@ -32,18 +33,54 @@ const chartFilters = [
 export default function WriterDashboard() {
   const { user } = useAuth();
   const { data: myStories } = useMyStories({ page: 0, size: 100 });
+  const {
+    data: userStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useUserStats();
   const [chartFilter, setChartFilter] = useState("30d");
 
-  // Calculate dashboard stats
+  // Calculate dashboard stats from real data
   const totalStories = myStories?.totalElements || 0;
-  const totalReads = 12450; // Mock data - would come from API
+  const totalReads = userStats?.totalViews || 0;
   const totalEarnings = user?.totalEarnedCoins || 0;
-  const followers = 185; // Mock data
-  const giftsReceived = 23; // Mock data
-  const notificationsCount = 5; // Mock data
+  const followers = userStats?.followers || 0;
+  const giftsReceived = userStats?.giftsReceived || 0;
+  const notificationsCount = userStats?.notificationsCount || 0;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).getFullYear()
     : new Date().getFullYear();
+
+  // Show loading state while fetching stats
+  if (statsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your statistics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if stats failed to load
+  if (statsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">
+            Failed to load statistics: {statsError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto">
@@ -222,7 +259,7 @@ export default function WriterDashboard() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <QuickAction
-              href="/write"
+              href="/stories/create"
               icon={PlusIcon}
               title="Write New Story"
               description="Start creating your next masterpiece"

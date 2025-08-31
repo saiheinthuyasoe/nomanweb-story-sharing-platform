@@ -168,6 +168,36 @@ public class LibraryController {
         }
     }
 
+    @GetMapping("/user/{userId}/lists")
+    public ResponseEntity<?> getUserLibraries(@PathVariable UUID userId,
+            @RequestParam(required = false) String listType) {
+        try {
+            // Verify user exists
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            List<Library> libraries;
+
+            if (listType != null) {
+                try {
+                    Library.ListType type = Library.ListType.valueOf(listType.toUpperCase());
+                    libraries = libraryRepository.findByUserIdAndListTypeOrderByAddedAtDesc(userId, type);
+                } catch (IllegalArgumentException e) {
+                    // Invalid list type, return empty list
+                    libraries = new java.util.ArrayList<>();
+                }
+            } else {
+                libraries = libraryRepository.findByUserIdOrderByAddedAtDesc(userId);
+            }
+
+            return ResponseEntity.ok(libraries);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to get user reading lists: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/story/{storyId}/reading-status")
     public ResponseEntity<?> updateReadingStatus(@PathVariable UUID storyId,
             @RequestParam String status,

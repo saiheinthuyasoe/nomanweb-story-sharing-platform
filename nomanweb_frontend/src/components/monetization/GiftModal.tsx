@@ -130,60 +130,63 @@ export default function GiftModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ backgroundColor: 'rgba(24, 36, 60, 0.8)', backdropFilter: 'blur(8px)' }}>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-white/20">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Gift className="h-6 w-6 text-purple-600" />
+              <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: '#18243c' }}>
+                <Gift className="h-5 w-5" style={{ color: '#18243c' }} />
                 Send Gift
               </h2>
-              <p className="text-gray-600">Send a gift to {recipientName}</p>
+              <p className="text-gray-500 text-sm">Choose how you want to support {recipientName}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-2 hover:bg-gray-100/50 rounded-full transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 text-gray-500" />
             </button>
           </div>
 
           {/* Coin Balance */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <Coins className="h-5 w-5" />
-              <span className="font-medium">Your Balance: {coinBalance.toLocaleString()} Coins</span>
+          <div className="mb-6 p-3 rounded-xl" style={{ backgroundColor: 'rgba(24, 36, 60, 0.05)' }}>
+            <div className="flex items-center gap-2" style={{ color: '#18243c' }}>
+              <Coins className="h-4 w-4" />
+              <span className="font-medium text-sm">{coinBalance.toLocaleString()} Coins</span>
             </div>
           </div>
 
           {/* Gift Selection */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">Choose a Gift</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <h3 className="text-base font-medium mb-3" style={{ color: '#18243c' }}>Select Gift</h3>
+            <div className="grid grid-cols-2 gap-3">
               {gifts.map((gift) => (
-                <Card
+                <div
                   key={gift.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
+                  className={`cursor-pointer transition-all p-3 rounded-xl border ${
                     selectedGift?.id === gift.id
-                      ? 'ring-2 ring-purple-500 bg-purple-50'
-                      : ''
+                      ? 'border-2 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
+                  style={{
+                    backgroundColor: selectedGift?.id === gift.id ? 'rgba(24, 36, 60, 0.05)' : 'transparent',
+                    borderColor: selectedGift?.id === gift.id ? '#18243c' : undefined
+                  }}
                   onClick={() => setSelectedGift(gift)}
                 >
-                  <CardContent className="p-4 text-center">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      <Gift className="h-6 w-6 text-purple-600" />
+                  <div className="text-center">
+                    <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ backgroundColor: 'rgba(24, 36, 60, 0.1)' }}>
+                      <Gift className="h-5 w-5" style={{ color: '#18243c' }} />
                     </div>
-                    <h4 className="font-medium text-sm mb-1">{gift.name}</h4>
-                    <p className="text-xs text-gray-600 mb-2">{gift.description}</p>
-                    <div className="flex items-center justify-center gap-1 text-yellow-600">
-                      <Coins className="h-4 w-4" />
-                      <span className="font-bold">{gift.coinCost}</span>
+                    <h4 className="font-medium text-sm mb-1" style={{ color: '#18243c' }}>{gift.name}</h4>
+                    <div className="flex items-center justify-center gap-1" style={{ color: '#18243c' }}>
+                      <Coins className="h-3 w-3" />
+                      <span className="font-semibold text-xs">{gift.coinCost}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -192,21 +195,31 @@ export default function GiftModal({
           {selectedGift && (
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: '#18243c' }}>
                   Quantity
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="w-8 h-8 rounded-full border transition-colors flex items-center justify-center"
+                    style={{ 
+                      borderColor: '#18243c', 
+                      color: quantity <= 1 ? '#9ca3af' : '#18243c',
+                      backgroundColor: quantity <= 1 ? 'transparent' : 'rgba(24, 36, 60, 0.05)'
+                    }}
                     disabled={quantity <= 1}
                   >
                     -
                   </button>
-                  <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                  <span className="text-base font-medium w-8 text-center" style={{ color: '#18243c' }}>{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="w-8 h-8 rounded-full border transition-colors flex items-center justify-center"
+                    style={{ 
+                      borderColor: '#18243c', 
+                      color: totalCost >= coinBalance ? '#9ca3af' : '#18243c',
+                      backgroundColor: totalCost >= coinBalance ? 'transparent' : 'rgba(24, 36, 60, 0.05)'
+                    }}
                     disabled={totalCost >= coinBalance}
                   >
                     +
@@ -215,72 +228,63 @@ export default function GiftModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: '#18243c' }}>
                   Message (Optional)
                 </label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Add a personal message..."
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={3}
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-sm"
+                  style={{ 
+                    focusBorderColor: '#18243c',
+                    backgroundColor: 'rgba(24, 36, 60, 0.02)'
+                  }}
+                  rows={2}
                   maxLength={500}
                 />
-                <div className="text-xs text-gray-500 mt-1">
-                  {message.length}/500 characters
+                <div className="text-xs text-gray-400 mt-1">
+                  {message.length}/500
                 </div>
               </div>
 
               {/* Cost Summary */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Cost per gift:</span>
-                  <span className="flex items-center gap-1">
-                    <Coins className="h-4 w-4" />
-                    {selectedGift.coinCost}
+              <div className="p-3 rounded-xl border" style={{ backgroundColor: 'rgba(24, 36, 60, 0.03)', borderColor: 'rgba(24, 36, 60, 0.1)' }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm" style={{ color: '#18243c' }}>Total:</span>
+                  <span className={`flex items-center gap-1 font-semibold ${!canAfford ? 'text-red-500' : ''}`} style={{ color: canAfford ? '#18243c' : undefined }}>
+                    <Coins className="h-3 w-3" />
+                    <span className="text-sm">{totalCost}</span>
                   </span>
                 </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>Quantity:</span>
-                  <span>{quantity}</span>
-                </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between items-center font-bold">
-                    <span>Total Cost:</span>
-                    <span className={`flex items-center gap-1 ${!canAfford ? 'text-red-600' : ''}`}>
-                      <Coins className="h-4 w-4" />
-                      {totalCost}
-                    </span>
-                  </div>
-                  {!canAfford && (
-                    <p className="text-red-600 text-sm mt-1">Insufficient coins</p>
-                  )}
-                </div>
+                {!canAfford && (
+                  <p className="text-red-500 text-xs mt-1">Insufficient coins</p>
+                )}
               </div>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
-            <Button
+          <div className="flex gap-3">
+            <button
               onClick={onClose}
-              variant="outline"
-              className="flex-1"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleSendGift}
               disabled={!selectedGift || !canAfford || loading}
-              className="flex-1 flex items-center gap-2"
+              className="flex-1 py-2.5 px-4 rounded-xl text-white transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ backgroundColor: '#18243c' }}
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3" />
               )}
               Send Gift
-            </Button>
+            </button>
           </div>
         </div>
       </div>

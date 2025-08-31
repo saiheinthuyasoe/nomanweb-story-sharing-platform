@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 export interface UserStats {
   userId: string;
@@ -20,8 +20,8 @@ export interface UserProfile {
   displayName?: string;
   profileImageUrl?: string;
   bio?: string;
-  role: 'USER' | 'ADMIN';
-  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED';
+  role: "USER" | "ADMIN";
+  status: "ACTIVE" | "SUSPENDED" | "BANNED";
   coinBalance: number;
   totalEarnedCoins: number;
   emailVerified: boolean;
@@ -59,29 +59,41 @@ const usersApi = {
     return response.data;
   },
 
-  // Get current user's statistics  
+  // Get current user's statistics
   getMyStats: async (): Promise<UserStats> => {
     const response = await apiClient.get(`/users/me/stats`);
     return response.data;
   },
 
   // Get followers list
-  getFollowers: async (userId: string, page = 0, size = 20): Promise<{
+  getFollowers: async (
+    userId: string,
+    page = 0,
+    size = 20
+  ): Promise<{
     content: FollowerUser[];
     totalElements: number;
     totalPages: number;
   }> => {
-    const response = await apiClient.get(`/users/${userId}/followers?page=${page}&size=${size}`);
+    const response = await apiClient.get(
+      `/users/${userId}/followers?page=${page}&size=${size}`
+    );
     return response.data;
   },
 
   // Get following list
-  getFollowing: async (userId: string, page = 0, size = 20): Promise<{
+  getFollowing: async (
+    userId: string,
+    page = 0,
+    size = 20
+  ): Promise<{
     content: FollowerUser[];
     totalElements: number;
     totalPages: number;
   }> => {
-    const response = await apiClient.get(`/users/${userId}/following?page=${page}&size=${size}`);
+    const response = await apiClient.get(
+      `/users/${userId}/following?page=${page}&size=${size}`
+    );
     return response.data;
   },
 
@@ -101,14 +113,20 @@ const usersApi = {
   },
 
   // Search users by email, username, or display name
-  searchUsers: async (query: string, page = 0, size = 20): Promise<{
+  searchUsers: async (
+    query: string,
+    page = 0,
+    size = 20
+  ): Promise<{
     content: SearchUser[];
     totalElements: number;
     totalPages: number;
   }> => {
-    const response = await apiClient.get(`/users/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`);
+    const response = await apiClient.get(
+      `/users/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`
+    );
     return response.data;
   },
 };
 
-export { usersApi }; 
+export { usersApi };

@@ -46,6 +46,7 @@ public class GiftTransactionResponse {
         private String title;
         private String coverImageUrl;
         private String pricingType; // Add pricing type to help frontend determine display
+        private UserSummary author; // Add author information
     }
 
     @Data

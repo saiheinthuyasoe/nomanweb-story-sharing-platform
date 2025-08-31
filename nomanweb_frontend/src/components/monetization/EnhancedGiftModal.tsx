@@ -169,37 +169,43 @@ export default function EnhancedGiftModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 flex items-center justify-center p-4 z-50"
+      style={{ 
+        backgroundColor: 'rgba(24, 36, 60, 0.8)',
+        backdropFilter: 'blur(8px)'
+      }}
+    >
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <GiftIcon className="h-6 w-6 text-purple-600" />
-                Send Gift to {recipientName}
+              <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: '#18243c' }}>
+                <GiftIcon className="h-5 w-5" style={{ color: '#18243c' }} />
+                Send Gift to <span className="cursor-pointer hover:underline">{recipientName}</span>
               </h2>
-              <p className="text-gray-600">Choose how you want to support this creator</p>
+              <p className="text-sm" style={{ color: 'rgba(24, 36, 60, 0.6)' }}>Support this creator</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-2 hover:bg-gray-50 rounded-xl transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" style={{ color: '#18243c' }} />
             </button>
           </div>
 
           {/* Coin Balance */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <Coins className="h-5 w-5" />
-              <span className="font-medium">Your Balance: {coinBalance.toLocaleString()} Coins</span>
+          <div className="mb-6 p-3 rounded-xl border" style={{ backgroundColor: 'rgba(24, 36, 60, 0.03)', borderColor: 'rgba(24, 36, 60, 0.1)' }}>
+            <div className="flex items-center gap-2" style={{ color: '#18243c' }}>
+              <Coins className="h-4 w-4" />
+              <span className="font-medium text-sm">{coinBalance.toLocaleString()} Coins</span>
             </div>
           </div>
 
           {/* Gift Mode Toggle */}
           <div className="mb-6">
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex rounded-xl p-1" style={{ backgroundColor: 'rgba(24, 36, 60, 0.05)' }}>
               <button
                 onClick={() => {
                   setGiftMode('emoji');
@@ -207,11 +213,14 @@ export default function EnhancedGiftModal({
                   setQuantity(1);
                   setCustomAmount('');
                 }}
-                className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
                   giftMode === 'emoji'
-                    ? 'bg-white text-purple-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'bg-white shadow-sm'
+                    : 'hover:bg-white hover:bg-opacity-50'
                 }`}
+                style={{ 
+                  color: giftMode === 'emoji' ? '#18243c' : 'rgba(24, 36, 60, 0.6)'
+                }}
               >
                 🎁 Gifts
               </button>
@@ -222,11 +231,14 @@ export default function EnhancedGiftModal({
                   setQuantity(1);
                   setSelectedGift(null);
                 }}
-                className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
                   giftMode === 'custom'
-                    ? 'bg-white text-purple-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'bg-white shadow-sm'
+                    : 'hover:bg-white hover:bg-opacity-50'
                 }`}
+                style={{ 
+                  color: giftMode === 'custom' ? '#18243c' : 'rgba(24, 36, 60, 0.6)'
+                }}
               >
                 💰 Custom Amount
               </button>
@@ -236,34 +248,36 @@ export default function EnhancedGiftModal({
           {/* Available Gifts */}
           {giftMode === 'emoji' && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Choose a Gift</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <h3 className="text-base font-medium mb-4" style={{ color: '#18243c' }}>Choose a Gift</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {gifts.map((gift) => (
-                  <Card
+                  <div
                     key={gift.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
+                    className={`cursor-pointer transition-all hover:shadow-sm rounded-xl border p-4 text-center ${
                       selectedGift?.id === gift.id
-                        ? 'ring-2 ring-purple-500 bg-purple-50'
-                        : ''
+                        ? 'shadow-sm'
+                        : 'hover:border-gray-300'
                     }`}
+                    style={{
+                      backgroundColor: selectedGift?.id === gift.id ? 'rgba(24, 36, 60, 0.03)' : 'white',
+                      borderColor: selectedGift?.id === gift.id ? 'rgba(24, 36, 60, 0.2)' : 'rgba(24, 36, 60, 0.1)'
+                    }}
                     onClick={() => {
                       setSelectedGift(gift);
                       // Reset quantity to 1 when selecting a new gift
                       setQuantity(1);
                     }}
                   >
-                    <CardContent className="p-4 text-center">
-                      <div className="text-4xl mb-2">
-                        {gift.iconUrl || getGiftEmoji(gift.name)}
-                      </div>
-                      <h4 className="font-medium text-sm mb-1">{gift.name}</h4>
-                      <p className="text-xs text-gray-600 mb-2">{gift.description}</p>
-                      <div className="flex items-center justify-center gap-1 text-yellow-600">
-                        <Coins className="h-4 w-4" />
-                        <span className="font-bold">{gift.coinCost}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <div className="text-3xl mb-2">
+                      {gift.iconUrl || getGiftEmoji(gift.name)}
+                    </div>
+                    <h4 className="font-medium text-xs mb-1" style={{ color: '#18243c' }}>{gift.name}</h4>
+                    <p className="text-xs mb-2" style={{ color: 'rgba(24, 36, 60, 0.6)' }}>{gift.description}</p>
+                    <div className="flex items-center justify-center gap-1" style={{ color: '#18243c' }}>
+                      <Coins className="h-3 w-3" />
+                      <span className="font-semibold text-xs">{gift.coinCost}</span>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -272,10 +286,10 @@ export default function EnhancedGiftModal({
           {/* Custom Amount */}
           {giftMode === 'custom' && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Custom Coin Amount</h3>
+              <h3 className="text-base font-medium mb-4" style={{ color: '#18243c' }}>Custom Coin Amount</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: '#18243c' }}>
                     Amount (Coins)
                   </label>
                   <input
@@ -287,7 +301,12 @@ export default function EnhancedGiftModal({
                       setQuantity(1);
                     }}
                     placeholder="Enter amount"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 transition-all text-sm"
+                    style={{
+                      borderColor: 'rgba(24, 36, 60, 0.2)',
+                      backgroundColor: 'rgba(24, 36, 60, 0.02)',
+                      color: '#18243c'
+                    }}
                     min="1"
                     max={coinBalance}
                   />
@@ -300,17 +319,21 @@ export default function EnhancedGiftModal({
           {((giftMode === 'emoji' && selectedGift) || (giftMode === 'custom' && customAmount)) && (
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity {quantity > 1 && <span className="text-purple-600">({quantity} gifts)</span>}
+                <label className="block text-sm font-medium mb-2" style={{ color: '#18243c' }}>
+                  Quantity {quantity > 1 && <span style={{ color: 'rgba(24, 36, 60, 0.6)' }}>({quantity} gifts)</span>}
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className={`p-2 border border-gray-300 rounded-md transition-colors ${
+                    className={`p-2 border rounded-lg transition-colors text-sm ${
                       quantity <= 1 
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'hover:bg-gray-50 hover:border-gray-400'
+                        ? 'cursor-not-allowed opacity-50' 
+                        : 'hover:bg-gray-50'
                     }`}
+                    style={{
+                      borderColor: 'rgba(24, 36, 60, 0.2)',
+                      color: '#18243c'
+                    }}
                     disabled={quantity <= 1}
                     title={quantity <= 1 ? 'Minimum quantity reached' : 'Decrease quantity'}
                   >
@@ -324,7 +347,12 @@ export default function EnhancedGiftModal({
                       const maxQuantity = getMaxQuantity();
                       setQuantity(Math.max(1, Math.min(newQuantity, maxQuantity)));
                     }}
-                    className="text-lg font-medium w-16 text-center border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="text-sm font-medium w-16 text-center border rounded-lg p-2 focus:outline-none focus:ring-2 transition-all"
+                    style={{
+                      borderColor: 'rgba(24, 36, 60, 0.2)',
+                      backgroundColor: 'rgba(24, 36, 60, 0.02)',
+                      color: '#18243c'
+                    }}
                     min="1"
                     max={getMaxQuantity()}
                   />
@@ -335,97 +363,90 @@ export default function EnhancedGiftModal({
                         setQuantity(quantity + 1);
                       }
                     }}
-                    className={`p-2 border border-gray-300 rounded-md transition-colors ${
+                    className={`p-2 border rounded-lg transition-colors text-sm ${
                       quantity >= getMaxQuantity()
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'hover:bg-gray-50 hover:border-gray-400'
+                        ? 'cursor-not-allowed opacity-50' 
+                        : 'hover:bg-gray-50'
                     }`}
+                    style={{
+                      borderColor: 'rgba(24, 36, 60, 0.2)',
+                      color: '#18243c'
+                    }}
                     disabled={quantity >= getMaxQuantity()}
                     title={quantity >= getMaxQuantity() ? 'Maximum quantity reached' : 'Increase quantity'}
                   >
                     +
                   </button>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Maximum quantity: {getMaxQuantity()} (based on your coin balance)
+                <div className="text-xs mt-1" style={{ color: 'rgba(24, 36, 60, 0.6)' }}>
+                  Maximum: {getMaxQuantity()}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: '#18243c' }}>
                   Message (Optional)
                 </label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Add a personal message..."
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 transition-all text-sm resize-none"
+                  style={{
+                    borderColor: 'rgba(24, 36, 60, 0.2)',
+                    backgroundColor: 'rgba(24, 36, 60, 0.02)',
+                    color: '#18243c'
+                  }}
                   rows={3}
                   maxLength={500}
                 />
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs mt-1" style={{ color: 'rgba(24, 36, 60, 0.6)' }}>
                   {message.length}/500 characters
                 </div>
               </div>
 
               {/* Cost Summary */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Cost per gift:</span>
-                  <span className="flex items-center gap-1">
-                    <Coins className="h-4 w-4" />
-                    {giftMode === 'emoji' && selectedGift 
-                      ? selectedGift.coinCost || 0
-                      : customAmount || 0
-                    }
+              <div className="p-3 rounded-xl border" style={{ backgroundColor: 'rgba(24, 36, 60, 0.03)', borderColor: 'rgba(24, 36, 60, 0.1)' }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm" style={{ color: '#18243c' }}>Total:</span>
+                  <span className={`flex items-center gap-1 font-semibold ${!canAfford ? 'text-red-500' : ''}`} style={{ color: canAfford ? '#18243c' : undefined }}>
+                    <Coins className="h-3 w-3" />
+                    <span className="text-sm">{totalCost}</span>
                   </span>
                 </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>Quantity:</span>
-                  <span>{quantity}</span>
+                <div className="text-xs mt-1" style={{ color: 'rgba(24, 36, 60, 0.6)' }}>
+                  💝 100% goes to {recipientName}
                 </div>
-                <div className="border-t pt-2">
-                  <div className="flex justify-between items-center font-bold">
-                    <span>Total Cost:</span>
-                    <span className={`flex items-center gap-1 ${!canAfford ? 'text-red-600' : ''}`}>
-                      <Coins className="h-4 w-4" />
-                      {totalCost}
-                    </span>
-                  </div>
-                  <div className="text-xs text-green-600 mt-1">
-                    💝 100% goes to {recipientName} (no platform fee)
-                  </div>
-                  {!canAfford && (
-                    <p className="text-red-600 text-sm mt-1">Insufficient coins</p>
-                  )}
-                </div>
+                {!canAfford && (
+                  <p className="text-red-500 text-xs mt-1">Insufficient coins</p>
+                )}
               </div>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
-            <Button
+          <div className="flex gap-3">
+            <button
               onClick={onClose}
-              variant="outline"
-              className="flex-1"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleSendGift}
               disabled={!selectedGift && giftMode === 'emoji' || 
                        (giftMode === 'custom' && (!customAmount || parseFloat(customAmount) <= 0)) || 
                        !canAfford || loading}
-              className="flex-1 flex items-center gap-2"
+              className="flex-1 py-2.5 px-4 rounded-xl text-white transition-colors text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ backgroundColor: '#18243c' }}
             >
               {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3" />
               )}
               Send Gift
-            </Button>
+            </button>
           </div>
         </div>
       </div>

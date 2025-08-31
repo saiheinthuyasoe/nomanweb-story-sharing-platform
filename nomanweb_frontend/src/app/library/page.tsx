@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useMyLibraries,
@@ -22,6 +23,8 @@ import {
   useStoryProgress,
   useResetStoryProgress,
 } from "@/hooks/useReadingProgress";
+import { useQuery } from "@tanstack/react-query";
+import { monetizationApi } from "@/lib/api/monetization";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -36,6 +39,7 @@ import {
   CheckCircleIcon,
   EyeIcon,
   ArrowPathIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import {
   HeartIcon as HeartIconSolid,
@@ -51,6 +55,7 @@ type LibraryFilter = "all" | "reading" | "completed" | "liked" | "want_to_read";
 
 export default function LibraryPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>("library");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
   const [isEditMode, setIsEditMode] = useState(false);
@@ -65,6 +70,16 @@ export default function LibraryPage() {
   const { data: purchasedStoriesData = [] } = usePurchasedStories();
   const { data: historyStoriesData = [] } = useHistoryStories();
 
+  // Fetch purchase history for count calculation
+  const {
+    data: purchaseHistory,
+    isLoading: isLoadingPurchases,
+  } = useQuery({
+    queryKey: ["purchaseHistory"],
+    queryFn: () => monetizationApi.getPurchaseHistory(),
+    enabled: !!user,
+  });
+
   // Reading history data
   const {
     data: readingHistoryData,
@@ -77,13 +92,28 @@ export default function LibraryPage() {
   const [accessiblePurchasedStories, setAccessiblePurchasedStories] = useState<
     any[]
   >([]);
-  
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'purchased') {
+      setActiveTab('purchased');
+    }
+  }, [searchParams]);
+
   // Memoize purchasedStoriesData to prevent infinite re-renders
-  const memoizedPurchasedStories = useMemo(() => purchasedStoriesData, [JSON.stringify(purchasedStoriesData)]);
-  
+  const memoizedPurchasedStories = useMemo(
+    () => purchasedStoriesData,
+    [JSON.stringify(purchasedStoriesData)]
+  );
+
   useEffect(() => {
     async function checkAccess() {
-      if (!user || !memoizedPurchasedStories || memoizedPurchasedStories.length === 0) {
+      if (
+        !user ||
+        !memoizedPurchasedStories ||
+        memoizedPurchasedStories.length === 0
+      ) {
         setAccessiblePurchasedStories([]);
         return;
       }
@@ -137,7 +167,7 @@ export default function LibraryPage() {
           ...likedStoriesData,
           ...completedStoriesData,
           ...wantToReadData,
-        ].forEach(item => {
+        ].forEach((item) => {
           if (!storyMap.has(item.story.id)) {
             storyMap.set(item.story.id, item);
           }
@@ -166,6 +196,21 @@ export default function LibraryPage() {
 
   const libraryItems = getFilteredLibraryItems();
 
+  // Calculate purchased content count by grouping purchases by story
+  const purchasedContentCount = useMemo(() => {
+    if (!purchaseHistory?.content) return 0;
+    
+    const groupedPurchases = purchaseHistory.content.reduce((groups, purchase) => {
+      const storyId = purchase.story.id;
+      if (!groups[storyId]) {
+        groups[storyId] = true;
+      }
+      return groups;
+    }, {} as Record<string, boolean>);
+    
+    return Object.keys(groupedPurchases).length;
+  }, [purchaseHistory]);
+
   // Get counts for each category
   const categoryCounts = {
     all: (() => {
@@ -175,7 +220,7 @@ export default function LibraryPage() {
         ...likedStoriesData,
         ...completedStoriesData,
         ...wantToReadData,
-      ].forEach(item => {
+      ].forEach((item) => {
         if (!storyMap.has(item.story.id)) {
           storyMap.set(item.story.id, item);
         }
@@ -273,7 +318,7 @@ export default function LibraryPage() {
                 onClick={() => handleTabChange("library")}
                 className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "library"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -283,21 +328,21 @@ export default function LibraryPage() {
                 onClick={() => handleTabChange("purchased")}
                 className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "purchased"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Purchased Content
+                Purchase History ({purchasedContentCount})
               </button>
               <button
                 onClick={() => handleTabChange("history")}
                 className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "history"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                History ({readingHistory.length})
+                Recent Reading History ({readingHistory.length})
               </button>
             </div>
 
@@ -322,8 +367,8 @@ export default function LibraryPage() {
                         : "text-gray-600 hover:text-gray-700"
                     }`}
                   >
-                    <PencilIcon className="w-4 h-4" />
-                    <span>{isEditMode ? "Done" : "Edit"}</span>
+                    <Squares2X2Icon className="w-4 h-4" />
+                    <span>{isEditMode ? "Done" : "Select"}</span>
                   </button>
                   <select
                     value={sortBy}
@@ -543,7 +588,7 @@ function LibraryTab({
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item, index) => (
         <LibraryBookCard
           key={`${item.story.id}-${index}`}
@@ -591,7 +636,10 @@ function HistoryTab({
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          className="text-white px-6 py-3 rounded-lg transition-colors"
+          style={{ backgroundColor: '#18243c' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
         >
           Try Again
         </button>
@@ -611,7 +659,10 @@ function HistoryTab({
         </p>
         <Link
           href="/stories"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          className="text-white px-6 py-3 rounded-lg transition-colors"
+          style={{ backgroundColor: '#18243c' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
         >
           Start Reading
         </Link>
@@ -661,8 +712,9 @@ function LibraryBookCard({
     };
 
     if (showStatusMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showStatusMenu]);
   const getListTypeIcon = (listType: string) => {
@@ -717,10 +769,10 @@ function LibraryBookCard({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex">
         {/* Cover Image */}
-        <Link href={`/stories/${item.story.id}`} className="block">
-          <div className="aspect-[3/4] relative bg-gray-200">
+        <Link href={`/stories/${item.story.id}`} className="flex-shrink-0">
+          <div className="w-40 h-52 relative bg-gray-200 rounded-l-lg overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
                 src={item.story.coverImageUrl}
@@ -730,26 +782,30 @@ function LibraryBookCard({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                <BookOpenIcon className="w-12 h-12 text-gray-400" />
+                <BookOpenIcon className="w-8 h-8 text-gray-400" />
               </div>
             )}
 
             {/* List Type Badge */}
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-1 right-1">
               {filter === "all" ? (
-                <div className="flex flex-wrap gap-1 max-w-[60px]">
+                <div className="flex flex-wrap gap-1 max-w-[40px]">
                   {getMultipleIcons()?.map((icon, index) => (
                     <div
                       key={index}
-                      className="bg-white/90 rounded-full p-1 shadow-sm"
+                      className="bg-white/90 rounded-full p-0.5 shadow-sm"
                     >
-                      {icon}
+                      {React.cloneElement(icon as React.ReactElement, {
+                        className: "w-3 h-3"
+                      })}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-white/90 rounded-full p-1 shadow-sm">
-                  {getListTypeIcon(item.listType)}
+                <div className="bg-white/90 rounded-full p-0.5 shadow-sm">
+                  {React.cloneElement(getListTypeIcon(item.listType) as React.ReactElement, {
+                    className: "w-3 h-3"
+                  })}
                 </div>
               )}
             </div>
@@ -757,167 +813,189 @@ function LibraryBookCard({
         </Link>
 
         {/* Content */}
-        <div className="p-4">
-            <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
+        <div className="flex-1 p-4 min-w-0">
+          <Link href={`/stories/${item.story.id}`}>
+            <h3 className="font-medium text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors">
               {item.story.title}
             </h3>
-            <p className="text-sm text-gray-600 mb-2">
-              by {item.story.author.displayName || item.story.author.username}
-            </p>
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>{item.story.totalChapters} chapters</span>
-              <span className="capitalize">
-                {item.listType.toLowerCase().replace("_", " ")}
-              </span>
-            </div>
+          </Link>
+          <p className="text-sm text-gray-600 mb-2">
+            by {item.story.author.displayName || item.story.author.username}
+          </p>
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>{item.story.totalChapters} chapters</span>
+            <span className="capitalize">
+              {item.listType.toLowerCase().replace("_", " ")}
+            </span>
+          </div>
 
-            {/* Reading Progress */}
-            {storyProgress && (
-              <div className="mt-2">
-                <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span>{Math.round(storyProgress.overallProgress)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${Math.round(storyProgress.overallProgress)}%`,
-                    }}
-                  ></div>
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                  <span>
-                    {storyProgress.completedChapters} of{" "}
-                    {storyProgress.totalChapters} chapters
-                  </span>
-                  {storyProgress.currentChapter && (
-                    <span className="text-blue-600">
-                      Ch. {storyProgress.currentChapter.chapterNumber}
-                    </span>
-                  )}
-                </div>
+          {/* Reading Progress */}
+          {storyProgress && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>Progress</span>
+                <span>{Math.round(storyProgress.overallProgress)}%</span>
               </div>
-            )}
-
-            {/* Reading Status Management */}
-            {!isEditMode && (
-              <div className="mt-3 flex items-center justify-between">
-                {/* Continue Reading / Start Reading Button */}
-                {storyProgress?.currentChapter ? (
-                  <Link
-                    href={`/stories/${item.story.id}/chapters/${storyProgress.currentChapter.chapterNumber}/read`}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Continue Reading →
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/stories/${item.story.id}`}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Start Reading
-                  </Link>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.round(storyProgress.overallProgress)}%`,
+                  }}
+                ></div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                <span>
+                  {storyProgress.completedChapters} of{" "}
+                  {storyProgress.totalChapters} chapters
+                </span>
+                {storyProgress.currentChapter && (
+                  <span className="text-blue-600">
+                    Ch. {storyProgress.currentChapter.chapterNumber}
+                  </span>
                 )}
+              </div>
+            </div>
+          )}
 
-                {/* Status Management Dropdown */}
-                 <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowStatusMenu(!showStatusMenu);
-                    }}
-                    className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
+          {/* Reading Status Management */}
+          {!isEditMode && (
+            <div className="mt-3 flex items-center justify-between">
+              {/* Continue Reading / Start Reading Button */}
+              {storyProgress?.currentChapter ? (
+                <Link
+                  href={`/stories/${item.story.id}/chapters/${storyProgress.currentChapter.chapterNumber}/read`}
+                  className="bg-[#18243c] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                >
+                  Continue Reading →
+                </Link>
+              ) : (
+                <Link
+                  href={`/stories/${item.story.id}`}
+                  className="bg-[#18243c] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                >
+                  Start Reading
+                </Link>
+              )}
+
+              {/* Status Management Dropdown */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowStatusMenu(!showStatusMenu);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
-                  </button>
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+                </button>
 
-                  {showStatusMenu && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
-                      <div className="py-1">
-                        {item.listType !== "READING" && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              updateReadingStatus({ storyId: item.story.id, status: "READING" });
-                              setShowStatusMenu(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          >
-                            <EyeIcon className="w-4 h-4 text-orange-500" />
-                            <span>Mark as Reading</span>
-                          </button>
-                        )}
-                        {item.listType !== "COMPLETED" && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              updateReadingStatus({ storyId: item.story.id, status: "COMPLETED" });
-                              setShowStatusMenu(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          >
-                            <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                            <span>Mark as Completed</span>
-                          </button>
-                        )}
-                        {item.listType !== "WANT_TO_READ" && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              updateReadingStatus({ storyId: item.story.id, status: "WANT_TO_READ" });
-                              setShowStatusMenu(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                          >
-                            <BookmarkIcon className="w-4 h-4 text-purple-500" />
-                            <span>Want to Read</span>
-                          </button>
-                        )}
-                        {/* Show reset progress button only if there's reading progress */}
-                        {storyProgress && storyProgress.overallProgress > 0 && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (confirm('Are you sure you want to reset all reading progress for this story? This action cannot be undone.')) {
-                                resetStoryProgress(item.story.id);
-                              }
-                              setShowStatusMenu(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center space-x-2"
-                          >
-                            <ArrowPathIcon className="w-4 h-4" />
-                            <span>Reset Reading Progress</span>
-                          </button>
-                        )}
-                        <hr className="my-1" />
+                {showStatusMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
+                    <div className="py-1">
+                      {item.listType !== "READING" && (
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            updateReadingStatus({ storyId: item.story.id, status: "REMOVE" });
+                            updateReadingStatus({
+                              storyId: item.story.id,
+                              status: "READING",
+                            });
                             setShowStatusMenu(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                         >
-                          <TrashIcon className="w-4 h-4" />
-                          <span>Remove from Library</span>
+                          <EyeIcon className="w-4 h-4 text-orange-500" />
+                          <span>Mark as Reading</span>
                         </button>
-                      </div>
+                      )}
+                      {item.listType !== "COMPLETED" && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateReadingStatus({
+                              storyId: item.story.id,
+                              status: "COMPLETED",
+                            });
+                            setShowStatusMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                          <span>Mark as Completed</span>
+                        </button>
+                      )}
+                      {item.listType !== "WANT_TO_READ" && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateReadingStatus({
+                              storyId: item.story.id,
+                              status: "WANT_TO_READ",
+                            });
+                            setShowStatusMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <BookmarkIcon className="w-4 h-4 text-purple-500" />
+                          <span>Want to Read</span>
+                        </button>
+                      )}
+                      {/* Show reset progress button only if there's reading progress */}
+                      {storyProgress && storyProgress.overallProgress > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (
+                              confirm(
+                                "Are you sure you want to reset all reading progress for this story? This action cannot be undone."
+                              )
+                            ) {
+                              resetStoryProgress(item.story.id);
+                            }
+                            setShowStatusMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center space-x-2"
+                        >
+                          <ArrowPathIcon className="w-4 h-4" />
+                          <span>Reset Reading Progress</span>
+                        </button>
+                      )}
+                      <hr className="my-1" />
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          updateReadingStatus({
+                            storyId: item.story.id,
+                            status: "REMOVE",
+                          });
+                          setShowStatusMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                        <span>Remove from Library</span>
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+      </div>
     </div>
   );
 }
@@ -938,8 +1016,9 @@ function HistoryBookCard({ item }: { item: any }) {
     };
 
     if (showStatusMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showStatusMenu]);
 
@@ -964,7 +1043,7 @@ function HistoryBookCard({ item }: { item: any }) {
       <div className="flex gap-4">
         {/* Cover Image */}
         <Link href={`/stories/${item.story.id}`} className="flex-shrink-0">
-          <div className="w-20 h-28 relative bg-gray-200 rounded overflow-hidden">
+          <div className="w-40 h-56 relative bg-gray-200 rounded overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
                 src={item.story.coverImageUrl}
@@ -974,7 +1053,7 @@ function HistoryBookCard({ item }: { item: any }) {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                <BookOpenIcon className="w-6 h-6 text-gray-400" />
+                <BookOpenIcon className="w-8 h-8 text-gray-400" />
               </div>
             )}
           </div>
@@ -1002,7 +1081,7 @@ function HistoryBookCard({ item }: { item: any }) {
                 <span>Last read: {formatLastRead(item.lastReadAt)}</span>
               </div>
               {item.story.description && (
-                <p className="text-sm text-gray-700 line-clamp-2">
+                <p className="text-sm text-gray-700 line-clamp-2 mb-4">
                   {item.story.description}
                 </p>
               )}
@@ -1012,7 +1091,7 @@ function HistoryBookCard({ item }: { item: any }) {
           {/* Progress Bar */}
           <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-orange-500 h-2 rounded-full transition-all duration-300"
               style={{
                 width: `${Math.min(
                   100,
@@ -1026,7 +1105,7 @@ function HistoryBookCard({ item }: { item: any }) {
           <div className="flex items-center justify-between">
             <Link
               href={`/stories/${item.story.id}/chapters/${item.chapter.chapterNumber}/read`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="bg-[#18243c] text-white px-4 py-2 rounded-lg hover:bg-[#18243c]/90 transition-colors text-sm font-medium"
             >
               {item.isCompleted ? "Read Again" : "Continue Reading"} →
             </Link>
@@ -1052,8 +1131,16 @@ function HistoryBookCard({ item }: { item: any }) {
                 >
                   <BookmarkIcon className="w-4 h-4" />
                   <span>Add to List</span>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
 
@@ -1064,7 +1151,10 @@ function HistoryBookCard({ item }: { item: any }) {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          updateReadingStatus({ storyId: item.story.id, status: "READING" });
+                          updateReadingStatus({
+                            storyId: item.story.id,
+                            status: "READING",
+                          });
                           setShowStatusMenu(false);
                         }}
                         className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
@@ -1076,7 +1166,10 @@ function HistoryBookCard({ item }: { item: any }) {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          updateReadingStatus({ storyId: item.story.id, status: "COMPLETED" });
+                          updateReadingStatus({
+                            storyId: item.story.id,
+                            status: "COMPLETED",
+                          });
                           setShowStatusMenu(false);
                         }}
                         className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
@@ -1088,7 +1181,10 @@ function HistoryBookCard({ item }: { item: any }) {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          updateReadingStatus({ storyId: item.story.id, status: "WANT_TO_READ" });
+                          updateReadingStatus({
+                            storyId: item.story.id,
+                            status: "WANT_TO_READ",
+                          });
                           setShowStatusMenu(false);
                         }}
                         className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"

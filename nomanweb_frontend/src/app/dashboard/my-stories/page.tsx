@@ -369,8 +369,9 @@ export default function MyStoriesPage() {
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                   style={{
-                    borderBottomColor: activeTab === tab.id ? '#18243c' : 'transparent',
-                    color: activeTab === tab.id ? '#18243c' : undefined
+                    borderBottomColor:
+                      activeTab === tab.id ? "#18243c" : "transparent",
+                    color: activeTab === tab.id ? "#18243c" : undefined,
                   }}
                 >
                   <div className="flex items-center space-x-2">
@@ -648,10 +649,12 @@ export default function MyStoriesPage() {
                                     className="text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
                                     style={{ backgroundColor: "#18243c" }}
                                     onMouseEnter={(e) =>
-                                      (e.currentTarget.style.backgroundColor = "#0f1729")
+                                      (e.currentTarget.style.backgroundColor =
+                                        "#0f1729")
                                     }
                                     onMouseLeave={(e) =>
-                                      (e.currentTarget.style.backgroundColor = "#18243c")
+                                      (e.currentTarget.style.backgroundColor =
+                                        "#18243c")
                                     }
                                   >
                                     <Eye className="h-4 w-4" />

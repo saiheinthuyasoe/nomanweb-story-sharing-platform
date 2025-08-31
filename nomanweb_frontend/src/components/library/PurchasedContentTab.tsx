@@ -93,7 +93,7 @@ export default function PurchasedContentTab({
         </p>
         <Link
           href="/stories"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#18243c]/90 transition-colors"
         >
           <BookOpenIcon className="w-4 h-4 mr-2" />
           Browse Stories
@@ -265,13 +265,13 @@ export default function PurchasedContentTab({
                       <Image
                         src={group.story.coverImageUrl}
                         alt={group.story.title}
-                        width={64}
-                        height={96}
+                        width={96}
+                        height={144}
                         className="rounded object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-24 bg-gray-200 rounded flex items-center justify-center">
-                        <BookOpenIcon className="w-8 h-8 text-gray-400" />
+                      <div className="w-24 h-36 bg-gray-200 rounded flex items-center justify-center">
+                        <BookOpenIcon className="w-12 h-12 text-gray-400" />
                       </div>
                     )}
                   </div>
@@ -354,7 +354,7 @@ export default function PurchasedContentTab({
                       <div className="flex items-center space-x-2">
                         <Link
                           href={`/stories/${storyId}`}
-                          className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          className="inline-flex items-center px-3 py-2 bg-[#18243c] text-white text-sm rounded-lg hover:bg-[#18243c]/90 transition-colors"
                         >
                           <EyeIcon className="w-4 h-4 mr-1" />
                           {effectivePurchaseType === "book"

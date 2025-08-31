@@ -152,13 +152,13 @@ export default function FollowerFollowingList({
       )}
 
       {/* Users List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filteredUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             {searchQuery ? (
               <div>
-                <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No {type} found for "{searchQuery}"</p>
+                <Search className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No {type} found for "{searchQuery}"</p>
                 <button
                   onClick={() => setSearchQuery('')}
                   className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
@@ -168,50 +168,45 @@ export default function FollowerFollowingList({
               </div>
             ) : (
               <div>
-                <UserPlus className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No {type} yet.</p>
+                <UserPlus className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No {type} yet.</p>
               </div>
             )}
           </div>
         ) : (
           filteredUsers.map((followerUser) => (
-            <div key={followerUser.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <Link 
-                href={`/authors/${followerUser.id}`}
-                className="flex items-center space-x-3 flex-1 hover:bg-gray-100 rounded-lg p-2 -m-2 transition-colors"
-              >
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+            <div key={followerUser.id} className="flex items-center justify-between py-2 px-1 hover:bg-gray-50 rounded transition-colors">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                   {followerUser.profileImageUrl ? (
                     <Image
                       src={followerUser.profileImageUrl}
                       alt={followerUser.displayName || followerUser.username}
-                      width={48}
-                      height={48}
+                      width={32}
+                      height={32}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-lg font-semibold text-gray-600">
+                    <span className="text-sm font-semibold text-gray-600">
                       {(followerUser.displayName || followerUser.username).charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">
+                  <Link 
+                    href={`/authors/${followerUser.id}`}
+                    className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                  >
                     {followerUser.displayName || followerUser.username}
-                  </div>
-                  <div className="text-sm text-gray-500">@{followerUser.username}</div>
+                  </Link>
+                  <div className="text-xs text-gray-500">@{followerUser.username}</div>
                 </div>
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="text-sm text-gray-500">
-                  {formatDistanceToNow(new Date(followerUser.followedAt), { addSuffix: true })}
-                </div>
-                <ActionButton followerUser={followerUser} />
               </div>
+              <ActionButton followerUser={followerUser} />
             </div>
           ))
         )}
       </div>
     </div>
   );
-} 
+}

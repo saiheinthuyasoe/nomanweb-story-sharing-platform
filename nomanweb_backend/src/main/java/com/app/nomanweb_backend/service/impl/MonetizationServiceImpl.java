@@ -485,12 +485,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                             .title(purchase.getChapter().getTitle())
                             .chapterNumber(purchase.getChapter().getChapterNumber())
                             .build())
-                    .story(GiftTransactionResponse.StorySummary.builder()
-                            .id(purchase.getStory().getId())
-                            .title(purchase.getStory().getTitle())
-                            .coverImageUrl(purchase.getStory().getCoverImageUrl())
-                            .pricingType(purchase.getStory().getPricingType().name())
-                            .build())
+                    .story(convertToStorySummary(purchase.getStory()))
                     .build());
         });
 
@@ -501,12 +496,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                     .totalCoins(purchase.getCoinsSpent())
                     .createdAt(purchase.getPurchasedAt())
                     .chaptersAtPurchase(purchase.getChaptersAtPurchase())
-                    .story(GiftTransactionResponse.StorySummary.builder()
-                            .id(purchase.getStory().getId())
-                            .title(purchase.getStory().getTitle())
-                            .coverImageUrl(purchase.getStory().getCoverImageUrl())
-                            .pricingType(purchase.getStory().getPricingType().name())
-                            .build())
+                    .story(convertToStorySummary(purchase.getStory()))
                     .build());
         });
 
@@ -685,13 +675,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         // Check for duplicate payment reference to prevent double-spending
         if (paymentReference != null) {
             boolean existingTransaction = coinTransactionRepository.existsByPaymentReferenceAndStatus(
-                paymentReference, CoinTransaction.Status.COMPLETED);
+                    paymentReference, CoinTransaction.Status.COMPLETED);
             if (existingTransaction) {
                 log.warn("Attempted to add coins for already processed payment reference: {}", paymentReference);
                 return; // Skip adding coins if already processed
             }
         }
-        
+
         BigDecimal balanceBefore = user.getCoinBalance();
         user.addCoins(amount);
         userRepository.save(user);
@@ -720,7 +710,7 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .build();
 
         coinTransactionRepository.save(transaction);
-        
+
         log.info("Successfully added {} coins to user {} (balance: {} -> {}), payment reference: {}",
                 amount, user.getId(), balanceBefore, user.getCoinBalance(), paymentReference);
     }
@@ -859,6 +849,8 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .id(story.getId())
                 .title(story.getTitle())
                 .coverImageUrl(story.getCoverImageUrl())
+                .pricingType(story.getPricingType().name())
+                .author(convertToUserSummary(story.getAuthor()))
                 .build();
     }
 

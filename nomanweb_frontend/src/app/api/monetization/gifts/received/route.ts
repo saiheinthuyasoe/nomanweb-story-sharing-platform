@@ -1,13 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     // Get the token from cookies or authorization header
-    const token = request.cookies.get('token')?.value || 
-                  request.headers.get('authorization')?.replace('Bearer ', '');
-    
+    const token =
+      request.cookies.get("token")?.value ||
+      request.headers.get("authorization")?.replace("Bearer ", "");
+
     if (!token) {
-      return NextResponse.json({ error: 'No authentication token provided' }, { status: 401 });
+      return NextResponse.json(
+        { error: "No authentication token provided" },
+        { status: 401 }
+      );
     }
 
     // Get query parameters for pagination
@@ -15,18 +19,24 @@ export async function GET(request: NextRequest) {
     const queryString = searchParams.toString();
 
     // Forward the request to the backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await fetch(`${backendUrl}/api/monetization/gifts/received${queryString ? `?${queryString}` : ''}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+    const response = await fetch(
+      `${backendUrl}/monetization/gifts/received${
+        queryString ? `?${queryString}` : ""
+      }`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { error: errorData.message || 'Failed to fetch received gifts' },
+        { error: errorData.message || "Failed to fetch received gifts" },
         { status: response.status }
       );
     }
@@ -34,9 +44,9 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Received gifts API error:', error);
+    console.error("Received gifts API error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

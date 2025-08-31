@@ -62,6 +62,16 @@ export const libraryApi = {
     return response.data;
   },
 
+  async getUserLibraries(
+    userId: string,
+    listType?: string
+  ): Promise<LibraryItem[]> {
+    const response = await apiClient.get(`/libraries/user/${userId}/lists`, {
+      params: listType ? { listType } : {},
+    });
+    return response.data;
+  },
+
   // Reading status
   async updateReadingStatus(
     storyId: string,

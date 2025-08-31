@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { 
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import {
   HeartIcon,
   EllipsisHorizontalIcon,
   BookOpenIcon,
@@ -12,41 +12,47 @@ import {
   UserGroupIcon,
   CalendarDaysIcon,
   EnvelopeIcon,
-  AtSymbolIcon
-} from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
-import { 
-  Mail, 
-  Calendar, 
-  BookOpen, 
-  Heart, 
-  Users, 
+  AtSymbolIcon,
+} from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
+import {
+  Mail,
+  Calendar,
+  BookOpen,
+  Heart,
+  Users,
   UserPlus,
   Loader2,
   Check,
   X,
-  Gift
-} from 'lucide-react';
-import { usersApi, UserProfile } from '@/lib/api/users';
-import { storiesApi } from '@/lib/api/stories';
-import { StoryPreview } from '@/types/story';
-import { StoryCard } from '@/components/stories/StoryCard';
-import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'react-hot-toast';
-import EnhancedGiftModal from '@/components/monetization/EnhancedGiftModal';
+  Gift,
+  Eye,
+} from "lucide-react";
+import { usersApi, UserProfile } from "@/lib/api/users";
+import { storiesApi } from "@/lib/api/stories";
+import { libraryApi, LibraryItem } from "@/lib/api/libraries";
+import { StoryPreview } from "@/types/story";
+import { StoryCard } from "@/components/stories/StoryCard";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "react-hot-toast";
+import EnhancedGiftModal from "@/components/monetization/EnhancedGiftModal";
 
 export default function AuthorProfile() {
   const params = useParams();
   const authorId = params.authorId as string;
-  
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [writtenStories, setWrittenStories] = useState<StoryPreview[]>([]);
+  const [readingData, setReadingData] = useState<LibraryItem[]>([]);
+  const [completedData, setCompletedData] = useState<LibraryItem[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
-  const [booksTab, setBooksTab] = useState<'written' | 'read'>('written');
+  const [activeTab, setActiveTab] = useState<"followers" | "following">(
+    "followers"
+  );
+  const [booksTab, setBooksTab] = useState<"written" | "read">("written");
   const [followLoading, setFollowLoading] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
 
@@ -54,34 +60,48 @@ export default function AuthorProfile() {
     const fetchAuthorData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch user profile
         const profile = await usersApi.getUserProfile(authorId);
         setUserProfile(profile);
-        
+
         // Fetch user's written stories
-        const storiesResponse = await storiesApi.getStoriesByAuthor(authorId, { page: 0, size: 12 });
+        const storiesResponse = await storiesApi.getStoriesByAuthor(authorId, {
+          page: 0,
+          size: 12,
+        });
         setWrittenStories(storiesResponse.content);
-        
+
         // Fetch followers and following
         const followersResponse = await usersApi.getFollowers(authorId, 0, 20);
         setFollowers(followersResponse.content);
-        
+
         const followingResponse = await usersApi.getFollowing(authorId, 0, 20);
         setFollowing(followingResponse.content);
-        
+
+        // Fetch reading data
+        try {
+          const readingResponse = await libraryApi.getUserLibraries(authorId, "READING");
+          setReadingData(readingResponse);
+
+          const completedResponse = await libraryApi.getUserLibraries(authorId, "COMPLETED");
+          setCompletedData(completedResponse);
+        } catch (error) {
+          console.error("Error fetching reading data:", error);
+          // Don't show error toast for reading data as it's not critical
+        }
+
         // Check if current user follows this author
         try {
           const followStatus = await usersApi.isFollowing(authorId);
           setIsFollowing(followStatus);
         } catch (error) {
           // User might not be logged in
-          console.log('Not logged in or error checking follow status');
+          console.log("Not logged in or error checking follow status");
         }
-        
       } catch (error) {
-        console.error('Error fetching author data:', error);
-        toast.error('Failed to load author profile');
+        console.error("Error fetching author data:", error);
+        toast.error("Failed to load author profile");
       } finally {
         setLoading(false);
       }
@@ -94,32 +114,39 @@ export default function AuthorProfile() {
 
   const handleFollowToggle = async () => {
     if (!userProfile) return;
-    
+
     try {
       setFollowLoading(true);
-      
+
       if (isFollowing) {
         await usersApi.unfollowUser(authorId);
         setIsFollowing(false);
-        toast.success(`Unfollowed ${userProfile.displayName || userProfile.username}`);
+        toast.success(
+          `Unfollowed ${userProfile.displayName || userProfile.username}`
+        );
       } else {
         await usersApi.followUser(authorId);
         setIsFollowing(true);
-        toast.success(`Following ${userProfile.displayName || userProfile.username}`);
+        toast.success(
+          `Following ${userProfile.displayName || userProfile.username}`
+        );
       }
-      
+
       // Update followers count in profile
-      setUserProfile(prev => prev ? {
-        ...prev,
-        stats: {
-          ...prev.stats,
-          followers: prev.stats.followers + (isFollowing ? -1 : 1)
-        }
-      } : null);
-      
+      setUserProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              stats: {
+                ...prev.stats,
+                followers: prev.stats.followers + (isFollowing ? -1 : 1),
+              },
+            }
+          : null
+      );
     } catch (error) {
-      console.error('Error toggling follow:', error);
-      toast.error('Failed to follow/unfollow user');
+      console.error("Error toggling follow:", error);
+      toast.error("Failed to follow/unfollow user");
     } finally {
       setFollowLoading(false);
     }
@@ -140,9 +167,13 @@ export default function AuthorProfile() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Author not found</h1>
-          <p className="text-gray-600">The author you're looking for doesn't exist.</p>
-          <Link 
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Author not found
+          </h1>
+          <p className="text-gray-600">
+            The author you're looking for doesn't exist.
+          </p>
+          <Link
             href="/"
             className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
@@ -157,23 +188,10 @@ export default function AuthorProfile() {
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header Section */}
       <div className="relative">
-        {/* Cover Image - Decorative Gradient */}
-        <div className="h-64 sm:h-80 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/20"></div>
-          
-          {/* Decorative Pattern Overlay */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" 
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundSize: '40px 40px'
-              }} 
-            />
-          </div>
-        </div>
+        {/* Removed Cover Image Section */}
 
-        {/* Profile Info Overlay */}
-        <div className="relative px-4 sm:px-6 lg:px-8 -mt-20">
+        {/* Profile Info Section */}
+        <div className="relative px-4 sm:px-6 lg:px-8 pt-8">
           <div className="max-w-6xl mx-auto">
             <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
@@ -191,7 +209,9 @@ export default function AuthorProfile() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-300">
                         <span className="text-2xl sm:text-3xl font-semibold text-gray-600">
-                          {(userProfile.displayName || userProfile.username).charAt(0).toUpperCase()}
+                          {(userProfile.displayName || userProfile.username)
+                            .charAt(0)
+                            .toUpperCase()}
                         </span>
                       </div>
                     )}
@@ -205,7 +225,7 @@ export default function AuthorProfile() {
                       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                         {userProfile.displayName || userProfile.username}
                       </h1>
-                      
+
                       <div className="space-y-2 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                           <Mail className="h-4 w-4" />
@@ -216,14 +236,22 @@ export default function AuthorProfile() {
                             <X className="h-4 w-4 text-red-600" />
                           )}
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
-                          <span className="text-gray-500">@{userProfile.username}</span>
+                          <span className="text-gray-500">
+                            @{userProfile.username}
+                          </span>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4" />
-                          <span>Joined {formatDistanceToNow(new Date(userProfile.createdAt), { addSuffix: true })}</span>
+                          <span>
+                            Joined{" "}
+                            {formatDistanceToNow(
+                              new Date(userProfile.createdAt),
+                              { addSuffix: true }
+                            )}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -235,18 +263,26 @@ export default function AuthorProfile() {
                         disabled={followLoading}
                         className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                           isFollowing
-                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        } ${followLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        } ${
+                          followLoading ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                       >
                         {isFollowing ? (
                           <HeartSolidIcon className="w-5 h-5" />
                         ) : (
                           <HeartIcon className="w-5 h-5" />
                         )}
-                        <span>{followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}</span>
+                        <span>
+                          {followLoading
+                            ? "Loading..."
+                            : isFollowing
+                            ? "Following"
+                            : "Follow"}
+                        </span>
                       </button>
-                      
+
                       <button
                         onClick={() => setShowGiftModal(true)}
                         className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors"
@@ -254,7 +290,7 @@ export default function AuthorProfile() {
                         <Gift className="w-5 h-5" />
                         <span>Send Gift</span>
                       </button>
-                      
+
                       <button className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors">
                         <EllipsisHorizontalIcon className="w-5 h-5" />
                       </button>
@@ -262,43 +298,39 @@ export default function AuthorProfile() {
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <BookOpen className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-gray-900">{userProfile.stats.writtenBooks}</div>
-                      <div className="text-sm text-gray-600">Written Books</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-6">
+                    <div className="text-center py-2">
+                      <div className="text-xl font-semibold text-gray-900">
+                        {userProfile.stats.writtenBooks}
+                      </div>
+                      <div className="text-xs text-gray-500">Written Books</div>
                     </div>
-                    
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-gray-900">{userProfile.stats.readBooks}</div>
-                      <div className="text-sm text-gray-600">Read Books</div>
+
+                    <div className="text-center py-2">
+                      <div className="text-xl font-semibold text-gray-900">
+                        {userProfile.stats.booksCompleted || 0}
+                      </div>
+                      <div className="text-xs text-gray-500">Read Books</div>
                     </div>
-                    
-                    <button 
-                      onClick={() => setActiveTab('followers')}
-                      className={`text-center p-4 rounded-lg transition-colors ${
-                        activeTab === 'followers' 
-                          ? 'bg-blue-100 border-2 border-blue-300' 
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
+
+                    <button
+                      onClick={() => setActiveTab("followers")}
+                      className="text-center py-2 transition-colors hover:text-gray-700"
                     >
-                      <Users className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-gray-900">{userProfile.stats.followers}</div>
-                      <div className="text-sm text-gray-600">Followers</div>
+                      <div className="text-xl font-semibold text-gray-900">
+                        {userProfile.stats.followers}
+                      </div>
+                      <div className="text-xs text-gray-500">Followers</div>
                     </button>
-                    
-                    <button 
-                      onClick={() => setActiveTab('following')}
-                      className={`text-center p-4 rounded-lg transition-colors ${
-                        activeTab === 'following' 
-                          ? 'bg-blue-100 border-2 border-blue-300' 
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
+
+                    <button
+                      onClick={() => setActiveTab("following")}
+                      className="text-center py-2 transition-colors hover:text-gray-700"
                     >
-                      <UserPlus className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-gray-900">{userProfile.stats.following}</div>
-                      <div className="text-sm text-gray-600">Following</div>
+                      <div className="text-xl font-semibold text-gray-900">
+                        {userProfile.stats.following}
+                      </div>
+                      <div className="text-xs text-gray-500">Following</div>
                     </button>
                   </div>
                 </div>
@@ -315,10 +347,12 @@ export default function AuthorProfile() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Bio</h2>
             </div>
-            
+
             <div className="prose max-w-none">
               {userProfile.bio ? (
-                <p className="text-gray-700 leading-relaxed">{userProfile.bio}</p>
+                <p className="text-gray-700 leading-relaxed">
+                  {userProfile.bio}
+                </p>
               ) : (
                 <p className="text-gray-500 italic">No bio available.</p>
               )}
@@ -332,39 +366,49 @@ export default function AuthorProfile() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
             {/* Tab Navigation */}
-            <div className="flex items-center space-x-4 mb-6">
-              <button 
-                onClick={() => setBooksTab('written')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  booksTab === 'written' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Written Books ({userProfile.stats.writtenBooks})
-              </button>
-              <button 
-                onClick={() => setBooksTab('read')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  booksTab === 'read' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Read Books ({userProfile.stats.readBooks})
-              </button>
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="flex space-x-8">
+                <button
+                  onClick={() => setBooksTab("written")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    booksTab === "written"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Written Books{" "}
+                  <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                    {userProfile.stats.writtenBooks}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setBooksTab("read")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    booksTab === "read"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Reading Books</span>
+                    <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
+                      {(readingData?.length || 0) + (completedData?.length || 0)}
+                    </span>
+                  </div>
+                </button>
+              </nav>
             </div>
 
             {/* Tab Content */}
             <div>
-              {booksTab === 'written' && (
+              {booksTab === "written" && (
                 <div>
                   {writtenStories.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {writtenStories.map((story) => (
-                        <StoryCard 
-                          key={story.id} 
-                          story={story} 
+                        <StoryCard
+                          key={story.id}
+                          story={story}
                           showAuthor={false}
                         />
                       ))}
@@ -372,24 +416,103 @@ export default function AuthorProfile() {
                   ) : (
                     <div className="text-center py-12">
                       <BookOpenIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No stories yet</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No stories yet
+                      </h3>
                       <p className="text-gray-500">
-                        {userProfile.displayName || userProfile.username} hasn't published any stories yet.
+                        {userProfile.displayName || userProfile.username} hasn't
+                        published any stories yet.
                       </p>
                     </div>
                   )}
                 </div>
               )}
 
-              {booksTab === 'read' && (
+              {booksTab === "read" && (
                 <div>
-                  <div className="text-center py-12">
-                    <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Reading history coming soon</h3>
-                    <p className="text-gray-500">
-                      Reading history feature will be available in a future update.
-                    </p>
-                  </div>
+                  {(() => {
+                    const allReadBooks = [...readingData, ...completedData];
+                    return allReadBooks.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {allReadBooks.map((item) => {
+                          const story = item.story;
+                          const isCompleted = item.listType === "COMPLETED";
+                          return (
+                            <div
+                              key={story.id}
+                              className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex items-start space-x-3">
+                                {story.coverImageUrl && (
+                                  <Image
+                                    src={story.coverImageUrl}
+                                    alt={story.title}
+                                    width={60}
+                                    height={80}
+                                    className="rounded object-cover flex-shrink-0"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <Link
+                                    href={`/stories/${story.id}`}
+                                    className="block"
+                                  >
+                                    <h4 className="font-medium text-gray-900 truncate hover:text-blue-600">
+                                      {story.title}
+                                    </h4>
+                                  </Link>
+                                  <p className="text-sm text-gray-500 mt-1">{story.genre}</p>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    @{story.author?.username || "unknown"}
+                                  </p>
+                                  <div className="flex items-center text-sm text-gray-500 space-x-3 mt-1">
+                                     <div className="flex items-center space-x-1">
+                                       <BookOpen className="w-3 h-3" />
+                                       <span>{story.totalChapters || 0} chapters</span>
+                                     </div>
+                                     {story.totalViews && (
+                                       <div className="flex items-center space-x-1">
+                                         <Eye className="w-3 h-3" />
+                                         <span>{story.totalViews} views</span>
+                                       </div>
+                                     )}
+                                   </div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span
+                                      className={`text-xs px-2 py-1 rounded-full ${
+                                        isCompleted
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-blue-100 text-blue-800"
+                                      }`}
+                                    >
+                                      {isCompleted ? "Completed" : "Reading"}
+                                    </span>
+                                    <p className="text-xs text-gray-400">
+                                      Added{" "}
+                                      {new Date(
+                                        item.addedAt
+                                      ).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No books read yet
+                        </h3>
+                        <p className="text-gray-500">
+                          {userProfile?.displayName || userProfile?.username} hasn't read any books yet.
+                        </p>
+                      </div>
+                    );
+                  })()
+                  }
                 </div>
               )}
             </div>
@@ -401,50 +524,65 @@ export default function AuthorProfile() {
       <div className="px-4 sm:px-6 lg:px-8 mt-8 mb-8">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-            <div className="flex items-center space-x-4 mb-6">
-              <button 
-                onClick={() => setActiveTab('followers')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'followers' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Followers ({userProfile.stats.followers})
-              </button>
-              <button 
-                onClick={() => setActiveTab('following')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'following' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Following ({userProfile.stats.following})
-              </button>
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("followers")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === "followers"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Followers{" "}
+                  <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                    {userProfile.stats.followers}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("following")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === "following"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Following{" "}
+                  <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                    {userProfile.stats.following}
+                  </span>
+                </button>
+              </nav>
             </div>
 
             <div className="space-y-4">
               {/* Followers/Following List */}
-              {activeTab === 'followers' && (
+              {activeTab === "followers" && (
                 <div>
                   {followers && followers.length > 0 ? (
                     <>
                       {followers.map((follower) => (
-                        <div key={follower.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3">
+                        <div
+                          key={follower.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3"
+                        >
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                               {follower.profileImageUrl ? (
                                 <Image
                                   src={follower.profileImageUrl}
-                                  alt={follower.displayName || follower.username}
+                                  alt={
+                                    follower.displayName || follower.username
+                                  }
                                   width={48}
                                   height={48}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <span className="text-lg font-semibold text-gray-600">
-                                  {(follower.displayName || follower.username).charAt(0).toUpperCase()}
+                                  {(follower.displayName || follower.username)
+                                    .charAt(0)
+                                    .toUpperCase()}
                                 </span>
                               )}
                             </div>
@@ -452,11 +590,16 @@ export default function AuthorProfile() {
                               <div className="font-semibold text-gray-900">
                                 {follower.displayName || follower.username}
                               </div>
-                              <div className="text-sm text-gray-500">@{follower.username}</div>
+                              <div className="text-sm text-gray-500">
+                                @{follower.username}
+                              </div>
                             </div>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(follower.followedAt), { addSuffix: true })}
+                            {formatDistanceToNow(
+                              new Date(follower.followedAt),
+                              { addSuffix: true }
+                            )}
                           </div>
                         </div>
                       ))}
@@ -470,37 +613,54 @@ export default function AuthorProfile() {
                 </div>
               )}
 
-              {activeTab === 'following' && (
+              {activeTab === "following" && (
                 <div>
                   {following && following.length > 0 ? (
                     <>
                       {following.map((followingUser) => (
-                        <div key={followingUser.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3">
+                        <div
+                          key={followingUser.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-3"
+                        >
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                               {followingUser.profileImageUrl ? (
                                 <Image
                                   src={followingUser.profileImageUrl}
-                                  alt={followingUser.displayName || followingUser.username}
+                                  alt={
+                                    followingUser.displayName ||
+                                    followingUser.username
+                                  }
                                   width={48}
                                   height={48}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <span className="text-lg font-semibold text-gray-600">
-                                  {(followingUser.displayName || followingUser.username).charAt(0).toUpperCase()}
+                                  {(
+                                    followingUser.displayName ||
+                                    followingUser.username
+                                  )
+                                    .charAt(0)
+                                    .toUpperCase()}
                                 </span>
                               )}
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">
-                                {followingUser.displayName || followingUser.username}
+                                {followingUser.displayName ||
+                                  followingUser.username}
                               </div>
-                              <div className="text-sm text-gray-500">@{followingUser.username}</div>
+                              <div className="text-sm text-gray-500">
+                                @{followingUser.username}
+                              </div>
                             </div>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(followingUser.followedAt), { addSuffix: true })}
+                            {formatDistanceToNow(
+                              new Date(followingUser.followedAt),
+                              { addSuffix: true }
+                            )}
                           </div>
                         </div>
                       ))}
@@ -523,11 +683,13 @@ export default function AuthorProfile() {
         isOpen={showGiftModal}
         onClose={() => setShowGiftModal(false)}
         recipientId={authorId}
-        recipientName={userProfile?.displayName || userProfile?.username || 'Author'}
+        recipientName={
+          userProfile?.displayName || userProfile?.username || "Author"
+        }
         onGiftSent={() => {
-          toast.success('Gift sent successfully!');
+          toast.success("Gift sent successfully!");
         }}
       />
     </div>
   );
-} 
+}

@@ -11,6 +11,9 @@ import {
   UserIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
+import { useToggleBookmark } from '@/hooks/useLibraries';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 interface StoryCardProps {
   story: StoryPreview;
@@ -19,175 +22,109 @@ interface StoryCardProps {
 }
 
 export function StoryCard({ story, showAuthor = true, className = '' }: StoryCardProps) {
+  const { user } = useAuth();
+  const { mutate: toggleBookmark, isPending: isBookmarkLoading } = useToggleBookmark();
+
+  const handleAddToWantToRead = () => {
+    if (!user) {
+      toast.error('Please login to add to library');
+      return;
+    }
+
+    toggleBookmark({
+      storyId: story.id,
+      listType: 'WANT_TO_READ',
+    });
+  };
+
   return (
-    <div className={`bg-white/90 backdrop-blur-xl rounded-2xl border border-white/50 hover:border-[#18243c]/30 transition-all duration-300 overflow-hidden group hover:shadow-xl hover:shadow-[#18243c]/10 ${className}`}>
-      <Link href={`/stories/${story.id}`}>
-        <div className="relative aspect-[16/9] bg-gray-200 overflow-hidden">
-          {story.coverImageUrl ? (
-            <Image
-              src={story.coverImageUrl}
-              alt={story.title}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full bg-gradient-to-br from-[#18243c]/5 to-[#22325a]/5">
-              <div className="text-center">
-                <BookOpenIcon className="w-12 h-12 text-[#18243c]/40 mx-auto mb-2" />
-                <p className="text-xs text-[#18243c]/60 font-medium">No Cover Image</p>
+    <div className={`bg-white hover:bg-gray-50 transition-colors duration-200 ${className}`}>
+      <div className="flex p-4">
+        {/* Cover Image */}
+        <Link href={`/stories/${story.id}`} className="flex-shrink-0">
+          <div className="relative w-[90px] h-[120px] bg-gray-100 overflow-hidden rounded">
+            {story.coverImageUrl ? (
+              <Image
+                src={story.coverImageUrl}
+                alt={story.title}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-100">
+                <BookOpenIcon className="w-6 h-6 text-gray-300" />
               </div>
-            </div>
-          )}
-          
-          {/* Gradient overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
-          {/* Status badge */}
-          <div className="absolute top-3 left-3">
-            <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg ${
-              story.status === 'PUBLISHED' 
-                ? 'bg-green-500 text-white' 
-                : story.status === 'DRAFT'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-gray-500 text-white'
-            }`}>
-              {story.status}
-            </span>
-          </div>
-
-          {/* Featured badge */}
-          {story.isFeatured && (
-            <div className="absolute top-3 right-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
-                <StarIcon className="w-4 h-4 text-white fill-current" />
-              </div>
-            </div>
-          )}
-
-          {/* Pricing type badge */}
-          <div className="absolute bottom-3 right-3">
-            <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg ${
-              story.pricingType === 'FREE' 
-                ? 'bg-green-500 text-white' 
-                : story.pricingType === 'PAID_PER_CHAPTER'
-                ? 'bg-gradient-to-r from-[#18243c] to-[#22325a] text-white'
-                : 'bg-purple-500 text-white'
-            }`}>
-              {story.pricingType === 'PAID_PER_CHAPTER' ? 'PAID PER CHAPTER' : 
-               story.pricingType === 'WHOLE_BOOK' ? 'WHOLE BOOK' : 
-               story.pricingType}
-            </span>
-          </div>
-        </div>
-      </Link>
-
-      <div className="p-5">
-        <Link href={`/stories/${story.id}`}>
-          <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 hover:text-[#18243c] transition-colors duration-200 group-hover:underline">
-            {story.title}
-          </h3>
-        </Link>
-
-        {story.description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-            {story.description}
-          </p>
-        )}
-
-        {/* Author info */}
-        {showAuthor && (
-          <div className="flex items-center mb-4 p-3 bg-gray-50/50 rounded-xl">
-            <div className="flex items-center space-x-3">
-              {story.author.profileImageUrl ? (
-                <div className="relative">
-                  <Image
-                    src={story.author.profileImageUrl}
-                    alt={story.author.displayName || story.author.username}
-                    width={32}
-                    height={32}
-                    className="rounded-full border-2 border-white shadow-sm"
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                </div>
-              ) : (
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-[#18243c] to-[#22325a] rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                </div>
-              )}
-              <div>
-                <Link 
-                  href={`/authors/${story.author.id}`}
-                  className="text-sm font-semibold text-gray-800 hover:text-[#18243c] transition-colors duration-200"
-                >
-                  {story.author.displayName || story.author.username}
-                </Link>
-                <p className="text-xs text-gray-500">Author</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Category */}
-        {story.category && (
-          <div className="mb-4">
-            <Link 
-              href={`/categories/${story.category.id}`}
-              className="inline-flex items-center px-3 py-1 text-xs font-bold text-[#18243c] bg-[#18243c]/10 rounded-full hover:bg-[#18243c]/20 transition-colors duration-200 border border-[#18243c]/20"
-            >
-              <SparklesIcon className="w-3 h-3 mr-1" />
-              {story.category.name}
-            </Link>
-          </div>
-        )}
-
-        {/* Tags */}
-        {story.tags && story.tags.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {story.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-            {story.tags.length > 2 && (
-              <span className="px-2 py-1 text-xs text-gray-500 bg-gray-50 rounded-full">
-                +{story.tags.length - 2} more
-              </span>
             )}
           </div>
-        )}
+        </Link>
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <EyeIcon className="w-4 h-4" />
-              <span className="font-medium">{story.totalViews.toLocaleString()}</span>
+        {/* Content */}
+        <div className="flex-1 ml-4 flex flex-col justify-between min-h-[120px]">
+          {/* Top section */}
+          <div>
+            {/* Title */}
+            <Link href={`/stories/${story.id}`}>
+              <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2 hover:text-gray-600 transition-colors leading-tight">
+                {story.title}
+              </h3>
+            </Link>
+
+            {/* Description */}
+            {story.description && (
+              <p className="text-xs text-gray-500 mb-2 line-clamp-2 leading-relaxed">
+                {story.description}
+              </p>
+            )}
+          </div>
+
+          {/* Genre, Rating, and Tags */}
+          <div className="mb-2">
+            {/* Genre and Rating */}
+            <div className="flex items-center gap-2 mb-1">
+              {story.category && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  {story.category.name}
+                </span>
+              )}
+              {story.totalViews > 0 && (
+                <div className="flex items-center gap-1">
+                  <StarIcon className="w-3 h-3 text-yellow-400 fill-current" />
+                  <span className="text-xs text-gray-600">
+                    {((story.totalLikes / story.totalViews) * 5).toFixed(1)}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center space-x-1">
-              <HeartIcon className="w-4 h-4" />
-              <span className="font-medium">{story.totalLikes.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <BookOpenIcon className="w-4 h-4" />
-              <span className="font-medium">{story.totalChapters}</span>
+
+            {/* Stats and Button - All in one row */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Stats */}
+                <div className="flex items-center space-x-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <BookOpenIcon className="w-3 h-3" />
+                    <span>{story.totalChapters}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <EyeIcon className="w-3 h-3" />
+                    <span>{story.totalViews.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* ADD button */}
+              <button 
+                onClick={handleAddToWantToRead}
+                disabled={isBookmarkLoading}
+                className="px-3 py-1 text-xs text-white hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium rounded-md flex-shrink-0"
+                style={{ backgroundColor: '#18243c' }}
+              >
+                {isBookmarkLoading ? 'Adding...' : '+ Want to Read'}
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Date */}
-        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-          {story.publishedAt 
-            ? `Published ${formatDistanceToNow(new Date(story.publishedAt), { addSuffix: true })}`
-            : `Created ${formatDistanceToNow(new Date(story.createdAt), { addSuffix: true })}`
-          }
         </div>
       </div>
     </div>
   );
-} 
+}
