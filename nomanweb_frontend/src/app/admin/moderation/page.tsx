@@ -111,6 +111,7 @@ export default function AdminModerationPage() {
 
   useEffect(() => {
     loadStories();
+    loadTextClassificationData();
   }, []);
 
   // ============================================================================
@@ -917,6 +918,134 @@ export default function AdminModerationPage() {
               </Card>
             </div>
 
+            {/* Model Health Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CpuChipIcon className="w-5 h-5" />
+                  Model Health Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {textClassificationData.health && !textClassificationData.health.error ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-green-600">Status</p>
+                          <p className="text-lg font-bold text-green-900">
+                            {textClassificationData.health.status || 'Unknown'}
+                          </p>
+                        </div>
+                        <CheckCircleIcon className="w-8 h-8 text-green-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-600">Total Requests</p>
+                          <p className="text-lg font-bold text-blue-900">
+                            {textClassificationData.health.total_requests || textClassificationData.health.proxy_info?.total_requests || 0}
+                          </p>
+                        </div>
+                        <GlobeAltIcon className="w-8 h-8 text-blue-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-purple-600">Model URL</p>
+                          <p className="text-sm font-bold text-purple-900 truncate">
+                            {textClassificationData.health.model_url || textClassificationData.health.proxy_info?.model_url || 'N/A'}
+                          </p>
+                        </div>
+                        <CpuChipIcon className="w-8 h-8 text-purple-600" />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-orange-600">Response Time</p>
+                          <p className="text-lg font-bold text-orange-900">
+                            {textClassificationData.health.proxy_info?.response_time_ms ? `${textClassificationData.health.proxy_info.response_time_ms}ms` : 'N/A'}
+                          </p>
+                        </div>
+                        <ClockIcon className="w-8 h-8 text-orange-600" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                      <p className="text-red-800 font-medium">
+                        {textClassificationData.health?.error || 'Health data not available'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Model Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5" />
+                  Model Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {textClassificationData.stats && !textClassificationData.stats.error ? (
+                  <div className="space-y-4">
+                    {/* Key Metrics */}
+                    {(textClassificationData.stats.total_requests || textClassificationData.stats.categories_count) && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        {textClassificationData.stats.total_requests && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-blue-600">Total Requests</p>
+                            <p className="text-xl font-bold text-blue-900">{textClassificationData.stats.total_requests}</p>
+                          </div>
+                        )}
+                        {textClassificationData.stats.categories_count && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-green-600">Categories</p>
+                            <p className="text-xl font-bold text-green-900">{textClassificationData.stats.categories_count}</p>
+                          </div>
+                        )}
+                        {textClassificationData.stats.proxy_info?.response_time_ms && (
+                          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-purple-600">Response Time</p>
+                            <p className="text-xl font-bold text-purple-900">{textClassificationData.stats.proxy_info.response_time_ms}ms</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Raw Statistics */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-700 mb-2">Raw Statistics Data</h4>
+                      <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                        {JSON.stringify(textClassificationData.stats, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                      <p className="text-red-800 font-medium">
+                        {textClassificationData.stats?.error || 'Statistics data not available'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
@@ -936,12 +1065,15 @@ export default function AdminModerationPage() {
                     <span>Review Stories</span>
                   </Button>
                   <Button
-                    onClick={loadStories}
+                    onClick={() => {
+                      loadStories();
+                      loadTextClassificationData();
+                    }}
                     variant="outline"
                     className="h-20 flex flex-col items-center justify-center gap-2"
                   >
                     <ArrowPathIcon className="w-6 h-6" />
-                    <span>Refresh Data</span>
+                    <span>Refresh All Data</span>
                   </Button>
                   <Button
                     onClick={() => {
@@ -1180,17 +1312,49 @@ export default function AdminModerationPage() {
                                     </div>
                                     
                                     {/* Quick Summary */}
-                                    <div className="flex items-center gap-3 mb-3 p-2 bg-white rounded border">
-                                      <Badge className={`${getClassificationColor(chapter.classification.predicted_category)} px-3 py-1 border`}>
-                                        {chapter.classification.predicted_category.toUpperCase()}
-                                      </Badge>
-                                      <span className="text-sm text-gray-600 font-medium">
-                                        {Math.round(chapter.classification.confidence * 100)}% confidence
-                                      </span>
-                                      {chapter.classification.performance && (
-                                        <span className="text-xs text-gray-500">
-                                          {chapter.classification.performance.processing_time_ms}ms
+                                    <div className="mb-3 p-3 bg-white rounded border">
+                                      <div className="flex items-center gap-3 mb-3">
+                                        <Badge className={`${getClassificationColor(chapter.classification.predicted_category)} px-3 py-1 border`}>
+                                          {chapter.classification.predicted_category.toUpperCase()}
+                                        </Badge>
+                                        <span className="text-sm text-gray-600 font-medium">
+                                          {Math.round(chapter.classification.confidence * 100)}% confidence
                                         </span>
+                                        {chapter.classification.performance && (
+                                          <span className="text-xs text-gray-500">
+                                            {chapter.classification.performance.processing_time_ms}ms
+                                          </span>
+                                        )}
+                                      </div>
+                                      
+                                      {/* All Categories with Percentages */}
+                                      {chapter.classification.all_probabilities && (
+                                        <div className="space-y-2">
+                                          <h5 className="text-sm font-medium text-gray-700 mb-2">All Categories:</h5>
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            {Object.entries(chapter.classification.all_probabilities)
+                                              .sort(([,a], [,b]) => (b as number) - (a as number))
+                                              .map(([category, probability]) => (
+                                                <div key={category} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                                                  <span className={`text-sm font-medium ${
+                                                    category === chapter.classification.predicted_category 
+                                                      ? 'text-blue-700' 
+                                                      : 'text-gray-600'
+                                                  }`}>
+                                                    {category.replace('_', ' ').toUpperCase()}
+                                                  </span>
+                                                  <span className={`text-sm font-bold ${
+                                                    category === chapter.classification.predicted_category 
+                                                      ? 'text-blue-700' 
+                                                      : 'text-gray-500'
+                                                  }`}>
+                                                    {Math.round((probability as number) * 100)}%
+                                                  </span>
+                                                </div>
+                                              ))
+                                            }
+                                          </div>
+                                        </div>
                                       )}
                                     </div>
                                     
@@ -1468,21 +1632,51 @@ export default function AdminModerationPage() {
                                   <p className="text-red-700 mt-1">{quickError}</p>
                                 </div>
                               ) : quickResult ? (
-                                <div className="space-y-3">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                                      <p className="text-sm font-medium text-blue-600">Predicted Category</p>
-                                      <p className="text-lg font-bold text-blue-900">
-                                        {quickResult.predicted_category || 'N/A'}
-                                      </p>
-                                    </div>
-                                    <div className="bg-green-50 border border-green-200 rounded p-3">
-                                      <p className="text-sm font-medium text-green-600">Confidence</p>
-                                      <p className="text-lg font-bold text-green-900">
-                                        {quickResult.confidence ? `${(quickResult.confidence * 100).toFixed(1)}%` : 'N/A'}
-                                      </p>
-                                    </div>
-                                  </div>
+                                 <div className="space-y-3">
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                                       <p className="text-sm font-medium text-blue-600">Predicted Category</p>
+                                       <p className="text-lg font-bold text-blue-900">
+                                         {quickResult.predicted_category || 'N/A'}
+                                       </p>
+                                     </div>
+                                     <div className="bg-green-50 border border-green-200 rounded p-3">
+                                       <p className="text-sm font-medium text-green-600">Confidence</p>
+                                       <p className="text-lg font-bold text-green-900">
+                                         {quickResult.confidence ? `${(quickResult.confidence * 100).toFixed(1)}%` : 'N/A'}
+                                       </p>
+                                     </div>
+                                   </div>
+                                   
+                                   {/* All Categories with Percentages */}
+                                   {quickResult.all_probabilities && (
+                                     <div className="bg-white border border-gray-200 rounded p-3">
+                                       <h5 className="text-sm font-medium text-gray-700 mb-3">All Categories:</h5>
+                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                         {Object.entries(quickResult.all_probabilities)
+                                           .sort(([,a], [,b]) => (b as number) - (a as number))
+                                           .map(([category, probability]) => (
+                                             <div key={category} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                                               <span className={`text-sm font-medium ${
+                                                 category === quickResult.predicted_category 
+                                                   ? 'text-blue-700' 
+                                                   : 'text-gray-600'
+                                               }`}>
+                                                 {category.replace('_', ' ').toUpperCase()}
+                                               </span>
+                                               <span className={`text-sm font-bold ${
+                                                 category === quickResult.predicted_category 
+                                                   ? 'text-blue-700' 
+                                                   : 'text-gray-500'
+                                               }`}>
+                                                 {Math.round((probability as number) * 100)}%
+                                               </span>
+                                             </div>
+                                           ))
+                                         }
+                                       </div>
+                                     </div>
+                                   )}
                                   
                                   <div className="bg-gray-50 rounded p-3">
                                     <h4 className="font-medium text-gray-700 mb-2">Full JSON Response</h4>
