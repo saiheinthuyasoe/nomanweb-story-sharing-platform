@@ -118,8 +118,6 @@ public class Chapter {
     @Builder.Default
     private List<ChapterPurchase> chapterPurchases = new ArrayList<>();
 
-
-
     @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
@@ -132,7 +130,7 @@ public class Chapter {
 
     // Enums
     public enum Status {
-        DRAFT, PUBLISHED
+        PENDING, DRAFT, PUBLISHED
     }
 
     public enum ModerationStatus {

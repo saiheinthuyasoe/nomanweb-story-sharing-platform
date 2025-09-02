@@ -8,6 +8,7 @@ import { authApi } from "@/lib/api/auth";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import { ProfileImageUpload } from "@/components/upload/ProfileImageUpload";
 import { useFollowers, useFollowing, useToggleFollow } from "@/hooks/useFollow";
+import NotificationPreferences from "@/components/profile/NotificationPreferences";
 import FollowerFollowingList from "@/components/profile/FollowerFollowingList";
 import { useMyStories } from "@/hooks/useStories";
 import { useCurrentlyReading, useCompletedStories } from "@/hooks/useLibraries";
@@ -27,6 +28,7 @@ import {
   Edit3,
   Loader2,
   Eye,
+  Bell,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -276,6 +278,15 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Notification Preferences Section */}
+      <div className="px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+            <NotificationPreferences userId={user.id} />
+          </div>
+        </div>
+      </div>
+
       {/* Books Section with Tabs */}
       <div className="px-4 sm:px-6 lg:px-8 mt-8">
         <div className="max-w-6xl mx-auto">
@@ -357,21 +368,23 @@ export default function ProfilePage() {
                                 {story.genre}
                               </p>
                               <div className="mt-2">
-                                  <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
-                                    <BookOpen className="w-3 h-3" />
-                                    <span>{story.totalChapters || 0} chapters</span>
+                                <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                                  <BookOpen className="w-3 h-3" />
+                                  <span>
+                                    {story.totalChapters || 0} chapters
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                  <div className="flex items-center space-x-1 text-sm text-gray-500">
+                                    <Eye className="w-3 h-3" />
+                                    <span>{story.totalViews || 0} views</span>
                                   </div>
-                                  <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-1 text-sm text-gray-500">
-                                      <Eye className="w-3 h-3" />
-                                      <span>{story.totalViews || 0} views</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1 text-sm text-gray-500">
-                                      <Heart className="w-3 h-3" />
-                                      <span>{story.totalLikes || 0} likes</span>
-                                    </div>
+                                  <div className="flex items-center space-x-1 text-sm text-gray-500">
+                                    <Heart className="w-3 h-3" />
+                                    <span>{story.totalLikes || 0} likes</span>
                                   </div>
                                 </div>
+                              </div>
                               <p className="text-xs text-gray-400 mt-2">
                                 Status: {story.publishStatus || "Draft"}
                               </p>
@@ -433,14 +446,18 @@ export default function ProfilePage() {
                                     {story.title}
                                   </h4>
                                 </Link>
-                                <p className="text-sm text-gray-500 mt-1">{story.genre}</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {story.genre}
+                                </p>
                                 <p className="text-sm text-gray-500 mt-1">
                                   @{story.author?.username || "unknown"}
                                 </p>
                                 <div className="flex items-center text-sm text-gray-500 space-x-3 mt-1">
                                   <div className="flex items-center space-x-1">
                                     <BookOpen className="w-3 h-3" />
-                                    <span>{story.totalChapters || 0} chapters</span>
+                                    <span>
+                                      {story.totalChapters || 0} chapters
+                                    </span>
                                   </div>
                                   {story.totalViews && (
                                     <div className="flex items-center space-x-1">

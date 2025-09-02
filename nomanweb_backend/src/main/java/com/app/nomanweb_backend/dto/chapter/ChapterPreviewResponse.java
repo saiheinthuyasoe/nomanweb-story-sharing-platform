@@ -19,6 +19,7 @@ public class ChapterPreviewResponse {
     private BigDecimal coinPrice;
     private Boolean isFree;
     private Chapter.Status status;
+    private Chapter.ModerationStatus moderationStatus;
 
     // Statistics
     private Long views;

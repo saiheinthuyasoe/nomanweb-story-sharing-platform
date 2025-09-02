@@ -66,7 +66,7 @@ export default function BulkEditChaptersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0 });
-  const [activeTab, setActiveTab] = useState<"published" | "draft">(
+  const [activeTab, setActiveTab] = useState<"published" | "draft" | "pending">(
     "published"
   );
 
@@ -74,7 +74,12 @@ export default function BulkEditChaptersPage() {
   const publishedChapters = editableChapters.filter(
     (ch) => ch.status === "PUBLISHED"
   );
-  const draftChapters = editableChapters.filter((ch) => ch.status === "DRAFT");
+  const draftChapters = editableChapters.filter(
+    (ch) => ch.status === "DRAFT" && ch.moderationStatus !== "PENDING"
+  );
+  const pendingChapters = editableChapters.filter(
+    (ch) => ch.status === "PENDING" || ch.moderationStatus === "PENDING"
+  );
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -156,19 +161,20 @@ export default function BulkEditChaptersPage() {
         // Update chapter numbers for the reordered group
         const updatedSameStatus = reorderedSameStatus.map((chapter, index) => {
           let baseNumber: number;
-          
+
           if (activeChapter.status === "PUBLISHED") {
             baseNumber = index + 1;
           } else {
             // For draft chapters, start after the highest published chapter number
             const publishedChapterNumbers = chapters
-                    .filter((ch) => ch.status === "PUBLISHED")
+              .filter((ch) => ch.status === "PUBLISHED")
               .map((ch) => ch.tempChapterNumber || 0);
-            
-            const maxPublishedNumber = publishedChapterNumbers.length > 0 
-              ? Math.max(...publishedChapterNumbers) 
-              : 0;
-            
+
+            const maxPublishedNumber =
+              publishedChapterNumbers.length > 0
+                ? Math.max(...publishedChapterNumbers)
+                : 0;
+
             baseNumber = maxPublishedNumber + index + 1;
           }
 
@@ -248,12 +254,13 @@ export default function BulkEditChaptersPage() {
       setIsSaving(true);
 
       // Check if chapter number changed and would require reordering
-      const chapterNumberChanged = chapter.tempChapterNumber !== chapter.chapterNumber;
-      
+      const chapterNumberChanged =
+        chapter.tempChapterNumber !== chapter.chapterNumber;
+
       if (chapterNumberChanged) {
         // If chapter number changed, we need to use the reorder API to avoid conflicts
-        const updatedChapters = editableChapters.map(ch => 
-          ch.id === chapterId 
+        const updatedChapters = editableChapters.map((ch) =>
+          ch.id === chapterId
             ? { ...ch, chapterNumber: chapter.tempChapterNumber }
             : ch
         );
@@ -261,7 +268,7 @@ export default function BulkEditChaptersPage() {
           (a, b) => a.chapterNumber - b.chapterNumber
         );
         const chapterIds = sortedChapters.map((ch) => ch.id);
-        
+
         // First reorder to handle chapter number change
         await chaptersApi.reorderChapters(storyId, chapterIds);
       }
@@ -323,13 +330,13 @@ export default function BulkEditChaptersPage() {
           (a, b) => a.tempChapterNumber - b.tempChapterNumber
         );
         const chapterIds = sortedChapters.map((ch) => ch.id);
-        
+
         setSaveProgress({ current: 0, total: changedChapters.length + 1 });
-        
+
         // Call reorder API
         await chaptersApi.reorderChapters(storyId, chapterIds);
         setSaveProgress({ current: 1, total: changedChapters.length + 1 });
-        
+
         // Now update other fields (title, price, etc.) for changed chapters
         let progressCounter = 1;
         for (const chapter of changedChapters) {
@@ -340,13 +347,16 @@ export default function BulkEditChaptersPage() {
             shouldPublish: false,
           });
           progressCounter++;
-          setSaveProgress({ current: progressCounter, total: changedChapters.length + 1 });
+          setSaveProgress({
+            current: progressCounter,
+            total: changedChapters.length + 1,
+          });
         }
       } else {
         // No reordering, just update fields normally
         setSaveProgress({ current: 0, total: changedChapters.length });
         let progressCounter = 0;
-        
+
         for (const chapter of changedChapters) {
           try {
             await chaptersApi.updateChapter(chapter.id, {
@@ -357,11 +367,15 @@ export default function BulkEditChaptersPage() {
               // Don't include chapterNumber to avoid conflicts
             });
             progressCounter++;
-            setSaveProgress({ current: progressCounter, total: changedChapters.length });
+            setSaveProgress({
+              current: progressCounter,
+              total: changedChapters.length,
+            });
           } catch (error: any) {
             console.error(`Error updating chapter ${chapter.id}:`, error);
             toast.error(
-              error.response?.data?.message || `Failed to update chapter "${chapter.title}"`
+              error.response?.data?.message ||
+                `Failed to update chapter "${chapter.title}"`
             );
             throw error;
           }
@@ -467,7 +481,7 @@ export default function BulkEditChaptersPage() {
                 <ArrowLeftIcon className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold" style={{color: '#18243c'}}>
+                <h1 className="text-2xl font-bold" style={{ color: "#18243c" }}>
                   Multi Edit Chapters
                 </h1>
                 <p className="text-gray-600 mt-1">
@@ -535,8 +549,9 @@ export default function BulkEditChaptersPage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
                 style={{
-                  borderBottomColor: activeTab === "published" ? '#18243c' : 'transparent',
-                  color: activeTab === "published" ? '#18243c' : undefined
+                  borderBottomColor:
+                    activeTab === "published" ? "#18243c" : "transparent",
+                  color: activeTab === "published" ? "#18243c" : undefined,
                 }}
               >
                 <div className="flex items-center space-x-2">
@@ -562,8 +577,9 @@ export default function BulkEditChaptersPage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
                 style={{
-                  borderBottomColor: activeTab === "draft" ? '#18243c' : 'transparent',
-                  color: activeTab === "draft" ? '#18243c' : undefined
+                  borderBottomColor:
+                    activeTab === "draft" ? "#18243c" : "transparent",
+                  color: activeTab === "draft" ? "#18243c" : undefined,
                 }}
               >
                 <div className="flex items-center space-x-2">
@@ -575,6 +591,34 @@ export default function BulkEditChaptersPage() {
                   {draftChapters.some((ch) => ch.hasChanges) && (
                     <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs font-medium">
                       {draftChapters.filter((ch) => ch.hasChanges).length}{" "}
+                      changes
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("pending")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "pending"
+                    ? "border-transparent"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+                style={{
+                  borderBottomColor:
+                    activeTab === "pending" ? "#18243c" : "transparent",
+                  color: activeTab === "pending" ? "#18243c" : undefined,
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="w-4 h-4" />
+                  <span>Pending Chapters</span>
+                  <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
+                    {pendingChapters.length}
+                  </span>
+                  {pendingChapters.some((ch) => ch.hasChanges) && (
+                    <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                      {pendingChapters.filter((ch) => ch.hasChanges).length}{" "}
                       changes
                     </span>
                   )}
@@ -619,10 +663,44 @@ export default function BulkEditChaptersPage() {
                 </SortableContext>
               </DndContext>
             )
-          ) : draftChapters.length === 0 ? (
+          ) : activeTab === "draft" ? (
+            draftChapters.length === 0 ? (
+              <div className="card-elevated p-8 text-center">
+                <ClockIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600">No draft chapters to edit</p>
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={draftChapters.map((ch) => ch.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {" "}
+                  <div className="space-y-4">
+                    {" "}
+                    {draftChapters.map((chapter) => (
+                      <SortableChapterEditCard
+                        key={chapter.id}
+                        chapter={chapter}
+                        onUpdate={updateChapter}
+                        onStartEdit={startEdit}
+                        onCancelEdit={cancelEdit}
+                        onSave={saveChapter}
+                        isSaving={isSaving}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )
+          ) : pendingChapters.length === 0 ? (
             <div className="card-elevated p-8 text-center">
               <ClockIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600">No draft chapters to edit</p>
+              <p className="text-gray-600">No pending chapters to edit</p>
             </div>
           ) : (
             <DndContext
@@ -631,13 +709,13 @@ export default function BulkEditChaptersPage() {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={draftChapters.map((ch) => ch.id)}
+                items={pendingChapters.map((ch) => ch.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {" "}
                 <div className="space-y-4">
                   {" "}
-                  {draftChapters.map((chapter) => (
+                  {pendingChapters.map((chapter) => (
                     <SortableChapterEditCard
                       key={chapter.id}
                       chapter={chapter}
@@ -739,10 +817,14 @@ function ChapterEditCard({
                 className={`px-2 py-1 text-xs font-medium rounded-full ${
                   chapter.status === "PUBLISHED"
                     ? "bg-green-100 text-green-800"
+                    : chapter.moderationStatus === "PENDING"
+                    ? "bg-orange-100 text-orange-800"
                     : "bg-yellow-100 text-yellow-800"
                 }`}
               >
-                {chapter.status}
+                {chapter.moderationStatus === "PENDING"
+                  ? "PENDING"
+                  : chapter.status}
               </span>
               {chapter.hasChanges && (
                 <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
@@ -911,7 +993,11 @@ function ChapterEditCard({
                 <ClockIcon className="w-4 h-4" />
               )}
               <span>
-                {chapter.status === "PUBLISHED" ? "Published" : "Draft"}
+                {chapter.status === "PUBLISHED"
+                  ? "Published"
+                  : chapter.moderationStatus === "PENDING"
+                  ? "Pending"
+                  : "Draft"}
               </span>
             </div>
           </div>

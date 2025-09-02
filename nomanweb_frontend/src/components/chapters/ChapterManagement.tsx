@@ -100,7 +100,7 @@ export default function ChapterManagement({
   } = useBulkPermanentlyDelete();
 
   const [activeTab, setActiveTab] = useState<
-    "published" | "draft" | "all" | "trash"
+    "published" | "draft" | "pending" | "all" | "trash"
   >("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -198,7 +198,11 @@ export default function ChapterManagement({
     (chapter) => chapter.status === "PUBLISHED"
   );
   const draftChapters = chapters.filter(
-    (chapter) => chapter.status === "DRAFT"
+    (chapter) =>
+      chapter.status === "DRAFT" && chapter.moderationStatus !== "PENDING"
+  );
+  const pendingChapters = chapters.filter(
+    (chapter) => chapter.status === "PENDING" || chapter.moderationStatus === "PENDING"
   );
 
   const getActiveChapters = () => {
@@ -207,6 +211,8 @@ export default function ChapterManagement({
         return publishedChapters;
       case "draft":
         return draftChapters;
+      case "pending":
+        return pendingChapters;
       case "trash":
         return trashChapters;
       case "all":
@@ -430,6 +436,22 @@ export default function ChapterManagement({
           >
             <ClockIcon className="w-4 h-4" />
             <span>Drafts ({draftChapters.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
+              activeTab === "pending"
+                ? "shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+            style={
+              activeTab === "pending"
+                ? { backgroundColor: "#18243c", color: "#ffffff" }
+                : {}
+            }
+          >
+            <AlertTriangle className="w-4 h-4" />
+            <span>Pending ({pendingChapters.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("trash")}
@@ -1125,6 +1147,23 @@ function ChapterContent({
           >
             {chapter.status}
           </span>
+          
+          {/* Moderation Status Badge */}
+          {chapter.moderationStatus && (
+            <span
+              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                chapter.moderationStatus === "APPROVED"
+                  ? "bg-green-100 text-green-800"
+                  : chapter.moderationStatus === "REJECTED"
+                  ? "bg-red-100 text-red-800"
+                  : chapter.moderationStatus === "PENDING"
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {chapter.moderationStatus}
+            </span>
+          )}
 
           {/* Pricing Badge/Editor */}
           {canEditPricing && isEditingPrice ? (

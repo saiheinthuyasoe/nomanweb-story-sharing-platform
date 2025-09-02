@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { toast } from 'react-hot-toast';
-import Cookies from 'js-cookie';
-import { useQueryClient } from '@tanstack/react-query';
-import { 
-  DocumentTextIcon, 
-  CloudArrowUpIcon, 
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  DocumentTextIcon,
+  CloudArrowUpIcon,
   XMarkIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 interface BulkChapterUploadProps {
   storyId: string;
@@ -25,21 +25,31 @@ interface UploadFile {
   file: File;
   name: string;
   size: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: "pending" | "uploading" | "success" | "error";
   progress: number;
   error?: string;
   chapterId?: string;
 }
 
 const ACCEPTED_FILE_TYPES = [
-  '.txt', '.doc', '.docx', '.pdf', '.rtf', '.odt', 
-  '.html', '.htm', '.md', '.markdown'
+  ".txt",
+  ".html",
+  ".htm",
+  ".md",
+  ".markdown",
+  ".pdf",
+  ".doc",
+  ".docx",
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_FILES = 20;
 
-export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkChapterUploadProps) {
+export default function BulkChapterUpload({
+  storyId,
+  onSuccess,
+  onClose,
+}: BulkChapterUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -50,28 +60,30 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
   useEffect(() => {
     setMounted(true);
     // Prevent body scroll when modal is open
-    document.body.style.overflow = 'hidden';
-    
+    document.body.style.overflow = "hidden";
+
     // Handle ESC key
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isUploading) {
+      if (e.key === "Escape" && !isUploading) {
         onClose?.();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    
+    document.addEventListener("keydown", handleEscape);
+
     return () => {
-      document.body.style.overflow = 'unset';
-      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = "unset";
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isUploading, onClose]);
 
   const validateFile = useCallback((file: File): string | null => {
     // Check file type
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_FILE_TYPES.includes(fileExtension)) {
-      return `Invalid file type. Accepted types: ${ACCEPTED_FILE_TYPES.join(', ')}`;
+      return `Invalid file type. Accepted types: ${ACCEPTED_FILE_TYPES.join(
+        ", "
+      )}`;
     }
 
     // Check file size
@@ -82,41 +94,50 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
     return null;
   }, []);
 
-  const handleFiles = useCallback((fileList: FileList) => {
-    const newFiles: UploadFile[] = [];
-    const currentFileCount = files.length;
+  const handleFiles = useCallback(
+    (fileList: FileList) => {
+      const newFiles: UploadFile[] = [];
+      const currentFileCount = files.length;
 
-    for (let i = 0; i < fileList.length && (currentFileCount + newFiles.length) < MAX_FILES; i++) {
-      const file = fileList[i];
-      const validationError = validateFile(file);
+      for (
+        let i = 0;
+        i < fileList.length && currentFileCount + newFiles.length < MAX_FILES;
+        i++
+      ) {
+        const file = fileList[i];
+        const validationError = validateFile(file);
 
-      // Check for duplicates
-      const isDuplicate = files.some(f => f.name === file.name && f.size === file.size);
-      
-      if (isDuplicate) {
-        toast.error(`File "${file.name}" is already added`);
-        continue;
+        // Check for duplicates
+        const isDuplicate = files.some(
+          (f) => f.name === file.name && f.size === file.size
+        );
+
+        if (isDuplicate) {
+          toast.error(`File "${file.name}" is already added`);
+          continue;
+        }
+
+        const uploadFile: UploadFile = {
+          id: `${Date.now()}-${i}`,
+          file,
+          name: file.name,
+          size: file.size,
+          status: validationError ? "error" : "pending",
+          progress: 0,
+          error: validationError || undefined,
+        };
+
+        newFiles.push(uploadFile);
       }
 
-      const uploadFile: UploadFile = {
-        id: `${Date.now()}-${i}`,
-        file,
-        name: file.name,
-        size: file.size,
-        status: validationError ? 'error' : 'pending',
-        progress: 0,
-        error: validationError || undefined
-      };
+      if (currentFileCount + newFiles.length >= MAX_FILES) {
+        toast.error(`Maximum ${MAX_FILES} files allowed`);
+      }
 
-      newFiles.push(uploadFile);
-    }
-
-    if (currentFileCount + newFiles.length >= MAX_FILES) {
-      toast.error(`Maximum ${MAX_FILES} files allowed`);
-    }
-
-    setFiles(prev => [...prev, ...newFiles]);
-  }, [files, validateFile]);
+      setFiles((prev) => [...prev, ...newFiles]);
+    },
+    [files, validateFile]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -128,109 +149,126 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      handleFiles(droppedFiles);
-    }
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      handleFiles(selectedFiles);
-    }
-    // Reset input value
-    e.target.value = '';
-  }, [handleFiles]);
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        handleFiles(droppedFiles);
+      }
+    },
+    [handleFiles]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = e.target.files;
+      if (selectedFiles && selectedFiles.length > 0) {
+        handleFiles(selectedFiles);
+      }
+      // Reset input value
+      e.target.value = "";
+    },
+    [handleFiles]
+  );
 
   const removeFile = useCallback((fileId: string) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setFiles((prev) => prev.filter((f) => f.id !== fileId));
   }, []);
 
   const uploadSingleFile = async (uploadFile: UploadFile): Promise<void> => {
-    setFiles(prev => prev.map(f => 
-      f.id === uploadFile.id 
-        ? { ...f, status: 'uploading', progress: 0 }
-        : f
-    ));
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === uploadFile.id ? { ...f, status: "uploading", progress: 0 } : f
+      )
+    );
 
     try {
       // Get auth token
-      const token = Cookies.get('token');
+      const token = Cookies.get("token");
       if (!token) {
-        throw new Error('Authentication required. Please log in.');
+        throw new Error("Authentication required. Please log in.");
       }
 
       const formData = new FormData();
-      formData.append('file', uploadFile.file);
-      formData.append('storyId', storyId);
+      formData.append("file", uploadFile.file);
+      formData.append("storyId", storyId);
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setFiles(prev => prev.map(f => 
-          f.id === uploadFile.id && f.progress < 90
-            ? { ...f, progress: f.progress + 10 }
-            : f
-        ));
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id && f.progress < 90
+              ? { ...f, progress: f.progress + 10 }
+              : f
+          )
+        );
       }, 200);
 
-      const response = await fetch(`/api/chapters/${storyId}/bulk-upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-        credentials: 'include',
-      });
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+      const response = await fetch(
+        `${apiUrl}/chapters/${storyId}/bulk-upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+          credentials: "include",
+        }
+      );
 
       clearInterval(progressInterval);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `Upload failed: ${response.statusText}`;
+        const errorMessage =
+          errorData.error || `Upload failed: ${response.statusText}`;
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
 
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { 
-              ...f, 
-              status: 'success', 
-              progress: 100,
-              chapterId: result.chapterId 
-            }
-          : f
-      ));
-
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? {
+                ...f,
+                status: "success",
+                progress: 100,
+                chapterId: result.chapterId,
+              }
+            : f
+        )
+      );
     } catch (error) {
-      setFiles(prev => prev.map(f => 
-        f.id === uploadFile.id 
-          ? { 
-              ...f, 
-              status: 'error', 
-              progress: 0,
-              error: error instanceof Error ? error.message : 'Upload failed'
-            }
-          : f
-      ));
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === uploadFile.id
+            ? {
+                ...f,
+                status: "error",
+                progress: 0,
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f
+        )
+      );
     }
   };
 
   const startUpload = async () => {
     if (files.length === 0) {
-      toast.error('Please select files to upload');
+      toast.error("Please select files to upload");
       return;
     }
 
-    const validFiles = files.filter(f => f.status === 'pending');
+    const validFiles = files.filter((f) => f.status === "pending");
     if (validFiles.length === 0) {
-      toast.error('No valid files to upload');
+      toast.error("No valid files to upload");
       return;
     }
 
@@ -242,64 +280,67 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
         await uploadSingleFile(file);
       }
 
-      const successCount = files.filter(f => f.status === 'success').length;
-      const errorCount = files.filter(f => f.status === 'error').length;
+      const successCount = files.filter((f) => f.status === "success").length;
+      const errorCount = files.filter((f) => f.status === "error").length;
 
       if (successCount > 0) {
-        console.log('🔄 Starting real-time mode - chapters will update automatically');
-        
+        console.log(
+          "🔄 Starting real-time mode - chapters will update automatically"
+        );
+
         // Quick invalidation to trigger immediate refresh
-        await queryClient.invalidateQueries({ 
-          queryKey: ['chapters', storyId], 
-          exact: true 
+        await queryClient.invalidateQueries({
+          queryKey: ["chapters", storyId],
+          exact: true,
         });
-        console.log('✅ Invalidated chapters cache');
-        
-        console.log('✅ Real-time polling will handle updates, calling onSuccess');
+        console.log("✅ Invalidated chapters cache");
+
+        console.log(
+          "✅ Real-time polling will handle updates, calling onSuccess"
+        );
         onSuccess?.();
       }
 
       if (errorCount > 0) {
         toast.error(`${errorCount} file(s) failed to upload`);
       }
-
     } catch (error) {
-      toast.error('Bulk upload failed');
+      toast.error("Bulk upload failed");
     } finally {
       setIsUploading(false);
     }
   };
 
   const retryUpload = (fileId: string) => {
-    const file = files.find(f => f.id === fileId);
-    if (file && file.status === 'error') {
+    const file = files.find((f) => f.id === fileId);
+    if (file && file.status === "error") {
       uploadSingleFile(file);
     }
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const getStatusIcon = (status: UploadFile['status']) => {
+  const getStatusIcon = (status: UploadFile["status"]) => {
     switch (status) {
-      case 'success':
+      case "success":
         return (
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
             <CheckCircleIcon className="w-5 h-5 text-green-600" />
           </div>
         );
-      case 'error':
+      case "error":
         return (
           <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
             <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
           </div>
         );
-      case 'uploading':
+      case "uploading":
         return (
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
             <ArrowPathIcon className="w-5 h-5 text-blue-600 animate-spin" />
@@ -323,23 +364,28 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
   };
 
   const modalContent = (
-    <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto" 
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
       style={{ zIndex: 9999 }}
       onClick={handleBackdropClick}
     >
-      <div 
-        className="card-elevated w-full max-w-4xl my-4 sm:my-8 mx-auto overflow-hidden min-h-0 flex flex-col shadow-2xl" 
-        style={{ maxHeight: 'calc(100vh - 2rem)' }}
+      <div
+        className="card-elevated w-full max-w-4xl my-4 sm:my-8 mx-auto overflow-hidden min-h-0 flex flex-col shadow-2xl"
+        style={{ maxHeight: "calc(100vh - 2rem)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-white border-b border-gray-200 p-4 sm:p-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <CloudArrowUpIcon className="w-6 h-6" style={{ color: '#18243c' }} />
+              <CloudArrowUpIcon
+                className="w-6 h-6"
+                style={{ color: "#18243c" }}
+              />
               <div>
-                <h2 className="text-2xl font-bold" style={{ color: '#18243c' }}>Multi Chapter Upload</h2>
+                <h2 className="text-2xl font-bold" style={{ color: "#18243c" }}>
+                  Multi Chapter Upload
+                </h2>
                 <p className="text-gray-600 text-sm mt-1">
                   Upload multiple chapters and convert them automatically
                 </p>
@@ -360,7 +406,7 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
             ref={fileInputRef}
             type="file"
             multiple
-            accept={ACCEPTED_FILE_TYPES.join(',')}
+            accept={ACCEPTED_FILE_TYPES.join(",")}
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -368,32 +414,32 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
               isDragging
-                ? 'border-gray-400 bg-gray-50'
-                : 'border-gray-300 hover:border-gray-400 bg-white'
+                ? "border-gray-400 bg-gray-50"
+                : "border-gray-300 hover:border-gray-400 bg-white"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <CloudArrowUpIcon 
-              className="w-12 h-12 mx-auto mb-4 text-gray-400" 
-              style={{ color: isDragging ? '#18243c' : undefined }}
+            <CloudArrowUpIcon
+              className="w-12 h-12 mx-auto mb-4 text-gray-400"
+              style={{ color: isDragging ? "#18243c" : undefined }}
             />
-            
+
             <h3 className="text-lg font-medium mb-2 text-gray-900">
-              {isDragging ? 'Drop your files here!' : 'Upload Chapter Files'}
+              {isDragging ? "Drop your files here!" : "Upload Chapter Files"}
             </h3>
-            
+
             <p className="text-sm text-gray-600 mb-4">
-              {isDragging 
-                ? 'Release to upload your chapters' 
-                : `Drag & drop up to ${MAX_FILES} files, or click to browse`
-              }
+              {isDragging
+                ? "Release to upload your chapters"
+                : `Drag & drop up to ${MAX_FILES} files, or click to browse`}
             </p>
-            
+
             <p className="text-xs text-gray-500">
-              Supports: TXT, DOC, DOCX, PDF, RTF, ODT, HTML, MD • Max 50MB per file
+              Supports: TXT, HTML, HTM, MD, MARKDOWN, PDF, DOC, DOCX • Max 50MB
+              per file
             </p>
           </div>
         </div>
@@ -408,11 +454,16 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
               <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-1">
                   <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                  <span className="text-green-600">{files.filter(f => f.status === 'success').length} uploaded</span>
+                  <span className="text-green-600">
+                    {files.filter((f) => f.status === "success").length}{" "}
+                    uploaded
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
-                  <span className="text-red-600">{files.filter(f => f.status === 'error').length} failed</span>
+                  <span className="text-red-600">
+                    {files.filter((f) => f.status === "error").length} failed
+                  </span>
                 </div>
               </div>
             </div>
@@ -435,47 +486,56 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
                           {formatFileSize(file.size)}
                         </span>
                       </div>
-                      
+
                       {/* Progress Bar */}
-                      {file.status === 'uploading' && (
+                      {file.status === "uploading" && (
                         <div className="mt-2">
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
                               className="h-2 rounded-full transition-all duration-300"
-                              style={{ 
+                              style={{
                                 width: `${file.progress}%`,
-                                backgroundColor: '#18243c'
+                                backgroundColor: "#18243c",
                               }}
                             />
                           </div>
-                          <p className="text-xs mt-1" style={{ color: '#18243c' }}>Uploading... {file.progress}%</p>
+                          <p
+                            className="text-xs mt-1"
+                            style={{ color: "#18243c" }}
+                          >
+                            Uploading... {file.progress}%
+                          </p>
                         </div>
                       )}
-                      
-                      {file.status === 'success' && (
-                        <p className="text-xs text-green-600 mt-1 font-medium">✓ Upload completed</p>
+
+                      {file.status === "success" && (
+                        <p className="text-xs text-green-600 mt-1 font-medium">
+                          ✓ Upload completed
+                        </p>
                       )}
-                      
+
                       {file.error && (
-                        <p className="text-xs text-red-600 mt-1">{file.error}</p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {file.error}
+                        </p>
                       )}
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center space-x-2 flex-shrink-0">
-                    {file.status === 'error' && (
+                    {file.status === "error" && (
                       <button
                         onClick={() => retryUpload(file.id)}
                         className="px-3 py-1 text-xs font-medium text-white rounded-full transition-colors"
                         style={{
-                          backgroundColor: '#18243c'
+                          backgroundColor: "#18243c",
                         }}
                       >
                         Retry
                       </button>
                     )}
-                    {file.status !== 'uploading' && (
+                    {file.status !== "uploading" && (
                       <button
                         onClick={() => removeFile(file.id)}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
@@ -498,20 +558,28 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-600">{files.filter(f => f.status === 'success').length} uploaded</span>
+                    <span className="text-gray-600">
+                      {files.filter((f) => f.status === "success").length}{" "}
+                      uploaded
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span className="text-gray-600">{files.filter(f => f.status === 'error').length} failed</span>
+                    <span className="text-gray-600">
+                      {files.filter((f) => f.status === "error").length} failed
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <span className="text-gray-600">{files.filter(f => f.status === 'pending').length} pending</span>
+                    <span className="text-gray-600">
+                      {files.filter((f) => f.status === "pending").length}{" "}
+                      pending
+                    </span>
                   </div>
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center justify-center sm:justify-end space-x-3">
               <button
                 onClick={onClose}
@@ -522,11 +590,14 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
               </button>
               <button
                 onClick={startUpload}
-                disabled={files.filter(f => f.status === 'pending').length === 0 || isUploading}
+                disabled={
+                  files.filter((f) => f.status === "pending").length === 0 ||
+                  isUploading
+                }
                 className="px-6 sm:px-8 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
-                style={{ 
-                  backgroundColor: '#18243c',
-                  ':hover': { backgroundColor: '#0f1a2e' }
+                style={{
+                  backgroundColor: "#18243c",
+                  ":hover": { backgroundColor: "#0f1a2e" },
                 }}
               >
                 {isUploading ? (
@@ -538,10 +609,15 @@ export default function BulkChapterUpload({ storyId, onSuccess, onClose }: BulkC
                 ) : (
                   <>
                     <span className="hidden sm:inline">
-                      Upload {files.filter(f => f.status === 'pending').length} {files.filter(f => f.status === 'pending').length === 1 ? 'File' : 'Files'}
+                      Upload{" "}
+                      {files.filter((f) => f.status === "pending").length}{" "}
+                      {files.filter((f) => f.status === "pending").length === 1
+                        ? "File"
+                        : "Files"}
                     </span>
                     <span className="sm:hidden">
-                      Upload ({files.filter(f => f.status === 'pending').length})
+                      Upload (
+                      {files.filter((f) => f.status === "pending").length})
                     </span>
                   </>
                 )}

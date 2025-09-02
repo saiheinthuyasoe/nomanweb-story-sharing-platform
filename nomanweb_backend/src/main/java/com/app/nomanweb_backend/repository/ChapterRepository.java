@@ -71,6 +71,13 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
         // Find chapters by moderation status
         Page<Chapter> findByModerationStatus(Chapter.ModerationStatus moderationStatus, Pageable pageable);
+        
+        // Find chapters by moderation status ordered by creation date
+        List<Chapter> findByModerationStatusOrderByCreatedAtAsc(Chapter.ModerationStatus moderationStatus);
+        
+        // Find chapters by moderation status with story and author eagerly fetched
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.moderationStatus = :moderationStatus ORDER BY c.createdAt ASC")
+        List<Chapter> findByModerationStatusWithStoryAndAuthor(@Param("moderationStatus") Chapter.ModerationStatus moderationStatus);
 
         // Check if chapter number exists for story
         boolean existsByStoryAndChapterNumber(Story story, Integer chapterNumber);

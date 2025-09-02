@@ -147,7 +147,7 @@ export default function EditChapterPage() {
           ? data.chapterNumber
           : undefined,
       shouldPublish:
-        !data.isDraft && chapter.status === "DRAFT" ? true : undefined,
+        !data.isDraft && (chapter.status === "DRAFT" || chapter.status === "PENDING") ? true : undefined,
     };
 
     console.log("EditPage - Update data being sent:", updateData);
@@ -371,7 +371,7 @@ export default function EditChapterPage() {
               content: chapter.content,
               coinPrice: chapter.coinPrice,
               isFree: chapter.isFree,
-              isDraft: chapter.status === "DRAFT",
+              isDraft: chapter.status === "DRAFT" || chapter.status === "PENDING",
               chapterNumber: chapter.chapterNumber,
             }}
             onSubmit={handleSubmit}

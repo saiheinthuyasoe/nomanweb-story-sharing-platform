@@ -78,6 +78,9 @@ public interface ChapterService {
 
     ChapterResponse moderateChapter(UUID chapterId, String moderationNotes, boolean approved, UUID moderatorId);
 
+    // Admin-specific chapter access (bypasses ownership checks)
+    ChapterResponse getChapterByIdForAdmin(UUID chapterId);
+
     // Trash management
     void moveChapterToTrash(UUID chapterId, UUID authorId);
 

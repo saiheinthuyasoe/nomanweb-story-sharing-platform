@@ -85,7 +85,10 @@ class WebSocketClient {
 
     // Create STOMP client
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      webSocketFactory: () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8080';
+    return new SockJS(`${baseUrl}/ws`);
+  },
       connectHeaders: {
         'username': username,
         'displayName': displayName,
@@ -383,4 +386,4 @@ class WebSocketClient {
 }
 
 // Export singleton instance
-export const websocketClient = new WebSocketClient(); 
+export const websocketClient = new WebSocketClient();

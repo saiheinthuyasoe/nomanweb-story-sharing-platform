@@ -29,7 +29,7 @@ export interface Chapter {
   wordCount: number;
   coinPrice: number;
   isFree: boolean;
-  status: "DRAFT" | "PUBLISHED";
+  status: "DRAFT" | "PUBLISHED" | "PENDING";
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   moderationNotes?: string;
   views: number;
@@ -59,7 +59,8 @@ export interface ChapterPreview {
   wordCount: number;
   coinPrice: number;
   isFree: boolean;
-  status: "DRAFT" | "PUBLISHED";
+  status: "DRAFT" | "PUBLISHED" | "PENDING";
+  moderationStatus?: "PENDING" | "APPROVED" | "REJECTED";
   views: number;
   likes: number;
   createdAt: string;

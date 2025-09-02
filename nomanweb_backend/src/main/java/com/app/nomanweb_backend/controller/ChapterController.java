@@ -1,8 +1,15 @@
 package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.dto.chapter.*;
+import com.app.nomanweb_backend.dto.moderation.ContentModerationResult;
+import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.Story;
+import com.app.nomanweb_backend.repository.ChapterRepository;
+import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
+import com.app.nomanweb_backend.service.ContentModerationService;
+import com.app.nomanweb_backend.service.ChapterModerationQueueService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,13 +22,26 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.IOException;
+import java.io.InputStream;
+
+// Document parsing imports
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
 @RestController
 @RequestMapping("/api/chapters")
@@ -33,6 +53,10 @@ public class ChapterController {
     private final ChapterService chapterService;
     private final JwtUtil jwtUtil;
     private final ViewTrackingService viewTrackingService;
+    private final ContentModerationService contentModerationService;
+    private final ChapterModerationQueueService chapterModerationQueueService;
+    private final ChapterRepository chapterRepository;
+    private final StoryRepository storyRepository;
 
     // Create a new chapter
     @PostMapping
@@ -476,6 +500,28 @@ public class ChapterController {
         }
     }
 
+    @PostMapping("/{chapterId}/analyze-content")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ContentModerationResult> analyzeChapterContent(
+            @PathVariable UUID chapterId,
+            HttpServletRequest httpRequest) {
+        try {
+            // Get chapter content using admin access (bypasses ownership checks)
+            ChapterResponse chapter = chapterService.getChapterByIdForAdmin(chapterId);
+
+            // Analyze content using AI
+            ContentModerationResult result = contentModerationService.analyzeContent(chapter.getContent());
+
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            log.error("Error analyzing chapter content: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error analyzing chapter content", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Trash management endpoints
 
     // Move chapter to trash
@@ -742,6 +788,140 @@ public class ChapterController {
         throw new IllegalArgumentException("No valid authentication found");
     }
 
+    // Bulk upload endpoint
+    @PostMapping("/{storyId}/bulk-upload")
+    public ResponseEntity<?> bulkUploadChapter(
+            @PathVariable UUID storyId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "chapterNumber", required = false) Integer chapterNumber,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID authorId = getCurrentUserId(httpRequest);
+            log.info("Bulk upload request for story: {} by author: {}", storyId, authorId);
+
+            // Verify story exists and user is the author
+            Story story = storyRepository.findById(storyId)
+                    .orElseThrow(() -> new IllegalArgumentException("Story not found"));
+
+            if (!story.getAuthor().getId().equals(authorId)) {
+                throw new IllegalArgumentException("You can only upload chapters to your own stories");
+            }
+
+            // Validate file type
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.trim().isEmpty()) {
+                throw new IllegalArgumentException("Invalid file name");
+            }
+
+            String fileExtension = "";
+            int lastDotIndex = originalFilename.lastIndexOf(".");
+            if (lastDotIndex > 0) {
+                fileExtension = originalFilename.substring(lastDotIndex).toLowerCase();
+            }
+
+            // Allow txt, html, htm, md, markdown, pdf, doc, docx files
+            if (!fileExtension.equals(".txt") && !fileExtension.equals(".html") &&
+                    !fileExtension.equals(".htm") && !fileExtension.equals(".md") &&
+                    !fileExtension.equals(".markdown") && !fileExtension.equals(".pdf") &&
+                    !fileExtension.equals(".doc") && !fileExtension.equals(".docx")) {
+                throw new IllegalArgumentException(
+                        "Invalid file type. Only TXT, HTML, MD, PDF, DOC, and DOCX files are supported.");
+            }
+
+            // Process the uploaded file content based on file type
+            String content;
+            try {
+                content = extractContentFromFile(file, fileExtension);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Failed to read file content: " + e.getMessage());
+            }
+
+            if (content.trim().isEmpty()) {
+                throw new IllegalArgumentException("File content cannot be empty");
+            }
+
+            // Use filename as title if not provided
+            String chapterTitle = title;
+            if (chapterTitle == null || chapterTitle.trim().isEmpty()) {
+                chapterTitle = file.getOriginalFilename();
+                if (chapterTitle != null && chapterTitle.contains(".")) {
+                    chapterTitle = chapterTitle.substring(0, chapterTitle.lastIndexOf("."));
+                }
+                if (chapterTitle == null || chapterTitle.trim().isEmpty()) {
+                    chapterTitle = "Uploaded Chapter";
+                }
+            }
+
+            // Determine chapter number if not provided
+            Integer finalChapterNumber = chapterNumber;
+            if (finalChapterNumber == null) {
+                finalChapterNumber = chapterRepository.findMaxChapterNumberByStory(story)
+                        .map(max -> max + 1)
+                        .orElse(1);
+            }
+
+            // Check if chapter number already exists
+            if (chapterRepository.existsByStoryAndChapterNumber(story, finalChapterNumber)) {
+                throw new IllegalArgumentException(
+                        "Chapter number " + finalChapterNumber + " already exists in this story");
+            }
+
+            // Create the chapter
+            Chapter chapter = Chapter.builder()
+                    .story(story)
+                    .title(chapterTitle.trim())
+                    .content(content)
+                    .chapterNumber(finalChapterNumber)
+                    .coinPrice(BigDecimal.ZERO)
+                    .isFree(true)
+                    .status(Chapter.Status.PENDING) // Start as PENDING for moderation
+                    .moderationStatus(Chapter.ModerationStatus.PENDING) // Will be updated by AI moderation
+                    .build();
+
+            // Calculate word count
+            chapter.updateWordCount();
+
+            // Save chapter first
+            chapter = chapterRepository.save(chapter);
+
+            // Queue for AI moderation
+            chapterModerationQueueService.queueChapterForModeration(chapter, "BULK_UPLOAD");
+            log.info("Chapter queued for AI moderation: {} (operation: BULK_UPLOAD)", chapter.getId());
+
+            // Update story chapter count
+            story.setTotalChapters(story.getTotalChapters() + 1);
+            storyRepository.save(story);
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Chapter uploaded successfully and queued for moderation");
+            response.put("chapterId", chapter.getId().toString());
+            response.put("title", chapter.getTitle());
+            response.put("chapterNumber", chapter.getChapterNumber());
+            response.put("status", chapter.getStatus().toString());
+            response.put("moderationStatus", chapter.getModerationStatus().toString());
+            response.put("wordCount", chapter.getWordCount());
+
+            log.info("Chapter created successfully via bulk upload: {}", chapter.getId());
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.error("Error in bulk upload: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("Unexpected error in bulk upload", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Internal server error occurred");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
     // Utility method to get current user ID (optional, returns null if not
     // authenticated)
     private UUID getCurrentUserIdOptional(HttpServletRequest request) {
@@ -749,6 +929,50 @@ public class ChapterController {
             return getCurrentUserId(request);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * Extract text content from different file types
+     */
+    private String extractContentFromFile(MultipartFile file, String fileExtension) throws IOException {
+        try (InputStream inputStream = file.getInputStream()) {
+            switch (fileExtension.toLowerCase()) {
+                case ".txt":
+                case ".html":
+                case ".htm":
+                case ".md":
+                case ".markdown":
+                    // For text-based files, read as UTF-8
+                    return new String(file.getBytes(), "UTF-8");
+
+                case ".pdf":
+                    // Extract text from PDF using PDFBox
+                    try (PDDocument document = PDDocument.load(inputStream)) {
+                        PDFTextStripper stripper = new PDFTextStripper();
+                        return stripper.getText(document);
+                    }
+
+                case ".docx":
+                    // Extract text from DOCX using Apache POI
+                    try (XWPFDocument document = new XWPFDocument(inputStream);
+                            XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
+                        return extractor.getText();
+                    }
+
+                case ".doc":
+                    // Extract text from DOC using Apache POI
+                    try (HWPFDocument document = new HWPFDocument(inputStream);
+                            WordExtractor extractor = new WordExtractor(document)) {
+                        return extractor.getText();
+                    }
+
+                default:
+                    throw new IllegalArgumentException("Unsupported file type: " + fileExtension);
+            }
+        } catch (IOException e) {
+            log.error("Error extracting content from file: {}", e.getMessage());
+            throw new IOException("Failed to extract content from file: " + e.getMessage(), e);
         }
     }
 }

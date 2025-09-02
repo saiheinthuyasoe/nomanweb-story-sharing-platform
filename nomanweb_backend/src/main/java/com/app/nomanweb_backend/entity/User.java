@@ -133,6 +133,10 @@ public class User {
     @Builder.Default
     private Boolean notifySystemMessages = true;
 
+    @Column(name = "notify_chapter_moderation")
+    @Builder.Default
+    private Boolean notifyChapterModeration = true;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

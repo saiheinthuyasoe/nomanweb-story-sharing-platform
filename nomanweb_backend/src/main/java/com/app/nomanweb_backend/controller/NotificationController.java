@@ -168,7 +168,14 @@ public class NotificationController {
 
             Map<String, Object> preferences = Map.of(
                     "emailNotificationsEnabled", user.getEmailNotificationsEnabled(),
-                    "lineNotificationsEnabled", user.getLineNotificationsEnabled());
+                    "lineNotificationsEnabled", user.getLineNotificationsEnabled(),
+                    "notifyNewFollowers", user.getNotifyNewFollowers(),
+                    "notifyNewStories", user.getNotifyNewStories(),
+                    "notifyNewChapters", user.getNotifyNewChapters(),
+                    "notifyLikes", user.getNotifyLikes(),
+                    "notifyComments", user.getNotifyComments(),
+                    "notifySystemMessages", user.getNotifySystemMessages(),
+                    "notifyChapterModeration", user.getNotifyChapterModeration());
 
             return ResponseEntity.ok(preferences);
         } catch (Exception e) {
@@ -180,25 +187,70 @@ public class NotificationController {
     // Update current user's notification preferences
     @PutMapping("/preferences")
     public ResponseEntity<Map<String, Object>> updateNotificationPreferences(
-            @RequestBody Map<String, Boolean> preferences) {
+            @RequestBody Map<String, Object> request) {
         try {
             UUID userId = getCurrentUserId();
-
-            Boolean emailEnabled = preferences.get("emailNotificationsEnabled");
-            Boolean lineEnabled = preferences.get("lineNotificationsEnabled");
-
-            if (emailEnabled == null && lineEnabled == null) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "At least one preference must be specified"));
-            }
-
             User user = userService.getUserById(userId);
 
-            if (emailEnabled != null) {
-                user.setEmailNotificationsEnabled(emailEnabled);
-            }
-            if (lineEnabled != null) {
-                user.setLineNotificationsEnabled(lineEnabled);
+            // Handle single preference update with type and enabled fields
+            if (request.containsKey("type") && request.containsKey("enabled")) {
+                String type = (String) request.get("type");
+                Boolean enabled = (Boolean) request.get("enabled");
+
+                switch (type) {
+                    case "CHAPTER_MODERATION":
+                        user.setNotifyChapterModeration(enabled);
+                        break;
+                    case "NEW_FOLLOWER":
+                        user.setNotifyNewFollowers(enabled);
+                        break;
+                    case "STORY_LIKE":
+                    case "CHAPTER_LIKE":
+                        user.setNotifyLikes(enabled);
+                        break;
+                    case "NEW_CHAPTER":
+                        user.setNotifyNewChapters(enabled);
+                        break;
+                    case "NEW_STORY":
+                        user.setNotifyNewStories(enabled);
+                        break;
+                    case "SYSTEM_MESSAGE":
+                        user.setNotifySystemMessages(enabled);
+                        break;
+                    default:
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("error", "Invalid notification type: " + type));
+                }
+            } else {
+                // Handle bulk preference update
+                Boolean emailEnabled = (Boolean) request.get("emailNotificationsEnabled");
+                Boolean lineEnabled = (Boolean) request.get("lineNotificationsEnabled");
+                Boolean notifyNewFollowers = (Boolean) request.get("notifyNewFollowers");
+                Boolean notifyNewStories = (Boolean) request.get("notifyNewStories");
+                Boolean notifyNewChapters = (Boolean) request.get("notifyNewChapters");
+                Boolean notifyLikes = (Boolean) request.get("notifyLikes");
+                Boolean notifyComments = (Boolean) request.get("notifyComments");
+                Boolean notifySystemMessages = (Boolean) request.get("notifySystemMessages");
+                Boolean notifyChapterModeration = (Boolean) request.get("notifyChapterModeration");
+
+                if (emailEnabled != null)
+                    user.setEmailNotificationsEnabled(emailEnabled);
+                if (lineEnabled != null)
+                    user.setLineNotificationsEnabled(lineEnabled);
+                if (notifyNewFollowers != null)
+                    user.setNotifyNewFollowers(notifyNewFollowers);
+                if (notifyNewStories != null)
+                    user.setNotifyNewStories(notifyNewStories);
+                if (notifyNewChapters != null)
+                    user.setNotifyNewChapters(notifyNewChapters);
+                if (notifyLikes != null)
+                    user.setNotifyLikes(notifyLikes);
+                if (notifyComments != null)
+                    user.setNotifyComments(notifyComments);
+                if (notifySystemMessages != null)
+                    user.setNotifySystemMessages(notifySystemMessages);
+                if (notifyChapterModeration != null)
+                    user.setNotifyChapterModeration(notifyChapterModeration);
             }
 
             User updatedUser = userService.updateUser(user);
@@ -207,7 +259,14 @@ public class NotificationController {
                     "message", "Notification preferences updated successfully",
                     "preferences", Map.of(
                             "emailNotificationsEnabled", updatedUser.getEmailNotificationsEnabled(),
-                            "lineNotificationsEnabled", updatedUser.getLineNotificationsEnabled()));
+                            "lineNotificationsEnabled", updatedUser.getLineNotificationsEnabled(),
+                            "notifyNewFollowers", updatedUser.getNotifyNewFollowers(),
+                            "notifyNewStories", updatedUser.getNotifyNewStories(),
+                            "notifyNewChapters", updatedUser.getNotifyNewChapters(),
+                            "notifyLikes", updatedUser.getNotifyLikes(),
+                            "notifyComments", updatedUser.getNotifyComments(),
+                            "notifySystemMessages", updatedUser.getNotifySystemMessages(),
+                            "notifyChapterModeration", updatedUser.getNotifyChapterModeration()));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

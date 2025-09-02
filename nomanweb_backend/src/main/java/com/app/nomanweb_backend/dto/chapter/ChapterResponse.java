@@ -43,8 +43,16 @@ public class ChapterResponse {
     public static class StoryInfo {
         private UUID id;
         private String title;
-        private String authorUsername;
+        private AuthorInfo author;
         private Integer totalChapters;
+    }
+
+    @Data
+    @Builder
+    public static class AuthorInfo {
+        private UUID id;
+        private String username;
+        private String displayName;
     }
 
     @Data

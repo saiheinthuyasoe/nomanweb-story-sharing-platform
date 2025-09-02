@@ -8,6 +8,7 @@ import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
+import com.app.nomanweb_backend.service.ChapterModerationProcessor;
 import com.app.nomanweb_backend.service.ChapterService;
 import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.service.StoryService;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
+        private final ChapterModerationProcessor chapterModerationProcessor;
         private final ChapterService chapterService;
         private final StoryService storyService;
         private final JwtUtil jwtUtil;
@@ -86,6 +88,49 @@ public class AdminController {
                         return ResponseEntity.ok(stats);
                 } catch (Exception e) {
                         log.error("Error getting dashboard stats", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        // Queue Status and Processing Metrics
+        @GetMapping("/moderation/queue/status")
+        public ResponseEntity<Map<String, Object>> getQueueStatus() {
+                try {
+                        Map<String, Object> status = chapterModerationProcessor.getProcessorStatus();
+                        return ResponseEntity.ok(status);
+                } catch (Exception e) {
+                        log.error("Error getting queue status", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        // AI Moderation Control
+        @PostMapping("/moderation/ai/start")
+        public ResponseEntity<Map<String, Object>> startAiModeration() {
+                try {
+                        boolean started = chapterModerationProcessor.startAiModeration();
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", started);
+                        response.put("message", started ? "AI moderation started successfully"
+                                        : "AI moderation is already running");
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        log.error("Error starting AI moderation", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/moderation/ai/stop")
+        public ResponseEntity<Map<String, Object>> stopAiModeration() {
+                try {
+                        boolean stopped = chapterModerationProcessor.stopAiModeration();
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("success", stopped);
+                        response.put("message", stopped ? "AI moderation stopped successfully"
+                                        : "AI moderation was not running");
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        log.error("Error stopping AI moderation", e);
                         return ResponseEntity.internalServerError().build();
                 }
         }
