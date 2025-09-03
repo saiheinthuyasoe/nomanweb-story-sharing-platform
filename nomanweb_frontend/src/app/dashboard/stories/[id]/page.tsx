@@ -31,6 +31,8 @@ import {
   Gift,
   BookmarkIcon,
   CheckCircleIcon,
+  ClockIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Coins, Gift as LucideGift } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -66,6 +68,39 @@ export default function StoryDetailPage() {
 
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
+
+  // Helper function for moderation status badges
+  const getModerationBadge = (status: "PENDING" | "APPROVED" | "REJECTED") => {
+    const statusConfig = {
+      PENDING: {
+        text: "Pending",
+        className: "bg-yellow-100 text-yellow-700",
+        icon: ClockIcon,
+      },
+      APPROVED: {
+        text: "Approved",
+        className: "bg-green-100 text-green-700",
+        icon: CheckCircleIcon,
+      },
+      REJECTED: {
+        text: "Rejected",
+        className: "bg-red-100 text-red-700",
+        icon: XCircleIcon,
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.PENDING;
+    const IconComponent = config.icon;
+
+    return (
+      <span
+        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded ${config.className}`}
+      >
+        <IconComponent className="h-4 w-4 mr-2" />
+        {config.text}
+      </span>
+    );
+  };
 
   if (isLoading) {
     return <StoryDetailSkeleton />;
@@ -244,30 +279,38 @@ export default function StoryDetailPage() {
 
               {/* Status Badges - Now under the cover image */}
               <div className="mt-3 space-y-2 w-[210px]">
-                <span
-                  className={`inline-block px-4 py-2 text-sm font-medium rounded ${
-                    story.publishStatus === "PUBLISHED"
-                      ? "bg-blue-100 text-blue-600"
-                      : story.publishStatus === "DRAFT"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : story.publishStatus === "COMPLETED"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {story.publishStatus}
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  {/* Publish Status Badge */}
+                  <span
+                    className={`inline-block px-4 py-2 text-sm font-medium rounded ${
+                      story.publishStatus === "PUBLISHED"
+                        ? "bg-blue-100 text-blue-600"
+                        : story.publishStatus === "DRAFT"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : story.publishStatus === "COMPLETED"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {story.publishStatus}
+                  </span>
 
-                {/* Book Status Badge */}
-                <span
-                  className={`inline-block ml-3 px-2 py-2 text-sm font-medium rounded ${
-                    story.bookStatus === "ONGOING"
-                      ? "bg-green-100 text-green-600"
-                      : "bg-purple-100 text-purple-800"
-                  }`}
-                >
-                  {story.bookStatus}
-                </span>
+                  {/* Book Status Badge */}
+                  <span
+                    className={`inline-block px-2 py-2 text-sm font-medium rounded ${
+                      story.bookStatus === "ONGOING"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-purple-100 text-purple-800"
+                    }`}
+                  >
+                    {story.bookStatus}
+                  </span>
+                </div>
+
+                {/* Moderation Status Badge */}
+                <div className="mt-2">
+                  {getModerationBadge(story.moderationStatus)}
+                </div>
               </div>
             </div>
 
@@ -466,9 +509,9 @@ export default function StoryDetailPage() {
           </h3>
 
           {/* Essential Details */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
             <div>
-              <span className="text-xs text-gray-500">Status</span>
+              <span className="text-xs text-gray-500">Publish Status</span>
               <p
                 className={`text-sm font-medium ${
                   story.publishStatus === "PUBLISHED"
@@ -481,6 +524,20 @@ export default function StoryDetailPage() {
                 }`}
               >
                 {story.publishStatus}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs text-gray-500">Moderation</span>
+              <p
+                className={`text-sm font-medium ${
+                  story.moderationStatus === "APPROVED"
+                    ? "text-green-600"
+                    : story.moderationStatus === "PENDING"
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }`}
+              >
+                {story.moderationStatus}
               </p>
             </div>
             <div>

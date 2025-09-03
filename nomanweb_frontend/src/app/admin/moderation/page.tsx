@@ -357,7 +357,7 @@ export default function AdminModerationPage() {
       }
 
       const response = await fetch(
-        `/api/chapters/analyze-content/${chapterId}`,
+        `/api/chapters/${chapterId}/analyze-content`,
         {
           method: "POST",
           headers: {

@@ -54,6 +54,7 @@ export default function BulkChapterUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"draft" | "publish">("draft");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -195,6 +196,7 @@ export default function BulkChapterUpload({
       const formData = new FormData();
       formData.append("file", uploadFile.file);
       formData.append("storyId", storyId);
+      formData.append("isDraft", uploadMode === "draft" ? "true" : "false");
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
@@ -580,48 +582,85 @@ export default function BulkChapterUpload({
               )}
             </div>
 
-            <div className="flex items-center justify-center sm:justify-end space-x-3">
-              <button
-                onClick={onClose}
-                className="px-4 sm:px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
-                disabled={isUploading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={startUpload}
-                disabled={
-                  files.filter((f) => f.status === "pending").length === 0 ||
-                  isUploading
-                }
-                className="px-6 sm:px-8 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
-                style={{
-                  backgroundColor: "#18243c",
-                  ":hover": { backgroundColor: "#0f1a2e" },
-                }}
-              >
-                {isUploading ? (
-                  <div className="flex items-center space-x-2">
-                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
-                    <span className="hidden sm:inline">Uploading...</span>
-                    <span className="sm:hidden">Upload...</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="hidden sm:inline">
-                      Upload{" "}
-                      {files.filter((f) => f.status === "pending").length}{" "}
-                      {files.filter((f) => f.status === "pending").length === 1
-                        ? "File"
-                        : "Files"}
-                    </span>
-                    <span className="sm:hidden">
-                      Upload (
-                      {files.filter((f) => f.status === "pending").length})
-                    </span>
-                  </>
-                )}
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* Upload Mode Selection */}
+              <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setUploadMode("draft")}
+                  disabled={isUploading}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    uploadMode === "draft"
+                      ? "shadow-sm text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  style={
+                    uploadMode === "draft" ? { backgroundColor: "#18243c" } : {}
+                  }
+                >
+                  Save as Draft
+                </button>
+                <button
+                  onClick={() => setUploadMode("publish")}
+                  disabled={isUploading}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    uploadMode === "publish"
+                      ? "shadow-sm text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  style={
+                    uploadMode === "publish"
+                      ? { backgroundColor: "#18243c" }
+                      : {}
+                  }
+                >
+                  Publish
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={onClose}
+                  className="px-4 sm:px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={startUpload}
+                  disabled={
+                    files.filter((f) => f.status === "pending").length === 0 ||
+                    isUploading
+                  }
+                  className="px-6 sm:px-8 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+                  style={{
+                    backgroundColor: "#18243c",
+                    ":hover": { backgroundColor: "#0f1a2e" },
+                  }}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center space-x-2">
+                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      <span className="hidden sm:inline">
+                        {uploadMode === "draft" ? "Saving..." : "Publishing..."}
+                      </span>
+                      <span className="sm:hidden">
+                        {uploadMode === "draft" ? "Save..." : "Pub..."}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">
+                        {uploadMode === "draft" ? "Save as Draft" : "Publish"} (
+                        {files.filter((f) => f.status === "pending").length})
+                      </span>
+                      <span className="sm:hidden">
+                        {uploadMode === "draft" ? "Draft" : "Publish"} (
+                        {files.filter((f) => f.status === "pending").length})
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

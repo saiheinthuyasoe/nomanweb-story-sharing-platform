@@ -795,6 +795,7 @@ public class ChapterController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "title", required = false) String title,
             @RequestParam(value = "chapterNumber", required = false) Integer chapterNumber,
+            @RequestParam(value = "isDraft", defaultValue = "false") boolean isDraft,
             HttpServletRequest httpRequest) {
         try {
             UUID authorId = getCurrentUserId(httpRequest);
@@ -867,7 +868,10 @@ public class ChapterController {
                         "Chapter number " + finalChapterNumber + " already exists in this story");
             }
 
-            // Create the chapter
+            // Create the chapter with appropriate status based on draft flag
+            Chapter.Status initialStatus = isDraft ? Chapter.Status.DRAFT : Chapter.Status.PENDING;
+            Chapter.ModerationStatus initialModerationStatus = isDraft ? null : Chapter.ModerationStatus.PENDING;
+
             Chapter chapter = Chapter.builder()
                     .story(story)
                     .title(chapterTitle.trim())
@@ -875,8 +879,8 @@ public class ChapterController {
                     .chapterNumber(finalChapterNumber)
                     .coinPrice(BigDecimal.ZERO)
                     .isFree(true)
-                    .status(Chapter.Status.PENDING) // Start as PENDING for moderation
-                    .moderationStatus(Chapter.ModerationStatus.PENDING) // Will be updated by AI moderation
+                    .status(initialStatus)
+                    .moderationStatus(initialModerationStatus)
                     .build();
 
             // Calculate word count
@@ -885,9 +889,13 @@ public class ChapterController {
             // Save chapter first
             chapter = chapterRepository.save(chapter);
 
-            // Queue for AI moderation
-            chapterModerationQueueService.queueChapterForModeration(chapter, "BULK_UPLOAD");
-            log.info("Chapter queued for AI moderation: {} (operation: BULK_UPLOAD)", chapter.getId());
+            // Only queue for AI moderation if not a draft
+            if (!isDraft) {
+                chapterModerationQueueService.queueChapterForModeration(chapter, "BULK_UPLOAD");
+                log.info("Chapter queued for AI moderation: {} (operation: BULK_UPLOAD)", chapter.getId());
+            } else {
+                log.info("Chapter saved as draft, skipping moderation: {}", chapter.getId());
+            }
 
             // Update story chapter count
             story.setTotalChapters(story.getTotalChapters() + 1);
@@ -896,13 +904,17 @@ public class ChapterController {
             // Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Chapter uploaded successfully and queued for moderation");
+            String message = isDraft ? "Chapter uploaded successfully as draft"
+                    : "Chapter uploaded successfully and queued for moderation";
+            response.put("message", message);
             response.put("chapterId", chapter.getId().toString());
             response.put("title", chapter.getTitle());
             response.put("chapterNumber", chapter.getChapterNumber());
             response.put("status", chapter.getStatus().toString());
-            response.put("moderationStatus", chapter.getModerationStatus().toString());
+            response.put("moderationStatus",
+                    chapter.getModerationStatus() != null ? chapter.getModerationStatus().toString() : null);
             response.put("wordCount", chapter.getWordCount());
+            response.put("isDraft", isDraft);
 
             log.info("Chapter created successfully via bulk upload: {}", chapter.getId());
             return ResponseEntity.ok(response);

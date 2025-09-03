@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Ensure BACKEND_URL doesn't end with /api to avoid double /api/api
 const BACKEND_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-).replace(/\/api$/, "");
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api$/, "");
 
 export async function POST(
   request: NextRequest,
@@ -22,10 +21,7 @@ export async function POST(
     const { chapterId } = params;
 
     console.log("[DEBUG] Authorization header:", authHeader);
-    console.log(
-      "[DEBUG] Backend URL:",
-      `${BACKEND_URL}/api/chapters/${chapterId}/analyze-content`
-    );
+    console.log("[DEBUG] Backend URL:", `${BACKEND_URL}/api/chapters/${chapterId}/analyze-content`);
 
     // Forward the request to the Spring Boot backend
     const response = await fetch(
@@ -40,10 +36,7 @@ export async function POST(
     );
 
     console.log("[DEBUG] Backend response status:", response.status);
-    console.log(
-      "[DEBUG] Backend response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
+    console.log("[DEBUG] Backend response headers:", Object.fromEntries(response.headers.entries()));
 
     // Check if response is JSON
     const contentType = response.headers.get("content-type");

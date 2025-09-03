@@ -77,6 +77,7 @@ public class SecurityConfig {
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/chapters/*/moderate").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/chapters/*/analyze-content").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/chapters/moderation").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/stories/*/moderate").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/stories/moderation").hasRole("ADMIN")

@@ -202,7 +202,8 @@ export default function ChapterManagement({
       chapter.status === "DRAFT" && chapter.moderationStatus !== "PENDING"
   );
   const pendingChapters = chapters.filter(
-    (chapter) => chapter.status === "PENDING" || chapter.moderationStatus === "PENDING"
+    (chapter) =>
+      chapter.status === "PENDING" || chapter.moderationStatus === "PENDING"
   );
 
   const getActiveChapters = () => {
@@ -1147,7 +1148,7 @@ function ChapterContent({
           >
             {chapter.status}
           </span>
-          
+
           {/* Moderation Status Badge */}
           {chapter.moderationStatus && (
             <span
