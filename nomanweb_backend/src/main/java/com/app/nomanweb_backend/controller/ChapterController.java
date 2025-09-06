@@ -789,7 +789,7 @@ public class ChapterController {
     }
 
     // Bulk upload endpoint
-    @PostMapping("/{storyId}/bulk-upload")
+    @PostMapping("/story/{storyId}/bulk-upload")
     public ResponseEntity<?> bulkUploadChapter(
             @PathVariable UUID storyId,
             @RequestParam("file") MultipartFile file,

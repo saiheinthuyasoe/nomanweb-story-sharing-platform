@@ -212,7 +212,7 @@ export default function BulkChapterUpload({
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
       const response = await fetch(
-        `${apiUrl}/chapters/${storyId}/bulk-upload`,
+        `${apiUrl}/chapters/story/${storyId}/bulk-upload`,
         {
           method: "POST",
           headers: {

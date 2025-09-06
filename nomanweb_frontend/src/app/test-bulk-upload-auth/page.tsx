@@ -64,7 +64,7 @@ export default function TestBulkUploadAuthPage() {
       formData.append("storyId", "2059391b-751e-4a93-8777-41e9a4a0d663"); // The story ID from the error
 
       const response = await fetch(
-        "/api/chapters/2059391b-751e-4a93-8777-41e9a4a0d663/bulk-upload",
+        "/api/chapters/story/2059391b-751e-4a93-8777-41e9a4a0d663/bulk-upload",
         {
           method: "POST",
           headers: {
