@@ -1,7 +1,7 @@
 import React from 'react';
 import { StoryCard } from './StoryCard';
 import { StoryPreview, StoriesResponse } from '@/types/story';
-import { BookOpenIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon } from '@heroicons/react/24/outline';
 
 interface StoryListProps {
   stories: StoriesResponse | null;
@@ -67,19 +67,10 @@ export function StoryList({
   if (!stories || stories.content.length === 0) {
     return (
       <div className={`${className} text-center py-16`}>
-        <div className="w-24 h-24 bg-gradient-to-br from-[#18243c]/10 to-[#22325a]/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+        <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6">
           <BookOpenIcon className="w-12 h-12 text-[#18243c]" />
         </div>
-        <h3 className="text-2xl font-bold text-[#18243c] mb-4">{emptyMessage}</h3>
-        <p className="text-gray-600 text-base mb-8 max-w-lg mx-auto">
-          Try adjusting your search criteria or explore different categories to discover amazing stories.
-        </p>
-        <div className="flex items-center justify-center space-x-4">
-          <div className="flex items-center space-x-2 px-4 py-2 bg-[#18243c]/10 rounded-xl border border-[#18243c]/20">
-            <MagnifyingGlassIcon className="w-4 h-4 text-[#18243c]" />
-            <span className="text-sm font-medium text-[#18243c]">Try Different Keywords</span>
-          </div>
-        </div>
+        <h3 className="text-2xl font-bold text-[#18243c] mb-4">No stories found</h3>
       </div>
     );
   }

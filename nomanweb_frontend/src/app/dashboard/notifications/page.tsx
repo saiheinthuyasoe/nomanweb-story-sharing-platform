@@ -80,7 +80,11 @@ export default function NotificationsPage() {
       case "like":
         return Star;
       case "system":
+        return DollarSign;
+      case "moderation":
         return AlertCircle;
+      case "purchase":
+        return DollarSign;
       default:
         return Bell;
     }
@@ -101,7 +105,11 @@ export default function NotificationsPage() {
       case "like":
         return "yellow";
       case "system":
-        return "gray";
+        return "green";
+      case "moderation":
+        return "orange";
+      case "purchase":
+        return "green";
       default:
         return "blue";
     }
@@ -225,8 +233,13 @@ export default function NotificationsPage() {
     },
     {
       id: "system",
-      label: "Purchases",
+      label: "Purchase",
       count: notificationItems.filter((a) => a.type === "system").length,
+    },
+    {
+      id: "moderation",
+      label: "Moderation",
+      count: notificationItems.filter((a) => a.type === "moderation").length,
     },
   ];
 

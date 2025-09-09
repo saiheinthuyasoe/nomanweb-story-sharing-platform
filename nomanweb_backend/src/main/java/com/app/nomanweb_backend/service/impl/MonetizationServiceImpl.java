@@ -444,7 +444,7 @@ public class MonetizationServiceImpl implements MonetizationService {
         try {
             notificationService.createNotification(
                     chapter.getStory().getAuthor().getId(),
-                    Notification.NotificationType.SYSTEM,
+                    Notification.NotificationType.PURCHASE,
                     "Chapter Purchased",
                     user.getDisplayNameOrUsername() + " purchased your chapter: " + chapter.getTitle(),
                     Notification.RelatedType.CHAPTER,
@@ -645,7 +645,7 @@ public class MonetizationServiceImpl implements MonetizationService {
         try {
             notificationService.createNotification(
                     story.getAuthor().getId(),
-                    Notification.NotificationType.SYSTEM,
+                    Notification.NotificationType.PURCHASE,
                     "Book Purchased",
                     user.getDisplayNameOrUsername() + " purchased your book: " + story.getTitle(),
                     Notification.RelatedType.STORY,

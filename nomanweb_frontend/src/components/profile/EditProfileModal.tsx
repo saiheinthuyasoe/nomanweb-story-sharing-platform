@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, User, Mail, Edit3, Save, Settings, Camera, Shield, Crown, Sparkles } from 'lucide-react';
+import { X, User, Mail, Edit3, Save, Settings, Camera, Shield, Crown, Sparkles, Link, Unlink } from 'lucide-react';
 import { User as UserType } from '@/types/user';
 import { authApi } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
 import EmailChangeModal from './EmailChangeModal';
 import UsernameChangeModal from './UsernameChangeModal';
+import GoogleSignIn from '@/components/auth/GoogleSignIn';
+import LinkLineSignIn from '@/components/auth/LinkLineSignIn';
 
 interface EditProfileModalProps {
   user: UserType;
@@ -19,6 +21,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailChangeModalOpen, setIsEmailChangeModalOpen] = useState(false);
   const [isUsernameChangeModalOpen, setIsUsernameChangeModalOpen] = useState(false);
+  const [isLinkingAccount, setIsLinkingAccount] = useState(false);
   const [formData, setFormData] = useState({
     displayName: user.displayName || '',
     bio: user.bio || '',
@@ -44,6 +47,53 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
       toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLink = async (response: any) => {
+    setIsLinkingAccount(true);
+    try {
+      await authApi.linkGoogleAccount(response.credential);
+      const updatedUser = { ...user, googleId: 'linked' };
+      onSave(updatedUser);
+      toast.success('Google account linked successfully!');
+    } catch (error: any) {
+      console.error('Error linking Google account:', error);
+      toast.error(error.response?.data?.error || 'Failed to link Google account');
+    } finally {
+      setIsLinkingAccount(false);
+    }
+  };
+
+  const handleLineLink = async (response: any) => {
+    setIsLinkingAccount(true);
+    try {
+      await authApi.linkLineAccount(response.accessToken);
+      const updatedUser = { ...user, lineUserId: 'linked' };
+      onSave(updatedUser);
+      toast.success('LINE account linked successfully!');
+    } catch (error: any) {
+      console.error('Error linking LINE account:', error);
+      toast.error(error.response?.data?.error || 'Failed to link LINE account');
+    } finally {
+      setIsLinkingAccount(false);
+    }
+  };
+
+  const handleUnlinkAccount = async (provider: 'google' | 'line') => {
+    if (!confirm(`Are you sure you want to unlink your ${provider.toUpperCase()} account?`)) {
+      return;
+    }
+
+    setIsLinkingAccount(true);
+    try {
+      // Note: Backend API for unlinking would need to be implemented
+      toast.info(`${provider.toUpperCase()} account unlinking is not yet implemented`);
+    } catch (error: any) {
+      console.error(`Error unlinking ${provider} account:`, error);
+      toast.error(`Failed to unlink ${provider.toUpperCase()} account`);
+    } finally {
+      setIsLinkingAccount(false);
     }
   };
 
@@ -175,6 +225,116 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
             </div>
           </div>
 
+          {/* Connected Accounts Section */}
+          <div className="space-y-4 pt-4 border-t border-gray-200/50">
+            <div className="flex items-center space-x-2 mb-4">
+              <Link className="w-4 h-4 text-[#18243c]" />
+              <span className="text-sm font-semibold text-gray-700">Connected Accounts</span>
+            </div>
+            
+            {/* Google Account */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Google Account
+              </label>
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border border-gray-200/60 rounded-xl backdrop-blur-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">G</span>
+                  </div>
+                  <span className="text-gray-700 font-medium">
+                    {user.googleId ? 'Connected' : 'Not connected'}
+                  </span>
+                  {user.googleId && (
+                    <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                      <span>Linked</span>
+                    </div>
+                  )}
+                </div>
+                {user.googleId ? (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlinkAccount('google')}
+                    disabled={isLinkingAccount}
+                    className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                  >
+                    <Unlink className="h-3.5 w-3.5" />
+                    <span>Unlink</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center">
+                    <GoogleSignIn
+                      mode="link"
+                      onSuccess={handleGoogleLink}
+                      onError={(error) => {
+                        console.error('Google OAuth error:', error);
+                        toast.error('Failed to connect Google account');
+                      }}
+                      className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
+                    >
+                      <Link className="h-3.5 w-3.5" />
+                      <span>Link Google</span>
+                    </GoogleSignIn>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* LINE Account */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                LINE Account
+              </label>
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50/80 to-green-50/30 border border-gray-200/60 rounded-xl backdrop-blur-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">L</span>
+                  </div>
+                  <span className="text-gray-700 font-medium">
+                    {user.lineUserId ? 'Connected' : 'Not connected'}
+                  </span>
+                  {user.lineUserId && (
+                    <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                      <span>Linked</span>
+                    </div>
+                  )}
+                </div>
+                {user.lineUserId ? (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlinkAccount('line')}
+                    disabled={isLinkingAccount}
+                    className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                  >
+                    <Unlink className="h-3.5 w-3.5" />
+                    <span>Unlink</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center">
+                    <LinkLineSignIn
+                      onSuccess={handleLineLink}
+                      onError={(error) => {
+                        console.error('LINE OAuth error:', error);
+                        toast.error('Failed to connect LINE account');
+                      }}
+                      className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
+                    >
+                      <Link className="h-3.5 w-3.5" />
+                      <span>Link LINE</span>
+                    </LinkLineSignIn>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="text-xs text-gray-500 bg-blue-50/50 p-3 rounded-lg border border-blue-200/30">
+              <p className="font-medium text-blue-700 mb-1">About Connected Accounts:</p>
+              <p>Link your social accounts to enable quick sign-in and sync your profile information. Your existing data will be preserved.</p>
+            </div>
+          </div>
+
           {/* Enhanced Action Buttons */}
           <div className="flex space-x-3 pt-6 border-t border-gray-200/50">
             <button
@@ -232,4 +392,4 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
       />
     </div>
   );
-} 
+}

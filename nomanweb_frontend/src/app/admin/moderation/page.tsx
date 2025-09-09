@@ -635,10 +635,51 @@ export default function AdminModerationPage() {
                       <div className="mb-4">
                         <span className="font-medium text-gray-900">
                           Classification:{" "}
-                          {analysisResult.isOffensive
-                            ? "🔴 Offensive"
-                            : "🟢 Normal"}{" "}
-                          ({(analysisResult.confidenceScore * 100).toFixed(0)}%)
+                          {(() => {
+                            // Find the category with highest probability
+                            let highestCategory =
+                              analysisResult.predictedCategory || "Normal";
+                            let highestPercentage =
+                              analysisResult.confidenceScore * 100;
+
+                            if (analysisResult.allProbabilities) {
+                              const entries = Object.entries(
+                                analysisResult.allProbabilities
+                              );
+                              if (entries.length > 0) {
+                                const [category, probability] = entries.reduce(
+                                  (max, current) =>
+                                    current[1] > max[1] ? current : max
+                                );
+                                highestCategory = category;
+                                highestPercentage = probability * 100;
+                              }
+                            }
+
+                            // Format category name
+                            const formattedCategory = highestCategory
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase());
+
+                            // Determine if problematic
+                            const isProblematic =
+                              highestCategory
+                                .toLowerCase()
+                                .includes("offensive") ||
+                              highestCategory.toLowerCase().includes("hate") ||
+                              highestCategory
+                                .toLowerCase()
+                                .includes("religious") ||
+                              highestCategory
+                                .toLowerCase()
+                                .includes("political");
+
+                            const icon = isProblematic ? "🔴" : "🟢";
+
+                            return `${icon} ${formattedCategory} (${highestPercentage.toFixed(
+                              0
+                            )}%)`;
+                          })()}
                         </span>
                       </div>
 
@@ -704,9 +745,20 @@ export default function AdminModerationPage() {
                         Suggested Action:
                       </h4>
                       <p className="text-blue-800 text-sm">
-                        {analysisResult.isOffensive
-                          ? "⚠️ Reject - Content flagged as potentially offensive"
-                          : "✅ Approve - Content appears safe for publication"}
+                        {(() => {
+                          const category =
+                            analysisResult.predictedCategory?.toLowerCase() ||
+                            "";
+                          const isProblematic =
+                            category.includes("offensive") ||
+                            category.includes("hate") ||
+                            category.includes("religious") ||
+                            category.includes("political");
+
+                          return isProblematic
+                            ? "🔴 Reject - Content violates community guidelines"
+                            : "✅ Approve - Content appears safe for publication";
+                        })()}
                       </p>
                     </div>
                   </div>

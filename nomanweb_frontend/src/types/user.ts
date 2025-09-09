@@ -37,7 +37,9 @@ export interface Notification {
     | "COMMENT"
     | "LIKE"
     | "FOLLOW"
-    | "SYSTEM";
+    | "SYSTEM"
+    | "MODERATION"
+    | "PURCHASE";
   title: string;
   message: string;
   relatedType?: "STORY" | "CHAPTER" | "USER" | "GIFT" | "COMMENT";
@@ -59,6 +61,8 @@ export interface NotificationStats {
   like: number;
   follow: number;
   system: number;
+  moderation: number;
+  purchase: number;
 }
 
 // Social interaction types

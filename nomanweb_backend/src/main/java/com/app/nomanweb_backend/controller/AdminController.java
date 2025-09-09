@@ -3,6 +3,7 @@ package com.app.nomanweb_backend.controller;
 import com.app.nomanweb_backend.dto.chapter.ChapterResponse;
 import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.FeaturedContent;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.ChapterRepository;
@@ -10,6 +11,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.ChapterModerationProcessor;
 import com.app.nomanweb_backend.service.ChapterService;
+import com.app.nomanweb_backend.service.FeaturedContentService;
 import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.ViewMigrationService;
@@ -45,6 +47,7 @@ public class AdminController {
         private final ChapterModerationProcessor chapterModerationProcessor;
         private final ChapterService chapterService;
         private final StoryService storyService;
+        private final FeaturedContentService featuredContentService;
         private final JwtUtil jwtUtil;
         private final StoryRepository storyRepository;
         private final ChapterRepository chapterRepository;
@@ -856,6 +859,205 @@ public class AdminController {
                         log.error("Error during view migration: {}", e.getMessage(), e);
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                         .body(Map.of("error", "Migration failed: " + e.getMessage()));
+                }
+        }
+
+        // Featured Content Management Endpoints
+
+        @GetMapping("/featured-content/{sectionType}")
+        public ResponseEntity<Page<FeaturedContent>> getFeaturedContent(
+                        @PathVariable String sectionType,
+                        @PageableDefault(size = 20) Pageable pageable) {
+                try {
+                        FeaturedContent.SectionType section = FeaturedContent.SectionType
+                                        .valueOf(sectionType.toUpperCase());
+                        Page<FeaturedContent> featuredContent = featuredContentService.getAllFeaturedContent(section,
+                                        pageable.getPageNumber(), pageable.getPageSize());
+                        return ResponseEntity.ok(featuredContent);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().build();
+                } catch (Exception e) {
+                        log.error("Error getting featured content for section: {}", sectionType, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/featured-content/{sectionType}/add/{storyId}")
+        public ResponseEntity<FeaturedContent> addToFeaturedSection(
+                        @PathVariable String sectionType,
+                        @PathVariable UUID storyId,
+                        @RequestBody(required = false) Map<String, Object> requestBody,
+                        HttpServletRequest request) {
+                try {
+                        UUID adminId = getCurrentUserId(request);
+                        User admin = userRepository.findById(adminId)
+                                        .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+                        FeaturedContent.SectionType section = FeaturedContent.SectionType
+                                        .valueOf(sectionType.toUpperCase());
+                        
+                        // Get duration from request body (0 means permanent)
+                        Integer duration = 0;
+                        if (requestBody != null && requestBody.containsKey("duration")) {
+                                duration = (Integer) requestBody.get("duration");
+                        }
+                        
+                        FeaturedContent featuredContent = featuredContentService.addToFeaturedSection(storyId, section,
+                                        admin, duration);
+                        return ResponseEntity.ok(featuredContent);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().build();
+                } catch (RuntimeException e) {
+                        return ResponseEntity.badRequest().body(null);
+                } catch (Exception e) {
+                        log.error("Error adding story to featured section: {}", sectionType, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @DeleteMapping("/featured-content/{featuredContentId}")
+        public ResponseEntity<Void> removeFromFeaturedSection(@PathVariable UUID featuredContentId) {
+                try {
+                        featuredContentService.removeFromFeaturedSection(featuredContentId);
+                        return ResponseEntity.ok().build();
+                } catch (RuntimeException e) {
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error removing featured content: {}", featuredContentId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PutMapping("/featured-content/{featuredContentId}/order")
+        public ResponseEntity<Void> updateDisplayOrder(
+                        @PathVariable UUID featuredContentId,
+                        @RequestParam Integer newOrder) {
+                try {
+                        featuredContentService.updateDisplayOrder(featuredContentId, newOrder);
+                        return ResponseEntity.ok().build();
+                } catch (RuntimeException e) {
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error updating display order for featured content: {}", featuredContentId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PutMapping("/featured-content/{featuredContentId}/duration")
+        public ResponseEntity<Void> setFeaturedDuration(
+                        @PathVariable UUID featuredContentId,
+                        @RequestParam String startDate,
+                        @RequestParam(required = false) String endDate) {
+                try {
+                        LocalDateTime start = LocalDateTime.parse(startDate);
+                        LocalDateTime end = endDate != null ? LocalDateTime.parse(endDate) : null;
+                        featuredContentService.setFeaturedDuration(featuredContentId, start, end);
+                        return ResponseEntity.ok().build();
+                } catch (RuntimeException e) {
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error setting featured duration: {}", featuredContentId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PutMapping("/featured-content/{featuredContentId}/toggle")
+        public ResponseEntity<FeaturedContent> toggleFeaturedContentStatus(@PathVariable UUID featuredContentId) {
+                try {
+                        FeaturedContent featuredContent = featuredContentService.toggleActiveStatus(featuredContentId);
+                        return ResponseEntity.ok(featuredContent);
+                } catch (RuntimeException e) {
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error toggling featured content status: {}", featuredContentId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/stories/{storyId}/toggle-featured")
+        public ResponseEntity<Void> toggleStoryFeaturedStatus(@PathVariable UUID storyId) {
+                try {
+                        featuredContentService.toggleStoryFeaturedStatus(storyId);
+                        return ResponseEntity.ok().build();
+                } catch (RuntimeException e) {
+                        return ResponseEntity.notFound().build();
+                } catch (Exception e) {
+                        log.error("Error toggling story featured status: {}", storyId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/featured-content/stats")
+        public ResponseEntity<Map<String, Object>> getAllFeaturedContentStats() {
+                try {
+                        log.debug("Starting getAllFeaturedContentStats");
+                        Map<String, Object> stats = new HashMap<>();
+                        Map<String, Long> sectionCounts = new HashMap<>();
+
+                        long totalActive = 0;
+                        long totalExpired = 0;
+
+                        for (FeaturedContent.SectionType section : FeaturedContent.SectionType.values()) {
+                                log.debug("Processing section: {}", section);
+                                long activeCount = featuredContentService.getActiveFeaturedCount(section);
+                                log.debug("Active count for {}: {}", section, activeCount);
+                                sectionCounts.put(section.name(), activeCount);
+                                totalActive += activeCount;
+                        }
+
+                        log.debug("Getting expired content");
+                        List<FeaturedContent> expiredContent = featuredContentService.getExpiredFeaturedContent();
+                        totalExpired = expiredContent.size();
+                        log.debug("Expired content count: {}", totalExpired);
+
+                        stats.put("totalActive", totalActive);
+                        stats.put("totalExpired", totalExpired);
+                        stats.put("sectionCounts", sectionCounts);
+
+                        log.debug("Returning stats: {}", stats);
+                        return ResponseEntity.ok(stats);
+                } catch (Exception e) {
+                        log.error("Error getting featured content stats", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/featured-content/{sectionType}/stats")
+        public ResponseEntity<Map<String, Object>> getFeaturedContentStats(@PathVariable String sectionType) {
+                try {
+                        FeaturedContent.SectionType section = FeaturedContent.SectionType
+                                        .valueOf(sectionType.toUpperCase());
+                        long activeCount = featuredContentService.getActiveFeaturedCount(section);
+
+                        Map<String, Object> stats = new HashMap<>();
+                        stats.put("activeCount", activeCount);
+                        stats.put("sectionType", section.name());
+
+                        return ResponseEntity.ok(stats);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().build();
+                } catch (Exception e) {
+                        log.error("Error getting featured content stats for section: {}", sectionType, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/featured-content/cleanup-expired")
+        public ResponseEntity<Map<String, Object>> cleanupExpiredContent() {
+                try {
+                        List<FeaturedContent> expiredContent = featuredContentService.getExpiredFeaturedContent();
+                        int expiredCount = expiredContent.size();
+
+                        featuredContentService.deactivateExpiredContent();
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("deactivatedCount", expiredCount);
+                        result.put("message", "Expired featured content has been deactivated");
+
+                        return ResponseEntity.ok(result);
+                } catch (Exception e) {
+                        log.error("Error cleaning up expired featured content", e);
+                        return ResponseEntity.internalServerError().build();
                 }
         }
 

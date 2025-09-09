@@ -70,7 +70,7 @@ public class Notification {
 
     // Enums
     public enum NotificationType {
-        NEW_CHAPTER, NEW_STORY, GIFT_RECEIVED, COMMENT, LIKE, FOLLOW, SYSTEM
+        NEW_CHAPTER, NEW_STORY, GIFT_RECEIVED, COMMENT, LIKE, FOLLOW, SYSTEM, MODERATION, PURCHASE
     }
 
     public enum RelatedType {

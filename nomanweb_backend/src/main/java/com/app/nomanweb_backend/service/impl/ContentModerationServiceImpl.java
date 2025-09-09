@@ -101,28 +101,28 @@ public class ContentModerationServiceImpl implements ContentModerationService {
         try {
             // Combine title and content for comprehensive analysis
             String combinedContent = (title != null ? title + "\n\n" : "") + (content != null ? content : "");
-            
+
             if (combinedContent.trim().isEmpty()) {
-                return ContentModerationResult.safe(1.0, "unknown", "Empty content - auto-approved", "normal", new HashMap<>());
+                return ContentModerationResult.safe(1.0, "unknown", "Empty content - auto-approved", "normal",
+                        new HashMap<>());
             }
 
             // Analyze the combined content
             ContentModerationResult result = analyzeContent(combinedContent);
-            
+
             // Add AI moderation decision details
             String aiDecision = shouldAutoApprove(result) ? "AUTO-APPROVED" : "AUTO-REJECTED";
             String enhancedDetails = String.format("AI Decision: %s | %s", aiDecision, result.getAnalysisDetails());
-            
+
             return new ContentModerationResult(
-                result.isOffensive(),
-                result.getConfidenceScore(),
-                result.getDetectedLanguage(),
-                enhancedDetails,
-                result.getErrorMessage(),
-                result.getPredictedCategory(),
-                result.getAllProbabilities()
-            );
-            
+                    result.isOffensive(),
+                    result.getConfidenceScore(),
+                    result.getDetectedLanguage(),
+                    enhancedDetails,
+                    result.getErrorMessage(),
+                    result.getPredictedCategory(),
+                    result.getAllProbabilities());
+
         } catch (Exception e) {
             log.error("Error in AI chapter moderation: ", e);
             return ContentModerationResult.error("AI moderation failed: " + e.getMessage());
@@ -135,22 +135,45 @@ public class ContentModerationServiceImpl implements ContentModerationService {
             // If there's an error, default to manual review (return false)
             return false;
         }
-        
-        // Auto-approve if:
-        // 1. Content is not offensive, OR
-        // 2. Content is flagged as offensive but confidence is below threshold
-        return !moderationResult.isOffensive() || 
-               (moderationResult.isOffensive() && moderationResult.getConfidenceScore() < offensiveThreshold);
+
+        // Check if the predicted category is any problematic content type
+        String category = moderationResult.getPredictedCategory();
+        if (category != null) {
+            String lowerCategory = category.toLowerCase();
+            boolean isProblematicContent = lowerCategory.contains("offensive") ||
+                    lowerCategory.contains("hate") ||
+                    lowerCategory.contains("religious") ||
+                    lowerCategory.contains("political");
+
+            if (isProblematicContent) {
+                log.info("Auto-rejecting content with category: {} (confidence: {:.3f})",
+                        category, moderationResult.getConfidenceScore());
+                return false; // Auto-reject all problematic content
+            }
+        }
+
+        // Auto-approve only if content is flagged as safe (normal category)
+        // If isOffensive is true, always reject
+        if (moderationResult.isOffensive()) {
+            log.info("Auto-rejecting offensive content with category: {} (confidence: {:.3f})",
+                    category, moderationResult.getConfidenceScore());
+            return false;
+        }
+
+        // Only auto-approve if category is explicitly "normal" or safe
+        boolean shouldApprove = category != null && category.toLowerCase().equals("normal");
+
+        log.info("Auto-approval decision: {} for category: {} (offensive: {}, confidence: {:.3f})",
+                shouldApprove, category, moderationResult.isOffensive(), moderationResult.getConfidenceScore());
+
+        return shouldApprove;
     }
 
     private ContentModerationResult parseApiResponse(String responseBody) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
 
-            String predictedCategory = root.get("predicted_category").asText();
-            double confidence = root.get("confidence").asDouble();
-            
-            // Parse all probabilities
+            // Parse all probabilities first
             Map<String, Double> allProbabilities = new HashMap<>();
             JsonNode probabilitiesNode = root.get("all_probabilities");
             if (probabilitiesNode != null) {
@@ -159,16 +182,38 @@ public class ContentModerationServiceImpl implements ContentModerationService {
                 });
             }
 
-            boolean isOffensive = predictedCategory.toLowerCase().contains("offensive") ||
-                    predictedCategory.toLowerCase().contains("hate") ||
-                    predictedCategory.toLowerCase().contains("toxic");
+            // Find the category with the highest probability (correct classification)
+            String actualPredictedCategory = "normal";
+            double highestProbability = 0.0;
 
-            String details = String.format("Category: %s, Confidence: %.3f", predictedCategory, confidence);
+            for (Map.Entry<String, Double> entry : allProbabilities.entrySet()) {
+                if (entry.getValue() > highestProbability) {
+                    highestProbability = entry.getValue();
+                    actualPredictedCategory = entry.getKey();
+                }
+            }
+
+            // Use the highest probability as confidence score
+            double confidence = highestProbability;
+
+            // Determine if content is offensive based on the actual highest probability
+            // category
+            boolean isOffensive = actualPredictedCategory.toLowerCase().contains("offensive") ||
+                    actualPredictedCategory.toLowerCase().contains("hate") ||
+                    actualPredictedCategory.toLowerCase().contains("religious") ||
+                    actualPredictedCategory.toLowerCase().contains("political");
+
+            String details = String.format("Category: %s, Confidence: %.3f", actualPredictedCategory, confidence);
+
+            log.info("AI Moderation Result - Highest Category: {}, Confidence: {:.3f}, IsOffensive: {}",
+                    actualPredictedCategory, confidence, isOffensive);
 
             if (isOffensive) {
-                return ContentModerationResult.offensive(confidence, "detected", details, predictedCategory, allProbabilities);
+                return ContentModerationResult.offensive(confidence, "detected", details, actualPredictedCategory,
+                        allProbabilities);
             } else {
-                return ContentModerationResult.safe(confidence, "detected", details, predictedCategory, allProbabilities);
+                return ContentModerationResult.safe(confidence, "detected", details, actualPredictedCategory,
+                        allProbabilities);
             }
 
         } catch (Exception e) {

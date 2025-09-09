@@ -53,7 +53,7 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
                 .relatedId(relatedId)
                 .isRead(false)
                 .build();
-        
+
         notification = notificationRepository.save(notification);
 
         // Generate action URL if not provided
@@ -151,6 +151,8 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
                 return user.getNotifyNewChapters();
             case SYSTEM:
                 return user.getNotifySystemMessages();
+            case MODERATION:
+                return user.getNotifyChapterModeration() != null ? user.getNotifyChapterModeration() : true;
             default:
                 return true;
         }

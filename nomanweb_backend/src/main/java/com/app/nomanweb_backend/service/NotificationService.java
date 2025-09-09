@@ -63,6 +63,10 @@ public interface NotificationService {
 
         void sendBulkSystemNotification(List<UUID> userIds, String title, String message);
 
+        // Moderation notifications
+        void sendModerationNotification(UUID userId, String title, String message,
+                        Notification.RelatedType relatedType, UUID relatedId);
+
         // Cleanup and maintenance
         void cleanupOldNotifications(int daysToKeep);
 

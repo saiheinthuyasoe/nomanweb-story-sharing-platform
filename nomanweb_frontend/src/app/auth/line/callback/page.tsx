@@ -29,6 +29,7 @@ export default function LineCallbackPage() {
         const state = searchParams.get('state');
         const storedState = sessionStorage.getItem('line_oauth_state') || localStorage.getItem('line_oauth_state');
         const timestamp = localStorage.getItem('line_oauth_timestamp');
+        const mode = sessionStorage.getItem('line_oauth_mode') || localStorage.getItem('line_oauth_mode') || 'login';
 
         console.log('LINE Callback Debug:');
         console.log('- Code:', code);
@@ -51,7 +52,9 @@ export default function LineCallbackPage() {
 
         // Clear stored state from both locations
         sessionStorage.removeItem('line_oauth_state');
+        sessionStorage.removeItem('line_oauth_mode');
         localStorage.removeItem('line_oauth_state');
+        localStorage.removeItem('line_oauth_mode');
         localStorage.removeItem('line_oauth_timestamp');
 
         if (!code) {
@@ -95,27 +98,49 @@ export default function LineCallbackPage() {
         }
 
         console.log('Sending access token to backend...');
+        console.log('Mode:', mode);
         
-        // Send access token to our backend
-        const response = await authApi.lineLogin(accessToken);
-        
-        console.log('Backend response:', response);
-        console.log('🔐 LINE OAuth response fields:', {
-          hasToken: !!response.token,
-          hasRefreshToken: !!response.refreshToken,
-          hasUser: !!response.user
-        });
-        
-        // Set authentication data
-        setAuthData(response.token, response.refreshToken, response.user);
-        
-        toast.success('LINE sign-in successful!');
-        
-        // Add a small delay to ensure state is updated before navigation
-        setTimeout(() => {
-          console.log('🚀 Navigating to dashboard after LINE callback');
-          router.push('/dashboard');
-        }, 100);
+        if (mode === 'link') {
+          // Account linking mode - call the link API
+          try {
+            await authApi.linkLineAccount(accessToken);
+            toast.success('LINE account linked successfully!');
+            
+            // Close the popup/redirect back to profile
+            setTimeout(() => {
+              console.log('🚀 Navigating back to profile after LINE linking');
+              router.push('/profile');
+            }, 100);
+          } catch (error: any) {
+            console.error('LINE account linking failed:', error);
+            toast.error(error.response?.data?.error || 'Failed to link LINE account');
+            
+            setTimeout(() => {
+              router.push('/profile');
+            }, 2000);
+          }
+        } else {
+          // Login mode - use the existing login flow
+          const response = await authApi.lineLogin(accessToken);
+          
+          console.log('Backend response:', response);
+          console.log('🔐 LINE OAuth response fields:', {
+            hasToken: !!response.token,
+            hasRefreshToken: !!response.refreshToken,
+            hasUser: !!response.user
+          });
+          
+          // Set authentication data
+          setAuthData(response.token, response.refreshToken, response.user);
+          
+          toast.success('LINE sign-in successful!');
+          
+          // Add a small delay to ensure state is updated before navigation
+          setTimeout(() => {
+            console.log('🚀 Navigating to dashboard after LINE callback');
+            router.push('/dashboard');
+          }, 100);
+        }
         
       } catch (error: any) {
         console.error('LINE OAuth callback error:', error);
@@ -164,4 +189,4 @@ export default function LineCallbackPage() {
   }
 
   return null;
-} 
+}

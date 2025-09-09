@@ -949,30 +949,25 @@ public class ChapterServiceImpl implements ChapterService {
         // Send notification to author about moderation result
         try {
             UUID authorId = chapter.getStory().getAuthor().getId();
-            User author = userRepository.findById(authorId)
-                    .orElseThrow(() -> new IllegalArgumentException("Author not found"));
+            String title = approved ? "Chapter Approved" : "Chapter Rejected";
+            String message;
 
-            // Check if author has enabled chapter moderation notifications
-            if (author.getNotifyChapterModeration() != null && author.getNotifyChapterModeration()) {
-                String title = approved ? "Chapter Approved" : "Chapter Rejected";
-                String message;
-
-                if (approved) {
-                    message = String.format("Your chapter '%s' from story '%s' has been approved and is now published.",
-                            chapter.getTitle(), chapter.getStory().getTitle());
-                } else {
-                    message = String.format(
-                            "Your chapter '%s' from story '%s' has been rejected and moved back to drafts. Reason: %s",
-                            chapter.getTitle(), chapter.getStory().getTitle(),
-                            moderationNotes != null && !moderationNotes.trim().isEmpty() ? moderationNotes
-                                    : "No specific reason provided");
-                }
-
-                notificationService.sendSystemNotification(authorId, title, message);
-                log.info("Moderation notification sent to author {} for chapter {}", authorId, chapterId);
+            if (approved) {
+                message = String.format("Your chapter '%s' from story '%s' has been approved and is now published.",
+                        chapter.getTitle(), chapter.getStory().getTitle());
             } else {
-                log.info("Moderation notification skipped for author {} - notifications disabled", authorId);
+                message = String.format(
+                        "Your chapter '%s' from story '%s' has been rejected and moved back to drafts. Reason: %s",
+                        chapter.getTitle(), chapter.getStory().getTitle(),
+                        moderationNotes != null && !moderationNotes.trim().isEmpty() ? moderationNotes
+                                : "No specific reason provided");
             }
+
+            // Use sendModerationNotification which handles preference checking
+            // automatically
+            notificationService.sendModerationNotification(authorId, title, message,
+                    Notification.RelatedType.CHAPTER, chapter.getId());
+            log.info("Moderation notification sent to author {} for chapter {}", authorId, chapterId);
         } catch (Exception e) {
             log.warn("Failed to send moderation notification for chapter {}: {}", chapterId, e.getMessage());
             // Don't fail the moderation if notification fails
@@ -1698,15 +1693,16 @@ public class ChapterServiceImpl implements ChapterService {
             String title = approved ? "Chapter Moderation Approved" : "Chapter Moderation Rejected";
             String message = approved
                     ? String.format(
-                            "Your chapter '%s' has passed moderation review. You can now publish it when ready.",
-                            chapter.getTitle())
+                            "Your chapter '%s' in story '%s' has passed moderation review. You can now publish it when ready.",
+                            chapter.getTitle(), chapter.getStory().getTitle())
                     : String.format(
-                            "Your chapter '%s' has been rejected during moderation. Please review and resubmit.",
-                            chapter.getTitle());
+                            "Your chapter '%s' in story '%s' has been rejected during moderation. Please review and resubmit.",
+                            chapter.getTitle(), chapter.getStory().getTitle());
 
-            notificationService.createNotification(
+            // Use sendModerationNotification to ensure proper preference checking and
+            // multi-channel delivery
+            notificationService.sendModerationNotification(
                     author.getId(),
-                    Notification.NotificationType.SYSTEM,
                     title,
                     message,
                     Notification.RelatedType.CHAPTER,

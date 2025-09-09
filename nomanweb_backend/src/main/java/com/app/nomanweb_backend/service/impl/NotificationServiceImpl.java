@@ -39,8 +39,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final CommentRepository commentRepository;
     private final EnhancedNotificationService enhancedNotificationService;
 
-
-
     @Override
     @Transactional
     public Notification createNotification(UUID userId, Notification.NotificationType type,
@@ -163,8 +161,8 @@ public class NotificationServiceImpl implements NotificationService {
                     follower.getDisplayName() != null ? follower.getDisplayName() : follower.getUsername());
 
             // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(followedUser, 
-                    Notification.NotificationType.FOLLOW, title, message, 
+            enhancedNotificationService.sendMultiChannelNotification(followedUser,
+                    Notification.NotificationType.FOLLOW, title, message,
                     Notification.RelatedType.USER, followerUserId);
         } catch (Exception e) {
             log.error("Failed to send new follower notification", e);
@@ -233,8 +231,8 @@ public class NotificationServiceImpl implements NotificationService {
                     story.getTitle());
 
             // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(storyAuthor, 
-                    Notification.NotificationType.LIKE, title, message, 
+            enhancedNotificationService.sendMultiChannelNotification(storyAuthor,
+                    Notification.NotificationType.LIKE, title, message,
                     Notification.RelatedType.STORY, storyId);
         } catch (Exception e) {
             log.error("Failed to send story like notification", e);
@@ -309,8 +307,8 @@ public class NotificationServiceImpl implements NotificationService {
                     .orElseThrow(() -> new IllegalArgumentException("Comment author not found"));
 
             // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(commentAuthor, 
-                    Notification.NotificationType.LIKE, title, message, 
+            enhancedNotificationService.sendMultiChannelNotification(commentAuthor,
+                    Notification.NotificationType.LIKE, title, message,
                     Notification.RelatedType.COMMENT, commentId);
         } catch (Exception e) {
             log.error("Failed to send comment like notification", e);
@@ -381,8 +379,8 @@ public class NotificationServiceImpl implements NotificationService {
                     .orElseThrow(() -> new IllegalArgumentException("Parent comment author not found"));
 
             // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(parentCommentAuthor, 
-                    Notification.NotificationType.COMMENT, title, message, 
+            enhancedNotificationService.sendMultiChannelNotification(parentCommentAuthor,
+                    Notification.NotificationType.COMMENT, title, message,
                     Notification.RelatedType.COMMENT, commentId);
         } catch (Exception e) {
             log.error("Failed to send comment reply notification", e);
@@ -423,10 +421,40 @@ public class NotificationServiceImpl implements NotificationService {
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
             // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(user, 
+            enhancedNotificationService.sendMultiChannelNotification(user,
                     Notification.NotificationType.SYSTEM, title, message, null, null);
         } catch (Exception e) {
             log.error("Failed to send system notification", e);
+        }
+    }
+
+    @Transactional
+    public void sendPurchaseNotification(UUID userId, String title, String message,
+            Notification.RelatedType relatedType, UUID relatedId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(user,
+                    Notification.NotificationType.PURCHASE, title, message, relatedType, relatedId);
+        } catch (Exception e) {
+            log.error("Failed to send purchase notification", e);
+        }
+    }
+
+    @Transactional
+    public void sendModerationNotification(UUID userId, String title, String message,
+            Notification.RelatedType relatedType, UUID relatedId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            // Send multi-channel notification (email + LINE)
+            enhancedNotificationService.sendMultiChannelNotification(user,
+                    Notification.NotificationType.MODERATION, title, message, relatedType, relatedId);
+        } catch (Exception e) {
+            log.error("Failed to send moderation notification", e);
         }
     }
 

@@ -34,11 +34,13 @@ export default function LoginPage() {
     },
   });
 
-  // Load saved email if remember me was checked
+  // Load saved email and password if remember me was checked
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
-    if (savedEmail) {
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    if (savedEmail && savedPassword) {
       setValue("email", savedEmail);
+      setValue("password", savedPassword);
       setValue("rememberMe", true);
     }
   }, [setValue]);
@@ -55,8 +57,10 @@ export default function LoginPage() {
       // Handle remember me functionality
       if (data.rememberMe) {
         localStorage.setItem("rememberedEmail", data.email);
+        localStorage.setItem("rememberedPassword", data.password);
       } else {
         localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
       }
 
       await login(data.email, data.password);

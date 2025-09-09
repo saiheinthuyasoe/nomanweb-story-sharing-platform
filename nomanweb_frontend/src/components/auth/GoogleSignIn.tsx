@@ -11,13 +11,15 @@ interface GoogleSignInProps {
   onError?: (error: any) => void;
   className?: string;
   children?: React.ReactNode;
+  mode?: 'login' | 'link'; // Add mode prop to distinguish between login and linking
 }
 
 export default function GoogleSignIn({ 
   onSuccess, 
   onError, 
   className = '',
-  children 
+  children,
+  mode = 'login'
 }: GoogleSignInProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,11 +30,17 @@ export default function GoogleSignIn({
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      // Send the ID token to our backend
-      const response = await authApi.googleLogin(idToken);
-      
-      toast.success('Google sign-in successful!');
-      onSuccess?.(response);
+      let response;
+      if (mode === 'link') {
+        // For linking accounts, pass the credential directly
+        response = { credential: idToken };
+        onSuccess?.(response);
+      } else {
+        // For login, send to backend
+        response = await authApi.googleLogin(idToken);
+        toast.success('Google sign-in successful!');
+        onSuccess?.(response);
+      }
     } catch (error: any) {
       console.error('Google sign-in failed:', error);
       toast.error('Google sign-in failed');
@@ -86,4 +94,4 @@ export default function GoogleSignIn({
       )}
     </button>
   );
-} 
+}

@@ -43,12 +43,12 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="max-w-md w-full p-8 text-center">
         <div className="mb-6">
           {status === 'loading' && (
             <div className="flex flex-col items-center">
-              <Loader2 className="h-16 w-16 text-blue-500 animate-spin mb-4" />
+              <Loader2 className="h-12 w-12 text-gray-400 animate-spin mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Verifying Email
               </h1>
@@ -60,7 +60,7 @@ export default function VerifyEmailPage() {
 
           {status === 'success' && (
             <div className="flex flex-col items-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+              <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Email Verified!
               </h1>
@@ -75,7 +75,7 @@ export default function VerifyEmailPage() {
 
           {status === 'error' && (
             <div className="flex flex-col items-center">
-              <XCircle className="h-16 w-16 text-red-500 mb-4" />
+              <XCircle className="h-12 w-12 text-red-500 mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Verification Failed
               </h1>
@@ -85,7 +85,7 @@ export default function VerifyEmailPage() {
               <div className="space-y-3">
                 <Link
                   href="/resend-verification"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-[#18243c] text-white rounded-lg hover:bg-[#18243c]/90 transition-colors font-medium"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   Resend Verification Email
@@ -93,7 +93,7 @@ export default function VerifyEmailPage() {
                 <div>
                   <Link
                     href="/login"
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+                    className="text-[#18243c] hover:text-[#18243c]/80 text-sm font-medium"
                   >
                     Back to Login
                   </Link>
@@ -107,7 +107,7 @@ export default function VerifyEmailPage() {
           <div className="space-y-3">
             <Link
               href="/login"
-              className="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="w-full inline-flex justify-center items-center px-6 py-3 bg-[#18243c] text-white rounded-lg hover:bg-[#18243c]/90 transition-colors font-medium"
             >
               Continue to Login
             </Link>
@@ -116,4 +116,4 @@ export default function VerifyEmailPage() {
       </div>
     </div>
   );
-} 
+}
