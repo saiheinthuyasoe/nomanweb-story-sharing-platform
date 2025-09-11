@@ -80,8 +80,7 @@ class BookInsightsService {
       }
 
       if (!response.ok) {
-        console.warn(`API request failed with status ${response.status}, falling back to mock data`);
-        return this.getMockTopRatedBooks(limit);
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       return await response.json();
@@ -90,7 +89,7 @@ class BookInsightsService {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching top-rated books:", error);
-      return this.getMockTopRatedBooks(limit);
+      throw error;
     }
   }
 
@@ -109,8 +108,7 @@ class BookInsightsService {
       }
 
       if (!response.ok) {
-        console.warn(`API request failed with status ${response.status}, falling back to mock data`);
-        return this.getMockMostReadWeekly(limit);
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       return await response.json();
@@ -119,7 +117,7 @@ class BookInsightsService {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching most read weekly:", error);
-      return this.getMockMostReadWeekly(limit);
+      throw error;
     }
   }
 
@@ -138,8 +136,7 @@ class BookInsightsService {
       }
 
       if (!response.ok) {
-        console.warn(`API request failed with status ${response.status}, falling back to mock data`);
-        return this.getMockNewReleases(limit);
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       return await response.json();
@@ -148,7 +145,7 @@ class BookInsightsService {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching new releases:", error);
-      return this.getMockNewReleases(limit);
+      throw error;
     }
   }
 
@@ -163,21 +160,19 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        console.warn(`Authentication failed for genre ${genreId} - using mock data`);
         this.handleAuthError(new Error('401 Unauthorized'));
-        return this.getMockBooksByGenre(genreId, limit);
+        throw new Error('Authentication required');
       }
 
       if (!response.ok) {
-        console.warn(`API request failed for genre ${genreId} with status ${response.status} - using mock data`);
-        return this.getMockBooksByGenre(genreId, limit);
+        throw new Error(`API request failed for genre ${genreId} with status ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
       this.handleAuthError(error);
       console.error("Error fetching books by genre:", error);
-      return this.getMockBooksByGenre(genreId, limit);
+      throw error;
     }
   }
 
@@ -194,7 +189,7 @@ class BookInsightsService {
         topRated,
         mostReadWeekly,
         newReleases,
-        mostShared: await this.getMockMostShared(10),
+        mostShared: [], // TODO: Implement getMostShared API endpoint
         byGenre: {
           fantasy: await this.getBooksByGenre("fantasy", 5),
           romance: await this.getBooksByGenre("romance", 5),
@@ -210,7 +205,7 @@ class BookInsightsService {
       };
     } catch (error) {
       console.error("Error fetching book insights dashboard:", error);
-      return this.getMockBookInsightsDashboard();
+      throw error;
     }
   }
 
@@ -239,8 +234,7 @@ class BookInsightsService {
       }
 
       if (!response.ok) {
-        console.warn(`API request failed with status ${response.status}, falling back to mock data`);
-        return this.getMockSuggestedBooks(criteria);
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       return await response.json();
@@ -249,7 +243,7 @@ class BookInsightsService {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching suggested books:", error);
-      return this.getMockSuggestedBooks(criteria);
+      throw error;
     }
   }
 
@@ -284,231 +278,14 @@ class BookInsightsService {
       );
 
       if (!response.ok) {
-        return this.getMockSearchResults(query, filters, page, size);
+        throw new Error(`Search request failed with status ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
       console.error("Error searching books with filters:", error);
-      return this.getMockSearchResults(query, filters, page, size);
+      throw error;
     }
-  }
-
-  // Mock data methods for development
-  private getMockTopRatedBooks(limit: number): BookInsight[] {
-    const mockBooks: BookInsight[] = [
-      {
-        id: "top-1",
-        title: "The Enchanted Chronicles",
-        author: { displayName: "Sarah Mitchell", username: "saiheinthuyasoe" },
-        coverImageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop",
-        category: { id: "fantasy", name: "Fantasy" },
-        totalViews: 4370,
-        totalLikes: 331,
-        averageRating: 4.9,
-        chapterCount: 8,
-        publishedAt: "2024-01-15T10:00:00Z",
-        weeklyViews: 1250,
-        weeklyLikes: 89,
-        trendingScore: 95
-      },
-      {
-        id: "top-2",
-        title: "Digital Hearts",
-        author: { displayName: "Takashi Akio", username: "takashiakio280" },
-        coverImageUrl: "https://images.unsplash.com/photo-1520637836862-4d197d17c93a?w=400",
-        category: { id: "romance", name: "Romance" },
-        totalViews: 5377,
-        totalLikes: 470,
-        averageRating: 4.8,
-        chapterCount: 11,
-        publishedAt: "2024-01-20T14:30:00Z",
-        weeklyViews: 1180,
-        weeklyLikes: 95,
-        trendingScore: 92
-      },
-      {
-        id: "top-3",
-        title: "The Silent Observer",
-        author: { displayName: "Zaia Gaming", username: "zaiaegaming" },
-        coverImageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=200&h=280&fit=crop",
-        category: { id: "mystery", name: "Mystery" },
-        totalViews: 3821,
-        totalLikes: 334,
-        averageRating: 4.7,
-        chapterCount: 7,
-        publishedAt: "2024-01-10T09:15:00Z",
-        weeklyViews: 980,
-        weeklyLikes: 76,
-        trendingScore: 88
-      }
-    ];
-
-    return mockBooks.slice(0, limit);
-  }
-
-  private getMockMostReadWeekly(limit: number): BookInsight[] {
-    const mockBooks: BookInsight[] = [
-      {
-        id: "weekly-1",
-        title: "Digital Hearts",
-        author: { displayName: "Takashi Akio", username: "takashiakio280" },
-        coverImageUrl: "https://images.unsplash.com/photo-1520637836862-4d197d17c93a?w=400",
-        category: { id: "romance", name: "Romance" },
-        totalViews: 5377,
-        totalLikes: 470,
-        averageRating: 4.8,
-        chapterCount: 11,
-        publishedAt: "2024-01-20T14:30:00Z",
-        weeklyViews: 2100,
-        weeklyLikes: 156,
-        trendingScore: 98
-      },
-      {
-        id: "weekly-2",
-        title: "The Enchanted Chronicles",
-        author: { displayName: "Sarah Mitchell", username: "saiheinthuyasoe" },
-        coverImageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop",
-        category: { id: "fantasy", name: "Fantasy" },
-        totalViews: 4370,
-        totalLikes: 331,
-        averageRating: 4.9,
-        chapterCount: 8,
-        publishedAt: "2024-01-15T10:00:00Z",
-        weeklyViews: 1850,
-        weeklyLikes: 142,
-        trendingScore: 94
-      }
-    ];
-
-    return mockBooks.slice(0, limit);
-  }
-
-  private getMockNewReleases(limit: number): BookInsight[] {
-    const mockBooks: BookInsight[] = [
-      {
-        id: "new-1",
-        title: "Echoes of the Past",
-        author: { displayName: "Zaia Gaming", username: "zaiaegaming" },
-        coverImageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=200&h=280&fit=crop",
-        category: { id: "mystery", name: "Mystery" },
-        totalViews: 1250,
-        totalLikes: 89,
-        averageRating: 4.6,
-        chapterCount: 6,
-        publishedAt: "2024-01-25T16:45:00Z",
-        weeklyViews: 1250,
-        weeklyLikes: 89,
-        trendingScore: 85
-      }
-    ];
-
-    return mockBooks.slice(0, limit);
-  }
-
-  private getMockBooksByGenre(genreId: string, limit: number): BookInsight[] {
-    const genreBooks: Record<string, BookInsight[]> = {
-      fantasy: [
-        {
-          id: "fantasy-1",
-          title: "The Enchanted Chronicles",
-          author: { displayName: "Sarah Mitchell", username: "saiheinthuyasoe" },
-          coverImageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop",
-          category: { id: "fantasy", name: "Fantasy" },
-          totalViews: 4370,
-          totalLikes: 331,
-          averageRating: 4.9,
-          chapterCount: 8,
-          publishedAt: "2024-01-15T10:00:00Z",
-          weeklyViews: 1250,
-          weeklyLikes: 89,
-          trendingScore: 95
-        }
-      ],
-      romance: [
-        {
-          id: "romance-1",
-          title: "Digital Hearts",
-          author: { displayName: "Takashi Akio", username: "takashiakio280" },
-          coverImageUrl: "https://images.unsplash.com/photo-1520637836862-4d197d17c93a?w=400",
-          category: { id: "romance", name: "Romance" },
-          totalViews: 5377,
-          totalLikes: 470,
-          averageRating: 4.8,
-          chapterCount: 11,
-          publishedAt: "2024-01-20T14:30:00Z",
-          weeklyViews: 1180,
-          weeklyLikes: 95,
-          trendingScore: 92
-        }
-      ]
-    };
-
-    return (genreBooks[genreId] || []).slice(0, limit);
-  }
-
-  private async getMockMostShared(limit: number): Promise<BookInsight[]> {
-    return this.getMockTopRatedBooks(limit);
-  }
-
-  private getMockBookInsightsDashboard(): BookInsightsData {
-    return {
-      topRated: this.getMockTopRatedBooks(10),
-      mostReadWeekly: this.getMockMostReadWeekly(10),
-      newReleases: this.getMockNewReleases(10),
-      mostShared: this.getMockTopRatedBooks(10),
-      byGenre: {
-        fantasy: this.getMockBooksByGenre("fantasy", 5),
-        romance: this.getMockBooksByGenre("romance", 5),
-        mystery: this.getMockBooksByGenre("mystery", 5),
-        scifi: this.getMockBooksByGenre("sci-fi", 5)
-      }
-    };
-  }
-
-  private getMockSuggestedBooks(criteria: SuggestionCriteria): BookInsight[] {
-    const { sectionType, limit = 5 } = criteria;
-    
-    switch (sectionType.toLowerCase()) {
-      case 'weekly_features':
-        return this.getMockMostReadWeekly(limit);
-      case 'best_rating':
-        return this.getMockTopRatedBooks(limit);
-      case 'new_releases':
-        return this.getMockNewReleases(limit);
-      default:
-        return this.getMockTopRatedBooks(limit);
-    }
-  }
-
-  private getMockSearchResults(
-    query: string,
-    filters: any,
-    page: number,
-    size: number
-  ): PagedResponse<BookInsight> {
-    const allBooks = [
-      ...this.getMockTopRatedBooks(10),
-      ...this.getMockMostReadWeekly(10),
-      ...this.getMockNewReleases(10)
-    ];
-
-    const filteredBooks = allBooks.filter(book => 
-      book.title.toLowerCase().includes(query.toLowerCase()) ||
-      book.author.displayName.toLowerCase().includes(query.toLowerCase())
-    );
-
-    const startIndex = page * size;
-    const endIndex = startIndex + size;
-    const paginatedBooks = filteredBooks.slice(startIndex, endIndex);
-
-    return {
-      content: paginatedBooks,
-      totalElements: filteredBooks.length,
-      totalPages: Math.ceil(filteredBooks.length / size),
-      size,
-      number: page
-    };
   }
 }
 

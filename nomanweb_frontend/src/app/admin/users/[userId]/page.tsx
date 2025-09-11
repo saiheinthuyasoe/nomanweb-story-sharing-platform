@@ -109,32 +109,6 @@ export default function AdminUserDetailPage() {
       setUser(userData);
     } catch (error) {
       console.error('Error fetching user details:', error);
-      // Mock data for development
-      setUser({
-        id: userId,
-        username: 'john_doe',
-        displayName: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'USER',
-        status: 'active',
-        createdAt: '2024-01-15T10:30:00Z',
-        updatedAt: '2024-01-20T14:22:00Z',
-        lastLoginAt: '2024-01-21T09:15:00Z',
-        lastLoginIp: '192.168.1.100',
-        emailVerified: true,
-        profileImageUrl: '',
-        bio: 'Love reading and writing stories about adventure and mystery.',
-        coinBalance: 150.50,
-        totalEarnedCoins: 300.75,
-        totalStories: 8,
-        totalFollowers: 245,
-        totalFollowing: 67,
-        totalComments: 124,
-        reportedCount: 1,
-        lastPasswordChange: '2024-01-10T12:00:00Z',
-        lineUserId: 'U1234567890abcdef',
-        googleId: null
-      });
     } finally {
       setLoading(false);
     }
@@ -158,33 +132,6 @@ export default function AdminUserDetailPage() {
       setActivityLogs(logs);
     } catch (error) {
       console.error('Error fetching activity logs:', error);
-      // Mock data
-      setActivityLogs([
-        {
-          id: '1',
-          action: 'LOGIN',
-          description: 'User logged in',
-          timestamp: '2024-01-21T09:15:00Z',
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: '2',
-          action: 'STORY_CREATE',
-          description: 'Created story "The Mystery of the Lost Castle"',
-          timestamp: '2024-01-20T16:30:00Z',
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: '3',
-          action: 'PROFILE_UPDATE',
-          description: 'Updated profile information',
-          timestamp: '2024-01-19T14:22:00Z',
-          ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      ]);
     }
   };
 
@@ -206,18 +153,6 @@ export default function AdminUserDetailPage() {
       setReports(reportsData);
     } catch (error) {
       console.error('Error fetching reports:', error);
-      // Mock data
-      setReports([
-        {
-          id: '1',
-          type: 'story',
-          reason: 'Inappropriate Content',
-          description: 'Story contains violent content not suitable for all audiences',
-          reportedBy: 'user123',
-          reportedAt: '2024-01-18T10:30:00Z',
-          status: 'pending'
-        }
-      ]);
     }
   };
 

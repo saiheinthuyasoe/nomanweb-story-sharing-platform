@@ -168,45 +168,7 @@ export default function CoinManagementPage() {
         const data = await response.json();
         setTransactions(data);
       } else {
-        // Mock data for development
-        setTransactions([
-          {
-            id: '1',
-            user: { id: '1', username: 'john_doe', email: 'john@example.com' },
-            type: 'purchase',
-            amount: 100,
-            status: 'completed',
-            date: '2024-01-20T10:30:00Z',
-            description: 'Coin package purchase',
-            reference: 'TXN001',
-            balanceBefore: 1000,
-            balanceAfter: 1100
-          },
-          {
-            id: '2',
-            user: { id: '2', username: 'jane_smith', email: 'jane@example.com' },
-            type: 'transfer_in',
-            amount: 50,
-            status: 'completed',
-            date: '2024-01-19T15:45:00Z',
-            description: 'Admin transfer',
-            reference: 'TXN002',
-            balanceBefore: 1000,
-            balanceAfter: 1050
-          },
-          {
-            id: '3',
-            user: { id: '3', username: 'bob_wilson', email: 'bob@example.com' },
-            type: 'withdrawal',
-            amount: 25,
-            status: 'pending',
-            date: '2024-01-18T09:15:00Z',
-            description: 'User withdrawal request',
-            reference: 'TXN003',
-            balanceBefore: 1000,
-            balanceAfter: 975
-          }
-        ]);
+        console.error('Failed to fetch transactions');
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -229,12 +191,7 @@ export default function CoinManagementPage() {
         const stats = await response.json();
         setTransactionStats(stats);
       } else {
-        // Mock data
-        setTransactionStats({
-          totalIssued: 50000,
-          totalPurchases: 35000,
-          totalWithdrawals: 8500
-        });
+        console.error('Failed to fetch transaction stats');
       }
     } catch (error) {
       console.error('Error fetching transaction stats:', error);
@@ -257,43 +214,7 @@ export default function CoinManagementPage() {
         const packages = await response.json();
         setCoinPackages(packages);
       } else {
-        // Mock data
-        // Mock data fallback - this should not be reached with real backend
-        setCoinPackages([
-          {
-            id: '1',
-            name: 'Starter Pack',
-            coins: 100, 
-            price: 350,
-            currency: 'THB',
-            description: 'Perfect for new readers',
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: '2',
-            name: 'Premium Pack',
-            coins: 575, // 500 + 75 bonus
-            price: 1400,
-            currency: 'THB',
-            description: 'Best value for regular readers',
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: '3',
-            name: 'Ultimate Pack',
-            coins: 1200, // 1000 + 200 bonus
-            price: 2450,
-            currency: 'THB',
-            description: 'For the most dedicated readers',
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z'
-          }
-        ]);
+        console.error('Failed to fetch coin packages');
       }
     } catch (error) {
       console.error('Error fetching coin packages:', error);
@@ -323,36 +244,6 @@ export default function CoinManagementPage() {
         setGifts(data);
       } else {
         console.error('Failed to fetch gifts');
-        // Mock data for development
-        setGifts([
-          {
-            id: '1',
-            name: 'Heart',
-            description: 'Show your love',
-            iconUrl: '❤️',
-            coinCost: 10,
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: '2',
-            name: 'Star',
-            description: 'You are a star',
-            iconUrl: '⭐',
-            coinCost: 25,
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: '3',
-            name: 'Diamond',
-            description: 'Precious like a diamond',
-            iconUrl: '💎',
-            coinCost: 100,
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z'
-          }
-        ]);
       }
     } catch (error) {
       console.error('Error fetching gifts:', error);
@@ -986,7 +877,7 @@ export default function CoinManagementPage() {
                   name: '',
                   coins: '',
                   price: '',
-                  currency: 'USD',
+                  currency: 'THB',
                   description: '',
                   isActive: true
                 });

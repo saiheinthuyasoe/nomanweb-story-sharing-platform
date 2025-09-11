@@ -30,7 +30,8 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         initializeCategories();
-        initializeSampleData();
+        // Disabled sample data initialization for production
+        // initializeSampleData();
     }
 
     private void initializeCategories() {

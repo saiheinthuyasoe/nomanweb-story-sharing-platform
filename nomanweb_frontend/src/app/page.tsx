@@ -42,9 +42,6 @@ export default function HomePage() {
       } catch (err) {
         console.error("Failed to fetch homepage data:", err);
         setError("Failed to load homepage content");
-        // Fallback to mock data
-        const mockData = await homepageService.getMockHomepageData();
-        setHomepageData(mockData);
       } finally {
         setIsLoading(false);
       }

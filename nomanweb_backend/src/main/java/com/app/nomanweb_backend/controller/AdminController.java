@@ -492,37 +492,8 @@ public class AdminController {
                         User user = userRepository.findById(userId)
                                         .orElseThrow(() -> new RuntimeException("User not found"));
 
-                        // For now, return mock data since we don't have an activity log table
                         // TODO: Implement real activity logging system
                         List<Map<String, Object>> activityLogs = new ArrayList<>();
-
-                        // Mock activity logs
-                        Map<String, Object> loginLog = new HashMap<>();
-                        loginLog.put("id", "1");
-                        loginLog.put("action", "LOGIN");
-                        loginLog.put("description", "User logged in");
-                        loginLog.put("timestamp", LocalDateTime.now().minusHours(2));
-                        loginLog.put("ipAddress", "192.168.1.100");
-                        loginLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                        activityLogs.add(loginLog);
-
-                        Map<String, Object> storyLog = new HashMap<>();
-                        storyLog.put("id", "2");
-                        storyLog.put("action", "STORY_CREATE");
-                        storyLog.put("description", "Created story \"The Mystery of the Lost Castle\"");
-                        storyLog.put("timestamp", LocalDateTime.now().minusDays(1));
-                        storyLog.put("ipAddress", "192.168.1.100");
-                        storyLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                        activityLogs.add(storyLog);
-
-                        Map<String, Object> profileLog = new HashMap<>();
-                        profileLog.put("id", "3");
-                        profileLog.put("action", "PROFILE_UPDATE");
-                        profileLog.put("description", "Updated profile information");
-                        profileLog.put("timestamp", LocalDateTime.now().minusDays(2));
-                        profileLog.put("ipAddress", "192.168.1.100");
-                        profileLog.put("userAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                        activityLogs.add(profileLog);
 
                         log.info("Returning {} activity logs for userId: {}", activityLogs.size(), userId);
                         return ResponseEntity.ok(activityLogs);
@@ -545,20 +516,8 @@ public class AdminController {
                         User user = userRepository.findById(userId)
                                         .orElseThrow(() -> new RuntimeException("User not found"));
 
-                        // For now, return mock data since we don't have a reports table
                         // TODO: Implement real reporting system
                         List<Map<String, Object>> reports = new ArrayList<>();
-
-                        // Mock reports
-                        Map<String, Object> report = new HashMap<>();
-                        report.put("id", "1");
-                        report.put("type", "story");
-                        report.put("reason", "Inappropriate Content");
-                        report.put("description", "Story contains violent content not suitable for all audiences");
-                        report.put("reportedBy", "user123");
-                        report.put("reportedAt", LocalDateTime.now().minusDays(3));
-                        report.put("status", "pending");
-                        reports.add(report);
 
                         log.info("Returning {} reports for userId: {}", reports.size(), userId);
                         return ResponseEntity.ok(reports);
