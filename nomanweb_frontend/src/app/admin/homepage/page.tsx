@@ -10,7 +10,6 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ChartBarIcon,
-  SparklesIcon,
   CheckIcon,
   XMarkIcon,
   ClockIcon,
@@ -23,9 +22,7 @@ import {
   Story,
 } from "../../../services/adminHomepageService";
 import { BookInsight } from "../../../services/bookInsightsService";
-import BookInsightsDashboard from "../../../components/admin/BookInsightsDashboard";
-import BookSuggestionModal from "../../../components/admin/BookSuggestionModal";
-import AutoSuggestPanel from "../../../components/admin/AutoSuggestPanel";
+
 import EditExpirationModal from "../../../components/admin/EditExpirationModal";
 import BulkExpirationModal from "../../../components/admin/BulkExpirationModal";
 import ExpirationAlerts from "../../../components/admin/ExpirationAlerts";
@@ -36,6 +33,17 @@ const SECTION_TYPES = [
   { value: "WEEKLY_FEATURES", label: "Weekly Features" },
   { value: "RECOMMENDED_FOR_YOU", label: "Recommended" },
   { value: "BEST_OF_ALL_TIME", label: "Best of All Time" },
+  { value: "HOMEPAGE_CAROUSEL", label: "Homepage Carousel" },
+  { value: "ADVENTURE", label: "Adventure" },
+  { value: "COMEDY", label: "Comedy" },
+  { value: "DRAMA", label: "Drama" },
+  { value: "FANTASY", label: "Fantasy" },
+  { value: "HORROR", label: "Horror" },
+  { value: "MYSTERY", label: "Mystery" },
+  { value: "ROMANCE", label: "Romance" },
+  { value: "SCIENCE_FICTION", label: "Science Fiction" },
+  { value: "THRILLER", label: "Thriller" },
+  { value: "YOUNG_ADULT", label: "Young Adult" },
 ];
 
 const HomepageManagementPage = () => {
@@ -54,12 +62,10 @@ const HomepageManagementPage = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [sortBy, setSortBy] = useState<string>("displayOrder");
   const [filterActive, setFilterActive] = useState<string>("all");
-  const [showInsightsDashboard, setShowInsightsDashboard] = useState(false);
-  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-  const [currentSectionForSuggestion, setCurrentSectionForSuggestion] =
-    useState<string>("");
+
   const [showEditExpirationModal, setShowEditExpirationModal] = useState(false);
-  const [selectedFeaturedContent, setSelectedFeaturedContent] = useState<FeaturedContent | null>(null);
+  const [selectedFeaturedContent, setSelectedFeaturedContent] =
+    useState<FeaturedContent | null>(null);
   const [showBulkExpirationModal, setShowBulkExpirationModal] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
@@ -111,58 +117,39 @@ const HomepageManagementPage = () => {
 
   // Add story to featured content
   const addToFeatured = async (storyId: string, duration: number) => {
+    console.log("🔄 Adding story to featured content:", {
+      storyId,
+      selectedSection,
+      duration,
+    });
     try {
-      await adminHomepageService.addToFeaturedContent(
+      const result = await adminHomepageService.addToFeaturedContent(
         storyId,
         selectedSection,
         duration
       );
+      console.log("✅ Story added successfully:", result);
       toast.success("Story added to featured content");
       setShowAddModal(false);
       setSearchQuery("");
       setSearchResults([]);
       fetchData();
     } catch (error) {
-      console.error("Error adding story:", error);
-      toast.error("Failed to add story");
-    }
-  };
+      console.error("❌ Error adding story:", error);
 
-  // Handle book selection from suggestion modal
-  const handleBookSelection = async (book: BookInsight) => {
-    try {
-      const duration = currentSectionForSuggestion === 'WEEKLY_FEATURES' ? 7 : 0; // 7 days for weekly, permanent for others
-      await adminHomepageService.addToFeaturedContent(
-        book.id,
-        currentSectionForSuggestion,
-        duration
-      );
-      toast.success(
-        `"${book.title}" added to ${getSectionLabel(
-          currentSectionForSuggestion
-        )}`
-      );
-      setShowSuggestionModal(false);
-      fetchData();
-    } catch (error) {
-      console.error("Error adding book from suggestion:", error);
-      toast.error("Failed to add book");
-    }
-  };
-
-  // Handle auto-suggest book addition
-  const handleAutoSuggestBook = async (book: BookInsight) => {
-    try {
-      const duration = selectedSection === 'WEEKLY_FEATURES' ? 7 : 0; // 7 days for weekly, permanent for others
-      await adminHomepageService.addToFeaturedContent(
-        book.id,
-        selectedSection,
-        duration
-      );
-      fetchData();
-    } catch (error) {
-      console.error("Error adding auto-suggested book:", error);
-      toast.error("Failed to add book");
+      // Check if the error is due to story already being featured
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("already featured") ||
+        errorMessage.includes("Story is already featured in this section")
+      ) {
+        toast.warning(
+          "This story is already added to the selected homepage section!"
+        );
+      } else {
+        toast.error("Failed to add story");
+      }
     }
   };
 
@@ -173,10 +160,6 @@ const HomepageManagementPage = () => {
   };
 
   // Open suggestion modal for specific section
-  const openSuggestionModal = (sectionType: string) => {
-    setCurrentSectionForSuggestion(sectionType);
-    setShowSuggestionModal(true);
-  };
 
   const openEditExpirationModal = (featuredContent: FeaturedContent) => {
     setSelectedFeaturedContent(featuredContent);
@@ -184,15 +167,15 @@ const HomepageManagementPage = () => {
   };
 
   const handleExpirationUpdate = (updatedContent: FeaturedContent) => {
-    setFeaturedContent(prev => 
-      prev.map(item => 
+    setFeaturedContent((prev) =>
+      prev.map((item) =>
         item.id === updatedContent.id ? updatedContent : item
       )
     );
   };
 
   const toggleItemSelection = (itemId: string) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
@@ -204,10 +187,10 @@ const HomepageManagementPage = () => {
   };
 
   const selectAllItems = () => {
-    const weeklyItems = featuredContent.filter(item => 
-      selectedSection === 'WEEKLY_FEATURES'
+    const weeklyItems = featuredContent.filter(
+      (item) => selectedSection === "WEEKLY_FEATURES"
     );
-    setSelectedItems(new Set(weeklyItems.map(item => item.id)));
+    setSelectedItems(new Set(weeklyItems.map((item) => item.id)));
   };
 
   const clearSelection = () => {
@@ -224,45 +207,45 @@ const HomepageManagementPage = () => {
   };
 
   const handleBulkExpirationUpdate = (updatedItems: FeaturedContent[]) => {
-    setFeaturedContent(prev => {
-      const updatedMap = new Map(updatedItems.map(item => [item.id, item]));
-      return prev.map(item => updatedMap.get(item.id) || item);
+    setFeaturedContent((prev) => {
+      const updatedMap = new Map(updatedItems.map((item) => [item.id, item]));
+      return prev.map((item) => updatedMap.get(item.id) || item);
     });
     clearSelection();
   };
 
   const handleQuickExtension = async (itemId: string, days: number) => {
     try {
-      const item = featuredContent.find(f => f.id === itemId);
+      const item = featuredContent.find((f) => f.id === itemId);
       if (!item || !item.endDate) {
-        toast.error('Cannot extend permanent items');
+        toast.error("Cannot extend permanent items");
         return;
       }
 
       const currentEndDate = new Date(item.endDate);
-      const newEndDate = new Date(currentEndDate.getTime() + days * 24 * 60 * 60 * 1000);
-      
-      const updatedItem = await adminHomepageService.updateFeaturedContentExpiration(
-        itemId,
-        {
+      const newEndDate = new Date(
+        currentEndDate.getTime() + days * 24 * 60 * 60 * 1000
+      );
+
+      const updatedItem =
+        await adminHomepageService.updateFeaturedContentExpiration(itemId, {
           startDate: item.startDate,
-          endDate: newEndDate.toISOString()
-        }
+          endDate: newEndDate.toISOString(),
+        });
+
+      setFeaturedContent((prev) =>
+        prev.map((f) => (f.id === itemId ? updatedItem : f))
       );
-      
-      setFeaturedContent(prev => 
-        prev.map(f => f.id === itemId ? updatedItem : f)
-      );
-      
+
       toast.success(`Extended expiration by ${days} days`);
     } catch (error) {
-      console.error('Error extending expiration:', error);
-      toast.error('Failed to extend expiration date');
+      console.error("Error extending expiration:", error);
+      toast.error("Failed to extend expiration date");
     }
   };
 
   const getSelectedFeaturedContent = (): FeaturedContent[] => {
-    return featuredContent.filter(item => selectedItems.has(item.id));
+    return featuredContent.filter((item) => selectedItems.has(item.id));
   };
 
   // Remove from featured content
@@ -452,30 +435,12 @@ const HomepageManagementPage = () => {
       )}
 
       {/* Expiration Alerts */}
-      {selectedSection === 'WEEKLY_FEATURES' && (
+      {selectedSection === "WEEKLY_FEATURES" && (
         <ExpirationAlerts
           featuredContent={featuredContent}
           onExtendExpiration={handleQuickExtension}
           onEditExpiration={openEditExpirationModal}
         />
-      )}
-
-      {/* Book Insights Dashboard Toggle */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowInsightsDashboard(!showInsightsDashboard)}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <ChartBarIcon className="h-4 w-4 mr-2" />
-          {showInsightsDashboard ? "Hide" : "Show"} Book Insights Dashboard
-        </button>
-      </div>
-
-      {/* Book Insights Dashboard */}
-      {showInsightsDashboard && (
-        <div className="mb-8">
-          <BookInsightsDashboard onAddToSection={handleBookSelection} />
-        </div>
       )}
 
       {/* Section Management */}
@@ -504,30 +469,23 @@ const HomepageManagementPage = () => {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => openSuggestionModal(selectedSection)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200"
-                    >
-                      <SparklesIcon className="h-4 w-4 mr-2" />
-                      Pick from Suggestions
-                    </button>
-                    <button
                       onClick={() => setShowAddModal(true)}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                     >
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Manual Search
                     </button>
-                    {selectedSection === 'WEEKLY_FEATURES' && (
+                    {selectedSection === "WEEKLY_FEATURES" && (
                       <button
                         onClick={() => setBulkSelectMode(!bulkSelectMode)}
                         className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md transition-colors duration-200 ${
                           bulkSelectMode
-                            ? 'border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100'
-                            : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                            ? "border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100"
+                            : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                         }`}
                       >
                         <CheckIcon className="h-4 w-4 mr-1" />
-                        {bulkSelectMode ? 'Exit Bulk Mode' : 'Bulk Select'}
+                        {bulkSelectMode ? "Exit Bulk Mode" : "Bulk Select"}
                       </button>
                     )}
                     {selectedItems.size > 0 && (
@@ -568,33 +526,35 @@ const HomepageManagementPage = () => {
                         <EyeIcon className="h-4 w-4" />
                         Toggle Active ({selectedItems.size})
                       </button>
-                      {selectedSection === 'WEEKLY_FEATURES' && (
+                      {selectedSection === "WEEKLY_FEATURES" && (
                         <button
                           onClick={openBulkExpirationModal}
                           className="px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors duration-200 flex items-center gap-1"
                           title={`Update expiration dates for ${selectedItems.size} selected items`}
                         >
                           <ClockIcon className="h-4 w-4" />
-                         Bulk Expiration ({selectedItems.size})
-                       </button>
-                     )}
-                     <button
+                          Bulk Expiration ({selectedItems.size})
+                        </button>
+                      )}
+                      <button
                         onClick={() => {
                           const selectedTitles = Array.from(selectedItems)
                             .map((id) => {
-                              const item = featuredContent.find((f) => f.id === id);
-                              return item ? item.story.title : 'Unknown';
+                              const item = featuredContent.find(
+                                (f) => f.id === id
+                              );
+                              return item ? item.story.title : "Unknown";
                             })
-                            .join(', ');
-                          
+                            .join(", ");
+
                           if (
                             confirm(
                               `Are you sure you want to remove ${selectedItems.size} selected item(s) from featured content?\n\nItems to be removed:\n${selectedTitles}`
                             )
                           ) {
                             Array.from(selectedItems).forEach((id) =>
-                               removeFromFeatured(id)
-                             );
+                              removeFromFeatured(id)
+                            );
                             clearSelection();
                           }
                         }}
@@ -656,6 +616,84 @@ const HomepageManagementPage = () => {
                     </span>
                   )}
                 </div>
+
+                {/* Carousel-specific information */}
+                {selectedSection === "HOMEPAGE_CAROUSEL" && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-medium text-blue-800">
+                        Carousel Display Settings
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-blue-700 space-y-1">
+                      <p>
+                        • Books will appear in a horizontal scrolling carousel
+                        on the homepage
+                      </p>
+                      <p>
+                        • Recommended limit: 8-12 books for optimal performance
+                      </p>
+                      <p>• Order determines left-to-right display sequence</p>
+                      <p>• Only active books will be visible to users</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Genre Display information */}
+                {[
+                  "ADVENTURE",
+                  "COMEDY",
+                  "DRAMA",
+                  "FANTASY",
+                  "HORROR",
+                  "MYSTERY",
+                  "ROMANCE",
+                  "SCIENCE_FICTION",
+                  "THRILLER",
+                  "YOUNG_ADULT",
+                ].includes(selectedSection) && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="font-medium text-green-800">
+                        {
+                          SECTION_TYPES.find((s) => s.value === selectedSection)
+                            ?.label
+                        }{" "}
+                        Genre Settings
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-green-700 space-y-1">
+                      <p>
+                        • Books will appear in the{" "}
+                        {
+                          SECTION_TYPES.find((s) => s.value === selectedSection)
+                            ?.label
+                        }{" "}
+                        section on the homepage
+                      </p>
+                      <p>
+                        • Select books that match the{" "}
+                        {SECTION_TYPES.find(
+                          (s) => s.value === selectedSection
+                        )?.label.toLowerCase()}{" "}
+                        genre
+                      </p>
+                      <p>
+                        • Higher display order = more prominent positioning
+                        within this genre
+                      </p>
+                      <p>
+                        • Helps users discover{" "}
+                        {SECTION_TYPES.find(
+                          (s) => s.value === selectedSection
+                        )?.label.toLowerCase()}{" "}
+                        books easily
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -693,7 +731,7 @@ const HomepageManagementPage = () => {
                         Select All ({filteredAndSortedContent.length} items)
                       </label>
                     </div>
-                   )}
+                  )}
                   {filteredAndSortedContent.map((item) => (
                     <div
                       key={item.id}
@@ -710,7 +748,8 @@ const HomepageManagementPage = () => {
                         )}
                         <img
                           src={
-                            item.story.coverImageUrl || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"
+                            item.story.coverImageUrl ||
+                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"
                           }
                           alt={item.story.title}
                           className="w-12 h-16 object-cover rounded"
@@ -751,12 +790,14 @@ const HomepageManagementPage = () => {
                               Added:{" "}
                               {new Date(item.createdAt).toLocaleDateString()}
                             </span>
-                            {selectedSection === 'WEEKLY_FEATURES' && (
+                            {selectedSection === "WEEKLY_FEATURES" && (
                               <div className="flex items-center space-x-2">
                                 {item.endDate ? (
                                   <span className="text-xs text-orange-600">
                                     Expires:{" "}
-                                    {new Date(item.endDate).toLocaleDateString()}
+                                    {new Date(
+                                      item.endDate
+                                    ).toLocaleDateString()}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-green-600">
@@ -765,7 +806,9 @@ const HomepageManagementPage = () => {
                                 )}
                                 <div className="flex items-center space-x-1">
                                   <button
-                                    onClick={() => openEditExpirationModal(item)}
+                                    onClick={() =>
+                                      openEditExpirationModal(item)
+                                    }
                                     className="text-xs text-blue-600 hover:text-blue-800 underline"
                                     title="Edit expiration date"
                                   >
@@ -773,23 +816,31 @@ const HomepageManagementPage = () => {
                                   </button>
                                   {item.endDate && (
                                     <>
-                                      <span className="text-xs text-gray-400">|</span>
+                                      <span className="text-xs text-gray-400">
+                                        |
+                                      </span>
                                       <button
-                                        onClick={() => handleQuickExtension(item.id, 7)}
+                                        onClick={() =>
+                                          handleQuickExtension(item.id, 7)
+                                        }
                                         className="text-xs text-green-600 hover:text-green-800 px-1 py-0.5 rounded bg-green-50 hover:bg-green-100"
                                         title="Extend by 7 days"
                                       >
                                         +7d
                                       </button>
                                       <button
-                                        onClick={() => handleQuickExtension(item.id, 14)}
+                                        onClick={() =>
+                                          handleQuickExtension(item.id, 14)
+                                        }
                                         className="text-xs text-green-600 hover:text-green-800 px-1 py-0.5 rounded bg-green-50 hover:bg-green-100"
                                         title="Extend by 14 days"
                                       >
                                         +14d
                                       </button>
                                       <button
-                                        onClick={() => handleQuickExtension(item.id, 30)}
+                                        onClick={() =>
+                                          handleQuickExtension(item.id, 30)
+                                        }
                                         className="text-xs text-green-600 hover:text-green-800 px-1 py-0.5 rounded bg-green-50 hover:bg-green-100"
                                         title="Extend by 30 days"
                                       >
@@ -805,20 +856,51 @@ const HomepageManagementPage = () => {
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => updateDisplayOrder(item.id, "up")}
-                          className="p-1 text-gray-400 hover:text-gray-600"
-                          title="Move up"
-                        >
-                          <ArrowUpIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => updateDisplayOrder(item.id, "down")}
-                          className="p-1 text-gray-400 hover:text-gray-600"
-                          title="Move down"
-                        >
-                          <ArrowDownIcon className="h-4 w-4" />
-                        </button>
+                        {/* Carousel-specific controls */}
+                        {selectedSection === "HOMEPAGE_CAROUSEL" && (
+                          <div className="flex items-center space-x-1 mr-2">
+                            <span className="text-xs text-gray-500">
+                              Carousel:
+                            </span>
+                            <button
+                              onClick={() => updateDisplayOrder(item.id, "up")}
+                              className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded"
+                              title="Move left in carousel"
+                            >
+                              <ArrowUpIcon className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateDisplayOrder(item.id, "down")
+                              }
+                              className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded"
+                              title="Move right in carousel"
+                            >
+                              <ArrowDownIcon className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Standard ordering controls */}
+                        {selectedSection !== "HOMEPAGE_CAROUSEL" && (
+                          <>
+                            <button
+                              onClick={() => updateDisplayOrder(item.id, "up")}
+                              className="p-1 text-gray-400 hover:text-gray-600"
+                              title="Move up"
+                            >
+                              <ArrowUpIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateDisplayOrder(item.id, "down")
+                              }
+                              className="p-1 text-gray-400 hover:text-gray-600"
+                              title="Move down"
+                            >
+                              <ArrowDownIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() =>
                             toggleActiveStatus(item.id, item.isActive)
@@ -838,12 +920,16 @@ const HomepageManagementPage = () => {
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm(`Remove "${item.story.title}" from featured content?`)) {
+                            if (
+                              confirm(
+                                `Remove "${item.story.title}" from featured content?`
+                              )
+                            ) {
                               removeFromFeatured(item.id);
                             }
                           }}
                           className={`p-1 transition-colors duration-200 ${
-                            selectedItems.includes(item.id)
+                            selectedItems.has(item.id)
                               ? "text-red-700 bg-red-50 hover:bg-red-100"
                               : "text-red-600 hover:text-red-700 hover:bg-red-50"
                           } rounded`}
@@ -859,27 +945,7 @@ const HomepageManagementPage = () => {
             </div>
           </div>
         </div>
-
-        {/* Auto-Suggest Panel */}
-        <div className="lg:col-span-1">
-          <AutoSuggestPanel
-            sectionType={selectedSection}
-            sectionTitle={getSectionLabel(selectedSection)}
-            onAddBook={handleAutoSuggestBook}
-            excludeBookIds={featuredContent.map((item) => item.story.id)}
-            className="sticky top-6"
-          />
-        </div>
       </div>
-
-      {/* Book Suggestion Modal */}
-      <BookSuggestionModal
-        isOpen={showSuggestionModal}
-        onClose={() => setShowSuggestionModal(false)}
-        onSelectBook={handleBookSelection}
-        sectionType={currentSectionForSuggestion}
-        sectionTitle={getSectionLabel(currentSectionForSuggestion)}
-      />
 
       {/* Manual Add Story Modal */}
       {showAddModal && (
@@ -922,7 +988,10 @@ const HomepageManagementPage = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <img
-                          src={story.coverImageUrl || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=40&h=60&fit=crop"}
+                          src={
+                            story.coverImageUrl ||
+                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=40&h=60&fit=crop"
+                          }
                           alt={story.title}
                           className="w-8 h-12 object-cover rounded"
                         />
@@ -940,7 +1009,10 @@ const HomepageManagementPage = () => {
                           <select
                             onChange={(e) => {
                               if (e.target.value) {
-                                addToFeatured(story.id, parseInt(e.target.value));
+                                addToFeatured(
+                                  story.id,
+                                  parseInt(e.target.value)
+                                );
                               }
                             }}
                             className="text-xs px-2 py-1 border border-gray-300 rounded"
@@ -957,7 +1029,7 @@ const HomepageManagementPage = () => {
                             onClick={() => addToFeatured(story.id, 0)} // 0 means permanent (no expiration)
                             className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                           >
-                            Add Permanently
+                            Add to Home Page Section
                           </button>
                         )}
                       </div>

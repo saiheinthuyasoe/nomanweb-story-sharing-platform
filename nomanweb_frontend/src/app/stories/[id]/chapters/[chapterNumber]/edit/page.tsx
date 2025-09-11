@@ -26,7 +26,7 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { CollaborationResponse } from "@/lib/api/collaborations";
+
 import Image from "next/image";
 
 export default function EditChapterPage() {

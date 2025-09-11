@@ -31,6 +31,11 @@ const adminNavItems = [
     icon: StarIcon,
   },
   {
+    name: "Book Insights",
+    href: "/admin/insights",
+    icon: ChartBarIcon,
+  },
+  {
     name: "Content Moderation",
     href: "/admin/moderation",
     icon: ExclamationTriangleIcon,

@@ -16,8 +16,7 @@ public interface EmailService {
 
     void sendEmailChangeVerificationEmail(User user, String newEmail, String verificationToken);
 
-    void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
-            String role, String invitationUrl, String customMessage);
+
 
     void sendSocialNotificationEmail(String email, String username, String title, String message);
 

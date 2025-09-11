@@ -80,8 +80,8 @@ export default function LoginPage() {
 
       // Add a small delay to ensure state is updated before navigation
       setTimeout(() => {
-        console.log("🚀 Navigating to dashboard after Google OAuth");
-        router.push("/dashboard");
+        console.log("🚀 Navigating to stories after Google OAuth");
+        router.push("/stories");
       }, 100);
     } else {
       console.error("❌ Google OAuth response missing required fields:", {
@@ -108,8 +108,8 @@ export default function LoginPage() {
 
       // Add a small delay to ensure state is updated before navigation
       setTimeout(() => {
-        console.log("🚀 Navigating to dashboard after LINE OAuth");
-        router.push("/dashboard");
+        console.log("🚀 Navigating to stories after LINE OAuth");
+        router.push("/stories");
       }, 100);
     } else {
       console.error("❌ LINE OAuth response missing required fields:", {

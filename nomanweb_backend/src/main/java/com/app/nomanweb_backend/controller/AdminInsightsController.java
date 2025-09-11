@@ -1,6 +1,8 @@
 package com.app.nomanweb_backend.controller;
 
+import com.app.nomanweb_backend.entity.Category;
 import com.app.nomanweb_backend.entity.Story;
+import com.app.nomanweb_backend.repository.CategoryRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class AdminInsightsController {
 
     private final StoryRepository storyRepository;
+    private final CategoryRepository categoryRepository;
 
     @GetMapping("/top-rated")
     public ResponseEntity<List<Map<String, Object>>> getTopRatedBooks(
@@ -101,6 +104,42 @@ public class AdminInsightsController {
         }
     }
 
+    @GetMapping("/by-genre/{genreId}")
+    public ResponseEntity<List<Map<String, Object>>> getBooksByGenre(
+            @PathVariable String genreId,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            log.info("Getting books by genre: {} with limit: {}", genreId, limit);
+            
+            // Map genre names to category names/slugs
+            String categoryName = mapGenreToCategory(genreId);
+            
+            // Find category by name or slug
+            Category category = categoryRepository.findByName(categoryName)
+                .or(() -> categoryRepository.findBySlug(genreId))
+                .orElse(null);
+            
+            if (category == null) {
+                log.warn("Category not found for genre: {}", genreId);
+                return ResponseEntity.ok(List.of());
+            }
+            
+            Pageable pageable = PageRequest.of(0, limit, Sort.by("totalViews").descending());
+            List<Story> stories = storyRepository.findByCategoryIdAndPublishStatus(
+                category.getId(), Story.PublishStatus.PUBLISHED, pageable).getContent();
+            
+            List<Map<String, Object>> insights = stories.stream()
+                .map(this::convertToBookInsight)
+                .collect(Collectors.toList());
+            
+            log.info("Returning {} books for genre: {}", insights.size(), genreId);
+            return ResponseEntity.ok(insights);
+        } catch (Exception e) {
+            log.error("Error getting books by genre: {}", genreId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/suggestions")
     public ResponseEntity<List<Map<String, Object>>> getSuggestions(
             @RequestParam String sectionType,
@@ -115,13 +154,24 @@ public class AdminInsightsController {
             
             switch (sectionType.toUpperCase()) {
                 case "TOP_RATED":
+                case "BEST_RATING":
                     suggestions = getTopRatedBooks(limit).getBody();
                     break;
                 case "MOST_READ_WEEKLY":
+                case "WEEKLY_FEATURES":
                     suggestions = getMostReadWeekly(limit).getBody();
                     break;
                 case "NEW_RELEASES":
                     suggestions = getNewReleases(limit).getBody();
+                    break;
+                case "RECOMMENDED_FOR_YOU":
+                case "RECOMMENDED":
+                    // Use top rated as fallback for recommended
+                    suggestions = getTopRatedBooks(limit).getBody();
+                    break;
+                case "BEST_OF_ALL_TIME":
+                    // Use top rated for best of all time
+                    suggestions = getTopRatedBooks(limit).getBody();
                     break;
                 default:
                     // Default to new releases
@@ -153,22 +203,80 @@ public class AdminInsightsController {
         }
     }
 
+    private String mapGenreToCategory(String genreId) {
+        // Map frontend genre IDs to backend category names
+        switch (genreId.toLowerCase()) {
+            case "fantasy":
+                return "Fantasy";
+            case "romance":
+                return "Romance";
+            case "mystery":
+                return "Mystery";
+            case "sci-fi":
+            case "science-fiction":
+                return "Science Fiction";
+            case "adventure":
+                return "Adventure";
+            case "thriller":
+                return "Thriller";
+            case "horror":
+                return "Horror";
+            case "comedy":
+                return "Comedy";
+            case "drama":
+                return "Drama";
+            case "young-adult":
+                return "Young Adult";
+            default:
+                return genreId; // Fallback to original genre ID
+        }
+    }
+
     private Map<String, Object> convertToBookInsight(Story story) {
         Map<String, Object> insight = new HashMap<>();
         insight.put("id", story.getId().toString());
         insight.put("title", story.getTitle());
-        insight.put("author", story.getAuthor() != null ? story.getAuthor().getDisplayName() : "Unknown");
-        insight.put("authorId", story.getAuthor() != null ? story.getAuthor().getId().toString() : null);
-        insight.put("description", story.getDescription());
+        
+        // Create author object with displayName and username
+        Map<String, String> author = new HashMap<>();
+        author.put("displayName", story.getAuthor() != null ? story.getAuthor().getDisplayName() : "Unknown");
+        author.put("username", story.getAuthor() != null ? story.getAuthor().getUsername() : "unknown");
+        insight.put("author", author);
+        
         insight.put("coverImageUrl", story.getCoverImageUrl());
-        insight.put("averageRating", 0.0); // TODO: Calculate average rating from reviews
-        insight.put("viewCount", story.getTotalViews() != null ? story.getTotalViews() : 0);
-        insight.put("likeCount", story.getTotalLikes() != null ? story.getTotalLikes() : 0);
-        insight.put("createdAt", story.getCreatedAt());
-        insight.put("updatedAt", story.getUpdatedAt());
-        insight.put("category", story.getCategory() != null ? story.getCategory().getName() : null);
-        insight.put("status", story.getBookStatus() != null ? story.getBookStatus().toString() : "DRAFT");
+        
+        // Create category object with id and name
+        if (story.getCategory() != null) {
+            Map<String, String> category = new HashMap<>();
+            category.put("id", story.getCategory().getSlug());
+            category.put("name", story.getCategory().getName());
+            insight.put("category", category);
+        }
+        
+        Long totalViews = story.getTotalViews() != null ? story.getTotalViews() : 0L;
+        Long totalLikes = story.getTotalLikes() != null ? story.getTotalLikes() : 0L;
+        
+        insight.put("totalViews", totalViews);
+        insight.put("totalLikes", totalLikes);
+        
+        // Calculate rating based on likes-to-views ratio (0.0 to 5.0 scale)
+        double averageRating = 0.0;
+        if (totalViews > 0 && totalLikes > 0) {
+            // Convert likes/views ratio to 5-star scale
+            double ratio = (double) totalLikes / totalViews;
+            // Scale the ratio to 5-star system (assuming max 20% like rate = 5 stars)
+            averageRating = Math.min(5.0, ratio * 25.0);
+            // Round to 1 decimal place
+            averageRating = Math.round(averageRating * 10.0) / 10.0;
+        }
+        insight.put("averageRating", averageRating);
+        
         insight.put("chapterCount", story.getTotalChapters() != null ? story.getTotalChapters() : 0);
+        insight.put("publishedAt", story.getPublishedAt() != null ? story.getPublishedAt().toString() : story.getCreatedAt().toString());
+        insight.put("weeklyViews", 0); // TODO: Calculate weekly views
+        insight.put("weeklyLikes", 0); // TODO: Calculate weekly likes
+        insight.put("trendingScore", 0); // TODO: Calculate trending score
+        
         return insight;
     }
 }

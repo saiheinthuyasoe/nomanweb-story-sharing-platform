@@ -278,7 +278,7 @@ public class ReadingProgressController {
                         // Delete all reading progress for this user and story
                         List<ReadingProgress> progressList = readingProgressRepository
                                         .findByUserIdAndStoryIdOrderByLastReadAtDesc(userId, storyId);
-                        
+
                         int deletedCount = progressList.size();
                         readingProgressRepository.deleteAll(progressList);
 

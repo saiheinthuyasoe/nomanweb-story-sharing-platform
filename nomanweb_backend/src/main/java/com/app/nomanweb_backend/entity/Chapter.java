@@ -123,10 +123,7 @@ public class Chapter {
     @Builder.Default
     private List<GiftTransaction> giftTransactions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private List<Collaboration> collaborations = new ArrayList<>();
+
 
     // Enums
     public enum Status {

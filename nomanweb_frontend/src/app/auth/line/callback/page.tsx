@@ -137,8 +137,8 @@ export default function LineCallbackPage() {
           
           // Add a small delay to ensure state is updated before navigation
           setTimeout(() => {
-            console.log('🚀 Navigating to dashboard after LINE callback');
-            router.push('/dashboard');
+            console.log('🚀 Navigating to stories after LINE callback');
+            router.push('/stories');
           }, 100);
         }
         

@@ -50,7 +50,6 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(authz -> authz
-                        // WebSocket endpoints for real-time collaboration
                         .requestMatchers("/ws/**").permitAll()
 
                         // Health endpoints

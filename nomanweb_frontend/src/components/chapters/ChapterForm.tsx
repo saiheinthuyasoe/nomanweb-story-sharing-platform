@@ -187,7 +187,7 @@ export function ChapterForm({
         shouldValidate: true,
       });
 
-      // Real-time collaboration: Send content update to other collaborators
+      // Send content update
       if (chapterId && newContent) {
         const previousContent = previousContentRef.current;
 

@@ -199,55 +199,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    @Override
-    public void sendCollaborationInvitationEmail(User invitee, User inviter, String chapterTitle, String storyTitle,
-            String role, String invitationUrl, String customMessage) {
-        try {
-            log.info("Starting to send collaboration invitation email to: {}", invitee.getEmail());
 
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(invitee.getEmail());
-            message.setFrom(fromEmail);
-            message.setSubject("Nomanweb - Collaboration Invitation - " + chapterTitle);
-
-            String emailBody = String.format(
-                    "Hello %s,\n\n" +
-                            "%s has invited you to collaborate on the chapter \"%s\" from the story \"%s\".\n\n" +
-                            "Role: %s\n\n" +
-                            "%s\n\n" +
-                            "Click here to accept the invitation: %s\n\n" +
-                            "This invitation will expire in 7 days.\n\n" +
-                            "Best regards,\n" +
-                            "The Nomanweb Team",
-                    invitee.getDisplayName() != null ? invitee.getDisplayName() : invitee.getUsername(),
-                    inviter != null ? inviter.getDisplayName() : "Someone",
-                    chapterTitle,
-                    storyTitle,
-                    role,
-                    customMessage != null && !customMessage.trim().isEmpty()
-                            ? "Message from inviter: " + customMessage + "\n\n"
-                            : "",
-                    invitationUrl);
-
-            message.setText(emailBody);
-
-            log.info("Email message prepared:");
-            log.info("  - To: {}", invitee.getEmail());
-            log.info("  - From: {}", fromEmail);
-            log.info("  - Subject: {}", message.getSubject());
-            log.info("  - Body length: {} characters", emailBody.length());
-
-            mailSender.send(message);
-
-            log.info("Collaboration invitation email sent successfully to: {} for chapter: {}", invitee.getEmail(),
-                    chapterTitle);
-        } catch (Exception e) {
-            log.error("Failed to send collaboration invitation email to: {} for chapter: {}", invitee.getEmail(),
-                    chapterTitle, e);
-            // Re-throw the exception so the calling code can handle it
-            throw new RuntimeException("Failed to send collaboration invitation email", e);
-        }
-    }
 
     @Override
     public void sendSocialNotificationEmail(String email, String username, String title, String message) {

@@ -60,7 +60,7 @@ export default function RealtimeContentPlugin({
     };
   }, [editor]);
 
-  // Handle content updates from real-time collaboration
+  // Handle content updates
   const handleContentUpdate = (content: string) => {
     updateCountRef.current += 1;
     console.log(`RealtimeContentPlugin: handleContentUpdate called (update #${updateCountRef.current}):`, {
@@ -207,7 +207,7 @@ export default function RealtimeContentPlugin({
         <div className="absolute top-2 right-2">
           <button
             onClick={() => {
-              const testContent = `<p class="editor-paragraph" dir="ltr"><span style="white-space: pre-wrap;">Test content from ${new Date().toLocaleTimeString()}</span></p><p class="editor-paragraph" dir="ltr"><span style="white-space: pre-wrap;">This is a test update to verify real-time collaboration is working.</span></p>`;
+              const testContent = `<p class="editor-paragraph" dir="ltr"><span style="white-space: pre-wrap;">Test content from ${new Date().toLocaleTimeString()}</span></p><p class="editor-paragraph" dir="ltr"><span style="white-space: pre-wrap;">This is a test update to verify real-time updates are working.</span></p>`;
               console.log('Manual test: Applying content update:', testContent);
               handleContentUpdate(testContent);
             }}
@@ -219,4 +219,4 @@ export default function RealtimeContentPlugin({
       )}
     </>
   );
-} 
+}

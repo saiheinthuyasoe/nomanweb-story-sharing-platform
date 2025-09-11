@@ -36,8 +36,6 @@ interface DashboardStats {
   recentActivity: number;
 }
 
-
-
 interface PagedResponse<T> {
   content: T[];
   totalElements: number;
@@ -47,7 +45,9 @@ interface PagedResponse<T> {
 }
 
 class AdminHomepageService {
-  private baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api$/, '');
+  private baseUrl = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+  ).replace(/\/api$/, "");
 
   private getAuthHeaders() {
     const token = localStorage.getItem("adminToken");
@@ -82,6 +82,61 @@ class AdminHomepageService {
     }
   }
 
+  // Check if a book is already in a specific section
+  async isBookInSection(bookId: string, sectionType: string): Promise<boolean> {
+    try {
+      const featuredContent = await this.getFeaturedContent(
+        sectionType,
+        0,
+        1000
+      ); // Get all items
+      return featuredContent.content.some((item) => item.story.id === bookId);
+    } catch (error) {
+      console.error("Error checking if book is in section:", error);
+      return false;
+    }
+  }
+
+  // Get all sections where a book is featured
+  async getBookSections(bookId: string): Promise<string[]> {
+    const sections = [
+      "FEATURED_STORIES",
+      "NEW_RELEASES",
+      "RECOMMENDED_FOR_YOU",
+      "WEEKLY_FEATURES",
+      "BEST_OF_ALL_TIME",
+      "BEST_RATING",
+      "TRENDING_NOW",
+      "EDITOR_CHOICE",
+      "HOMEPAGE_CAROUSEL",
+      "ADVENTURE",
+      "COMEDY",
+      "DRAMA",
+      "FANTASY",
+      "HORROR",
+      "MYSTERY",
+      "ROMANCE",
+      "SCIENCE_FICTION",
+      "THRILLER",
+      "YOUNG_ADULT",
+    ];
+
+    const bookSections: string[] = [];
+
+    for (const section of sections) {
+      try {
+        const isInSection = await this.isBookInSection(bookId, section);
+        if (isInSection) {
+          bookSections.push(section);
+        }
+      } catch (error) {
+        console.error(`Error checking section ${section}:`, error);
+      }
+    }
+
+    return bookSections;
+  }
+
   // Get featured content statistics
   async getFeaturedContentStats(): Promise<FeaturedContentStats> {
     try {
@@ -110,30 +165,54 @@ class AdminHomepageService {
     duration: number
   ): Promise<FeaturedContent> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/api/admin/featured-content/${sectionType}/add/${storyId}`,
-        {
-          method: "POST",
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify({
-            duration,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Validate inputs to prevent URL construction issues
+      if (!sectionType || !storyId) {
+        throw new Error("Section type and story ID are required");
       }
 
-      return await response.json();
+      const url = `${
+        this.baseUrl
+      }/api/admin/featured-content/${encodeURIComponent(
+        sectionType
+      )}/add/${encodeURIComponent(storyId)}`;
+      const payload = { duration };
+
+      console.log("🌐 API Call:", {
+        url,
+        payload,
+        headers: this.getAuthHeaders(),
+      });
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      console.log("📡 Response status:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Response error:", errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ API Success:", result);
+      return result;
     } catch (error) {
-      console.error("Error adding to featured content:", error);
+      console.error("❌ Error adding to featured content:", error);
       throw error;
     }
   }
 
   // Remove from featured content
-  async removeFromFeaturedContent(featuredId: string): Promise<void> {
+  async removeFromFeaturedContent(
+    featuredId: string,
+    storyId?: string
+  ): Promise<void> {
     try {
       const response = await fetch(
         `${this.baseUrl}/api/admin/featured-content/${featuredId}`,
@@ -146,6 +225,8 @@ class AdminHomepageService {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      // Cache invalidation will be handled by the component
     } catch (error) {
       console.error("Error removing from featured content:", error);
       throw error;
@@ -253,7 +334,7 @@ class AdminHomepageService {
   ): Promise<PagedResponse<Story>> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/api/stories/search?q=${encodeURIComponent(
+        `${this.baseUrl}/api/stories/search?query=${encodeURIComponent(
           query
         )}&page=${page}&size=${size}`,
         {
@@ -292,9 +373,13 @@ class AdminHomepageService {
       throw error;
     }
   }
-
-
 }
 
 export const adminHomepageService = new AdminHomepageService();
-export type { FeaturedContent, FeaturedContentStats, DashboardStats, Story, PagedResponse };
+export type {
+  FeaturedContent,
+  FeaturedContentStats,
+  DashboardStats,
+  Story,
+  PagedResponse,
+};

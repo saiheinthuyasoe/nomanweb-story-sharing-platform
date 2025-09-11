@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       Cookies.set('refreshToken', response.refreshToken, { expires: 7, path: '/', secure: false, sameSite: 'strict' });
       setUser(response.user);
       toast.success('Login successful!');
-      router.push('/dashboard');
+      router.push('/stories');
     } catch (error: any) {
       handleApiError(error, 'Login failed');
       throw error;
@@ -201,4 +201,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

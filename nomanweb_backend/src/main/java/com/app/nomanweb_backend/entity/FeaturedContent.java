@@ -74,7 +74,19 @@ public class FeaturedContent {
         BEST_OF_ALL_TIME, // All-time popular stories
         BEST_RATING, // Highest rated stories
         TRENDING_NOW, // Currently trending
-        EDITOR_CHOICE // Editor's picks
+        EDITOR_CHOICE, // Editor's picks
+        HOMEPAGE_CAROUSEL, // Homepage carousel display
+        // Genre-specific sections
+        ADVENTURE, // Adventure genre books
+        COMEDY, // Comedy genre books
+        DRAMA, // Drama genre books
+        FANTASY, // Fantasy genre books
+        HORROR, // Horror genre books
+        MYSTERY, // Mystery genre books
+        ROMANCE, // Romance genre books
+        SCIENCE_FICTION, // Science Fiction genre books
+        THRILLER, // Thriller genre books
+        YOUNG_ADULT // Young Adult genre books
     }
 
     // Helper methods

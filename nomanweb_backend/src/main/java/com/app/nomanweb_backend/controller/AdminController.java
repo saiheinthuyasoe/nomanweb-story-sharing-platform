@@ -895,13 +895,18 @@ public class AdminController {
 
                         FeaturedContent.SectionType section = FeaturedContent.SectionType
                                         .valueOf(sectionType.toUpperCase());
-                        
+
                         // Get duration from request body (0 means permanent)
                         Integer duration = 0;
                         if (requestBody != null && requestBody.containsKey("duration")) {
-                                duration = (Integer) requestBody.get("duration");
+                                Object durationObj = requestBody.get("duration");
+                                if (durationObj instanceof Number) {
+                                        duration = ((Number) durationObj).intValue();
+                                } else if (durationObj instanceof String) {
+                                        duration = Integer.parseInt((String) durationObj);
+                                }
                         }
-                        
+
                         FeaturedContent featuredContent = featuredContentService.addToFeaturedSection(storyId, section,
                                         admin, duration);
                         return ResponseEntity.ok(featuredContent);

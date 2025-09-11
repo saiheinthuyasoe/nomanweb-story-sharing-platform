@@ -136,6 +136,19 @@ const AutoSuggestPanel: React.FC<AutoSuggestPanelProps> = ({
         return 'Top-rated books from readers';
       case 'new_releases':
         return 'Recently published books';
+      case 'homepage_carousel':
+        return 'Popular books perfect for carousel display';
+      case 'adventure':
+      case 'comedy':
+      case 'drama':
+      case 'fantasy':
+      case 'horror':
+      case 'mystery':
+      case 'romance':
+      case 'science_fiction':
+      case 'thriller':
+      case 'young_adult':
+        return `Books perfect for ${sectionTitle.toLowerCase()} genre section`;
       default:
         return 'Recommended books for this section';
     }
@@ -149,6 +162,19 @@ const AutoSuggestPanel: React.FC<AutoSuggestPanelProps> = ({
         return 'rating';
       case 'new_releases':
         return 'total reads';
+      case 'homepage_carousel':
+        return 'engagement';
+      case 'adventure':
+      case 'comedy':
+      case 'drama':
+      case 'fantasy':
+      case 'horror':
+      case 'mystery':
+      case 'romance':
+      case 'science_fiction':
+      case 'thriller':
+      case 'young_adult':
+        return 'genre rating';
       default:
         return 'total reads';
     }
@@ -162,6 +188,19 @@ const AutoSuggestPanel: React.FC<AutoSuggestPanelProps> = ({
         return (book.averageRating || 0).toFixed(1);
       case 'new_releases':
         return formatNumber(book.totalViews);
+      case 'homepage_carousel':
+        return formatNumber(book.weeklyViews + book.totalLikes);
+      case 'adventure':
+      case 'comedy':
+      case 'drama':
+      case 'fantasy':
+      case 'horror':
+      case 'mystery':
+      case 'romance':
+      case 'science_fiction':
+      case 'thriller':
+      case 'young_adult':
+        return (book.averageRating || 0).toFixed(1);
       default:
         return formatNumber(book.totalViews);
     }

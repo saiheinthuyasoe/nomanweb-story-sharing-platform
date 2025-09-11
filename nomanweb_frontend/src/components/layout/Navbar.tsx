@@ -24,7 +24,7 @@ import {
   Users,
   LogIn,
 } from "lucide-react";
-import { ActiveCollaborators } from "@/components/collaboration/ActiveCollaborators";
+
 import { useUnreadCount } from "@/hooks/useNotifications";
 
 export default function Navbar() {
@@ -247,7 +247,7 @@ export default function Navbar() {
                     Collaborating
                   </span>
                   {/* Note: We would need the actual chapter ID here for real functionality */}
-                  {/* <ActiveCollaborators chapterId={actualChapterId} /> */}
+  
                 </div>
               )}
             </div>

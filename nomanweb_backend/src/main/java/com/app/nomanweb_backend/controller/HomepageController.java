@@ -124,6 +124,161 @@ public class HomepageController {
         }
     }
 
+    @GetMapping("/carousel")
+    public ResponseEntity<Page<Story>> getCarouselStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.HOMEPAGE_CAROUSEL, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting carousel stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Genre-specific endpoints
+    @GetMapping("/adventure")
+    public ResponseEntity<Page<Story>> getAdventureStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.ADVENTURE, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting adventure stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/comedy")
+    public ResponseEntity<Page<Story>> getComedyStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.COMEDY, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting comedy stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/drama")
+    public ResponseEntity<Page<Story>> getDramaStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.DRAMA, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting drama stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/fantasy")
+    public ResponseEntity<Page<Story>> getFantasyStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.FANTASY, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting fantasy stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/horror")
+    public ResponseEntity<Page<Story>> getHorrorStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.HORROR, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting horror stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/mystery")
+    public ResponseEntity<Page<Story>> getMysteryStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.MYSTERY, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting mystery stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/romance")
+    public ResponseEntity<Page<Story>> getRomanceStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.ROMANCE, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting romance stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/science-fiction")
+    public ResponseEntity<Page<Story>> getScienceFictionStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.SCIENCE_FICTION, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting science fiction stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/thriller")
+    public ResponseEntity<Page<Story>> getThrillerStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.THRILLER, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting thriller stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/young-adult")
+    public ResponseEntity<Page<Story>> getYoungAdultStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        try {
+            Page<Story> stories = featuredContentService.getStoriesForSection(
+                    FeaturedContent.SectionType.YOUNG_ADULT, page, size);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            log.error("Error getting young adult stories", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/all-sections")
     public ResponseEntity<Map<String, Page<Story>>> getAllHomepageSections(
             @RequestParam(defaultValue = "0") int page,
@@ -142,7 +297,34 @@ public class HomepageController {
                     featuredContentService.getStoriesForSection(FeaturedContent.SectionType.BEST_OF_ALL_TIME, page,
                             size));
             sections.put("recommended",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.RECOMMENDED_FOR_YOU, page, size));
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.RECOMMENDED_FOR_YOU, page,
+                            size));
+            sections.put("homepageCarousel",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.HOMEPAGE_CAROUSEL, page,
+                            size));
+
+            // Genre sections
+            sections.put("adventure",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.ADVENTURE, page, size));
+            sections.put("comedy",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.COMEDY, page, size));
+            sections.put("drama",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.DRAMA, page, size));
+            sections.put("fantasy",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.FANTASY, page, size));
+            sections.put("horror",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.HORROR, page, size));
+            sections.put("mystery",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.MYSTERY, page, size));
+            sections.put("romance",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.ROMANCE, page, size));
+            sections.put("scienceFiction",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.SCIENCE_FICTION, page,
+                            size));
+            sections.put("thriller",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.THRILLER, page, size));
+            sections.put("youngAdult",
+                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.YOUNG_ADULT, page, size));
 
             return ResponseEntity.ok(sections);
         } catch (Exception e) {

@@ -50,12 +50,19 @@ class BookInsightsService {
   private getAuthHeaders() {
     const token = localStorage.getItem("adminToken");
     if (!token) {
-      throw new Error('Admin authentication required. Please log in.');
+      console.warn('No admin token found, API requests may fail');
     }
     return {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token || ''}`,
       "Content-Type": "application/json",
     };
+  }
+
+  private handleAuthError(error: any): void {
+    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+      console.warn('Authentication failed - token may be expired or invalid');
+      // Could redirect to login page or show auth modal here
+    }
   }
 
   // Get top-rated books (highest average rating)
@@ -155,12 +162,20 @@ class BookInsightsService {
         }
       );
 
+      if (response.status === 401) {
+        console.warn(`Authentication failed for genre ${genreId} - using mock data`);
+        this.handleAuthError(new Error('401 Unauthorized'));
+        return this.getMockBooksByGenre(genreId, limit);
+      }
+
       if (!response.ok) {
+        console.warn(`API request failed for genre ${genreId} with status ${response.status} - using mock data`);
         return this.getMockBooksByGenre(genreId, limit);
       }
 
       return await response.json();
     } catch (error) {
+      this.handleAuthError(error);
       console.error("Error fetching books by genre:", error);
       return this.getMockBooksByGenre(genreId, limit);
     }
@@ -184,7 +199,13 @@ class BookInsightsService {
           fantasy: await this.getBooksByGenre("fantasy", 5),
           romance: await this.getBooksByGenre("romance", 5),
           mystery: await this.getBooksByGenre("mystery", 5),
-          scifi: await this.getBooksByGenre("sci-fi", 5)
+          "sci-fi": await this.getBooksByGenre("sci-fi", 5),
+          adventure: await this.getBooksByGenre("adventure", 5),
+          thriller: await this.getBooksByGenre("thriller", 5),
+          horror: await this.getBooksByGenre("horror", 5),
+          comedy: await this.getBooksByGenre("comedy", 5),
+          drama: await this.getBooksByGenre("drama", 5),
+          "young-adult": await this.getBooksByGenre("young-adult", 5)
         }
       };
     } catch (error) {

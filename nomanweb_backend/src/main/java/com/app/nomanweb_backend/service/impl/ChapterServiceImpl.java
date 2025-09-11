@@ -24,7 +24,7 @@ import com.app.nomanweb_backend.repository.LibraryRepository;
 import com.app.nomanweb_backend.repository.ReadingProgressRepository;
 
 import com.app.nomanweb_backend.service.ChapterService;
-import com.app.nomanweb_backend.service.CollaborationService;
+
 import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.MonetizationService;
@@ -66,7 +66,7 @@ public class ChapterServiceImpl implements ChapterService {
     private final LibraryRepository libraryRepository;
     private final ReadingProgressRepository readingProgressRepository;
 
-    private final CollaborationService collaborationService;
+
     private final ViewTrackingService viewTrackingService;
     private final PurchaseProtectionService purchaseProtectionService;
     private final MonetizationService monetizationService;
@@ -207,13 +207,12 @@ public class ChapterServiceImpl implements ChapterService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-        // Validate ownership or collaboration permissions
+        // Validate ownership
         boolean isAuthor = chapter.getStory().getAuthor().getId().equals(authorId);
-        boolean hasEditPermission = collaborationService.hasEditPermission(chapterId, authorId);
 
-        if (!isAuthor && !hasEditPermission) {
+        if (!isAuthor) {
             throw new IllegalArgumentException(
-                    "Only the author or collaborators with edit permissions can update this chapter");
+                    "Only the author can update this chapter");
         }
 
         log.info(
@@ -730,12 +729,7 @@ public class ChapterServiceImpl implements ChapterService {
             return true;
         }
 
-        // Check if user is a collaborator (collaborators can access regardless of
-        // chapter status)
-        if (userId != null && collaborationService.hasAccessToChapter(chapterId, userId)) {
-            log.info("Access granted - User is a collaborator");
-            return true;
-        }
+
 
         // Chapter must be published for public access
         if (chapter.getStatus() != Chapter.Status.PUBLISHED) {

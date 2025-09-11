@@ -39,7 +39,7 @@ export default function StoriesPage() {
   } = useSearchStories({
     query: urlSearchQuery,
     page,
-    size: 12,
+    size: 30,
   });
 
   const {
@@ -48,7 +48,7 @@ export default function StoriesPage() {
     error: regularError,
   } = useStories({
     page,
-    size: 12,
+    size: 30,
     sortBy,
     categoryId: selectedCategory || undefined,
     pricingType: pricingType || undefined,

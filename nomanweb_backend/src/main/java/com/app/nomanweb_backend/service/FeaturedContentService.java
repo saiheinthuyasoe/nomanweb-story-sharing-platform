@@ -16,6 +16,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageImpl;
 
 @Service
 @Transactional
@@ -27,25 +29,21 @@ public class FeaturedContentService {
     @Autowired
     private StoryRepository storyRepository;
 
-    // Get stories for homepage sections
+    // Get stories for homepage sections - now uses admin-curated featured content
     public Page<Story> getStoriesForSection(FeaturedContent.SectionType sectionType, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        switch (sectionType) {
-            case NEW_RELEASES:
-                return storyRepository.findNewestStories(Story.PublishStatus.PUBLISHED, pageable);
-            case BEST_RATING:
-                return storyRepository.findBestRatedStories(Story.PublishStatus.PUBLISHED, pageable);
-            case WEEKLY_FEATURES:
-                LocalDateTime weekAgo = LocalDateTime.now().minusWeeks(1);
-                return storyRepository.findWeeklyTrending(Story.PublishStatus.PUBLISHED, weekAgo, pageable);
-            case BEST_OF_ALL_TIME:
-                return storyRepository.findBestOfAllTime(Story.PublishStatus.PUBLISHED, pageable);
-            case RECOMMENDED_FOR_YOU:
-                return storyRepository.findRecommendedStories(Story.PublishStatus.PUBLISHED, 100L, pageable);
-            default:
-                return storyRepository.findFeaturedStories(Story.PublishStatus.PUBLISHED, pageable);
-        }
+        // Get active featured content for this section
+        Page<FeaturedContent> featuredContent = featuredContentRepository.findActiveBySectionType(
+                sectionType, LocalDateTime.now(), pageable);
+
+        // Extract stories from featured content
+        List<Story> stories = featuredContent.getContent().stream()
+                .map(FeaturedContent::getStory)
+                .collect(Collectors.toList());
+
+        // Return as Page with proper pagination info
+        return new PageImpl<>(stories, pageable, featuredContent.getTotalElements());
     }
 
     // Admin methods for managing featured content
@@ -59,7 +57,8 @@ public class FeaturedContentService {
         return featuredContentRepository.findBySectionTypeOrderByDisplayOrderAscCreatedAtDesc(sectionType, pageable);
     }
 
-    public FeaturedContent addToFeaturedSection(UUID storyId, FeaturedContent.SectionType sectionType, User admin, Integer duration) {
+    public FeaturedContent addToFeaturedSection(UUID storyId, FeaturedContent.SectionType sectionType, User admin,
+            Integer duration) {
         Optional<Story> storyOpt = storyRepository.findById(storyId);
         if (!storyOpt.isPresent()) {
             throw new RuntimeException("Story not found");
@@ -83,13 +82,13 @@ public class FeaturedContentService {
         featuredContent.setDisplayOrder(nextOrder != null ? nextOrder : 1);
         featuredContent.setIsActive(true);
         featuredContent.setStartDate(LocalDateTime.now());
-        
+
         // Set endDate only for WEEKLY_FEATURES section and when duration > 0
         if (sectionType == FeaturedContent.SectionType.WEEKLY_FEATURES && duration != null && duration > 0) {
             featuredContent.setEndDate(LocalDateTime.now().plusDays(duration));
         }
         // For other sections or duration = 0, endDate remains null (permanent)
-        
+
         featuredContent.setCreatedBy(admin);
         featuredContent.setCreatedAt(LocalDateTime.now());
         featuredContent.setUpdatedAt(LocalDateTime.now());
