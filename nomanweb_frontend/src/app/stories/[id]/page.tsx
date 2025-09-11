@@ -799,7 +799,7 @@ export default function StoryReaderView() {
                 <button
                   onClick={handleReadStory}
                   className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
-                  style={{ backgroundColor: '#18243c' }}
+                  style={{ backgroundColor: "#18243c" }}
                 >
                   <BookOpen className="h-5 w-5" />
                   <span>Read</span>
@@ -813,7 +813,7 @@ export default function StoryReaderView() {
                       onClick={handleBookPurchase}
                       disabled={isPurchasingBook}
                       className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2 disabled:opacity-50"
-                      style={{ backgroundColor: '#18243c' }}
+                      style={{ backgroundColor: "#18243c" }}
                     >
                       <ShoppingBagIcon className="h-5 w-5" />
                       <span>
@@ -859,7 +859,7 @@ export default function StoryReaderView() {
                     } ${
                       isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
                     }`}
-                    style={{ backgroundColor: '#18243c' }}
+                    style={{ backgroundColor: "#18243c" }}
                   >
                     <Plus className="h-5 w-5" />
                     <span>
@@ -964,7 +964,7 @@ export default function StoryReaderView() {
                 <button
                   onClick={handleShare}
                   className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
-                  style={{ backgroundColor: '#18243c' }}
+                  style={{ backgroundColor: "#18243c" }}
                 >
                   <Share2 className="h-5 w-5" />
                   <span>Share</span>
@@ -975,7 +975,7 @@ export default function StoryReaderView() {
                   className={`px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 text-white hover:opacity-80 ${
                     isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
-                  style={{ backgroundColor: '#18243c' }}
+                  style={{ backgroundColor: "#18243c" }}
                   title={
                     bookmarkStatus?.listTypes?.LIKE
                       ? "Unlike story"
@@ -1006,7 +1006,7 @@ export default function StoryReaderView() {
                   <button
                     onClick={() => setShowGiftModal(true)}
                     className="px-6 py-3 text-white rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
-                    style={{ backgroundColor: '#18243c' }}
+                    style={{ backgroundColor: "#18243c" }}
                   >
                     <Gift className="h-5 w-5" />
                     <span>Send Gift</span>
@@ -1036,7 +1036,8 @@ export default function StoryReaderView() {
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                   style={{
-                    borderBottomColor: activeTab === tab.id ? '#18243c' : 'transparent'
+                    borderBottomColor:
+                      activeTab === tab.id ? "#18243c" : "transparent",
                   }}
                 >
                   {tab.label}

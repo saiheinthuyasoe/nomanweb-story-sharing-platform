@@ -87,7 +87,18 @@ export function ProtectedActionButton({
   const checkPurchases = async () => {
     if (itemType === "story") {
       try {
-        const response = await fetch(`/api/stories/${itemId}/has-purchases`);
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('token='))
+          ?.split('=')[1];
+        
+        const response = await fetch(`/api/stories/${itemId}/has-purchases`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           return data;
@@ -97,8 +108,20 @@ export function ProtectedActionButton({
       }
     } else if (itemType === "chapter") {
       try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('token='))
+          ?.split('=')[1];
+        
         const response = await fetch(
-          `/api/refunds/chapters/${itemId}/has-purchases`
+          `/api/refunds/chapters/${itemId}/has-purchases`,
+          {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -114,12 +137,19 @@ export function ProtectedActionButton({
   const calculateRefund = async () => {
     if (itemType === "story") {
       try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('token='))
+          ?.split('=')[1];
+        
         const response = await fetch(
           `/api/stories/${itemId}/calculate-refund`,
           {
             method: "POST",
+            credentials: 'include',
             headers: {
               "Content-Type": "application/json",
+              ...(token && { 'Authorization': `Bearer ${token}` }),
             },
             body: JSON.stringify({}),
           }
@@ -133,8 +163,20 @@ export function ProtectedActionButton({
       }
     } else if (itemType === "chapter") {
       try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('token='))
+          ?.split('=')[1];
+        
         const response = await fetch(
-          `/api/refunds/chapters/${itemId}/calculate-refund`
+          `/api/refunds/chapters/${itemId}/calculate-refund`,
+          {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+          }
         );
         if (response.ok) {
           const data = await response.json();

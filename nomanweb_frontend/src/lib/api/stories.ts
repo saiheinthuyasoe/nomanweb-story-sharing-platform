@@ -176,7 +176,9 @@ export const storiesApi = {
     };
     message: string;
   }> {
-    const response = await apiClient.post(`/stories/${id}/recalculate-earnings`);
+    const response = await apiClient.post(
+      `/stories/${id}/recalculate-earnings`
+    );
     return response.data;
   },
 };
