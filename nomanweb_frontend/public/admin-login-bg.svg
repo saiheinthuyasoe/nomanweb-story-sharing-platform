@@ -1,0 +1,95 @@
+<svg width="1024" height="768" viewBox="0 0 1024 768" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#0f3460;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e94560;stop-opacity:0.3" />
+    </linearGradient>
+    <radialGradient id="moonGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#f5f5f5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e0e0;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Sky background -->
+  <rect width="1024" height="768" fill="url(#skyGradient)"/>
+  
+  <!-- Stars -->
+  <circle cx="100" cy="80" r="1" fill="white" opacity="0.8"/>
+  <circle cx="200" cy="120" r="1.5" fill="white" opacity="0.6"/>
+  <circle cx="300" cy="60" r="1" fill="white" opacity="0.9"/>
+  <circle cx="450" cy="100" r="1" fill="white" opacity="0.7"/>
+  <circle cx="600" cy="90" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="750" cy="70" r="1" fill="white" opacity="0.6"/>
+  <circle cx="850" cy="110" r="1" fill="white" opacity="0.9"/>
+  <circle cx="950" cy="85" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="150" cy="150" r="1" fill="white" opacity="0.5"/>
+  <circle cx="350" cy="140" r="1" fill="white" opacity="0.8"/>
+  <circle cx="550" cy="130" r="1" fill="white" opacity="0.6"/>
+  <circle cx="700" cy="160" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="900" cy="145" r="1" fill="white" opacity="0.8"/>
+  
+  <!-- Crescent moon -->
+  <g transform="translate(512, 150)">
+    <circle cx="0" cy="0" r="25" fill="url(#moonGradient)"/>
+    <circle cx="8" cy="-3" r="20" fill="#1a1a2e"/>
+  </g>
+  
+  <!-- Distant mountains -->
+  <polygon points="0,400 200,300 400,350 600,280 800,320 1024,290 1024,768 0,768" fill="#2c2c54" opacity="0.6"/>
+  
+  <!-- Middle mountains -->
+  <polygon points="0,450 150,380 300,420 500,350 700,390 900,340 1024,360 1024,768 0,768" fill="#40407a" opacity="0.7"/>
+  
+  <!-- Foreground mountains -->
+  <polygon points="0,500 100,450 250,480 400,420 600,460 800,400 1024,430 1024,768 0,768" fill="#706fd3" opacity="0.8"/>
+  
+  <!-- Pine trees silhouettes -->
+  <g fill="#2c2c54" opacity="0.9">
+    <!-- Tree 1 -->
+    <polygon points="80,500 90,450 100,500"/>
+    <polygon points="85,480 95,430 105,480"/>
+    <polygon points="90,460 100,410 110,460"/>
+    
+    <!-- Tree 2 -->
+    <polygon points="180,520 190,470 200,520"/>
+    <polygon points="185,500 195,450 205,500"/>
+    <polygon points="190,480 200,430 210,480"/>
+    
+    <!-- Tree 3 -->
+    <polygon points="280,510 290,460 300,510"/>
+    <polygon points="285,490 295,440 305,490"/>
+    <polygon points="290,470 300,420 310,470"/>
+    
+    <!-- Tree 4 -->
+    <polygon points="380,530 390,480 400,530"/>
+    <polygon points="385,510 395,460 405,510"/>
+    <polygon points="390,490 400,440 410,490"/>
+    
+    <!-- Tree 5 -->
+    <polygon points="680,520 690,470 700,520"/>
+    <polygon points="685,500 695,450 705,500"/>
+    <polygon points="690,480 700,430 710,480"/>
+    
+    <!-- Tree 6 -->
+    <polygon points="780,540 790,490 800,540"/>
+    <polygon points="785,520 795,470 805,520"/>
+    <polygon points="790,500 800,450 810,500"/>
+    
+    <!-- Tree 7 -->
+    <polygon points="880,525 890,475 900,525"/>
+    <polygon points="885,505 895,455 905,505"/>
+    <polygon points="890,485 900,435 910,485"/>
+  </g>
+  
+  <!-- Foreground hills -->
+  <ellipse cx="200" cy="600" rx="150" ry="80" fill="#34495e" opacity="0.8"/>
+  <ellipse cx="600" cy="620" rx="200" ry="100" fill="#2c3e50" opacity="0.7"/>
+  <ellipse cx="900" cy="610" rx="120" ry="70" fill="#34495e" opacity="0.8"/>
+  
+  <!-- Ground mist/fog effect -->
+  <ellipse cx="512" cy="700" rx="400" ry="50" fill="white" opacity="0.1"/>
+  <ellipse cx="300" cy="680" rx="200" ry="30" fill="white" opacity="0.08"/>
+  <ellipse cx="700" cy="690" rx="250" ry="40" fill="white" opacity="0.06"/>
+</svg>

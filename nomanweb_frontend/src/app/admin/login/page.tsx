@@ -66,7 +66,12 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      backgroundImage: 'url(/admin-login-bg.svg)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -183,4 +188,4 @@ const AdminLoginPage = () => {
   );
 };
 
-export default AdminLoginPage; 
+export default AdminLoginPage;
