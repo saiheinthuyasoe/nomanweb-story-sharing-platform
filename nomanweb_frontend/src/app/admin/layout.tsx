@@ -234,32 +234,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 shadow-lg" style={{backgroundColor: '#1a1a1a'}}>
+      <div className="fixed inset-y-0 left-0 z-50 w-64 shadow-lg" style={{backgroundColor: '#18243c'}}>
         <div className="flex flex-col h-full">
           {/* Admin User Info */}
-          <div className="px-4 py-6 bg-gradient-to-r from-[#1a2332] to-[#1f2937] mx-2 mt-2 rounded-xl border border-gray-600/30">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-700 to-black rounded-full flex items-center justify-center shadow-lg ring-2 ring-white/10">
-                  <span className="text-white font-bold text-xl">
-                    {adminUser.displayName?.charAt(0) ||
-                      adminUser.username.charAt(0)}
-                  </span>
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-[#1a1a1a] flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
+          <div className="px-4 py-6">
+            <div className="flex items-center mb-3">
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-lg">
+                  {adminUser.displayName?.charAt(0) ||
+                    adminUser.username.charAt(0)}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-white truncate mb-1">
+              <div className="ml-4">
+                <p className="text-base font-medium text-white">
                   {adminUser.displayName || adminUser.username}
-                </h3>
-                <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm">
-                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L3 7.723V8a1 1 0 01-2 0V6a.996.996 0 01.52-.878l1.734-.99a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.734.99A.996.996 0 0118 6v2a1 1 0 11-2 0v-.277l-1.254.145a1 1 0 11-.992-1.736L14.984 6l-.23-.132a1 1 0 01-.372-1.364zm-7 4a1 1 0 011.364-.372L10 8.848l1.254-.716a1 1 0 11.992 1.736L11 10.723V12a1 1 0 11-2 0v-1.277l-1.246-.855a1 1 0 01-.372-1.364zM3 11a1 1 0 011 1v1.277l1.246.855a1 1 0 11-.992 1.736l-1.75-1A1 1 0 012 14v-2a1 1 0 011-1zm14 0a1 1 0 011 1v2a1 1 0 01-.504.868l-1.75 1a1 1 0 11-.992-1.736L16 13.277V12a1 1 0 011-1zm-9.618 5.504a1 1 0 011.364-.372l.254.145V16a1 1 0 112 0v.277l.254-.145a1 1 0 11.992 1.736l-1.735.992a.995.995 0 01-1.022 0l-1.735-.992a1 1 0 01-.372-1.364z" clipRule="evenodd" />
-                  </svg>
-                  ADMINISTRATOR
-                </div>
+                </p>
+                <p className="text-sm text-red-400 font-medium">
+                  Administrator
+                </p>
               </div>
             </div>
           </div>
@@ -277,7 +269,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   href={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive
-                      ? "bg-gray-500/30 text-white"
+                      ? "bg-gray-600 text-white"
                       : "text-gray-300 hover:bg-gray-700 hover:text-white"
                   }`}
                 >

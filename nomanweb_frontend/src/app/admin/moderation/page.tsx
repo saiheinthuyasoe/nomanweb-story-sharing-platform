@@ -130,7 +130,7 @@ export default function AdminModerationPage() {
   );
   const [showDetailView, setShowDetailView] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "flagged" | "queue" | "reports"
+    "overview" | "queue" | "reports"
   >("overview");
 
   useEffect(() => {
@@ -840,101 +840,96 @@ export default function AdminModerationPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header Bar */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-[#1a1a1a]">
-                Moderation
-              </h1>
-            </div>
+        {/* Header */}
+         <div className="mb-8">
+           <div className="mb-6">
+             <h1 className="text-2xl font-semibold mb-2" style={{color: '#18243c'}}>
+               Content Moderation
+             </h1>
+           </div>
 
-            <div className="flex items-center space-x-4">
+          {/* Search and Filters */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               {/* Search Bar */}
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by title, author, keyword..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-80 bg-[#1a1a1a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
-                />
+              <div className="flex-1">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search content, authors, or keywords..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
               </div>
 
-              {/* Quick Filters */}
-              <div className="flex items-center space-x-2">
-                <FunnelIcon className="h-5 w-5 text-gray-400" />
-                <select
-                  value={currentFilter}
-                  onChange={(e) =>
-                    setCurrentFilter(e.target.value as FilterType)
-                  }
-                  className="px-3 py-2 bg-[#1a1a1a] border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
-                >
-                  <option value="ALL">All</option>
-                  <option value="PENDING">Pending Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="AUTO_FLAGGED">Auto-Flagged</option>
-                </select>
-              </div>
+              {/* Filter and Sort */}
+              <div className="flex gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Status:</label>
+                  <select
+                    value={currentFilter}
+                    onChange={(e) => setCurrentFilter(e.target.value as FilterType)}
+                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-[140px]"
+                  >
+                    <option value="ALL">All Content</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="AUTO_FLAGGED">Auto-Flagged</option>
+                  </select>
+                </div>
 
-              {/* Sort Options */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortType)}
-                className="px-3 py-2 bg-[#1a1a1a] border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
-              >
-                <option value="NEWEST">Newest First</option>
-                <option value="OLDEST">Oldest First</option>
-                <option value="HIGHEST_RISK">Highest Risk</option>
-                <option value="MOST_FLAGGED">Most Flagged</option>
-              </select>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Sort:</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortType)}
+                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-[140px]"
+                  >
+                    <option value="NEWEST">Newest First</option>
+                    <option value="OLDEST">Oldest First</option>
+                    <option value="HIGHEST_RISK">Highest Risk</option>
+                    <option value="MOST_FLAGGED">Most Flagged</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="bg-white rounded-lg p-1 shadow-sm border border-gray-200">
+            <nav className="flex space-x-1">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
                   activeTab === "overview"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-gray-100 text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 📊 Overview
               </button>
               <button
-                onClick={() => setActiveTab("flagged")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "flagged"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🚩 Flagged Content
-              </button>
-              <button
                 onClick={() => setActiveTab("queue")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
                   activeTab === "queue"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-gray-100 text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 🕑 Queue Status
               </button>
               <button
                 onClick={() => setActiveTab("reports")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-3 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
                   activeTab === "reports"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-gray-100 text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 👤 User Reports
@@ -947,83 +942,83 @@ export default function AdminModerationPage() {
         {activeTab === "overview" && (
           <>
             {/* Stats/Insights Section */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              <Card className="p-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <FlagIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+              <Card className="p-6 bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Flagged Today
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.flaggedToday}
                     </p>
                   </div>
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <FlagIcon className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <ClockIcon className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
+              <Card className="p-6 bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Pending Reviews
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.pendingReviews}
                     </p>
                   </div>
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <ClockIcon className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
+              <Card className="p-6 bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Approved
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.approved}
                     </p>
                   </div>
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <CheckCircleIcon className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <XCircleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
+              <Card className="p-6 bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Rejected
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.rejected}
                     </p>
                   </div>
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <XCircleIcon className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ChartBarIcon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600">
+              <Card className="p-6 bg-white border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
                       Detection Accuracy
                     </p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-gray-900">
                       {stats.detectionAccuracy}%
                     </p>
+                  </div>
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <ChartBarIcon className="h-6 w-6 text-gray-600" />
                   </div>
                 </div>
               </Card>
@@ -1159,210 +1154,133 @@ export default function AdminModerationPage() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input
-                          type="checkbox"
-                          checked={
-                            selectedChapters.size === filteredChapters.length &&
-                            filteredChapters.length > 0
-                          }
-                          onChange={selectAllChapters}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Content Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Snippet / Preview
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Detected Issue
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Confidence
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User Info
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredChapters.map((chapter) => {
-                      const confidence = getConfidenceScore(chapter);
-                      const detectedIssue = getDetectedIssue(chapter);
+              <div className="max-h-96 overflow-y-auto space-y-4 p-4">
+                {filteredChapters.map((chapter) => {
+                  const confidence = getConfidenceScore(chapter);
+                  const detectedIssue = getDetectedIssue(chapter);
 
-                      return (
-                        <tr key={chapter.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="checkbox"
-                              checked={selectedChapters.has(chapter.id)}
-                              onChange={() =>
-                                toggleChapterSelection(chapter.id)
-                              }
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
+                  return (
+                    <div key={chapter.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      {/* First Layer - Main Content Info */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start space-x-3 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedChapters.has(chapter.id)}
+                            onChange={() => toggleChapterSelection(chapter.id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2">
                               <DocumentTextIcon className="h-5 w-5 text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-900">
-                                Chapter
-                              </span>
+                              <span className="text-sm font-medium text-gray-600">Chapter</span>
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="max-w-xs">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {chapter.story.title} - {chapter.title}
+                            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                              {chapter.story.title} - {chapter.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {stripHtml(chapter.content).substring(0, 150)}...
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(chapter.moderationStatus)}
+                        </div>
+                      </div>
+
+                      {/* Second Layer - Details and Actions */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex items-center space-x-6">
+                          {/* User Info */}
+                          <div className="flex items-center space-x-2">
+                            <UserIcon className="h-4 w-4 text-gray-400" />
+                            <div>
+                              <p className="text-xs font-medium text-gray-900">
+                                {chapter.story.author?.displayName || chapter.story.author?.username}
                               </p>
-                              <p className="text-sm text-gray-500 truncate">
-                                {stripHtml(chapter.content).substring(0, 100)}
-                                ...
-                              </p>
+                              <p className="text-xs text-gray-500">@{chapter.story.author?.username}</p>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                chapter.moderationStatus === "PENDING"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}
-                            >
+                          </div>
+
+                          {/* Detected Issue */}
+                          <div>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              chapter.moderationStatus === "PENDING"
+                                ? "bg-gray-100 text-gray-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}>
                               {detectedIssue}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                <div
-                                  className={`h-2 rounded-full ${
-                                    confidence >= 80
-                                      ? "bg-red-500"
-                                      : confidence >= 60
-                                      ? "bg-yellow-500"
-                                      : "bg-green-500"
-                                  }`}
-                                  style={{ width: `${confidence}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-gray-600">
-                                {confidence}%
-                              </span>
+                          </div>
+
+                          {/* Confidence */}
+                          <div className="flex items-center space-x-2">
+                            <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className="h-1.5 rounded-full bg-gray-600"
+                                style={{ width: `${confidence}%` }}
+                              ></div>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {chapter.story.author?.displayName ||
-                                    chapter.story.author?.username}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  @{chapter.story.author?.username}
-                                </p>
-                              </div>
+                            <span className="text-xs text-gray-600">{confidence}%</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            onClick={() => {
+                              setSelectedChapter(chapter);
+                              setShowDetailView(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <EyeIcon className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+
+                          {/* AI Decision Display */}
+                          {chapter.aiModerationResult && (
+                            <div className="flex items-center space-x-1">
+                              <SparklesIcon className="h-4 w-4 text-gray-500" />
+                              <Badge className="text-xs bg-gray-100 text-gray-800">
+                                {chapter.moderationStatus === "APPROVED"
+                                  ? "Auto-Approved"
+                                  : chapter.moderationStatus === "REJECTED"
+                                  ? "Auto-Rejected"
+                                  : "Pending Review"}
+                              </Badge>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(chapter.moderationStatus)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center space-x-2">
+                          )}
+
+                          {/* Manual Override for Pending Items */}
+                          {chapter.moderationStatus === "PENDING" && (
+                            <>
                               <Button
-                                onClick={() => {
-                                  setSelectedChapter(chapter);
-                                  setShowDetailView(true);
-                                }}
-                                variant="outline"
+                                onClick={() => moderateChapter(chapter.id, true)}
+                                disabled={moderating}
                                 size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                title="Manual Override: Approve"
                               >
-                                <EyeIcon className="h-4 w-4 mr-1" />
-                                View
+                                <CheckCircleIcon className="h-4 w-4" />
                               </Button>
-
-                              {/* AI Decision Display */}
-                              {chapter.aiModerationResult && (
-                                <div className="flex items-center space-x-2">
-                                  <div className="flex items-center space-x-1">
-                                    <SparklesIcon className="h-4 w-4 text-blue-500" />
-                                    <span className="text-xs text-gray-600">
-                                      AI:
-                                    </span>
-                                    <Badge
-                                      className={`text-xs ${
-                                        chapter.moderationStatus === "APPROVED"
-                                          ? "bg-green-100 text-green-800"
-                                          : chapter.moderationStatus ===
-                                            "REJECTED"
-                                          ? "bg-red-100 text-red-800"
-                                          : "bg-yellow-100 text-yellow-800"
-                                      }`}
-                                    >
-                                      {chapter.moderationStatus === "APPROVED"
-                                        ? "Auto-Approved"
-                                        : chapter.moderationStatus ===
-                                          "REJECTED"
-                                        ? "Auto-Rejected"
-                                        : "Pending Review"}
-                                    </Badge>
-                                  </div>
-                                  <span className="text-xs text-gray-500">
-                                    {Math.round(
-                                      chapter.aiModerationResult.confidenceScore
-                                    )}
-                                    % confidence
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Manual Override for Pending Items */}
-                              {chapter.moderationStatus === "PENDING" && (
-                                <>
-                                  <Button
-                                    onClick={() =>
-                                      moderateChapter(chapter.id, true)
-                                    }
-                                    disabled={moderating}
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                    title="Manual Override: Approve"
-                                  >
-                                    <CheckCircleIcon className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    onClick={() =>
-                                      moderateChapter(chapter.id, false)
-                                    }
-                                    disabled={moderating}
-                                    variant="destructive"
-                                    size="sm"
-                                    title="Manual Override: Reject"
-                                  >
-                                    <XCircleIcon className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              <Button
+                                onClick={() => moderateChapter(chapter.id, false)}
+                                disabled={moderating}
+                                variant="destructive"
+                                size="sm"
+                                title="Manual Override: Reject"
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {filteredChapters.length === 0 && (
@@ -1382,45 +1300,7 @@ export default function AdminModerationPage() {
           </>
         )}
 
-        {/* Flagged Content Tab */}
-        {activeTab === "flagged" && (
-          <Card className="p-6">
-            <div className="text-center py-12">
-              <FlagIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Flagged Content
-              </h3>
-              <p className="text-gray-600">
-                Content that has been automatically flagged by AI or reported by
-                users.
-              </p>
-              <div className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
-                      {stats.rejected}
-                    </div>
-                    <div className="text-sm text-red-700">Auto-Rejected</div>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {stats.pendingReviews}
-                    </div>
-                    <div className="text-sm text-yellow-700">
-                      Pending Review
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {stats.flaggedToday}
-                    </div>
-                    <div className="text-sm text-orange-700">Flagged Today</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+
 
         {/* Queue Status Tab */}
         {activeTab === "queue" && (
