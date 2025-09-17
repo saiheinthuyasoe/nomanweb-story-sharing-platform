@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   HomeIcon,
@@ -14,6 +14,7 @@ import {
   CurrencyDollarIcon,
   StarIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminAuth, AdminAuthProvider } from "@/contexts/AdminAuthContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -51,6 +52,11 @@ const adminNavItems = [
     icon: CurrencyDollarIcon,
   },
   {
+    name: "Withdrawal Management",
+    href: "/admin/withdrawals",
+    icon: CurrencyDollarIcon,
+  },
+  {
     name: "Content Reports",
     href: "/admin/reports",
     icon: DocumentTextIcon,
@@ -72,129 +78,12 @@ const adminNavItems = [
   },
 ];
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [adminUser, setAdminUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+function AdminLayoutContent({ children }: AdminLayoutProps) {
+  const { adminUser, loading: isLoading, logout } = useAdminAuth();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const checkAdminAuth = async () => {
-      // Allow access to login page without authentication
-      if (pathname === "/admin/login") {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const adminToken = localStorage.getItem("adminToken");
-        const adminUserData = localStorage.getItem("adminUser");
-
-        if (!adminToken || !adminUserData) {
-          router.push("/admin/login");
-          return;
-        }
-
-        // Verify admin token is still valid
-        const response = await fetch("/api/admin/auth/verify-admin", {
-          headers: {
-            Authorization: `Bearer ${adminToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Admin authentication failed");
-        }
-
-        const adminUser = JSON.parse(adminUserData);
-
-        // Double-check user role
-        if (adminUser.role !== "ADMIN") {
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("adminUser");
-          router.push("/admin/login");
-          return;
-        }
-
-        setAdminUser(adminUser);
-      } catch (error) {
-        console.error("Admin auth check failed:", error);
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminUser");
-        router.push("/admin/login");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAdminAuth();
-  }, [router, pathname]);
-
-  // Add effect to listen for storage changes (when login happens in same tab)
-  useEffect(() => {
-    const handleStorageChange = async () => {
-      if (pathname === "/admin/login") {
-        return;
-      }
-
-      const adminToken = localStorage.getItem("adminToken");
-      const adminUserData = localStorage.getItem("adminUser");
-
-      if (adminToken && adminUserData && !adminUser) {
-        // Authentication just happened, re-check auth
-        setIsLoading(true);
-        try {
-          // Verify the token is valid
-          const response = await fetch("/api/admin/auth/verify-admin", {
-            headers: {
-              Authorization: `Bearer ${adminToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            const adminUser = JSON.parse(adminUserData);
-            setAdminUser(adminUser);
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem("adminToken");
-            localStorage.removeItem("adminUser");
-            router.push("/admin/login");
-          }
-        } catch (error) {
-          console.error("Token verification failed:", error);
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("adminUser");
-          router.push("/admin/login");
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (!adminToken && adminUser) {
-        // Logout happened
-        setAdminUser(null);
-        router.push("/admin/login");
-      }
-    };
-
-    // Listen for storage events (cross-tab) and custom events (same-tab)
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("adminAuthChange", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("adminAuthChange", handleStorageChange);
-    };
-  }, [adminUser, router, pathname]);
-
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-
-    // Dispatch custom event to notify of auth change
-    window.dispatchEvent(new Event("adminAuthChange"));
-
-    router.push("/admin/login");
+    logout();
   };
 
   // Show loading while checking authentication
@@ -345,5 +234,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <main className="flex-1">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <AdminAuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminAuthProvider>
   );
 }

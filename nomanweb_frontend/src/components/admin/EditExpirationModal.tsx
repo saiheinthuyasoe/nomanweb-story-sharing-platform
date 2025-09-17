@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 import { XMarkIcon, ClockIcon } from "@heroicons/react/24/outline";
-import { adminHomepageService, FeaturedContent } from "../../services/adminHomepageService";
+import {
+  adminHomepageService,
+  FeaturedContent,
+} from "../../services/adminHomepageService";
 import DatePicker from "../ui/DatePicker";
 
 interface EditExpirationModalProps {
@@ -33,7 +37,7 @@ const EditExpirationModal: React.FC<EditExpirationModalProps> = ({
       const end = featuredContent.endDate
         ? new Date(featuredContent.endDate)
         : null;
-      
+
       setStartDate(start);
       setEndDate(end);
       setSelectedDuration("");
@@ -44,7 +48,9 @@ const EditExpirationModal: React.FC<EditExpirationModalProps> = ({
     setSelectedDuration(duration);
     if (duration && startDate) {
       const durationDays = parseInt(duration);
-      const end = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      const end = new Date(
+        startDate.getTime() + durationDays * 24 * 60 * 60 * 1000
+      );
       setEndDate(end);
     } else if (duration === "permanent") {
       setEndDate(null);
@@ -70,18 +76,26 @@ const EditExpirationModal: React.FC<EditExpirationModalProps> = ({
 
     try {
       setLoading(true);
-      
+
       // Format dates for API
       const formattedStartDate = startDate.toISOString();
       const formattedEndDate = endDate ? endDate.toISOString() : null;
 
       // Call the API to update duration
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/admin/featured-content/${featuredContent.id}/duration?startDate=${encodeURIComponent(formattedStartDate)}${formattedEndDate ? `&endDate=${encodeURIComponent(formattedEndDate)}` : ''}`,
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+        }/api/admin/featured-content/${
+          featuredContent.id
+        }/duration?startDate=${encodeURIComponent(formattedStartDate)}${
+          formattedEndDate
+            ? `&endDate=${encodeURIComponent(formattedEndDate)}`
+            : ""
+        }`,
         {
           method: "PUT",
           headers: {
-            "Authorization": `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${Cookies.get("adminToken")}`,
             "Content-Type": "application/json",
           },
         }
@@ -130,7 +144,10 @@ const EditExpirationModal: React.FC<EditExpirationModalProps> = ({
           {/* Story Info */}
           <div className="flex items-center space-x-3">
             <img
-              src={featuredContent.story.coverImageUrl || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"}
+              src={
+                featuredContent.story.coverImageUrl ||
+                "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"
+              }
               alt={featuredContent.story.title}
               className="w-12 h-16 object-cover rounded"
             />
@@ -139,7 +156,8 @@ const EditExpirationModal: React.FC<EditExpirationModalProps> = ({
                 {featuredContent.story.title}
               </h4>
               <p className="text-sm text-gray-500">
-                {featuredContent.story.author.displayName || featuredContent.story.author.username}
+                {featuredContent.story.author?.displayName ||
+                  featuredContent.story.author?.username || 'Unknown Author'}
               </p>
             </div>
           </div>

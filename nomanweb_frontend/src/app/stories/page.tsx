@@ -107,7 +107,7 @@ export default function StoriesPage() {
             <Link
               href="/stories/create"
               className="inline-flex items-center px-4 py-2 text-white hover:opacity-80 transition-all font-medium rounded-md"
-              style={{ backgroundColor: '#18243c' }}
+              style={{ backgroundColor: "#18243c" }}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
               Write Story
@@ -149,7 +149,7 @@ export default function StoriesPage() {
                 <button
                   type="submit"
                   className="absolute right-2 top-1.5 px-3 py-1 text-white text-sm hover:opacity-80 transition-all font-medium rounded-md"
-                  style={{ backgroundColor: '#18243c' }}
+                  style={{ backgroundColor: "#18243c" }}
                 >
                   Search
                 </button>
@@ -254,6 +254,7 @@ export default function StoriesPage() {
           isLoading={isLoading}
           error={error}
           onPageChange={handlePageChange}
+          currentPage={page}
           emptyMessage={
             urlSearchQuery
               ? `No stories found for "${urlSearchQuery}". Try a different search term or browse all stories.`

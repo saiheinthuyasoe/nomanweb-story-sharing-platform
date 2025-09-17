@@ -23,6 +23,7 @@ import {
   Library,
   Users,
   LogIn,
+  CreditCard,
 } from "lucide-react";
 
 import { useUnreadCount } from "@/hooks/useNotifications";
@@ -238,18 +239,6 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-
-              {/* Active Collaborators for Chapter Edit Pages */}
-              {isChapterEditPage && (
-                <div className="hidden lg:flex items-center ml-6 px-3 py-1 bg-white/10 rounded-lg">
-                  <Users className="w-4 h-4 text-white mr-2" />
-                  <span className="text-white text-sm font-medium">
-                    Collaborating
-                  </span>
-                  {/* Note: We would need the actual chapter ID here for real functionality */}
-  
-                </div>
-              )}
             </div>
 
             {/* Center Section - Mobile Search */}
@@ -445,8 +434,14 @@ export default function Navbar() {
                           <DropdownLink href="/library" icon={Library}>
                             Library
                           </DropdownLink>
-                          <DropdownLink href="/library?tab=purchased" icon={History}>
+                          <DropdownLink
+                            href="/library?tab=purchased"
+                            icon={History}
+                          >
                             Purchase History
+                          </DropdownLink>
+                          <DropdownLink href="/withdraw" icon={CreditCard}>
+                            Withdraw
                           </DropdownLink>
                           <button
                             onClick={handleLogout}
@@ -652,6 +647,13 @@ export default function Navbar() {
                     onClick={closeMobileMenu}
                   >
                     Library
+                  </MobileNavLink>
+                  <MobileNavLink
+                    href="/withdraw"
+                    icon={CreditCard}
+                    onClick={closeMobileMenu}
+                  >
+                    Withdraw
                   </MobileNavLink>
 
                   {/* Logout Button */}

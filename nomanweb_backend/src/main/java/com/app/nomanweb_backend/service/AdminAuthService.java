@@ -12,6 +12,10 @@ public interface AdminAuthService {
     // Admin Authentication
     LoginResponse adminLogin(AdminLoginRequest request);
 
+    LoginResponse refreshAdminToken(String refreshToken, String clientIp, String userAgent);
+
+    void adminLogout(String refreshToken, String clientIp, String userAgent);
+
     // Admin User Management
     void promoteToAdmin(UUID userId, UUID currentAdminId);
 

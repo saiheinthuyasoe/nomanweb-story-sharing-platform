@@ -190,15 +190,15 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       filtered = filtered.filter(
         (book) =>
           book.title.toLowerCase().includes(query) ||
-          book.author.displayName.toLowerCase().includes(query) ||
-          book.category.name.toLowerCase().includes(query)
+          (book.author?.displayName || '').toLowerCase().includes(query) ||
+          (book.category?.name || '').toLowerCase().includes(query)
       );
     }
 
     // Apply genre filter
     if (selectedGenre) {
       filtered = filtered.filter(
-        (book) => book.category.name === selectedGenre
+        (book) => book.category?.name === selectedGenre
       );
     }
 
@@ -251,7 +251,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       ...Object.values(insightsData.byGenre).flat(),
     ];
 
-    const genres = new Set(allBooks.map((book) => book.category.name));
+    const genres = new Set(allBooks.map((book) => book.category?.name).filter(Boolean));
     return Array.from(genres).sort();
   };
 
@@ -484,12 +484,12 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-sm truncate">{book.title}</h4>
             <p className="text-xs text-gray-600 truncate">
-              by {book.author.displayName}
+              by {book.author?.displayName || 'Unknown Author'}
             </p>
 
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs">
-                {book.category.name}
+                {book.category?.name || 'Uncategorized'}
               </Badge>
             </div>
 
@@ -561,7 +561,9 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                     disabled={addingToSection === book.id}
                   >
                     <Plus className="w-3 h-3 mr-1" />
-                    {addingToSection === book.id ? "Adding..." : "Add to Homepage Section"}
+                    {addingToSection === book.id
+                      ? "Adding..."
+                      : "Add to Homepage Section"}
                   </Button>
                 )}
               </div>

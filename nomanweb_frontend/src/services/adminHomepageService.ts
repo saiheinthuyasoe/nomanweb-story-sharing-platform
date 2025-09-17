@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+
 interface Story {
   id: string;
   title: string;
@@ -50,7 +52,7 @@ class AdminHomepageService {
   ).replace(/\/api$/, "");
 
   private getAuthHeaders() {
-    const token = localStorage.getItem("adminToken");
+    const token = Cookies.get("adminToken");
     return {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",

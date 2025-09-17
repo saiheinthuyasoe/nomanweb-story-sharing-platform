@@ -105,10 +105,13 @@ export function ChapterForm({
 
   const watchedValues = watch();
 
-  // Update all form values when initialData changes (for editing)
+  // Track if form has been initialized to prevent overriding user changes
+  const [isFormInitialized, setIsFormInitialized] = React.useState(false);
+
+  // Update all form values when initialData changes (for editing) - only on first load
   useEffect(() => {
-    if (initialData && isEditing) {
-      console.log("ChapterForm - Updating form values for editing:", {
+    if (initialData && isEditing && !isFormInitialized) {
+      console.log("ChapterForm - Initializing form values for editing:", {
         title: initialData.title,
         chapterNumber: initialData.chapterNumber,
         coinPrice: initialData.coinPrice,
@@ -116,7 +119,7 @@ export function ChapterForm({
         isDraft: initialData.isDraft,
       });
 
-      // Update all form fields with initial data
+      // Update all form fields with initial data only on first initialization
       if (initialData.title !== undefined) {
         setValue("title", initialData.title);
       }
@@ -132,8 +135,10 @@ export function ChapterForm({
       if (initialData.isDraft !== undefined) {
         setValue("isDraft", initialData.isDraft);
       }
+
+      setIsFormInitialized(true);
     }
-  }, [initialData, isEditing, setValue]);
+  }, [initialData, isEditing, setValue, isFormInitialized]);
 
   // Update content state when initialData changes (for editing)
   useEffect(() => {
@@ -557,6 +562,7 @@ export function ChapterForm({
     return () => {
       clearTimeout((window as any).contentUpdateTimeout);
       clearTimeout((window as any).contentChangeAutoSaveTimeout);
+      clearTimeout((window as any).titleAutoSaveTimeout);
     };
   }, []);
 
@@ -782,6 +788,38 @@ export function ChapterForm({
             {...register("title", {
               required: "Chapter title is required",
               maxLength: { value: 255, message: "Title too long" },
+              onChange: (e) => {
+                // Auto-save title changes with debounce
+                if (onAutoSave && isEditing && chapterId) {
+                  clearTimeout((window as any).titleAutoSaveTimeout);
+                  (window as any).titleAutoSaveTimeout = setTimeout(
+                    async () => {
+                      try {
+                        const formData = {
+                          ...watchedValues,
+                          title: e.target.value,
+                          content: latestContentRef.current,
+                          isAutoSave: true,
+                        };
+
+                        console.log(
+                          "Auto-saving title change:",
+                          e.target.value
+                        );
+                        await onAutoSave(formData);
+
+                        toast.success("Title auto-saved", {
+                          duration: 1000,
+                          style: { fontSize: "12px", opacity: 0.8 },
+                        });
+                      } catch (error) {
+                        console.error("Title auto-save failed:", error);
+                      }
+                    },
+                    1000
+                  ); // 1 second debounce for title changes
+                }
+              },
             })}
             placeholder="Enter your chapter title..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"

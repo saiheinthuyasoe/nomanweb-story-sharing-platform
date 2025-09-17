@@ -11,4 +11,8 @@ public interface OAuthService {
     void linkGoogleAccount(String userId, String idToken);
 
     void linkLineAccount(String userId, String accessToken);
+
+    void unlinkGoogleAccount(String userId);
+
+    void unlinkLineAccount(String userId);
 }

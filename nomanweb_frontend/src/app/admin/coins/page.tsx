@@ -1,7 +1,8 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
-import { 
+import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import {
   CurrencyDollarIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -12,9 +13,9 @@ import {
   EyeIcon,
   CalendarIcon,
   FunnelIcon,
-  GiftIcon
-} from '@heroicons/react/24/outline';
-import { useCoinTransfersRealtime } from '@/hooks/useCoinTransfersRealtime';
+  GiftIcon,
+} from "@heroicons/react/24/outline";
+import { useCoinTransfersRealtime } from "@/hooks/useCoinTransfersRealtime";
 
 // Types
 interface Transaction {
@@ -24,9 +25,9 @@ interface Transaction {
     username: string;
     email: string;
   };
-  type: 'purchase' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'bonus';
+  type: "purchase" | "withdrawal" | "transfer_in" | "transfer_out" | "bonus";
   amount: number;
-  status: 'completed' | 'pending' | 'failed' | 'cancelled';
+  status: "completed" | "pending" | "failed" | "cancelled";
   date: string;
   description?: string;
   reference?: string;
@@ -57,7 +58,7 @@ interface Gift {
 }
 
 export default function CoinManagementPage() {
-  const [activeTab, setActiveTab] = useState('transactions');
+  const [activeTab, setActiveTab] = useState("transactions");
   const [loading, setLoading] = useState(false);
 
   // Transactions state
@@ -65,71 +66,75 @@ export default function CoinManagementPage() {
   const [transactionStats, setTransactionStats] = useState({
     totalIssued: 0,
     totalPurchases: 0,
-    totalWithdrawals: 0
+    totalWithdrawals: 0,
   });
   const [transactionFilters, setTransactionFilters] = useState({
-    search: '',
-    type: '',
-    status: '',
-    dateFrom: '',
-    dateTo: ''
+    search: "",
+    type: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
   });
 
   // Coin packages state
   const [coinPackages, setCoinPackages] = useState<CoinPackage[]>([]);
   const [showPackageModal, setShowPackageModal] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<CoinPackage | null>(null);
+  const [editingPackage, setEditingPackage] = useState<CoinPackage | null>(
+    null
+  );
   const [packageForm, setPackageForm] = useState({
-    name: '',
-    coins: '',
-    price: '',
-    currency: 'THB',
-    description: '',
-    isActive: true
+    name: "",
+    coins: "",
+    price: "",
+    currency: "THB",
+    description: "",
+    isActive: true,
   });
   const [packageLoading, setPackageLoading] = useState(false);
 
   // Transaction details state
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
   // Coin transfer state
   const [transferForm, setTransferForm] = useState({
-    userIdentifier: '',
-    amount: '',
-    type: 'transfer' as 'transfer' | 'withdraw',
-    reason: ''
+    userIdentifier: "",
+    amount: "",
+    type: "transfer" as "transfer" | "withdraw",
+    reason: "",
   });
   const [transferLoading, setTransferLoading] = useState(false);
   const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
-  const [transferConnectionStatus, setTransferConnectionStatus] = useState(false);
+  const [transferConnectionStatus, setTransferConnectionStatus] =
+    useState(false);
 
   // Gift management state
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [showGiftForm, setShowGiftForm] = useState(false);
   const [editingGift, setEditingGift] = useState<Gift | null>(null);
   const [giftForm, setGiftForm] = useState({
-    name: '',
-    description: '',
-    iconUrl: '',
+    name: "",
+    description: "",
+    iconUrl: "",
     coinCost: 0,
     isActive: true,
   });
   const [giftLoading, setGiftLoading] = useState(false);
 
   useEffect(() => {
-    if (activeTab === 'transactions') {
+    if (activeTab === "transactions") {
       fetchTransactions();
       fetchTransactionStats();
-    } else if (activeTab === 'packages') {
+    } else if (activeTab === "packages") {
       fetchCoinPackages();
-    } else if (activeTab === 'gifts') {
+    } else if (activeTab === "gifts") {
       fetchGifts();
     }
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeTab === 'transactions') {
+    if (activeTab === "transactions") {
       fetchTransactions();
     }
   }, [transactionFilters]);
@@ -137,30 +142,35 @@ export default function CoinManagementPage() {
   // Set up real-time updates for coin transfers
   useCoinTransfersRealtime({
     onTransferCompleted: (transfer) => {
-      setRecentTransfers(prev => [transfer, ...prev.slice(0, 9)]); // Keep only last 10 transfers
+      setRecentTransfers((prev) => [transfer, ...prev.slice(0, 9)]); // Keep only last 10 transfers
     },
     onConnectionChange: (connected) => {
       setTransferConnectionStatus(connected);
-    }
+    },
   });
 
   // Transaction functions
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const params = new URLSearchParams();
-      
-      if (transactionFilters.search) params.append('search', transactionFilters.search);
-      if (transactionFilters.type) params.append('type', transactionFilters.type);
-      if (transactionFilters.status) params.append('status', transactionFilters.status);
-      if (transactionFilters.dateFrom) params.append('dateFrom', transactionFilters.dateFrom);
-      if (transactionFilters.dateTo) params.append('dateTo', transactionFilters.dateTo);
+
+      if (transactionFilters.search)
+        params.append("search", transactionFilters.search);
+      if (transactionFilters.type)
+        params.append("type", transactionFilters.type);
+      if (transactionFilters.status)
+        params.append("status", transactionFilters.status);
+      if (transactionFilters.dateFrom)
+        params.append("dateFrom", transactionFilters.dateFrom);
+      if (transactionFilters.dateTo)
+        params.append("dateTo", transactionFilters.dateTo);
 
       const response = await fetch(`/api/admin/coins/transactions?${params}`, {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -168,10 +178,10 @@ export default function CoinManagementPage() {
         const data = await response.json();
         setTransactions(data);
       } else {
-        console.error('Failed to fetch transactions');
+        console.error("Failed to fetch transactions");
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error("Error fetching transactions:", error);
     } finally {
       setLoading(false);
     }
@@ -179,11 +189,11 @@ export default function CoinManagementPage() {
 
   const fetchTransactionStats = async () => {
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/coins/stats', {
+      const adminToken = Cookies.get("adminToken");
+      const response = await fetch("/api/admin/coins/stats", {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -191,10 +201,10 @@ export default function CoinManagementPage() {
         const stats = await response.json();
         setTransactionStats(stats);
       } else {
-        console.error('Failed to fetch transaction stats');
+        console.error("Failed to fetch transaction stats");
       }
     } catch (error) {
-      console.error('Error fetching transaction stats:', error);
+      console.error("Error fetching transaction stats:", error);
     }
   };
 
@@ -202,11 +212,11 @@ export default function CoinManagementPage() {
   const fetchCoinPackages = async () => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/coins/packages', {
+      const adminToken = Cookies.get("adminToken");
+      const response = await fetch("/api/admin/coins/packages", {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -214,10 +224,10 @@ export default function CoinManagementPage() {
         const packages = await response.json();
         setCoinPackages(packages);
       } else {
-        console.error('Failed to fetch coin packages');
+        console.error("Failed to fetch coin packages");
       }
     } catch (error) {
-      console.error('Error fetching coin packages:', error);
+      console.error("Error fetching coin packages:", error);
     } finally {
       setLoading(false);
     }
@@ -227,15 +237,15 @@ export default function CoinManagementPage() {
   const fetchGifts = async () => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
-        console.error('Admin token not found');
+        console.error("Admin token not found");
         return;
       }
 
-      const response = await fetch('/api/admin/gifts', {
+      const response = await fetch("/api/admin/gifts", {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
+          Authorization: `Bearer ${adminToken}`,
         },
       });
 
@@ -243,10 +253,10 @@ export default function CoinManagementPage() {
         const data = await response.json();
         setGifts(data);
       } else {
-        console.error('Failed to fetch gifts');
+        console.error("Failed to fetch gifts");
       }
     } catch (error) {
-      console.error('Error fetching gifts:', error);
+      console.error("Error fetching gifts:", error);
     } finally {
       setLoading(false);
     }
@@ -257,35 +267,41 @@ export default function CoinManagementPage() {
     setGiftLoading(true);
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
-        alert('Admin token not found. Please login again.');
+        alert("Admin token not found. Please login again.");
         return;
       }
 
-      const url = editingGift ? `/api/admin/gifts/${editingGift.id}` : '/api/admin/gifts';
-      const method = editingGift ? 'PUT' : 'POST';
+      const url = editingGift
+        ? `/api/admin/gifts/${editingGift.id}`
+        : "/api/admin/gifts";
+      const method = editingGift ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(giftForm),
       });
 
       if (response.ok) {
-        alert(editingGift ? 'Gift updated successfully!' : 'Gift created successfully!');
+        alert(
+          editingGift
+            ? "Gift updated successfully!"
+            : "Gift created successfully!"
+        );
         resetGiftForm();
         fetchGifts();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to save gift'}`);
+        alert(`Error: ${error.message || "Failed to save gift"}`);
       }
     } catch (error) {
-      console.error('Error saving gift:', error);
-      alert('Network error: Failed to save gift. Please try again.');
+      console.error("Error saving gift:", error);
+      alert("Network error: Failed to save gift. Please try again.");
     } finally {
       setGiftLoading(false);
     }
@@ -304,42 +320,42 @@ export default function CoinManagementPage() {
   };
 
   const handleDeleteGift = async (giftId: string) => {
-    if (!confirm('Are you sure you want to delete this gift?')) {
+    if (!confirm("Are you sure you want to delete this gift?")) {
       return;
     }
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
-        alert('Admin token not found. Please login again.');
+        alert("Admin token not found. Please login again.");
         return;
       }
 
       const response = await fetch(`/api/admin/gifts/${giftId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
+          Authorization: `Bearer ${adminToken}`,
         },
       });
 
       if (response.ok) {
-        alert('Gift deleted successfully!');
+        alert("Gift deleted successfully!");
         fetchGifts();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to delete gift'}`);
+        alert(`Error: ${error.message || "Failed to delete gift"}`);
       }
     } catch (error) {
-      console.error('Error deleting gift:', error);
-      alert('Network error: Failed to delete gift. Please try again.');
+      console.error("Error deleting gift:", error);
+      alert("Network error: Failed to delete gift. Please try again.");
     }
   };
 
   const resetGiftForm = () => {
     setGiftForm({
-      name: '',
-      description: '',
-      iconUrl: '',
+      name: "",
+      description: "",
+      iconUrl: "",
       coinCost: 0,
       isActive: true,
     });
@@ -349,73 +365,81 @@ export default function CoinManagementPage() {
 
   // Transfer functions
   const handleTransfer = async () => {
-    if (!transferForm.userIdentifier || !transferForm.amount || !transferForm.reason) {
-      alert('Please fill in all required fields: User Identifier, Amount, and Reason');
+    if (
+      !transferForm.userIdentifier ||
+      !transferForm.amount ||
+      !transferForm.reason
+    ) {
+      alert(
+        "Please fill in all required fields: User Identifier, Amount, and Reason"
+      );
       return;
     }
 
     // Validate amount
     const amount = parseFloat(transferForm.amount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid positive amount');
+      alert("Please enter a valid positive amount");
       return;
     }
 
     setTransferLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
-        alert('Admin token not found. Please login again.');
+        alert("Admin token not found. Please login again.");
         return;
       }
 
-      const response = await fetch('/api/admin/coins/transfer', {
-        method: 'POST',
+      const response = await fetch("/api/admin/coins/transfer", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userIdentifier: transferForm.userIdentifier,
           amount: amount,
           type: transferForm.type,
-          reason: transferForm.reason
+          reason: transferForm.reason,
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        const action = transferForm.type === 'transfer' ? 'transferred' : 'withdrawn';
-        const message = `✅ Coins ${action} successfully!\n\n` +
-                       `User: ${result.user?.username || result.userIdentifier}\n` +
-                       `Email: ${result.user?.email || 'N/A'}\n` +
-                       `Amount: ${amount} coins\n` +
-                       `New Balance: ${result.newBalance} coins\n` +
-                       `Transaction ID: ${result.transactionId}`;
-        
+        const action =
+          transferForm.type === "transfer" ? "transferred" : "withdrawn";
+        const message =
+          `✅ Coins ${action} successfully!\n\n` +
+          `User: ${result.user?.username || result.userIdentifier}\n` +
+          `Email: ${result.user?.email || "N/A"}\n` +
+          `Amount: ${amount} coins\n` +
+          `New Balance: ${result.newBalance} coins\n` +
+          `Transaction ID: ${result.transactionId}`;
+
         alert(message);
-        
+
         // Reset form
         setTransferForm({
-          userIdentifier: '',
-          amount: '',
-          type: 'transfer',
-          reason: ''
+          userIdentifier: "",
+          amount: "",
+          type: "transfer",
+          reason: "",
         });
-        
+
         // Refresh transactions if on that tab
-        if (activeTab === 'transactions') {
+        if (activeTab === "transactions") {
           fetchTransactions();
           fetchTransactionStats();
         }
       } else {
-        const errorMessage = result.error || 'Failed to process transfer';
+        const errorMessage = result.error || "Failed to process transfer";
         alert(`❌ Error: ${errorMessage}`);
       }
     } catch (error) {
-      console.error('Error processing transfer:', error);
-      alert('❌ Network error: Failed to process transfer. Please try again.');
+      console.error("Error processing transfer:", error);
+      alert("❌ Network error: Failed to process transfer. Please try again.");
     } finally {
       setTransferLoading(false);
     }
@@ -423,14 +447,14 @@ export default function CoinManagementPage() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'purchase':
+      case "purchase":
         return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
-      case 'earning':
+      case "earning":
         return <ArrowUpIcon className="w-4 h-4 text-blue-600" />;
 
-      case 'bonus':
+      case "bonus":
         return <ArrowUpIcon className="w-4 h-4 text-purple-600" />;
-      case 'penalty':
+      case "penalty":
         return <ArrowDownIcon className="w-4 h-4 text-red-600" />;
       default:
         return <CurrencyDollarIcon className="w-4 h-4 text-gray-600" />;
@@ -439,56 +463,61 @@ export default function CoinManagementPage() {
 
   const getStatusBadge = (status: string) => {
     const statusClasses = {
-      completed: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800',
-      cancelled: 'bg-gray-100 text-gray-800'
+      completed: "bg-green-100 text-green-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
     };
 
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClasses[status as keyof typeof statusClasses] || statusClasses.cancelled}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          statusClasses[status as keyof typeof statusClasses] ||
+          statusClasses.cancelled
+        }`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const formatCurrency = (amount: number, currency = 'THB') => {
-    return new Intl.NumberFormat('th-TH', {
-      style: 'currency',
-      currency: currency
+  const formatCurrency = (amount: number, currency = "THB") => {
+    return new Intl.NumberFormat("th-TH", {
+      style: "currency",
+      currency: currency,
     }).format(amount);
   };
 
   // Package management functions
   const handlePackageSubmit = async () => {
     if (!packageForm.name || !packageForm.coins || !packageForm.price) {
-      alert('Please fill in all required fields');
+      alert("Please fill in all required fields");
       return;
     }
 
     setPackageLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
-        alert('Admin token not found. Please login again.');
+        alert("Admin token not found. Please login again.");
         return;
       }
-      
-      console.log('Submitting package:', packageForm);
-      const method = editingPackage ? 'PUT' : 'POST';
-      const url = editingPackage 
-        ? `/api/admin/coins/packages/${editingPackage.id}` 
-        : '/api/admin/coins/packages';
+
+      console.log("Submitting package:", packageForm);
+      const method = editingPackage ? "PUT" : "POST";
+      const url = editingPackage
+        ? `/api/admin/coins/packages/${editingPackage.id}`
+        : "/api/admin/coins/packages";
 
       const requestBody: any = {
         name: packageForm.name,
@@ -496,7 +525,7 @@ export default function CoinManagementPage() {
         price: parseFloat(packageForm.price),
         currency: packageForm.currency,
         description: packageForm.description,
-        isActive: packageForm.isActive
+        isActive: packageForm.isActive,
       };
 
       // Add ID for PUT requests
@@ -504,49 +533,53 @@ export default function CoinManagementPage() {
         requestBody.id = editingPackage.id;
       }
 
-      console.log('Making request to:', url, 'with method:', method);
-      console.log('Request body:', requestBody);
-      
+      console.log("Making request to:", url, "with method:", method);
+      console.log("Request body:", requestBody);
+
       const response = await fetch(url, {
         method: method,
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Success response:', result);
-        alert(`Package ${editingPackage ? 'updated' : 'created'} successfully!`);
+        console.log("Success response:", result);
+        alert(
+          `Package ${editingPackage ? "updated" : "created"} successfully!`
+        );
         setShowPackageModal(false);
         setEditingPackage(null);
         setPackageForm({
-          name: '',
-          coins: '',
-          price: '',
-          currency: 'THB',
-          description: '',
-          isActive: true
+          name: "",
+          coins: "",
+          price: "",
+          currency: "THB",
+          description: "",
+          isActive: true,
         });
         fetchCoinPackages();
       } else {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error("Error response:", errorText);
         try {
           const error = JSON.parse(errorText);
-          alert(`Error: ${error.message || error.error || 'Failed to save package'}`);
+          alert(
+            `Error: ${error.message || error.error || "Failed to save package"}`
+          );
         } catch (e) {
-          alert(`Error: ${errorText || 'Failed to save package'}`);
+          alert(`Error: ${errorText || "Failed to save package"}`);
         }
       }
     } catch (error) {
-      console.error('Error saving package:', error);
-      alert('Failed to save package');
+      console.error("Error saving package:", error);
+      alert("Failed to save package");
     } finally {
       setPackageLoading(false);
     }
@@ -559,37 +592,40 @@ export default function CoinManagementPage() {
       coins: pkg.coins.toString(),
       price: pkg.price.toString(),
       currency: pkg.currency,
-      description: pkg.description || '',
-      isActive: pkg.isActive
+      description: pkg.description || "",
+      isActive: pkg.isActive,
     });
     setShowPackageModal(true);
   };
 
   const handleDeletePackage = async (packageId: string) => {
-    if (!confirm('Are you sure you want to delete this package?')) {
+    if (!confirm("Are you sure you want to delete this package?")) {
       return;
     }
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`/api/admin/coins/packages?id=${packageId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const adminToken = Cookies.get("adminToken");
+      const response = await fetch(
+        `/api/admin/coins/packages?id=${packageId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
-        alert('Package deleted successfully!');
+        alert("Package deleted successfully!");
         fetchCoinPackages();
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to delete package'}`);
+        alert(`Error: ${error.message || "Failed to delete package"}`);
       }
     } catch (error) {
-      console.error('Error deleting package:', error);
-      alert('Failed to delete package');
+      console.error("Error deleting package:", error);
+      alert("Failed to delete package");
     }
   };
 
@@ -597,12 +633,12 @@ export default function CoinManagementPage() {
     setShowPackageModal(false);
     setEditingPackage(null);
     setPackageForm({
-      name: '',
-      coins: '',
-      price: '',
-      currency: 'THB',
-      description: '',
-      isActive: true
+      name: "",
+      coins: "",
+      price: "",
+      currency: "THB",
+      description: "",
+      isActive: true,
     });
   };
 
@@ -614,7 +650,9 @@ export default function CoinManagementPage() {
           <CurrencyDollarIcon className="w-8 h-8 mr-3 text-yellow-600" />
           Coin Management
         </h1>
-        <p className="text-gray-600 mt-2">Manage coin transactions, packages, and transfers</p>
+        <p className="text-gray-600 mt-2">
+          Manage coin transactions, packages, and transfers
+        </p>
       </div>
 
       {/* Tabs */}
@@ -622,10 +660,14 @@ export default function CoinManagementPage() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { id: 'transactions', name: 'Transactions', icon: CurrencyDollarIcon },
-              { id: 'packages', name: 'Coin Packages', icon: PlusIcon },
-              { id: 'gifts', name: 'Gift Packages', icon: GiftIcon },
-              { id: 'transfer', name: 'Coin Transfer', icon: ArrowUpIcon }
+              {
+                id: "transactions",
+                name: "Transactions",
+                icon: CurrencyDollarIcon,
+              },
+              { id: "packages", name: "Coin Packages", icon: PlusIcon },
+              { id: "gifts", name: "Gift Packages", icon: GiftIcon },
+              { id: "transfer", name: "Coin Transfer", icon: ArrowUpIcon },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -634,8 +676,8 @@ export default function CoinManagementPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   <Icon className="w-5 h-5 mr-2" />
@@ -648,7 +690,7 @@ export default function CoinManagementPage() {
       </div>
 
       {/* Transactions Tab */}
-      {activeTab === 'transactions' && (
+      {activeTab === "transactions" && (
         <div className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -658,8 +700,12 @@ export default function CoinManagementPage() {
                   <CurrencyDollarIcon className="h-8 w-8 text-blue-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Coins Issued</p>
-                  <p className="text-2xl font-semibold text-gray-900">{transactionStats.totalIssued.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    Total Coins Issued
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {transactionStats.totalIssued.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -670,8 +716,12 @@ export default function CoinManagementPage() {
                   <ArrowUpIcon className="h-8 w-8 text-green-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Purchases</p>
-                  <p className="text-2xl font-semibold text-gray-900">{transactionStats.totalPurchases.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    Total Purchases
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {transactionStats.totalPurchases.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -682,8 +732,12 @@ export default function CoinManagementPage() {
                   <ArrowDownIcon className="h-8 w-8 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Withdrawals</p>
-                  <p className="text-2xl font-semibold text-gray-900">{transactionStats.totalWithdrawals.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    Total Withdrawals
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {transactionStats.totalWithdrawals.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -693,40 +747,61 @@ export default function CoinManagementPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search
+                </label>
                 <div className="relative">
                   <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={transactionFilters.search}
-                    onChange={(e) => setTransactionFilters(prev => ({ ...prev, search: e.target.value }))}
+                    onChange={(e) =>
+                      setTransactionFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }))
+                    }
                     className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type
+                </label>
                 <select
                   value={transactionFilters.type}
-                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, type: e.target.value }))}
+                  onChange={(e) =>
+                    setTransactionFilters((prev) => ({
+                      ...prev,
+                      type: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Types</option>
                   <option value="purchase">Purchase</option>
                   <option value="earning">Earning</option>
-                  
+
                   <option value="bonus">Bonus</option>
                   <option value="penalty">Penalty</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
                 <select
                   value={transactionFilters.status}
-                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) =>
+                    setTransactionFilters((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Status</option>
@@ -738,21 +813,35 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  From Date
+                </label>
                 <input
                   type="date"
                   value={transactionFilters.dateFrom}
-                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  onChange={(e) =>
+                    setTransactionFilters((prev) => ({
+                      ...prev,
+                      dateFrom: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  To Date
+                </label>
                 <input
                   type="date"
                   value={transactionFilters.dateTo}
-                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  onChange={(e) =>
+                    setTransactionFilters((prev) => ({
+                      ...prev,
+                      dateTo: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -768,7 +857,13 @@ export default function CoinManagementPage() {
               </button>
               <button
                 onClick={() => {
-                  setTransactionFilters({ search: '', type: '', status: '', dateFrom: '', dateTo: '' });
+                  setTransactionFilters({
+                    search: "",
+                    type: "",
+                    status: "",
+                    dateFrom: "",
+                    dateTo: "",
+                  });
                   fetchTransactions();
                 }}
                 className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
@@ -784,13 +879,27 @@ export default function CoinManagementPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Balance
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -802,22 +911,35 @@ export default function CoinManagementPage() {
                     </tr>
                   ) : transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">No transactions found</td>
+                      <td
+                        colSpan={7}
+                        className="px-6 py-4 text-center text-gray-500"
+                      >
+                        No transactions found
+                      </td>
                     </tr>
                   ) : (
                     transactions.map((transaction) => (
                       <tr key={transaction.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{transaction.user.username}</div>
-                            <div className="text-sm text-gray-500">{transaction.user.email}</div>
-                            <div className="text-xs text-gray-400">ID: {transaction.user.id}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {transaction.user.username}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {transaction.user.email}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              ID: {transaction.user.id}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {getTypeIcon(transaction.type)}
-                            <span className="ml-2 text-sm text-gray-900 capitalize">{transaction.type.replace('_', ' ')}</span>
+                            <span className="ml-2 text-sm text-gray-900 capitalize">
+                              {transaction.type.replace("_", " ")}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -825,15 +947,22 @@ export default function CoinManagementPage() {
                             {transaction.amount} coins
                           </div>
                           {transaction.description && (
-                            <div className="text-xs text-gray-500 truncate max-w-32" title={transaction.description}>
+                            <div
+                              className="text-xs text-gray-500 truncate max-w-32"
+                              title={transaction.description}
+                            >
                               {transaction.description}
                             </div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            <div className="text-xs text-gray-500">Before: {transaction.balanceBefore || 'N/A'}</div>
-                            <div className="text-xs text-gray-500">After: {transaction.balanceAfter || 'N/A'}</div>
+                            <div className="text-xs text-gray-500">
+                              Before: {transaction.balanceBefore || "N/A"}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              After: {transaction.balanceAfter || "N/A"}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -843,7 +972,7 @@ export default function CoinManagementPage() {
                           {formatDate(transaction.date)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button 
+                          <button
                             onClick={() => {
                               setSelectedTransaction(transaction);
                               setShowTransactionModal(true);
@@ -865,21 +994,23 @@ export default function CoinManagementPage() {
       )}
 
       {/* Coin Packages Tab */}
-      {activeTab === 'packages' && (
+      {activeTab === "packages" && (
         <div className="space-y-6">
           {/* Header with Add Button */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Coin Packages</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Coin Packages
+            </h2>
             <button
               onClick={() => {
                 setEditingPackage(null);
                 setPackageForm({
-                  name: '',
-                  coins: '',
-                  price: '',
-                  currency: 'THB',
-                  description: '',
-                  isActive: true
+                  name: "",
+                  coins: "",
+                  price: "",
+                  currency: "THB",
+                  description: "",
+                  isActive: true,
                 });
                 setShowPackageModal(true);
               }}
@@ -897,33 +1028,53 @@ export default function CoinManagementPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : coinPackages.length === 0 ? (
-              <div className="col-span-3 text-center py-8 text-gray-500">No coin packages found</div>
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                No coin packages found
+              </div>
             ) : (
               coinPackages.map((pkg) => (
-                <div key={pkg.id} className={`bg-white rounded-lg shadow-lg p-6 border-2 ${pkg.isActive ? 'border-green-200' : 'border-gray-200'}`}>
+                <div
+                  key={pkg.id}
+                  className={`bg-white rounded-lg shadow-lg p-6 border-2 ${
+                    pkg.isActive ? "border-green-200" : "border-gray-200"
+                  }`}
+                >
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{pkg.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {pkg.isActive ? 'Active' : 'Inactive'}
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {pkg.name}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        pkg.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {pkg.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Coins:</span>
-                      <span className="font-medium">{pkg.coins.toLocaleString()}</span>
+                      <span className="font-medium">
+                        {pkg.coins.toLocaleString()}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Price:</span>
-                      <span className="font-medium">{formatCurrency(pkg.price, pkg.currency)}</span>
+                      <span className="font-medium">
+                        {formatCurrency(pkg.price, pkg.currency)}
+                      </span>
                     </div>
-                    
                   </div>
-                  
+
                   {pkg.description && (
-                    <p className="text-sm text-gray-600 mb-4">{pkg.description}</p>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {pkg.description}
+                    </p>
                   )}
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditPackage(pkg)}
@@ -948,18 +1099,20 @@ export default function CoinManagementPage() {
       )}
 
       {/* Gift Packages Tab */}
-      {activeTab === 'gifts' && (
+      {activeTab === "gifts" && (
         <div className="space-y-6">
           {/* Header with Add Button */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Gift Packages</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Gift Packages
+            </h2>
             <button
               onClick={() => {
                 setEditingGift(null);
                 setGiftForm({
-                  name: '',
-                  description: '',
-                  iconUrl: '',
+                  name: "",
+                  description: "",
+                  iconUrl: "",
                   coinCost: 0,
                   isActive: true,
                 });
@@ -979,31 +1132,48 @@ export default function CoinManagementPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : gifts.length === 0 ? (
-              <div className="col-span-3 text-center py-8 text-gray-500">No gifts found</div>
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                No gifts found
+              </div>
             ) : (
               gifts.map((gift) => (
-                <div key={gift.id} className={`bg-white rounded-lg shadow-lg p-6 border-2 ${gift.isActive ? 'border-green-200' : 'border-gray-200'}`}>
+                <div
+                  key={gift.id}
+                  className={`bg-white rounded-lg shadow-lg p-6 border-2 ${
+                    gift.isActive ? "border-green-200" : "border-gray-200"
+                  }`}
+                >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center">
                       <div className="text-2xl mr-3">{gift.iconUrl}</div>
-                      <h3 className="text-lg font-semibold text-gray-900">{gift.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {gift.name}
+                      </h3>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${gift.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {gift.isActive ? 'Active' : 'Inactive'}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        gift.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {gift.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Cost:</span>
                       <span className="font-medium">{gift.coinCost} coins</span>
                     </div>
                   </div>
-                  
+
                   {gift.description && (
-                    <p className="text-sm text-gray-600 mb-4">{gift.description}</p>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {gift.description}
+                    </p>
                   )}
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditGift(gift)}
@@ -1028,7 +1198,7 @@ export default function CoinManagementPage() {
       )}
 
       {/* Coin Transfer Tab */}
-      {activeTab === 'transfer' && (
+      {activeTab === "transfer" && (
         <div className="space-y-6">
           {/* Transfer Form */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -1037,16 +1207,22 @@ export default function CoinManagementPage() {
                 <ArrowUpIcon className="h-8 w-8 text-blue-600" />
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-900">Coin Transfer & Withdrawal</h2>
-                <p className="text-sm text-gray-600">Transfer coins to users or withdraw coins from user accounts</p>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Coin Transfer & Withdrawal
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Transfer coins to users or withdraw coins from user accounts
+                </p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* User Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">User Information</h3>
-                
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                  User Information
+                </h3>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     User Identifier <span className="text-red-500">*</span>
@@ -1055,17 +1231,26 @@ export default function CoinManagementPage() {
                     type="text"
                     placeholder="Enter username or email (e.g., john_doe or john@example.com)"
                     value={transferForm.userIdentifier}
-                    onChange={(e) => setTransferForm(prev => ({ ...prev, userIdentifier: e.target.value }))}
+                    onChange={(e) =>
+                      setTransferForm((prev) => ({
+                        ...prev,
+                        userIdentifier: e.target.value,
+                      }))
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter the user's username or email address</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the user's username or email address
+                  </p>
                 </div>
               </div>
 
               {/* Transaction Details */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Transaction Details</h3>
-                
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                  Transaction Details
+                </h3>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Amount <span className="text-red-500">*</span>
@@ -1077,14 +1262,21 @@ export default function CoinManagementPage() {
                       step="0.01"
                       placeholder="Enter coin amount"
                       value={transferForm.amount}
-                      onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
+                      onChange={(e) =>
+                        setTransferForm((prev) => ({
+                          ...prev,
+                          amount: e.target.value,
+                        }))
+                      }
                       className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 text-sm">🪙</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Enter the number of coins to transfer</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the number of coins to transfer
+                  </p>
                 </div>
 
                 <div>
@@ -1093,17 +1285,25 @@ export default function CoinManagementPage() {
                   </label>
                   <select
                     value={transferForm.type}
-                    onChange={(e) => setTransferForm(prev => ({ ...prev, type: e.target.value as 'transfer' | 'withdraw' }))}
+                    onChange={(e) =>
+                      setTransferForm((prev) => ({
+                        ...prev,
+                        type: e.target.value as "transfer" | "withdraw",
+                      }))
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="transfer">➕ Transfer Coins (Add to User)</option>
-                    <option value="withdraw">➖ Withdraw Coins (Remove from User)</option>
+                    <option value="transfer">
+                      ➕ Transfer Coins (Add to User)
+                    </option>
+                    <option value="withdraw">
+                      ➖ Withdraw Coins (Remove from User)
+                    </option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    {transferForm.type === 'transfer' 
-                      ? 'Add coins to user account (BONUS transaction type)'
-                      : 'Remove coins from user account (PENALTY transaction type)'
-                    }
+                    {transferForm.type === "transfer"
+                      ? "Add coins to user account (BONUS transaction type)"
+                      : "Remove coins from user account (PENALTY transaction type)"}
                   </p>
                 </div>
 
@@ -1114,11 +1314,18 @@ export default function CoinManagementPage() {
                   <textarea
                     placeholder="Enter detailed reason for this transaction (e.g., 'Compensation for service issue', 'Bonus for loyal user', 'Penalty for violation')"
                     value={transferForm.reason}
-                    onChange={(e) => setTransferForm(prev => ({ ...prev, reason: e.target.value }))}
+                    onChange={(e) =>
+                      setTransferForm((prev) => ({
+                        ...prev,
+                        reason: e.target.value,
+                      }))
+                    }
                     rows={3}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">This will be recorded in the transaction log</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will be recorded in the transaction log
+                  </p>
                 </div>
               </div>
             </div>
@@ -1129,9 +1336,9 @@ export default function CoinManagementPage() {
                 onClick={handleTransfer}
                 disabled={transferLoading}
                 className={`flex-1 px-6 py-3 rounded-lg font-medium flex items-center justify-center ${
-                  transferForm.type === 'transfer'
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
+                  transferForm.type === "transfer"
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-red-600 hover:bg-red-700 text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {transferLoading ? (
@@ -1141,18 +1348,27 @@ export default function CoinManagementPage() {
                   </>
                 ) : (
                   <>
-                    {transferForm.type === 'transfer' ? (
+                    {transferForm.type === "transfer" ? (
                       <ArrowUpIcon className="w-4 h-4 mr-2" />
                     ) : (
                       <ArrowDownIcon className="w-4 h-4 mr-2" />
                     )}
-                    {transferForm.type === 'transfer' ? 'Transfer Coins' : 'Withdraw Coins'}
+                    {transferForm.type === "transfer"
+                      ? "Transfer Coins"
+                      : "Withdraw Coins"}
                   </>
                 )}
               </button>
-              
+
               <button
-                onClick={() => setTransferForm({ userIdentifier: '', amount: '', type: 'transfer', reason: '' })}
+                onClick={() =>
+                  setTransferForm({
+                    userIdentifier: "",
+                    amount: "",
+                    type: "transfer",
+                    reason: "",
+                  })
+                }
                 className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium"
               >
                 Clear Form
@@ -1163,15 +1379,28 @@ export default function CoinManagementPage() {
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-blue-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">Important Information</h3>
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Important Information
+                  </h3>
                   <div className="mt-2 text-sm text-blue-700">
                     <ul className="list-disc list-inside space-y-1">
-                      <li>All transactions are logged with admin ID for audit purposes</li>
+                      <li>
+                        All transactions are logged with admin ID for audit
+                        purposes
+                      </li>
                       <li>Transfer creates a BONUS transaction type</li>
                       <li>Withdrawal creates a PENALTY transaction type</li>
                       <li>User balance is automatically updated</li>
@@ -1187,50 +1416,70 @@ export default function CoinManagementPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-medium text-gray-900">Recent Transfers</h3>
+                <h3 className="text-lg font-medium text-gray-900">
+                  Recent Transfers
+                </h3>
                 <div className="ml-3 flex items-center">
-                  <div className={`w-2 h-2 rounded-full mr-2 ${transferConnectionStatus ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className={`text-sm ${transferConnectionStatus ? 'text-green-600' : 'text-red-600'}`}>
-                    {transferConnectionStatus ? 'Connected' : 'Disconnected'}
+                  <div
+                    className={`w-2 h-2 rounded-full mr-2 ${
+                      transferConnectionStatus ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  ></div>
+                  <span
+                    className={`text-sm ${
+                      transferConnectionStatus
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {transferConnectionStatus ? "Connected" : "Disconnected"}
                   </span>
                 </div>
               </div>
               <span className="text-sm text-gray-500">Live Updates</span>
             </div>
-            
+
             {recentTransfers.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <ArrowUpIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                 <p>No recent transfers yet</p>
-                <p className="text-sm">Transfer updates will appear here in real-time</p>
+                <p className="text-sm">
+                  Transfer updates will appear here in real-time
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
                 {recentTransfers.map((transfer, index) => (
-                                     <div
-                     key={transfer.transferId}
-                     className={`p-4 rounded-lg border-l-4 ${
-                       transfer.transferType === 'transfer' 
-                         ? 'border-l-green-500 bg-green-50' 
-                         : 'border-l-red-500 bg-red-50'
-                     } ${index === 0 ? 'animate-pulse' : ''}`}
-                   >
-                     <div className="flex items-center justify-between">
-                       <div className="flex items-center">
-                         {transfer.transferType === 'transfer' ? (
-                           <ArrowUpIcon className="h-5 w-5 text-green-600 mr-2" />
-                         ) : (
-                           <ArrowDownIcon className="h-5 w-5 text-red-600 mr-2" />
-                         )}
-                         <div>
-                           <p className="font-medium text-gray-900">
-                             {transfer.transferType === 'transfer' ? 'Transferred' : 'Withdrawn'} {transfer.amount} coins
-                           </p>
-                           <p className="text-sm text-gray-600">
-                             {transfer.transferType === 'transfer' ? 'to' : 'from'} {transfer.user.username} ({transfer.user.email})
-                           </p>
-                         </div>
-                       </div>
+                  <div
+                    key={transfer.transferId}
+                    className={`p-4 rounded-lg border-l-4 ${
+                      transfer.transferType === "transfer"
+                        ? "border-l-green-500 bg-green-50"
+                        : "border-l-red-500 bg-red-50"
+                    } ${index === 0 ? "animate-pulse" : ""}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {transfer.transferType === "transfer" ? (
+                          <ArrowUpIcon className="h-5 w-5 text-green-600 mr-2" />
+                        ) : (
+                          <ArrowDownIcon className="h-5 w-5 text-red-600 mr-2" />
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {transfer.transferType === "transfer"
+                              ? "Transferred"
+                              : "Withdrawn"}{" "}
+                            {transfer.amount} coins
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {transfer.transferType === "transfer"
+                              ? "to"
+                              : "from"}{" "}
+                            {transfer.user.username} ({transfer.user.email})
+                          </p>
+                        </div>
+                      </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-500">
                           {new Date(transfer.timestamp).toLocaleTimeString()}
@@ -1242,7 +1491,8 @@ export default function CoinManagementPage() {
                     </div>
                     <div className="mt-2">
                       <p className="text-sm text-gray-700">
-                        <span className="font-medium">Reason:</span> {transfer.reason}
+                        <span className="font-medium">Reason:</span>{" "}
+                        {transfer.reason}
                       </p>
                     </div>
                   </div>
@@ -1258,16 +1508,23 @@ export default function CoinManagementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingPackage ? 'Edit Coin Package' : 'Add New Coin Package'}
+              {editingPackage ? "Edit Coin Package" : "Add New Coin Package"}
             </h3>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Package Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Package Name *
+                </label>
                 <input
                   type="text"
                   value={packageForm.name}
-                  onChange={(e) => setPackageForm(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setPackageForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter package name"
                 />
@@ -1275,22 +1532,36 @@ export default function CoinManagementPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Coins *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Coins *
+                  </label>
                   <input
                     type="number"
                     value={packageForm.coins}
-                    onChange={(e) => setPackageForm(prev => ({ ...prev, coins: e.target.value }))}
+                    onChange={(e) =>
+                      setPackageForm((prev) => ({
+                        ...prev,
+                        coins: e.target.value,
+                      }))
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (THB) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price (THB) *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={packageForm.price}
-                    onChange={(e) => setPackageForm(prev => ({ ...prev, price: e.target.value }))}
+                    onChange={(e) =>
+                      setPackageForm((prev) => ({
+                        ...prev,
+                        price: e.target.value,
+                      }))
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="350"
                   />
@@ -1298,10 +1569,17 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Currency
+                </label>
                 <select
                   value={packageForm.currency}
-                  onChange={(e) => setPackageForm(prev => ({ ...prev, currency: e.target.value }))}
+                  onChange={(e) =>
+                    setPackageForm((prev) => ({
+                      ...prev,
+                      currency: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="THB">THB (Thai Baht)</option>
@@ -1309,10 +1587,17 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   value={packageForm.description}
-                  onChange={(e) => setPackageForm(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setPackageForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Package description..."
@@ -1324,10 +1609,17 @@ export default function CoinManagementPage() {
                   <input
                     type="checkbox"
                     checked={packageForm.isActive}
-                    onChange={(e) => setPackageForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                    onChange={(e) =>
+                      setPackageForm((prev) => ({
+                        ...prev,
+                        isActive: e.target.checked,
+                      }))
+                    }
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Active Package</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Active Package
+                  </span>
                 </label>
               </div>
             </div>
@@ -1345,7 +1637,11 @@ export default function CoinManagementPage() {
                 disabled={packageLoading}
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {packageLoading ? 'Saving...' : (editingPackage ? 'Update' : 'Create')}
+                {packageLoading
+                  ? "Saving..."
+                  : editingPackage
+                  ? "Update"
+                  : "Create"}
               </button>
             </div>
           </div>
@@ -1357,16 +1653,20 @@ export default function CoinManagementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {editingGift ? 'Edit Gift' : 'Add New Gift'}
+              {editingGift ? "Edit Gift" : "Add New Gift"}
             </h3>
-            
+
             <form onSubmit={handleGiftSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Gift Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gift Name *
+                </label>
                 <input
                   type="text"
                   value={giftForm.name}
-                  onChange={(e) => setGiftForm(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setGiftForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter gift name"
                   required
@@ -1374,11 +1674,18 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Icon/Emoji *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Icon/Emoji *
+                </label>
                 <input
                   type="text"
                   value={giftForm.iconUrl}
-                  onChange={(e) => setGiftForm(prev => ({ ...prev, iconUrl: e.target.value }))}
+                  onChange={(e) =>
+                    setGiftForm((prev) => ({
+                      ...prev,
+                      iconUrl: e.target.value,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="❤️ or image URL"
                   required
@@ -1386,12 +1693,19 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Coin Cost *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Coin Cost *
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={giftForm.coinCost}
-                  onChange={(e) => setGiftForm(prev => ({ ...prev, coinCost: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setGiftForm((prev) => ({
+                      ...prev,
+                      coinCost: parseInt(e.target.value) || 0,
+                    }))
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="10"
                   required
@@ -1399,10 +1713,17 @@ export default function CoinManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   value={giftForm.description}
-                  onChange={(e) => setGiftForm(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setGiftForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Gift description..."
@@ -1414,10 +1735,17 @@ export default function CoinManagementPage() {
                   <input
                     type="checkbox"
                     checked={giftForm.isActive}
-                    onChange={(e) => setGiftForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                    onChange={(e) =>
+                      setGiftForm((prev) => ({
+                        ...prev,
+                        isActive: e.target.checked,
+                      }))
+                    }
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Active Gift</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Active Gift
+                  </span>
                 </label>
               </div>
 
@@ -1435,7 +1763,11 @@ export default function CoinManagementPage() {
                   disabled={giftLoading}
                   className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {giftLoading ? 'Saving...' : (editingGift ? 'Update' : 'Create')}
+                  {giftLoading
+                    ? "Saving..."
+                    : editingGift
+                    ? "Update"
+                    : "Create"}
                 </button>
               </div>
             </form>
@@ -1448,7 +1780,9 @@ export default function CoinManagementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Transaction Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Transaction Details
+              </h3>
               <button
                 onClick={() => {
                   setShowTransactionModal(false);
@@ -1456,67 +1790,113 @@ export default function CoinManagementPage() {
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Transaction ID</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedTransaction.id}</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Transaction ID
+                  </label>
+                  <p className="text-sm text-gray-900 font-mono">
+                    {selectedTransaction.id}
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Reference</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedTransaction.reference || 'N/A'}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">User</label>
-                  <p className="text-sm text-gray-900">{selectedTransaction.user.username}</p>
-                  <p className="text-xs text-gray-500">{selectedTransaction.user.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">User ID</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedTransaction.user.id}</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Reference
+                  </label>
+                  <p className="text-sm text-gray-900 font-mono">
+                    {selectedTransaction.reference || "N/A"}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    User
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedTransaction.user.username}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {selectedTransaction.user.email}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    User ID
+                  </label>
+                  <p className="text-sm text-gray-900 font-mono">
+                    {selectedTransaction.user.id}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Type
+                  </label>
                   <div className="flex items-center mt-1">
                     {getTypeIcon(selectedTransaction.type)}
                     <span className="ml-2 text-sm text-gray-900 capitalize">
-                      {selectedTransaction.type.replace('_', ' ')}
+                      {selectedTransaction.type.replace("_", " ")}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Amount</label>
-                  <p className="text-sm text-gray-900 font-medium">{selectedTransaction.amount} coins</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Amount
+                  </label>
+                  <p className="text-sm text-gray-900 font-medium">
+                    {selectedTransaction.amount} coins
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <div className="mt-1">{getStatusBadge(selectedTransaction.status)}</div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <div className="mt-1">
+                    {getStatusBadge(selectedTransaction.status)}
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Date</label>
-                  <p className="text-sm text-gray-900">{formatDate(selectedTransaction.date)}</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Date
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {formatDate(selectedTransaction.date)}
+                  </p>
                 </div>
               </div>
 
               {selectedTransaction.description && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <p className="text-sm text-gray-900">{selectedTransaction.description}</p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {selectedTransaction.description}
+                  </p>
                 </div>
               )}
             </div>

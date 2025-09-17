@@ -148,6 +148,65 @@ const authApi = {
     const response = await apiClient.post(`/oauth/link-line`, { accessToken });
     return response.data;
   },
+
+  unlinkGoogleAccount: async (): Promise<void> => {
+    const response = await apiClient.post(`/oauth/unlink-google`);
+    return response.data;
+  },
+
+  unlinkLineAccount: async (): Promise<void> => {
+    const response = await apiClient.post(`/oauth/unlink-line`);
+    return response.data;
+  },
+
+  // Withdraw methods
+  createWithdrawRequest: async (data: {
+    amount: number;
+    accountNumber: string;
+    bankName: string;
+    accountHolderName: string;
+    routingNumber?: string;
+  }): Promise<{ withdrawalId: string; status: string }> => {
+    const response = await apiClient.post(`/withdraw/request`, data);
+    return response.data;
+  },
+
+  getWithdrawHistory: async (): Promise<
+    Array<{
+      id: string;
+      amount: number;
+      status: string;
+      bankAccount: string;
+      bankName: string;
+      accountHolderName: string;
+      createdAt: string;
+      processedAt?: string;
+      stripeTransferId?: string;
+    }>
+  > => {
+    const response = await apiClient.get(`/withdraw/history?page=0&size=100`);
+    // Backend returns a Page object, we need to extract the content array
+    return response.data.content || [];
+  },
+
+  getWithdrawStatus: async (
+    withdrawalId: string
+  ): Promise<{
+    id: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+    processedAt?: string;
+    errorMessage?: string;
+  }> => {
+    const response = await apiClient.get(`/withdraw/status/${withdrawalId}`);
+    return response.data;
+  },
+
+  cancelWithdrawRequest: async (withdrawalId: string): Promise<void> => {
+    const response = await apiClient.post(`/withdraw/cancel/${withdrawalId}`);
+    return response.data;
+  },
 };
 
 export { authApi };

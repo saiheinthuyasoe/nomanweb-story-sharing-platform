@@ -1,67 +1,46 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Eye, EyeOff, Shield, AlertTriangle } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const AdminLoginPage = () => {
   const router = useRouter();
+  const { login } = useAdminAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    adminCode: ''
+    email: "",
+    password: "",
+    adminCode: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('/api/admin/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Admin login failed');
-      }
-
-      // Store admin token
-      localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('adminUser', JSON.stringify(data.user));
-      
-      // Dispatch custom event to notify admin layout of auth change
-      window.dispatchEvent(new Event('adminAuthChange'));
-      
-      toast.success('Admin login successful');
-      
-      // Small delay to ensure localStorage is set and events are processed
-      setTimeout(() => {
-        router.push('/admin/dashboard');
-      }, 100);
+      await login(
+        formData.email,
+        formData.password,
+        formData.adminCode || undefined
+      );
     } catch (error: any) {
       setError(error.message);
-      toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -73,7 +52,9 @@ const AdminLoginPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
             <Shield className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Access</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Admin Access
+          </h1>
           <p className="text-gray-600">Secure administrator login</p>
         </div>
 
@@ -82,7 +63,10 @@ const AdminLoginPage = () => {
           <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-yellow-800">
             <p className="font-medium">Restricted Access</p>
-            <p>This area is for authorized administrators only. All login attempts are monitored and logged.</p>
+            <p>
+              This area is for authorized administrators only. All login
+              attempts are monitored and logged.
+            </p>
           </div>
         </div>
 
@@ -96,7 +80,10 @@ const AdminLoginPage = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Admin Email
             </label>
             <input
@@ -112,12 +99,15 @@ const AdminLoginPage = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Password
             </label>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 id="password"
                 name="password"
                 value={formData.password}
@@ -131,13 +121,20 @@ const AdminLoginPage = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
 
           <div>
-            <label htmlFor="adminCode" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="adminCode"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Admin Code <span className="text-gray-500">(Optional)</span>
             </label>
             <input
@@ -162,7 +159,7 @@ const AdminLoginPage = () => {
                 Authenticating...
               </div>
             ) : (
-              'Admin Login'
+              "Admin Login"
             )}
           </button>
         </form>
@@ -170,8 +167,8 @@ const AdminLoginPage = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <div className="border-t pt-4">
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               ← Back to User Login
@@ -183,4 +180,4 @@ const AdminLoginPage = () => {
   );
 };
 
-export default AdminLoginPage; 
+export default AdminLoginPage;

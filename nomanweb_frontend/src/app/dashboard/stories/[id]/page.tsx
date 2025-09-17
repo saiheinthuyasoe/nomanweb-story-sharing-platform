@@ -406,7 +406,7 @@ export default function StoryDetailPage() {
                   {/* Preview Button */}
                   {story.totalChapters > 0 ? (
                     <Link
-                      href={`/stories/${story.id}/chapters/1`}
+                      href={`/stories/${story.id}/chapters/1/read`}
                       className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center space-x-2 text-sm"
                     >
                       <EyeIcon className="w-4 h-4" />

@@ -1,14 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { X, User, Mail, Edit3, Save, Settings, Camera, Shield, Crown, Sparkles, Link, Unlink } from 'lucide-react';
-import { User as UserType } from '@/types/user';
-import { authApi } from '@/lib/api/auth';
-import toast from 'react-hot-toast';
-import EmailChangeModal from './EmailChangeModal';
-import UsernameChangeModal from './UsernameChangeModal';
-import GoogleSignIn from '@/components/auth/GoogleSignIn';
-import LinkLineSignIn from '@/components/auth/LinkLineSignIn';
+import React, { useState } from "react";
+import {
+  X,
+  User,
+  Mail,
+  Edit3,
+  Save,
+  Settings,
+  Camera,
+  Shield,
+  Crown,
+  Sparkles,
+  Link,
+  Unlink,
+} from "lucide-react";
+import { User as UserType } from "@/types/user";
+import { authApi } from "@/lib/api/auth";
+import toast from "react-hot-toast";
+import EmailChangeModal from "./EmailChangeModal";
+import UsernameChangeModal from "./UsernameChangeModal";
+import GoogleSignIn from "@/components/auth/GoogleSignIn";
+import LinkLineSignIn from "@/components/auth/LinkLineSignIn";
 
 interface EditProfileModalProps {
   user: UserType;
@@ -17,14 +30,20 @@ interface EditProfileModalProps {
   onSave: (updatedUser: UserType) => void;
 }
 
-export default function EditProfileModal({ user, isOpen, onClose, onSave }: EditProfileModalProps) {
+export default function EditProfileModal({
+  user,
+  isOpen,
+  onClose,
+  onSave,
+}: EditProfileModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailChangeModalOpen, setIsEmailChangeModalOpen] = useState(false);
-  const [isUsernameChangeModalOpen, setIsUsernameChangeModalOpen] = useState(false);
+  const [isUsernameChangeModalOpen, setIsUsernameChangeModalOpen] =
+    useState(false);
   const [isLinkingAccount, setIsLinkingAccount] = useState(false);
   const [formData, setFormData] = useState({
-    displayName: user.displayName || '',
-    bio: user.bio || '',
+    displayName: user.displayName || "",
+    bio: user.bio || "",
   });
 
   if (!isOpen) return null;
@@ -40,11 +59,11 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
       });
 
       onSave(updatedUser);
-      toast.success('Profile updated successfully!');
+      toast.success("Profile updated successfully!");
       onClose();
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile. Please try again.');
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -54,12 +73,14 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
     setIsLinkingAccount(true);
     try {
       await authApi.linkGoogleAccount(response.credential);
-      const updatedUser = { ...user, googleId: 'linked' };
+      const updatedUser = { ...user, googleId: "linked" };
       onSave(updatedUser);
-      toast.success('Google account linked successfully!');
+      toast.success("Google account linked successfully!");
     } catch (error: any) {
-      console.error('Error linking Google account:', error);
-      toast.error(error.response?.data?.error || 'Failed to link Google account');
+      console.error("Error linking Google account:", error);
+      toast.error(
+        error.response?.data?.error || "Failed to link Google account"
+      );
     } finally {
       setIsLinkingAccount(false);
     }
@@ -69,29 +90,45 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
     setIsLinkingAccount(true);
     try {
       await authApi.linkLineAccount(response.accessToken);
-      const updatedUser = { ...user, lineUserId: 'linked' };
+      const updatedUser = { ...user, lineUserId: "linked" };
       onSave(updatedUser);
-      toast.success('LINE account linked successfully!');
+      toast.success("LINE account linked successfully!");
     } catch (error: any) {
-      console.error('Error linking LINE account:', error);
-      toast.error(error.response?.data?.error || 'Failed to link LINE account');
+      console.error("Error linking LINE account:", error);
+      toast.error(error.response?.data?.error || "Failed to link LINE account");
     } finally {
       setIsLinkingAccount(false);
     }
   };
 
-  const handleUnlinkAccount = async (provider: 'google' | 'line') => {
-    if (!confirm(`Are you sure you want to unlink your ${provider.toUpperCase()} account?`)) {
+  const handleUnlinkAccount = async (provider: "google" | "line") => {
+    if (
+      !confirm(
+        `Are you sure you want to unlink your ${provider.toUpperCase()} account?`
+      )
+    ) {
       return;
     }
 
     setIsLinkingAccount(true);
     try {
-      // Note: Backend API for unlinking would need to be implemented
-      toast.info(`${provider.toUpperCase()} account unlinking is not yet implemented`);
+      if (provider === "google") {
+        await authApi.unlinkGoogleAccount();
+        const updatedUser = { ...user, googleId: null };
+        onSave(updatedUser);
+        toast.success("Google account unlinked successfully!");
+      } else if (provider === "line") {
+        await authApi.unlinkLineAccount();
+        const updatedUser = { ...user, lineUserId: null };
+        onSave(updatedUser);
+        toast.success("LINE account unlinked successfully!");
+      }
     } catch (error: any) {
       console.error(`Error unlinking ${provider} account:`, error);
-      toast.error(`Failed to unlink ${provider.toUpperCase()} account`);
+      toast.error(
+        error.response?.data?.error ||
+          `Failed to unlink ${provider.toUpperCase()} account`
+      );
     } finally {
       setIsLinkingAccount(false);
     }
@@ -111,7 +148,9 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 <h2 className="text-xl font-bold bg-gradient-to-r from-[#18243c] to-[#22325a] bg-clip-text text-transparent">
                   Edit Profile
                 </h2>
-                <p className="text-sm text-gray-600">Update your profile information</p>
+                <p className="text-sm text-gray-600">
+                  Update your profile information
+                </p>
               </div>
             </div>
             <button
@@ -127,7 +166,10 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Display Name Section */}
           <div className="space-y-3">
-            <label htmlFor="displayName" className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="displayName"
+              className="flex items-center space-x-2 text-sm font-semibold text-gray-700"
+            >
               <User className="w-4 h-4 text-[#18243c]" />
               <span>Display Name</span>
             </label>
@@ -136,7 +178,9 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 type="text"
                 id="displayName"
                 value={formData.displayName}
-                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, displayName: e.target.value })
+                }
                 placeholder="Enter your display name"
                 className="w-full pl-4 pr-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl focus:ring-2 focus:ring-[#18243c]/20 focus:border-[#18243c]/40 transition-all duration-300 placeholder-gray-400"
               />
@@ -146,7 +190,10 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
 
           {/* Bio Section */}
           <div className="space-y-3">
-            <label htmlFor="bio" className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="bio"
+              className="flex items-center space-x-2 text-sm font-semibold text-gray-700"
+            >
               <Sparkles className="w-4 h-4 text-[#18243c]" />
               <span>Bio</span>
             </label>
@@ -155,7 +202,9 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 id="bio"
                 rows={4}
                 value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, bio: e.target.value })
+                }
                 placeholder="Tell us about yourself..."
                 className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl focus:ring-2 focus:ring-[#18243c]/20 focus:border-[#18243c]/40 transition-all duration-300 resize-none placeholder-gray-400"
               />
@@ -163,7 +212,13 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
             </div>
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>Share your story with the community</span>
-              <span className={`font-medium ${formData.bio.length > 450 ? 'text-orange-500' : 'text-gray-400'}`}>
+              <span
+                className={`font-medium ${
+                  formData.bio.length > 450
+                    ? "text-orange-500"
+                    : "text-gray-400"
+                }`}
+              >
                 {formData.bio.length}/500
               </span>
             </div>
@@ -173,9 +228,11 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
           <div className="space-y-4 pt-4 border-t border-gray-200/50">
             <div className="flex items-center space-x-2 mb-4">
               <Shield className="w-4 h-4 text-[#18243c]" />
-              <span className="text-sm font-semibold text-gray-700">Account Settings</span>
+              <span className="text-sm font-semibold text-gray-700">
+                Account Settings
+              </span>
             </div>
-            
+
             {/* Username Field */}
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -184,7 +241,9 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
               <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border border-gray-200/60 rounded-xl backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
                   <Crown className="w-4 h-4 text-yellow-500" />
-                  <span className="text-gray-700 font-medium">@{user.username}</span>
+                  <span className="text-gray-700 font-medium">
+                    @{user.username}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -196,7 +255,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 </button>
               </div>
             </div>
-            
+
             {/* Email Field */}
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -205,7 +264,9 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
               <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border border-gray-200/60 rounded-xl backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-blue-500" />
-                  <span className="text-gray-700 font-medium">{user.email}</span>
+                  <span className="text-gray-700 font-medium">
+                    {user.email}
+                  </span>
                   {user.emailVerified && (
                     <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
@@ -229,9 +290,11 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
           <div className="space-y-4 pt-4 border-t border-gray-200/50">
             <div className="flex items-center space-x-2 mb-4">
               <Link className="w-4 h-4 text-[#18243c]" />
-              <span className="text-sm font-semibold text-gray-700">Connected Accounts</span>
+              <span className="text-sm font-semibold text-gray-700">
+                Connected Accounts
+              </span>
             </div>
-            
+
             {/* Google Account */}
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,7 +306,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                     <span className="text-white text-xs font-bold">G</span>
                   </div>
                   <span className="text-gray-700 font-medium">
-                    {user.googleId ? 'Connected' : 'Not connected'}
+                    {user.googleId ? "Connected" : "Not connected"}
                   </span>
                   {user.googleId && (
                     <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
@@ -255,7 +318,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 {user.googleId ? (
                   <button
                     type="button"
-                    onClick={() => handleUnlinkAccount('google')}
+                    onClick={() => handleUnlinkAccount("google")}
                     disabled={isLinkingAccount}
                     className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50"
                   >
@@ -268,8 +331,8 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                       mode="link"
                       onSuccess={handleGoogleLink}
                       onError={(error) => {
-                        console.error('Google OAuth error:', error);
-                        toast.error('Failed to connect Google account');
+                        console.error("Google OAuth error:", error);
+                        toast.error("Failed to connect Google account");
                       }}
                       className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
                     >
@@ -280,7 +343,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 )}
               </div>
             </div>
-            
+
             {/* LINE Account */}
             <div className="group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -292,7 +355,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                     <span className="text-white text-xs font-bold">L</span>
                   </div>
                   <span className="text-gray-700 font-medium">
-                    {user.lineUserId ? 'Connected' : 'Not connected'}
+                    {user.lineUserId ? "Connected" : "Not connected"}
                   </span>
                   {user.lineUserId && (
                     <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
@@ -304,7 +367,7 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 {user.lineUserId ? (
                   <button
                     type="button"
-                    onClick={() => handleUnlinkAccount('line')}
+                    onClick={() => handleUnlinkAccount("line")}
                     disabled={isLinkingAccount}
                     className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50"
                   >
@@ -316,8 +379,8 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                     <LinkLineSignIn
                       onSuccess={handleLineLink}
                       onError={(error) => {
-                        console.error('LINE OAuth error:', error);
-                        toast.error('Failed to connect LINE account');
+                        console.error("LINE OAuth error:", error);
+                        toast.error("Failed to connect LINE account");
                       }}
                       className="group/btn flex items-center space-x-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
                     >
@@ -328,10 +391,15 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
                 )}
               </div>
             </div>
-            
+
             <div className="text-xs text-gray-500 bg-blue-50/50 p-3 rounded-lg border border-blue-200/30">
-              <p className="font-medium text-blue-700 mb-1">About Connected Accounts:</p>
-              <p>Link your social accounts to enable quick sign-in and sync your profile information. Your existing data will be preserved.</p>
+              <p className="font-medium text-blue-700 mb-1">
+                About Connected Accounts:
+              </p>
+              <p>
+                Link your social accounts to enable quick sign-in and sync your
+                profile information. Your existing data will be preserved.
+              </p>
             </div>
           </div>
 

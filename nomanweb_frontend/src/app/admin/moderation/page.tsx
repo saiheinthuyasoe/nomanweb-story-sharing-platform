@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -148,7 +149,7 @@ export default function AdminModerationPage() {
   const fetchChapters = async () => {
     try {
       setLoading(true);
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         throw new Error("Admin token not found. Please login again.");
       }
@@ -199,7 +200,7 @@ export default function AdminModerationPage() {
 
   const fetchQueueStatus = async () => {
     try {
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         return;
       }
@@ -224,7 +225,7 @@ export default function AdminModerationPage() {
 
   const startAiModeration = async () => {
     try {
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         throw new Error("Admin token not found. Please login again.");
       }
@@ -253,7 +254,7 @@ export default function AdminModerationPage() {
 
   const stopAiModeration = async () => {
     try {
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         throw new Error("Admin token not found. Please login again.");
       }
@@ -351,7 +352,7 @@ export default function AdminModerationPage() {
       setAnalyzing(true);
       setAnalysisResult(null);
 
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         throw new Error("Admin token not found. Please login again.");
       }
@@ -389,7 +390,7 @@ export default function AdminModerationPage() {
     try {
       setModerating(true);
 
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken = Cookies.get("adminToken");
       if (!adminToken) {
         throw new Error("Admin token not found. Please login again.");
       }

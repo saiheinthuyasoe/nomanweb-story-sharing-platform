@@ -1,7 +1,7 @@
-import React from 'react';
-import { StoryCard } from './StoryCard';
-import { StoryPreview, StoriesResponse } from '@/types/story';
-import { BookOpenIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import { StoryCard } from "./StoryCard";
+import { StoryPreview, StoriesResponse } from "@/types/story";
+import { BookOpenIcon } from "@heroicons/react/24/outline";
 
 interface StoryListProps {
   stories: StoriesResponse | null;
@@ -17,8 +17,8 @@ export function StoryList({
   stories,
   isLoading,
   error,
-  className = '',
-  emptyMessage = 'No stories found',
+  className = "",
+  emptyMessage = "No stories found",
   onPageChange,
   currentPage = 0,
 }: StoryListProps) {
@@ -50,9 +50,12 @@ export function StoryList({
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <BookOpenIcon className="w-8 h-8 text-red-600 animate-spin" />
         </div>
-        <h3 className="text-xl font-bold text-red-600 mb-3">Error Loading Stories</h3>
+        <h3 className="text-xl font-bold text-red-600 mb-3">
+          Error Loading Stories
+        </h3>
         <p className="text-gray-500 text-base mb-6 max-w-md mx-auto">
-          {error.message || 'Something went wrong while loading stories. Please try again.'}
+          {error.message ||
+            "Something went wrong while loading stories. Please try again."}
         </p>
         <button
           onClick={() => window.location.reload()}
@@ -70,7 +73,9 @@ export function StoryList({
         <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6">
           <BookOpenIcon className="w-12 h-12 text-[#18243c]" />
         </div>
-        <h3 className="text-2xl font-bold text-[#18243c] mb-4">No stories found</h3>
+        <h3 className="text-2xl font-bold text-[#18243c] mb-4">
+          No stories found
+        </h3>
       </div>
     );
   }
@@ -93,26 +98,73 @@ export function StoryList({
           >
             Previous
           </button>
-          
+
           <div className="flex items-center space-x-1">
-            {[...Array(Math.min(5, stories.totalPages))].map((_, i) => {
-              const pageNum = currentPage < 3 ? i : currentPage - 2 + i;
-              if (pageNum >= stories.totalPages) return null;
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    pageNum === currentPage
-                      ? 'bg-[#18243c] text-white'
-                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {pageNum + 1}
-                </button>
-              );
-            })}
+            {(() => {
+              const totalPages = stories.totalPages;
+              const current = currentPage;
+              const pages = [];
+
+              if (totalPages <= 7) {
+                // Show all pages if 7 or fewer
+                for (let i = 0; i < totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                // Always show first page
+                pages.push(0);
+
+                if (current <= 3) {
+                  // Show first 5 pages + ellipsis + last page
+                  for (let i = 1; i <= 4; i++) {
+                    pages.push(i);
+                  }
+                  pages.push("ellipsis");
+                  pages.push(totalPages - 1);
+                } else if (current >= totalPages - 4) {
+                  // Show first page + ellipsis + last 5 pages
+                  pages.push("ellipsis");
+                  for (let i = totalPages - 5; i < totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Show first page + ellipsis + current-1, current, current+1 + ellipsis + last page
+                  pages.push("ellipsis");
+                  for (let i = current - 1; i <= current + 1; i++) {
+                    pages.push(i);
+                  }
+                  pages.push("ellipsis");
+                  pages.push(totalPages - 1);
+                }
+              }
+
+              return pages.map((pageNum, index) => {
+                if (pageNum === "ellipsis") {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-3 py-2 text-gray-400"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum as number)}
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
+                      pageNum === currentPage
+                        ? "bg-[#18243c] text-white"
+                        : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {(pageNum as number) + 1}
+                  </button>
+                );
+              });
+            })()}
           </div>
 
           <button

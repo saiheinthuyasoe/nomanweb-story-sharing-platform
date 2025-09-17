@@ -290,12 +290,12 @@ const AutoSuggestPanel: React.FC<AutoSuggestPanelProps> = ({
                     <div className="min-w-0 flex-1">
                       <h4 className="font-medium text-xs truncate">{book.title}</h4>
                       <p className="text-xs text-gray-600 truncate">
-                        by {book.author.displayName}
+                        by {book.author?.displayName || 'Unknown Author'}
                       </p>
                       
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs px-1 py-0">
-                          {book.category.name}
+                          {book.category?.name || 'Uncategorized'}
                         </Badge>
                       </div>
                       

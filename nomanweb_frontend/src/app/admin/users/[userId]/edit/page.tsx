@@ -1,26 +1,27 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { 
-  UserIcon, 
-  EnvelopeIcon, 
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Cookies from "js-cookie";
+import {
+  UserIcon,
+  EnvelopeIcon,
   ShieldCheckIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   XCircleIcon,
   ArrowLeftIcon,
   EyeIcon,
-  EyeSlashIcon
-} from '@heroicons/react/24/outline';
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 
 interface UserDetail {
   id: string;
   username: string;
   displayName?: string;
   email: string;
-  role: 'USER' | 'ADMIN';
-  status: 'active' | 'suspended' | 'banned';
+  role: "USER" | "ADMIN";
+  status: "active" | "suspended" | "banned";
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -42,19 +43,19 @@ export default function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
-    username: '',
-    displayName: '',
-    email: '',
-    role: 'USER' as 'USER' | 'ADMIN',
-    status: 'active' as 'active' | 'suspended' | 'banned',
-    bio: '',
+    username: "",
+    displayName: "",
+    email: "",
+    role: "USER" as "USER" | "ADMIN",
+    status: "active" as "active" | "suspended" | "banned",
+    bio: "",
     emailVerified: false,
     coinBalance: 0,
-    newPassword: '',
-    confirmPassword: ''
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,54 +69,54 @@ export default function EditUserPage() {
   const fetchUserDetails = async () => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const response = await fetch(`/api/admin/users/${userId}`, {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch user details');
+        throw new Error("Failed to fetch user details");
       }
 
       const userData = await response.json();
       setUser(userData);
-      
+
       // Populate form data
       setFormData({
-        username: userData.username || '',
-        displayName: userData.displayName || '',
-        email: userData.email || '',
-        role: userData.role || 'USER',
-        status: userData.status || 'active',
-        bio: userData.bio || '',
+        username: userData.username || "",
+        displayName: userData.displayName || "",
+        email: userData.email || "",
+        role: userData.role || "USER",
+        status: userData.status || "active",
+        bio: userData.bio || "",
         emailVerified: userData.emailVerified || false,
         coinBalance: userData.coinBalance || 0,
-        newPassword: '',
-        confirmPassword: ''
+        newPassword: "",
+        confirmPassword: "",
       });
     } catch (error) {
-      console.error('Error fetching user details:', error);
+      console.error("Error fetching user details:", error);
       // Show error or redirect
-      router.push('/admin/users');
+      router.push("/admin/users");
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [field]: ''
+        [field]: "",
       }));
     }
   };
@@ -124,27 +125,27 @@ export default function EditUserPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = "Username is required";
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = "Username must be at least 3 characters";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
 
     if (formData.newPassword && formData.newPassword.length < 6) {
-      newErrors.newPassword = 'Password must be at least 6 characters';
+      newErrors.newPassword = "Password must be at least 6 characters";
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (formData.coinBalance < 0) {
-      newErrors.coinBalance = 'Coin balance cannot be negative';
+      newErrors.coinBalance = "Coin balance cannot be negative";
     }
 
     setErrors(newErrors);
@@ -158,8 +159,8 @@ export default function EditUserPage() {
 
     setSaving(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      
+      const adminToken = Cookies.get("adminToken");
+
       // Prepare update data
       const updateData = {
         username: formData.username.trim(),
@@ -170,28 +171,28 @@ export default function EditUserPage() {
         bio: formData.bio.trim() || null,
         emailVerified: formData.emailVerified,
         coinBalance: formData.coinBalance,
-        ...(formData.newPassword && { newPassword: formData.newPassword })
+        ...(formData.newPassword && { newPassword: formData.newPassword }),
       };
 
       const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update user');
+        throw new Error(errorData.error || "Failed to update user");
       }
 
       // Success - redirect back to user details
       router.push(`/admin/users/${userId}`);
     } catch (error) {
-      console.error('Error updating user:', error);
-      alert('Failed to update user. Please try again.');
+      console.error("Error updating user:", error);
+      alert("Failed to update user. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -199,21 +200,21 @@ export default function EditUserPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
             <CheckCircleIcon className="w-4 h-4 mr-1" />
             Active
           </span>
         );
-      case 'suspended':
+      case "suspended":
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
             <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
             Suspended
           </span>
         );
-      case 'banned':
+      case "banned":
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
             <XCircleIcon className="w-4 h-4 mr-1" />
@@ -239,9 +240,11 @@ export default function EditUserPage() {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">User Not Found</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            User Not Found
+          </h2>
           <button
-            onClick={() => router.push('/admin/users')}
+            onClick={() => router.push("/admin/users")}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             Back to Users
@@ -266,7 +269,7 @@ export default function EditUserPage() {
             </button>
           </div>
         </div>
-        
+
         <div className="mt-4">
           <h1 className="text-3xl font-bold text-gray-900">Edit User</h1>
           <div className="flex items-center space-x-4 mt-2">
@@ -280,11 +283,12 @@ export default function EditUserPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-              
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Basic Information
+              </h3>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Username *
@@ -292,9 +296,11 @@ export default function EditUserPage() {
                 <input
                   type="text"
                   value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.username ? 'border-red-500' : 'border-gray-300'
+                    errors.username ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter username"
                 />
@@ -310,7 +316,9 @@ export default function EditUserPage() {
                 <input
                   type="text"
                   value={formData.displayName}
-                  onChange={(e) => handleInputChange('displayName', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("displayName", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter display name"
                 />
@@ -323,9 +331,9 @@ export default function EditUserPage() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter email"
                 />
@@ -340,7 +348,7 @@ export default function EditUserPage() {
                 </label>
                 <textarea
                   value={formData.bio}
-                  onChange={(e) => handleInputChange('bio', e.target.value)}
+                  onChange={(e) => handleInputChange("bio", e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter user bio"
@@ -350,15 +358,22 @@ export default function EditUserPage() {
 
             {/* Account Settings */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
-              
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Account Settings
+              </h3>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => handleInputChange('role', e.target.value as 'USER' | 'ADMIN')}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "role",
+                      e.target.value as "USER" | "ADMIN"
+                    )
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="USER">User</option>
@@ -372,7 +387,12 @@ export default function EditUserPage() {
                 </label>
                 <select
                   value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'suspended' | 'banned')}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "status",
+                      e.target.value as "active" | "suspended" | "banned"
+                    )
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="active">Active</option>
@@ -390,14 +410,21 @@ export default function EditUserPage() {
                   step="0.01"
                   min="0"
                   value={formData.coinBalance}
-                  onChange={(e) => handleInputChange('coinBalance', parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "coinBalance",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.coinBalance ? 'border-red-500' : 'border-gray-300'
+                    errors.coinBalance ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="0.00"
                 />
                 {errors.coinBalance && (
-                  <p className="mt-1 text-sm text-red-600">{errors.coinBalance}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.coinBalance}
+                  </p>
                 )}
               </div>
 
@@ -406,10 +433,14 @@ export default function EditUserPage() {
                   <input
                     type="checkbox"
                     checked={formData.emailVerified}
-                    onChange={(e) => handleInputChange('emailVerified', e.target.checked)}
+                    onChange={(e) =>
+                      handleInputChange("emailVerified", e.target.checked)
+                    }
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Email Verified</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Email Verified
+                  </span>
                 </label>
               </div>
             </div>
@@ -417,7 +448,9 @@ export default function EditUserPage() {
 
           {/* Password Reset Section */}
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Password Reset (Optional)</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Password Reset (Optional)
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -425,11 +458,13 @@ export default function EditUserPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={formData.newPassword}
-                    onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("newPassword", e.target.value)
+                    }
                     className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.newPassword ? 'border-red-500' : 'border-gray-300'
+                      errors.newPassword ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="Leave blank to keep current password"
                   />
@@ -446,7 +481,9 @@ export default function EditUserPage() {
                   </button>
                 </div>
                 {errors.newPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.newPassword}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.newPassword}
+                  </p>
                 )}
               </div>
 
@@ -455,16 +492,22 @@ export default function EditUserPage() {
                   Confirm New Password
                 </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("confirmPassword", e.target.value)
+                  }
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                   placeholder="Confirm new password"
                 />
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
             </div>
@@ -485,7 +528,7 @@ export default function EditUserPage() {
                 disabled={saving}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
@@ -493,4 +536,4 @@ export default function EditUserPage() {
       </div>
     </div>
   );
-} 
+}

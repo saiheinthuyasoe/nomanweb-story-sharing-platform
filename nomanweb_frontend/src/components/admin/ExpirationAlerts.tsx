@@ -191,7 +191,7 @@ const ExpirationAlerts: React.FC<ExpirationAlertsProps> = ({
                           {item.story.title}
                         </p>
                         <p className="text-xs text-gray-500">
-                          by {item.story.author.displayName || item.story.author.username}
+                          by {item.story.author?.displayName || item.story.author?.username || 'Unknown Author'}
                         </p>
                       </div>
                     </div>

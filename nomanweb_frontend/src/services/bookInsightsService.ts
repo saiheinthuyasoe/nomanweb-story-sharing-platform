@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+
 interface BookInsight {
   id: string;
   title: string;
@@ -45,22 +47,27 @@ interface PagedResponse<T> {
 }
 
 class BookInsightsService {
-  private baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api$/, '');
+  private baseUrl = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+  ).replace(/\/api$/, "");
 
   private getAuthHeaders() {
-    const token = localStorage.getItem("adminToken");
+    const token = Cookies.get("adminToken");
     if (!token) {
-      console.warn('No admin token found, API requests may fail');
+      console.warn("No admin token found, API requests may fail");
     }
     return {
-      Authorization: `Bearer ${token || ''}`,
+      Authorization: `Bearer ${token || ""}`,
       "Content-Type": "application/json",
     };
   }
 
   private handleAuthError(error: any): void {
-    if (error instanceof Error && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
-      console.warn('Authentication failed - token may be expired or invalid');
+    if (
+      error instanceof Error &&
+      (error.message.includes("401") || error.message.includes("Unauthorized"))
+    ) {
+      console.warn("Authentication failed - token may be expired or invalid");
       // Could redirect to login page or show auth modal here
     }
   }
@@ -76,7 +83,9 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        throw new Error('Authentication required. Please log in to access admin features.');
+        throw new Error(
+          "Authentication required. Please log in to access admin features."
+        );
       }
 
       if (!response.ok) {
@@ -85,7 +94,7 @@ class BookInsightsService {
 
       return await response.json();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('authentication')) {
+      if (error instanceof Error && error.message.includes("authentication")) {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching top-rated books:", error);
@@ -104,7 +113,9 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        throw new Error('Authentication required. Please log in to access admin features.');
+        throw new Error(
+          "Authentication required. Please log in to access admin features."
+        );
       }
 
       if (!response.ok) {
@@ -113,7 +124,7 @@ class BookInsightsService {
 
       return await response.json();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('authentication')) {
+      if (error instanceof Error && error.message.includes("authentication")) {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching most read weekly:", error);
@@ -132,7 +143,9 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        throw new Error('Authentication required. Please log in to access admin features.');
+        throw new Error(
+          "Authentication required. Please log in to access admin features."
+        );
       }
 
       if (!response.ok) {
@@ -141,7 +154,7 @@ class BookInsightsService {
 
       return await response.json();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('authentication')) {
+      if (error instanceof Error && error.message.includes("authentication")) {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching new releases:", error);
@@ -160,12 +173,14 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        this.handleAuthError(new Error('401 Unauthorized'));
-        throw new Error('Authentication required');
+        this.handleAuthError(new Error("401 Unauthorized"));
+        throw new Error("Authentication required");
       }
 
       if (!response.ok) {
-        throw new Error(`API request failed for genre ${genreId} with status ${response.status}`);
+        throw new Error(
+          `API request failed for genre ${genreId} with status ${response.status}`
+        );
       }
 
       return await response.json();
@@ -182,7 +197,7 @@ class BookInsightsService {
       const [topRated, mostReadWeekly, newReleases] = await Promise.all([
         this.getTopRatedBooks(10),
         this.getMostReadWeekly(10),
-        this.getNewReleases(10)
+        this.getNewReleases(10),
       ]);
 
       return {
@@ -200,8 +215,8 @@ class BookInsightsService {
           horror: await this.getBooksByGenre("horror", 5),
           comedy: await this.getBooksByGenre("comedy", 5),
           drama: await this.getBooksByGenre("drama", 5),
-          "young-adult": await this.getBooksByGenre("young-adult", 5)
-        }
+          "young-adult": await this.getBooksByGenre("young-adult", 5),
+        },
       };
     } catch (error) {
       console.error("Error fetching book insights dashboard:", error);
@@ -210,8 +225,16 @@ class BookInsightsService {
   }
 
   // Get suggested books for a specific section
-  async getSuggestedBooks(criteria: SuggestionCriteria): Promise<BookInsight[]> {
-    const { sectionType, limit = 5, genreFilter, minRating, minViews } = criteria;
+  async getSuggestedBooks(
+    criteria: SuggestionCriteria
+  ): Promise<BookInsight[]> {
+    const {
+      sectionType,
+      limit = 5,
+      genreFilter,
+      minRating,
+      minViews,
+    } = criteria;
 
     try {
       const queryParams = new URLSearchParams({
@@ -219,7 +242,7 @@ class BookInsightsService {
         limit: limit.toString(),
         ...(genreFilter && { genre: genreFilter }),
         ...(minRating && { minRating: minRating.toString() }),
-        ...(minViews && { minViews: minViews.toString() })
+        ...(minViews && { minViews: minViews.toString() }),
       });
 
       const response = await fetch(
@@ -230,7 +253,9 @@ class BookInsightsService {
       );
 
       if (response.status === 401) {
-        throw new Error('Authentication required. Please log in to access admin features.');
+        throw new Error(
+          "Authentication required. Please log in to access admin features."
+        );
       }
 
       if (!response.ok) {
@@ -239,7 +264,7 @@ class BookInsightsService {
 
       return await response.json();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('authentication')) {
+      if (error instanceof Error && error.message.includes("authentication")) {
         throw error; // Re-throw authentication errors
       }
       console.error("Error fetching suggested books:", error);
@@ -251,10 +276,10 @@ class BookInsightsService {
   async searchBooksWithFilters(
     query: string,
     filters: {
-      sortBy?: 'rating' | 'views' | 'date' | 'likes';
+      sortBy?: "rating" | "views" | "date" | "likes";
       genre?: string;
       minRating?: number;
-      dateRange?: 'week' | 'month' | 'year' | 'all';
+      dateRange?: "week" | "month" | "year" | "all";
     },
     page = 0,
     size = 10
@@ -267,7 +292,7 @@ class BookInsightsService {
         ...(filters.sortBy && { sortBy: filters.sortBy }),
         ...(filters.genre && { genre: filters.genre }),
         ...(filters.minRating && { minRating: filters.minRating.toString() }),
-        ...(filters.dateRange && { dateRange: filters.dateRange })
+        ...(filters.dateRange && { dateRange: filters.dateRange }),
       });
 
       const response = await fetch(
@@ -290,4 +315,9 @@ class BookInsightsService {
 }
 
 export const bookInsightsService = new BookInsightsService();
-export type { BookInsight, BookInsightsData, SuggestionCriteria, PagedResponse };
+export type {
+  BookInsight,
+  BookInsightsData,
+  SuggestionCriteria,
+  PagedResponse,
+};

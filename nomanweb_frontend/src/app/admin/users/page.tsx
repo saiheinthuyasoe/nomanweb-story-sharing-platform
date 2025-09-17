@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  UserIcon, 
+import React, { useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import {
+  UserIcon,
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -16,17 +17,17 @@ import {
   FlagIcon,
   XMarkIcon,
   ChevronUpIcon,
-  ChevronDownIcon
-} from '@heroicons/react/24/outline';
-import './ant-table.css';
-import { useRouter } from 'next/navigation';
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
+import "./ant-table.css";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
   username: string;
   email: string;
-  role: 'USER' | 'ADMIN';
-  status: 'active' | 'suspended' | 'banned';
+  role: "USER" | "ADMIN";
+  status: "active" | "suspended" | "banned";
   createdAt: string;
   lastLoginAt?: string;
   emailVerified: boolean;
@@ -57,58 +58,58 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState('');
-  const [reportedFilter, setReportedFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("");
+  const [reportedFilter, setReportedFilter] = useState("");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [suspendReason, setSuspendReason] = useState('');
-  const [banReason, setBanReason] = useState('');
+  const [suspendReason, setSuspendReason] = useState("");
+  const [banReason, setBanReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const fetchUsers = async (page = 0, search = '', status = '') => {
+  const fetchUsers = async (page = 0, search = "", status = "") => {
     setLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const params = new URLSearchParams({
         page: page.toString(),
-        size: '20',
+        size: "20",
         ...(search && { search }),
-        ...(status && { status })
+        ...(status && { status }),
       });
 
       const response = await fetch(`/api/admin/users?${params}`, {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error("Failed to fetch users");
       }
 
       const data: UserListResponse = await response.json();
-      
+
       // Check if backend returned empty data (not fully implemented)
       if (!data.users.content || data.users.content.length === 0) {
-        throw new Error('Backend returned empty data - using mock data');
+        throw new Error("Backend returned empty data - using mock data");
       }
-      
+
       setAllUsers(data.users.content || []);
       setTotalUsers(data.totalUsers);
       setTotalPages(data.users.totalPages);
       setCurrentPage(data.users.number);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
     }
@@ -120,49 +121,61 @@ export default function AdminUsersPage() {
 
     // Text search
     if (searchTerm.trim()) {
-      filtered = filtered.filter(user => 
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Status filter
     if (statusFilter) {
-      filtered = filtered.filter(user => user.status === statusFilter);
+      filtered = filtered.filter((user) => user.status === statusFilter);
     }
 
     // Role filter
     if (roleFilter) {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
     // Email verified filter
-    if (emailVerifiedFilter === 'verified') {
-      filtered = filtered.filter(user => user.emailVerified === true);
-    } else if (emailVerifiedFilter === 'unverified') {
-      filtered = filtered.filter(user => user.emailVerified === false);
+    if (emailVerifiedFilter === "verified") {
+      filtered = filtered.filter((user) => user.emailVerified === true);
+    } else if (emailVerifiedFilter === "unverified") {
+      filtered = filtered.filter((user) => user.emailVerified === false);
     }
 
     // Reported filter
-    if (reportedFilter === 'reported') {
-      filtered = filtered.filter(user => (user.reportedCount || 0) > 0);
-    } else if (reportedFilter === 'flagged') {
-      filtered = filtered.filter(user => (user.reportedCount || 0) > 2);
+    if (reportedFilter === "reported") {
+      filtered = filtered.filter((user) => (user.reportedCount || 0) > 0);
+    } else if (reportedFilter === "flagged") {
+      filtered = filtered.filter((user) => (user.reportedCount || 0) > 2);
     }
 
     // Date range filter
     if (dateFromFilter) {
       const fromDate = new Date(dateFromFilter);
-      filtered = filtered.filter(user => new Date(user.createdAt) >= fromDate);
+      filtered = filtered.filter(
+        (user) => new Date(user.createdAt) >= fromDate
+      );
     }
     if (dateToFilter) {
       const toDate = new Date(dateToFilter);
       toDate.setHours(23, 59, 59, 999); // Include entire day
-      filtered = filtered.filter(user => new Date(user.createdAt) <= toDate);
+      filtered = filtered.filter((user) => new Date(user.createdAt) <= toDate);
     }
 
     setUsers(filtered);
-  }, [allUsers, searchTerm, statusFilter, roleFilter, emailVerifiedFilter, reportedFilter, dateFromFilter, dateToFilter]);
+  }, [
+    allUsers,
+    searchTerm,
+    statusFilter,
+    roleFilter,
+    emailVerifiedFilter,
+    reportedFilter,
+    dateFromFilter,
+    dateToFilter,
+  ]);
 
   useEffect(() => {
     fetchUsers(currentPage, searchTerm, statusFilter);
@@ -179,43 +192,50 @@ export default function AdminUsersPage() {
 
     setActionLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`/api/admin/users/${selectedUser.id}/suspend`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason: suspendReason }),
-      });
+      const adminToken = Cookies.get("adminToken");
+      const response = await fetch(
+        `/api/admin/users/${selectedUser.id}/suspend`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason: suspendReason }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to suspend user');
+        throw new Error("Failed to suspend user");
       }
 
       // Update user status in local state immediately
-      setUsers(users.map(user => 
-        user.id === selectedUser.id 
-          ? { ...user, status: 'suspended' as const }
-          : user
-      ));
-      
+      setUsers(
+        users.map((user) =>
+          user.id === selectedUser.id
+            ? { ...user, status: "suspended" as const }
+            : user
+        )
+      );
+
       // Also update allUsers for filtering
-      setAllUsers(allUsers.map(user => 
-        user.id === selectedUser.id 
-          ? { ...user, status: 'suspended' as const }
-          : user
-      ));
+      setAllUsers(
+        allUsers.map((user) =>
+          user.id === selectedUser.id
+            ? { ...user, status: "suspended" as const }
+            : user
+        )
+      );
 
       setShowSuspendModal(false);
       setSelectedUser(null);
-      setSuspendReason('');
-      
+      setSuspendReason("");
+
       // Show success message
-      alert('User suspended successfully');
+      alert("User suspended successfully");
     } catch (error) {
-      console.error('Error suspending user:', error);
-      alert('Failed to suspend user. Please try again.');
+      console.error("Error suspending user:", error);
+      alert("Failed to suspend user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -224,38 +244,38 @@ export default function AdminUsersPage() {
   const handleUnsuspendUser = async (user: User) => {
     setActionLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const response = await fetch(`/api/admin/users/${user.id}/unsuspend`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to unsuspend user');
+        throw new Error("Failed to unsuspend user");
       }
 
       // Update user status in local state immediately
-      setUsers(users.map(u => 
-        u.id === user.id 
-          ? { ...u, status: 'active' as const }
-          : u
-      ));
-      
+      setUsers(
+        users.map((u) =>
+          u.id === user.id ? { ...u, status: "active" as const } : u
+        )
+      );
+
       // Also update allUsers for filtering
-      setAllUsers(allUsers.map(u => 
-        u.id === user.id 
-          ? { ...u, status: 'active' as const }
-          : u
-      ));
-      
+      setAllUsers(
+        allUsers.map((u) =>
+          u.id === user.id ? { ...u, status: "active" as const } : u
+        )
+      );
+
       // Show success message
-      alert('User unsuspended successfully');
+      alert("User unsuspended successfully");
     } catch (error) {
-      console.error('Error unsuspending user:', error);
-      alert('Failed to unsuspend user. Please try again.');
+      console.error("Error unsuspending user:", error);
+      alert("Failed to unsuspend user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -266,32 +286,32 @@ export default function AdminUsersPage() {
 
     setActionLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete user');
+        throw new Error("Failed to delete user");
       }
 
       // Remove user from local state immediately
-      setUsers(users.filter(u => u.id !== selectedUser.id));
-      setAllUsers(allUsers.filter(u => u.id !== selectedUser.id));
+      setUsers(users.filter((u) => u.id !== selectedUser.id));
+      setAllUsers(allUsers.filter((u) => u.id !== selectedUser.id));
       setTotalUsers(totalUsers - 1);
-      
+
       setShowDeleteModal(false);
       setSelectedUser(null);
-      
+
       // Show success message
-      alert('User deleted successfully');
+      alert("User deleted successfully");
     } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user. Please try again.');
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -299,48 +319,48 @@ export default function AdminUsersPage() {
 
   const handleBanUser = async () => {
     if (!selectedUser || !banReason.trim()) return;
-    
+
     setActionLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const response = await fetch(`/api/admin/users/${selectedUser.id}/ban`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          reason: banReason.trim()
-        })
+          reason: banReason.trim(),
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to ban user');
+        throw new Error("Failed to ban user");
       }
 
       // Update user status in local state immediately
-      setUsers(users.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, status: 'banned' as const }
-          : u
-      ));
-      
+      setUsers(
+        users.map((u) =>
+          u.id === selectedUser.id ? { ...u, status: "banned" as const } : u
+        )
+      );
+
       // Also update allUsers for filtering
-      setAllUsers(allUsers.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, status: 'banned' as const }
-          : u
-      ));
-      
+      setAllUsers(
+        allUsers.map((u) =>
+          u.id === selectedUser.id ? { ...u, status: "banned" as const } : u
+        )
+      );
+
       setShowBanModal(false);
       setSelectedUser(null);
-      setBanReason('');
-      
+      setBanReason("");
+
       // Show success message
-      alert('User banned successfully');
+      alert("User banned successfully");
     } catch (error) {
-      console.error('Error banning user:', error);
-      alert('Failed to ban user. Please try again.');
+      console.error("Error banning user:", error);
+      alert("Failed to ban user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -349,76 +369,76 @@ export default function AdminUsersPage() {
   const handleUnbanUser = async (user: User) => {
     setActionLoading(true);
     try {
-      const adminToken = localStorage.getItem('adminToken');
+      const adminToken = Cookies.get("adminToken");
       const response = await fetch(`/api/admin/users/${user.id}/unban`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to unban user');
+        throw new Error("Failed to unban user");
       }
 
       // Update user status in local state immediately
-      setUsers(users.map(u => 
-        u.id === user.id 
-          ? { ...u, status: 'active' as const }
-          : u
-      ));
-      
+      setUsers(
+        users.map((u) =>
+          u.id === user.id ? { ...u, status: "active" as const } : u
+        )
+      );
+
       // Also update allUsers for filtering
-      setAllUsers(allUsers.map(u => 
-        u.id === user.id 
-          ? { ...u, status: 'active' as const }
-          : u
-      ));
-      
+      setAllUsers(
+        allUsers.map((u) =>
+          u.id === user.id ? { ...u, status: "active" as const } : u
+        )
+      );
+
       // Show success message
-      alert('User unbanned successfully');
+      alert("User unbanned successfully");
     } catch (error) {
-      console.error('Error unbanning user:', error);
-      alert('Failed to unban user. Please try again.');
+      console.error("Error unbanning user:", error);
+      alert("Failed to unban user. Please try again.");
     } finally {
       setActionLoading(false);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
     return num.toString();
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <CheckCircleIcon className="w-4 h-4 mr-1" />
             Active
           </span>
         );
-      case 'suspended':
+      case "suspended":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
             <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
             Suspended
           </span>
         );
-      case 'banned':
+      case "banned":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
             <XCircleIcon className="w-4 h-4 mr-1" />
@@ -432,14 +452,14 @@ export default function AdminUsersPage() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'ADMIN':
+      case "ADMIN":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
             <ShieldCheckIcon className="w-4 h-4 mr-1" />
             Admin
           </span>
         );
-      case 'USER':
+      case "USER":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <UserIcon className="w-4 h-4 mr-1" />
@@ -454,8 +474,12 @@ export default function AdminUsersPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">User Management</h1>
-        <p className="text-gray-600">Manage user accounts, permissions, and moderation</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          User Management
+        </h1>
+        <p className="text-gray-600">
+          Manage user accounts, permissions, and moderation
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -471,49 +495,49 @@ export default function AdminUsersPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <CheckCircleIcon className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-                             <p className="text-sm font-medium text-gray-600">Active Users</p>
-               <p className="text-2xl font-bold text-gray-900">
-                 {users.filter(u => u.status === 'active').length}
-               </p>
-             </div>
-           </div>
-         </div>
-         
-         <div className="bg-white rounded-lg shadow p-6">
-           <div className="flex items-center">
-             <div className="p-2 bg-yellow-100 rounded-lg">
-               <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
-             </div>
-             <div className="ml-4">
-               <p className="text-sm font-medium text-gray-600">Suspended</p>
-               <p className="text-2xl font-bold text-gray-900">
-                 {users.filter(u => u.status === 'suspended').length}
-               </p>
-             </div>
-           </div>
-         </div>
-         
-         <div className="bg-white rounded-lg shadow p-6">
-           <div className="flex items-center">
-             <div className="p-2 bg-red-100 rounded-lg">
-               <XCircleIcon className="h-6 w-6 text-red-600" />
-             </div>
-             <div className="ml-4">
-               <p className="text-sm font-medium text-gray-600">Banned</p>
-               <p className="text-2xl font-bold text-gray-900">
-                 {users.filter(u => u.status === 'banned').length}
-               </p>
-             </div>
-           </div>
-         </div>
-        
+              <p className="text-sm font-medium text-gray-600">Active Users</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {users.filter((u) => u.status === "active").length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Suspended</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {users.filter((u) => u.status === "suspended").length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <XCircleIcon className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Banned</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {users.filter((u) => u.status === "banned").length}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
@@ -522,7 +546,7 @@ export default function AdminUsersPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Admins</p>
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.role === 'ADMIN').length}
+                {users.filter((u) => u.role === "ADMIN").length}
               </p>
             </div>
           </div>
@@ -539,8 +563,12 @@ export default function AdminUsersPage() {
                 <MagnifyingGlassIcon className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Search & Filter Users</h3>
-                <p className="text-sm text-gray-500">Find users by applying filters below</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Search & Filter Users
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Find users by applying filters below
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -553,11 +581,19 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Active Filters Display */}
-        {(searchTerm || statusFilter || roleFilter || emailVerifiedFilter || reportedFilter || dateFromFilter || dateToFilter) && (
+        {(searchTerm ||
+          statusFilter ||
+          roleFilter ||
+          emailVerifiedFilter ||
+          reportedFilter ||
+          dateFromFilter ||
+          dateToFilter) && (
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Active Filters:
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {searchTerm && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -587,7 +623,12 @@ export default function AdminUsersPage() {
                   )}
                   {(dateFromFilter || dateToFilter) && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      Date: {dateFromFilter && dateToFilter ? `${dateFromFilter} to ${dateToFilter}` : dateFromFilter ? `from ${dateFromFilter}` : `to ${dateToFilter}`}
+                      Date:{" "}
+                      {dateFromFilter && dateToFilter
+                        ? `${dateFromFilter} to ${dateToFilter}`
+                        : dateFromFilter
+                        ? `from ${dateFromFilter}`
+                        : `to ${dateToFilter}`}
                     </span>
                   )}
                 </div>
@@ -595,13 +636,13 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('');
-                  setRoleFilter('');
-                  setEmailVerifiedFilter('');
-                  setReportedFilter('');
-                  setDateFromFilter('');
-                  setDateToFilter('');
+                  setSearchTerm("");
+                  setStatusFilter("");
+                  setRoleFilter("");
+                  setEmailVerifiedFilter("");
+                  setReportedFilter("");
+                  setDateFromFilter("");
+                  setDateToFilter("");
                   setCurrentPage(0);
                 }}
                 className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
@@ -694,13 +735,13 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('');
-                    setRoleFilter('');
-                    setEmailVerifiedFilter('');
-                    setReportedFilter('');
-                    setDateFromFilter('');
-                    setDateToFilter('');
+                    setSearchTerm("");
+                    setStatusFilter("");
+                    setRoleFilter("");
+                    setEmailVerifiedFilter("");
+                    setReportedFilter("");
+                    setDateFromFilter("");
+                    setDateToFilter("");
                     setCurrentPage(0);
                   }}
                   className="px-3 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
@@ -715,13 +756,15 @@ export default function AdminUsersPage() {
           {/* Advanced Filters - Collapsible Section */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-medium text-gray-900">Advanced Filters</h4>
+              <h4 className="text-sm font-medium text-gray-900">
+                Advanced Filters
+              </h4>
               <button
                 type="button"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700"
               >
-                <span>{showAdvancedFilters ? 'Hide' : 'Show'} Advanced</span>
+                <span>{showAdvancedFilters ? "Hide" : "Show"} Advanced</span>
                 {showAdvancedFilters ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -803,39 +846,79 @@ export default function AdminUsersPage() {
                     <table className="ant-table-tbody">
                       <thead className="ant-table-thead">
                         <tr>
-                          <th className="ant-table-cell" style={{ width: '280px' }}>
+                          <th
+                            className="ant-table-cell"
+                            style={{ width: "280px" }}
+                          >
                             <div className="ant-table-column-title">User</div>
                           </th>
-                          <th className="ant-table-cell" style={{ width: '100px' }}>
+                          <th
+                            className="ant-table-cell"
+                            style={{ width: "100px" }}
+                          >
                             <div className="ant-table-column-title">Role</div>
                           </th>
-                          <th className="ant-table-cell" style={{ width: '100px' }}>
+                          <th
+                            className="ant-table-cell"
+                            style={{ width: "100px" }}
+                          >
                             <div className="ant-table-column-title">Status</div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '120px' }}>
-                            <div className="ant-table-column-title">Stories</div>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "120px" }}
+                          >
+                            <div className="ant-table-column-title">
+                              Stories
+                            </div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '100px' }}>
-                            <div className="ant-table-column-title">Followers</div>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "100px" }}
+                          >
+                            <div className="ant-table-column-title">
+                              Followers
+                            </div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '80px' }}>
-                            <div className="ant-table-column-title">Reports</div>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "80px" }}
+                          >
+                            <div className="ant-table-column-title">
+                              Reports
+                            </div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '120px' }}>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "120px" }}
+                          >
                             <div className="ant-table-column-title">Joined</div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '120px' }}>
-                            <div className="ant-table-column-title">Last Login</div>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "120px" }}
+                          >
+                            <div className="ant-table-column-title">
+                              Last Login
+                            </div>
                           </th>
-                          <th className="ant-table-cell ant-table-cell-align-center" style={{ width: '140px' }}>
-                            <div className="ant-table-column-title">Actions</div>
+                          <th
+                            className="ant-table-cell ant-table-cell-align-center"
+                            style={{ width: "140px" }}
+                          >
+                            <div className="ant-table-column-title">
+                              Actions
+                            </div>
                           </th>
                         </tr>
                       </thead>
                       <tbody className="ant-table-tbody">
                         {loading ? (
                           <tr className="ant-table-row ant-table-row-level-0">
-                            <td colSpan={9} className="ant-table-cell text-center">
+                            <td
+                              colSpan={9}
+                              className="ant-table-cell text-center"
+                            >
                               <div className="flex justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                               </div>
@@ -843,17 +926,20 @@ export default function AdminUsersPage() {
                           </tr>
                         ) : (
                           users.map((user) => (
-                            <tr key={user.id} className="ant-table-row ant-table-row-level-0">
+                            <tr
+                              key={user.id}
+                              className="ant-table-row ant-table-row-level-0"
+                            >
                               {/* User Column */}
                               <td className="ant-table-cell">
                                 <div className="flex items-center space-x-3">
                                   <div className="flex-shrink-0">
                                     {user.profileImageUrl ? (
                                       <div className="relative w-10 h-10 overflow-hidden rounded-full">
-                                        <img 
-                                          className="w-10 h-10 rounded-full object-cover" 
-                                          src={user.profileImageUrl} 
-                                          alt={user.username} 
+                                        <img
+                                          className="w-10 h-10 rounded-full object-cover"
+                                          src={user.profileImageUrl}
+                                          alt={user.username}
                                         />
                                       </div>
                                     ) : (
@@ -863,10 +949,12 @@ export default function AdminUsersPage() {
                                     )}
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <p 
-                                      className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-red-600 transition-colors" 
+                                    <p
+                                      className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-red-600 transition-colors"
                                       title={user.username}
-                                      onClick={() => router.push(`/admin/users/${user.id}`)}
+                                      onClick={() =>
+                                        router.push(`/admin/users/${user.id}`)
+                                      }
                                     >
                                       {user.username}
                                     </p>
@@ -911,7 +999,13 @@ export default function AdminUsersPage() {
                               {/* Reports Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">
                                 <div className="flex items-center justify-center">
-                                  <span className={`font-medium ${(user.reportedCount || 0) > 2 ? 'text-red-600' : 'text-gray-900'}`}>
+                                  <span
+                                    className={`font-medium ${
+                                      (user.reportedCount || 0) > 2
+                                        ? "text-red-600"
+                                        : "text-gray-900"
+                                    }`}
+                                  >
                                     {user.reportedCount || 0}
                                   </span>
                                   {(user.reportedCount || 0) > 2 && (
@@ -925,149 +1019,163 @@ export default function AdminUsersPage() {
                               {/* Joined Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">
                                 <span className="text-sm text-gray-900">
-                                  {formatDate(user.createdAt).split(',')[0]}
+                                  {formatDate(user.createdAt).split(",")[0]}
                                 </span>
                               </td>
 
                               {/* Last Login Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">
                                 <span className="text-sm text-gray-900">
-                                  {user.lastLoginAt ? formatDate(user.lastLoginAt).split(',')[0] : 'Never'}
+                                  {user.lastLoginAt
+                                    ? formatDate(user.lastLoginAt).split(",")[0]
+                                    : "Never"}
                                 </span>
                               </td>
 
-                                                            {/* Actions Column */}
+                              {/* Actions Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">
                                 <div className="flex items-center justify-center gap-2">
                                   {/* View Details Button */}
                                   <button
-                                    onClick={() => router.push(`/admin/users/${user.id}`)}
+                                    onClick={() =>
+                                      router.push(`/admin/users/${user.id}`)
+                                    }
                                     className="ant-btn ant-btn-sm ant-btn-default"
                                     title="View Details"
                                   >
                                     <EyeIcon className="h-3 w-3 mr-1" />
                                     View
                                   </button>
-                                  
+
                                   {/* Dropdown Menu */}
                                   <div className="relative">
                                     <button
-                                      onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
+                                      onClick={() =>
+                                        setOpenDropdown(
+                                          openDropdown === user.id
+                                            ? null
+                                            : user.id
+                                        )
+                                      }
                                       className="ant-btn ant-btn-icon-only ant-btn-default"
                                       title="More actions"
                                     >
                                       <EllipsisVerticalIcon className="h-4 w-4" />
                                     </button>
-                         
-                         {openDropdown === user.id && (
-                           <>
-                             {/* Backdrop */}
-                             <div 
-                               className="fixed inset-0 z-40" 
-                               onClick={() => setOpenDropdown(null)}
-                             />
-                             
-                             {/* Dropdown Menu */}
-                             <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                               <div className="py-1">
-                                 <button
-                                   onClick={() => {
-                                     router.push(`/admin/users/${user.id}/edit`);
-                                     setOpenDropdown(null);
-                                   }}
-                                   className="ant-dropdown-menu-item"
-                                 >
-                                   <div className="ant-dropdown-menu-title-content">
-                                     <PencilIcon className="h-4 w-4 mr-2" />
-                                     <span>Edit User</span>
-                                   </div>
-                                 </button>
-                                 
-                                 <hr className="my-1 border-gray-100" />
-                                 
-                                 {user.status === 'active' && user.role !== 'ADMIN' && (
-                                   <button
-                                     onClick={() => {
-                                       setSelectedUser(user);
-                                       setShowSuspendModal(true);
-                                       setOpenDropdown(null);
-                                     }}
-                                     className="ant-dropdown-menu-item"
-                                   >
-                                     <div className="ant-dropdown-menu-title-content">
-                                       <ShieldExclamationIcon className="h-4 w-4 mr-2" />
-                                       <span>Suspend User</span>
-                                     </div>
-                                   </button>
-                                 )}
-                                 
-                                 {user.status === 'suspended' && (
-                                   <button
-                                     onClick={() => {
-                                       handleUnsuspendUser(user);
-                                       setOpenDropdown(null);
-                                     }}
-                                     className="ant-dropdown-menu-item"
-                                     disabled={actionLoading}
-                                   >
-                                     <div className="ant-dropdown-menu-title-content">
-                                       <CheckCircleIcon className="h-4 w-4 mr-2" />
-                                       <span>Unsuspend User</span>
-                                     </div>
-                                   </button>
-                                 )}
-                                 
-                                 {user.status === 'banned' && (
-                                   <button
-                                     onClick={() => {
-                                       handleUnbanUser(user);
-                                       setOpenDropdown(null);
-                                     }}
-                                     className="ant-dropdown-menu-item"
-                                     disabled={actionLoading}
-                                   >
-                                     <div className="ant-dropdown-menu-title-content">
-                                       <CheckCircleIcon className="h-4 w-4 mr-2" />
-                                       <span>Unban User</span>
-                                     </div>
-                                   </button>
-                                 )}
-                                 
-                                 {user.status !== 'banned' && user.role !== 'ADMIN' && (
-                                   <button
-                                     onClick={() => {
-                                       setSelectedUser(user);
-                                       setShowBanModal(true);
-                                       setOpenDropdown(null);
-                                     }}
-                                     className="ant-dropdown-menu-item ant-dropdown-menu-item-danger"
-                                   >
-                                     <div className="ant-dropdown-menu-title-content">
-                                       <XCircleIcon className="h-4 w-4 mr-2" />
-                                       <span>Ban User</span>
-                                     </div>
-                                   </button>
-                                 )}
-                                 
-                                 {user.role !== 'ADMIN' && (
-                                   <button
-                                     onClick={() => {
-                                       setSelectedUser(user);
-                                       setShowDeleteModal(true);
-                                       setOpenDropdown(null);
-                                     }}
-                                     className="ant-dropdown-menu-item ant-dropdown-menu-item-danger"
-                                   >
-                                     <div className="ant-dropdown-menu-title-content">
-                                       <TrashIcon className="h-4 w-4 mr-2" />
-                                       <span>Delete User</span>
-                                     </div>
-                                   </button>
-                                 )}
-                               </div>
-                             </div>
-                           </>
-                         )}
+
+                                    {openDropdown === user.id && (
+                                      <>
+                                        {/* Backdrop */}
+                                        <div
+                                          className="fixed inset-0 z-40"
+                                          onClick={() => setOpenDropdown(null)}
+                                        />
+
+                                        {/* Dropdown Menu */}
+                                        <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                          <div className="py-1">
+                                            <button
+                                              onClick={() => {
+                                                router.push(
+                                                  `/admin/users/${user.id}/edit`
+                                                );
+                                                setOpenDropdown(null);
+                                              }}
+                                              className="ant-dropdown-menu-item"
+                                            >
+                                              <div className="ant-dropdown-menu-title-content">
+                                                <PencilIcon className="h-4 w-4 mr-2" />
+                                                <span>Edit User</span>
+                                              </div>
+                                            </button>
+
+                                            <hr className="my-1 border-gray-100" />
+
+                                            {user.status === "active" &&
+                                              user.role !== "ADMIN" && (
+                                                <button
+                                                  onClick={() => {
+                                                    setSelectedUser(user);
+                                                    setShowSuspendModal(true);
+                                                    setOpenDropdown(null);
+                                                  }}
+                                                  className="ant-dropdown-menu-item"
+                                                >
+                                                  <div className="ant-dropdown-menu-title-content">
+                                                    <ShieldExclamationIcon className="h-4 w-4 mr-2" />
+                                                    <span>Suspend User</span>
+                                                  </div>
+                                                </button>
+                                              )}
+
+                                            {user.status === "suspended" && (
+                                              <button
+                                                onClick={() => {
+                                                  handleUnsuspendUser(user);
+                                                  setOpenDropdown(null);
+                                                }}
+                                                className="ant-dropdown-menu-item"
+                                                disabled={actionLoading}
+                                              >
+                                                <div className="ant-dropdown-menu-title-content">
+                                                  <CheckCircleIcon className="h-4 w-4 mr-2" />
+                                                  <span>Unsuspend User</span>
+                                                </div>
+                                              </button>
+                                            )}
+
+                                            {user.status === "banned" && (
+                                              <button
+                                                onClick={() => {
+                                                  handleUnbanUser(user);
+                                                  setOpenDropdown(null);
+                                                }}
+                                                className="ant-dropdown-menu-item"
+                                                disabled={actionLoading}
+                                              >
+                                                <div className="ant-dropdown-menu-title-content">
+                                                  <CheckCircleIcon className="h-4 w-4 mr-2" />
+                                                  <span>Unban User</span>
+                                                </div>
+                                              </button>
+                                            )}
+
+                                            {user.status !== "banned" &&
+                                              user.role !== "ADMIN" && (
+                                                <button
+                                                  onClick={() => {
+                                                    setSelectedUser(user);
+                                                    setShowBanModal(true);
+                                                    setOpenDropdown(null);
+                                                  }}
+                                                  className="ant-dropdown-menu-item ant-dropdown-menu-item-danger"
+                                                >
+                                                  <div className="ant-dropdown-menu-title-content">
+                                                    <XCircleIcon className="h-4 w-4 mr-2" />
+                                                    <span>Ban User</span>
+                                                  </div>
+                                                </button>
+                                              )}
+
+                                            {user.role !== "ADMIN" && (
+                                              <button
+                                                onClick={() => {
+                                                  setSelectedUser(user);
+                                                  setShowDeleteModal(true);
+                                                  setOpenDropdown(null);
+                                                }}
+                                                className="ant-dropdown-menu-item ant-dropdown-menu-item-danger"
+                                              >
+                                                <div className="ant-dropdown-menu-title-content">
+                                                  <TrashIcon className="h-4 w-4 mr-2" />
+                                                  <span>Delete User</span>
+                                                </div>
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -1082,7 +1190,7 @@ export default function AdminUsersPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
@@ -1095,7 +1203,9 @@ export default function AdminUsersPage() {
                 Previous
               </button>
               <button
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages - 1, currentPage + 1))
+                }
                 disabled={currentPage === totalPages - 1}
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
               >
@@ -1105,15 +1215,12 @@ export default function AdminUsersPage() {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing{' '}
-                  <span className="font-medium">{currentPage * 20 + 1}</span>
-                  {' '} to{' '}
+                  Showing{" "}
+                  <span className="font-medium">{currentPage * 20 + 1}</span> to{" "}
                   <span className="font-medium">
                     {Math.min((currentPage + 1) * 20, totalUsers)}
-                  </span>
-                  {' '} of{' '}
-                  <span className="font-medium">{totalUsers}</span>
-                  {' '} results
+                  </span>{" "}
+                  of <span className="font-medium">{totalUsers}</span> results
                 </p>
               </div>
               <div>
@@ -1126,7 +1233,9 @@ export default function AdminUsersPage() {
                     Previous
                   </button>
                   <button
-                    onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages - 1, currentPage + 1))
+                    }
                     disabled={currentPage === totalPages - 1}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
@@ -1152,8 +1261,9 @@ export default function AdminUsersPage() {
                   Suspend User
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Are you sure you want to suspend <strong>{selectedUser.username}</strong>?
-                  This action will prevent them from accessing their account.
+                  Are you sure you want to suspend{" "}
+                  <strong>{selectedUser.username}</strong>? This action will
+                  prevent them from accessing their account.
                 </p>
                 <div className="mt-4">
                   <textarea
@@ -1170,7 +1280,7 @@ export default function AdminUsersPage() {
                   onClick={() => {
                     setShowSuspendModal(false);
                     setSelectedUser(null);
-                    setSuspendReason('');
+                    setSuspendReason("");
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-500"
                   disabled={actionLoading}
@@ -1182,7 +1292,7 @@ export default function AdminUsersPage() {
                   disabled={!suspendReason.trim() || actionLoading}
                   className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 disabled:opacity-50"
                 >
-                  {actionLoading ? 'Suspending...' : 'Suspend User'}
+                  {actionLoading ? "Suspending..." : "Suspend User"}
                 </button>
               </div>
             </div>
@@ -1203,8 +1313,10 @@ export default function AdminUsersPage() {
                   Delete User
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Are you sure you want to permanently delete <strong>{selectedUser.username}</strong>?
-                  This action cannot be undone and will remove all their data including stories, comments, and account information.
+                  Are you sure you want to permanently delete{" "}
+                  <strong>{selectedUser.username}</strong>? This action cannot
+                  be undone and will remove all their data including stories,
+                  comments, and account information.
                 </p>
               </div>
               <div className="flex justify-center space-x-4 mt-6">
@@ -1223,7 +1335,7 @@ export default function AdminUsersPage() {
                   disabled={actionLoading}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                 >
-                  {actionLoading ? 'Deleting...' : 'Delete User'}
+                  {actionLoading ? "Deleting..." : "Delete User"}
                 </button>
               </div>
             </div>
@@ -1240,12 +1352,11 @@ export default function AdminUsersPage() {
                 <XCircleIcon className="w-6 h-6 text-red-600" />
               </div>
               <div className="mt-4 text-center">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Ban User
-                </h3>
+                <h3 className="text-lg font-medium text-gray-900">Ban User</h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Are you sure you want to permanently ban <strong>{selectedUser.username}</strong>?
-                  This action will prevent them from accessing their account permanently.
+                  Are you sure you want to permanently ban{" "}
+                  <strong>{selectedUser.username}</strong>? This action will
+                  prevent them from accessing their account permanently.
                 </p>
                 <div className="mt-4">
                   <textarea
@@ -1262,7 +1373,7 @@ export default function AdminUsersPage() {
                   onClick={() => {
                     setShowBanModal(false);
                     setSelectedUser(null);
-                    setBanReason('');
+                    setBanReason("");
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-500"
                   disabled={actionLoading}
@@ -1274,7 +1385,7 @@ export default function AdminUsersPage() {
                   disabled={!banReason.trim() || actionLoading}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                 >
-                  {actionLoading ? 'Banning...' : 'Ban User'}
+                  {actionLoading ? "Banning..." : "Ban User"}
                 </button>
               </div>
             </div>

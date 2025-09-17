@@ -552,7 +552,10 @@ public class SearchServiceImpl implements SearchService {
         return users.stream()
                 .filter(user -> user.getUsername().toLowerCase().contains(query.toLowerCase()) ||
                         (user.getDisplayName() != null
-                                && user.getDisplayName().toLowerCase().contains(query.toLowerCase())))
+                                && user.getDisplayName().toLowerCase().contains(query.toLowerCase()))
+                        ||
+                        (user.getLineUserId() != null
+                                && user.getLineUserId().toLowerCase().contains(query.toLowerCase())))
                 .skip((long) page * size)
                 .limit(size)
                 .collect(Collectors.toList());
