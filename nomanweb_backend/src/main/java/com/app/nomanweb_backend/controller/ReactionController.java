@@ -9,6 +9,7 @@ import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.Chapter;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.NotificationService;
+import com.app.nomanweb_backend.controller.UserController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -71,6 +72,14 @@ public class ReactionController {
                                 response.put("liked", false);
                                 response.put("message", "Story unliked");
                                 System.out.println("User " + user.getUsername() + " unliked story: " + storyId);
+
+                                // Broadcast real-time update for story unlike
+                                Map<String, Object> unlikeData = new HashMap<>();
+                                unlikeData.put("storyId", storyId);
+                                unlikeData.put("userId", user.getId());
+                                unlikeData.put("liked", false);
+                                UserController.broadcastSocialUpdate(story.getAuthor().getId(), "story_unliked",
+                                                unlikeData);
                         } else {
                                 // Like - add reaction
                                 Reaction reaction = Reaction.builder()
@@ -89,6 +98,14 @@ public class ReactionController {
                                 response.put("liked", true);
                                 response.put("message", "Story liked");
                                 System.out.println("User " + user.getUsername() + " liked story: " + storyId);
+
+                                // Broadcast real-time update for story like
+                                Map<String, Object> likeData = new HashMap<>();
+                                likeData.put("storyId", storyId);
+                                likeData.put("userId", user.getId());
+                                likeData.put("liked", true);
+                                UserController.broadcastSocialUpdate(story.getAuthor().getId(), "story_liked",
+                                                likeData);
                         }
 
                         response.put("totalLikes", story.getTotalLikes());

@@ -4,15 +4,12 @@ import com.app.nomanweb_backend.dto.chapter.*;
 import com.app.nomanweb_backend.exception.InsufficientFundsException;
 import com.app.nomanweb_backend.entity.BookPurchase;
 import com.app.nomanweb_backend.entity.Chapter;
-import com.app.nomanweb_backend.entity.Chapter.ModerationStatus;
 import com.app.nomanweb_backend.entity.ChapterPurchase;
 import com.app.nomanweb_backend.entity.ChapterRefund;
 
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.entity.Library;
-import com.app.nomanweb_backend.entity.Notification;
-import com.app.nomanweb_backend.entity.Notification.RelatedType;
 import com.app.nomanweb_backend.repository.BookPurchaseRepository;
 import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.StoryRepository;
@@ -24,14 +21,11 @@ import com.app.nomanweb_backend.repository.LibraryRepository;
 import com.app.nomanweb_backend.repository.ReadingProgressRepository;
 
 import com.app.nomanweb_backend.service.ChapterService;
-
+import com.app.nomanweb_backend.service.CollaborationService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.MonetizationService;
 import com.app.nomanweb_backend.service.NotificationService;
-import com.app.nomanweb_backend.service.ContentModerationService;
-import com.app.nomanweb_backend.service.ChapterModerationQueueService;
-import com.app.nomanweb_backend.dto.moderation.ContentModerationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,12 +59,11 @@ public class ChapterServiceImpl implements ChapterService {
     private final LibraryRepository libraryRepository;
     private final ReadingProgressRepository readingProgressRepository;
 
+    private final CollaborationService collaborationService;
     private final ViewTrackingService viewTrackingService;
     private final PurchaseProtectionService purchaseProtectionService;
     private final MonetizationService monetizationService;
     private final NotificationService notificationService;
-    private final ContentModerationService contentModerationService;
-    private final ChapterModerationQueueService chapterModerationQueueService;
 
     private static final int WORDS_PER_MINUTE = 200; // Average reading speed
 
@@ -99,46 +91,27 @@ public class ChapterServiceImpl implements ChapterService {
             throw new IllegalArgumentException("Chapter number " + chapterNumber + " already exists");
         }
 
-        // Create chapter with different logic for drafts vs publish
-        Chapter chapter;
-        if (request.getIsDraft()) {
-            // Draft chapters skip moderation entirely
-            chapter = Chapter.builder()
-                    .story(story)
-                    .chapterNumber(chapterNumber)
-                    .title(request.getTitle())
-                    .content(request.getContent())
-                    .coinPrice(request.getCoinPrice())
-                    .isFree(request.getIsFree())
-                    .status(Chapter.Status.DRAFT) // Drafts start as DRAFT
-                    .moderationStatus(null) // No moderation for drafts
-                    .build();
-            log.info("Creating draft chapter (no moderation): {}", chapter.getId());
-        } else {
-            // Chapters intended for publishing need moderation
-            chapter = Chapter.builder()
-                    .story(story)
-                    .chapterNumber(chapterNumber)
-                    .title(request.getTitle())
-                    .content(request.getContent())
-                    .coinPrice(request.getCoinPrice())
-                    .isFree(request.getIsFree())
-                    .status(Chapter.Status.PENDING) // Publishing chapters start as PENDING
-                    .moderationStatus(Chapter.ModerationStatus.PENDING) // Will be updated by AI moderation
-                    .build();
-        }
+        // Create chapter
+        Chapter chapter = Chapter.builder()
+                .story(story)
+                .chapterNumber(chapterNumber)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .coinPrice(request.getCoinPrice())
+                .isFree(request.getIsFree())
+                .status(request.getIsDraft() ? Chapter.Status.DRAFT : Chapter.Status.PUBLISHED)
+                .moderationStatus(Chapter.ModerationStatus.PENDING)
+                .build();
 
         // Calculate word count
         chapter.updateWordCount();
 
-        // Save chapter first
-        chapter = chapterRepository.save(chapter);
-
-        // Only queue chapters for AI moderation if they're intended for publishing
+        // Set published date if publishing
         if (!request.getIsDraft()) {
-            chapterModerationQueueService.queueChapterForModeration(chapter, "CREATE_PUBLISH");
-            log.info("Chapter queued for AI moderation: {} (operation: CREATE_PUBLISH)", chapter.getId());
+            chapter.setPublishedAt(LocalDateTime.now());
         }
+
+        chapter = chapterRepository.save(chapter);
 
         // Update story chapter count
         story.setTotalChapters(story.getTotalChapters() + 1);
@@ -206,12 +179,13 @@ public class ChapterServiceImpl implements ChapterService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-        // Validate ownership
+        // Validate ownership or collaboration permissions
         boolean isAuthor = chapter.getStory().getAuthor().getId().equals(authorId);
+        boolean hasEditPermission = collaborationService.hasEditPermission(chapterId, authorId);
 
-        if (!isAuthor) {
+        if (!isAuthor && !hasEditPermission) {
             throw new IllegalArgumentException(
-                    "Only the author can update this chapter");
+                    "Only the author or collaborators with edit permissions can update this chapter");
         }
 
         log.info(
@@ -258,31 +232,13 @@ public class ChapterServiceImpl implements ChapterService {
         // Handle publishing
         boolean wasJustPublished = false;
         if (request.getShouldPublish() != null) {
-            if (request.getShouldPublish()
-                    && (chapter.getStatus() == Chapter.Status.DRAFT || chapter.getStatus() == Chapter.Status.PENDING)) {
-                // Check if chapter is already approved by AI moderation
-                if (chapter.getModerationStatus() == Chapter.ModerationStatus.APPROVED) {
-                    // Chapter is already approved, publish directly
-                    chapter.setStatus(Chapter.Status.PUBLISHED);
-                    chapter.setPublishedAt(LocalDateTime.now());
-                    wasJustPublished = true;
-                    log.info("Publishing pre-approved chapter during update: {}", chapter.getId());
-                } else {
-                    // Queue for AI moderation and set to PENDING until approved
-                    chapter.setStatus(Chapter.Status.PENDING);
-                    chapter.setModerationStatus(Chapter.ModerationStatus.PENDING);
-                    chapterModerationQueueService.queueChapterForModeration(chapter, "UPDATE_PUBLISH");
-                    log.info("Chapter queued for AI moderation during update: {}", chapter.getId());
-
-                    // Note: Chapter will remain as PENDING until AI moderation completes
-                    // The background processor will update status when moderation is done
-                }
+            if (request.getShouldPublish() && chapter.getStatus() == Chapter.Status.DRAFT) {
+                chapter.setStatus(Chapter.Status.PUBLISHED);
+                chapter.setPublishedAt(LocalDateTime.now());
+                wasJustPublished = true;
             } else if (!request.getShouldPublish() && chapter.getStatus() == Chapter.Status.PUBLISHED) {
-                // Unpublishing - move back to draft and clear moderation
                 chapter.setStatus(Chapter.Status.DRAFT);
-                chapter.setModerationStatus(null);
                 chapter.setPublishedAt(null);
-                log.info("Chapter unpublished during update: {}", chapter.getId());
             }
         }
 
@@ -303,14 +259,20 @@ public class ChapterServiceImpl implements ChapterService {
         if (wasJustPublished) {
             updateLibraryStatusForNewChapter(chapter.getStory());
 
-            // Notify followers about new chapter publication
-            try {
-                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
-                        chapter.getId());
-                log.info("Notifications sent to followers for new chapter: {}", chapterId);
-            } catch (Exception e) {
-                log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
-                // Don't fail the chapter update if notification fails
+            // Only notify followers if chapter is actually PUBLISHED (not PENDING)
+            if (chapter.getStatus() == Chapter.Status.PUBLISHED) {
+                try {
+                    notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(),
+                            chapter.getStory().getId(),
+                            chapter.getId());
+                    log.info("Notifications sent to followers for published chapter: {}", chapterId);
+                } catch (Exception e) {
+                    log.warn("Failed to send notifications for published chapter: {} - {}", chapterId, e.getMessage());
+                    // Don't fail the chapter update if notification fails
+                }
+            } else {
+                log.info("Chapter is {} - notifications will be sent when approved and published: {}",
+                        chapter.getStatus(), chapterId);
             }
         }
 
@@ -485,24 +447,8 @@ public class ChapterServiceImpl implements ChapterService {
         // refund and republish
         // Refunded purchases remain refunded and do not automatically regain access
 
-        // Check if chapter is already approved by AI moderation
-        if (chapter.getModerationStatus() == Chapter.ModerationStatus.APPROVED) {
-            // Chapter is already approved, publish directly
-            chapter.setStatus(Chapter.Status.PUBLISHED);
-            chapter.setPublishedAt(LocalDateTime.now());
-            log.info("Publishing pre-approved chapter: {}", chapterId);
-        } else {
-            // Queue for AI moderation
-            chapter.setStatus(Chapter.Status.PENDING);
-            chapter.setModerationStatus(Chapter.ModerationStatus.PENDING);
-            chapterModerationQueueService.queueChapterForModeration(chapter, "REPUBLISH");
-            log.info("Chapter queued for AI moderation: {}", chapterId);
-
-            // Chapter status is now PENDING until AI moderation completes
-            // The background processor will handle publishing when approved
-            log.info("Chapter queued for moderation - will be published when approved: {}", chapterId);
-        }
-
+        chapter.setStatus(Chapter.Status.PUBLISHED);
+        chapter.setPublishedAt(LocalDateTime.now());
         chapter = chapterRepository.save(chapter);
 
         // Update library status for users who had completed this story
@@ -728,6 +674,13 @@ public class ChapterServiceImpl implements ChapterService {
             return true;
         }
 
+        // Check if user is a collaborator (collaborators can access regardless of
+        // chapter status)
+        if (userId != null && collaborationService.hasAccessToChapter(chapterId, userId)) {
+            log.info("Access granted - User is a collaborator");
+            return true;
+        }
+
         // Chapter must be published for public access
         if (chapter.getStatus() != Chapter.Status.PUBLISHED) {
             log.info("Access denied - Chapter is not published");
@@ -882,19 +835,11 @@ public class ChapterServiceImpl implements ChapterService {
     @Override
     @Transactional(readOnly = true)
     public Page<ChapterResponse> getChaptersForModeration(Pageable pageable) {
-        // Fetch all chapters that have gone through moderation (PENDING, APPROVED,
-        // REJECTED)
-        // This allows admins to see auto-approved and auto-rejected content
-        Page<Chapter> allChapters = chapterRepository.findAll(pageable);
-
-        // Filter to only include chapters with moderation status (exclude null)
-        List<Chapter> moderatedChapters = allChapters.getContent().stream()
-                .filter(chapter -> chapter.getModerationStatus() != null)
-                .collect(Collectors.toList());
+        Page<Chapter> chapters = chapterRepository.findByModerationStatus(Chapter.ModerationStatus.PENDING, pageable);
 
         // Filter out orphaned chapters (chapters whose stories don't exist) and map to
         // response
-        List<ChapterResponse> validChapters = moderatedChapters.stream()
+        List<ChapterResponse> validChapters = chapters.getContent().stream()
                 .map(chapter -> {
                     try {
                         return mapToChapterResponse(chapter, null);
@@ -908,10 +853,7 @@ public class ChapterServiceImpl implements ChapterService {
                 .collect(Collectors.toList());
 
         // Create a new page with filtered results
-        // Note: This is a simplified approach. For better performance with large
-        // datasets,
-        // consider creating a custom repository method with proper pagination
-        return new PageImpl<>(validChapters, pageable, validChapters.size());
+        return new PageImpl<>(validChapters, pageable, chapters.getTotalElements());
     }
 
     @Override
@@ -919,63 +861,12 @@ public class ChapterServiceImpl implements ChapterService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-        // Update moderation status
         chapter.setModerationStatus(approved ? Chapter.ModerationStatus.APPROVED : Chapter.ModerationStatus.REJECTED);
         chapter.setModerationNotes(moderationNotes);
-
-        // Handle chapter status based on approval
-        if (approved) {
-            // If approved, change status from PENDING to PUBLISHED
-            chapter.setStatus(Chapter.Status.PUBLISHED);
-            log.info("Chapter {} approved by {}: Status changed to PUBLISHED", chapterId, moderatorId);
-        } else {
-            // If rejected, change status back to DRAFT
-            chapter.setStatus(Chapter.Status.DRAFT);
-            chapter.setPublishedAt(null); // Clear published date
-            log.info("Chapter {} rejected by {}: Status changed to DRAFT", chapterId, moderatorId);
-        }
-
         chapter = chapterRepository.save(chapter);
-
-        // Send notification to author about moderation result
-        try {
-            UUID authorId = chapter.getStory().getAuthor().getId();
-            String title = approved ? "Chapter Approved" : "Chapter Rejected";
-            String message;
-
-            if (approved) {
-                message = String.format("Your chapter '%s' from story '%s' has been approved and is now published.",
-                        chapter.getTitle(), chapter.getStory().getTitle());
-            } else {
-                message = String.format(
-                        "Your chapter '%s' from story '%s' has been rejected and moved back to drafts. Reason: %s",
-                        chapter.getTitle(), chapter.getStory().getTitle(),
-                        moderationNotes != null && !moderationNotes.trim().isEmpty() ? moderationNotes
-                                : "No specific reason provided");
-            }
-
-            // Use sendModerationNotification which handles preference checking
-            // automatically
-            notificationService.sendModerationNotification(authorId, title, message,
-                    Notification.RelatedType.CHAPTER, chapter.getId());
-            log.info("Moderation notification sent to author {} for chapter {}", authorId, chapterId);
-        } catch (Exception e) {
-            log.warn("Failed to send moderation notification for chapter {}: {}", chapterId, e.getMessage());
-            // Don't fail the moderation if notification fails
-        }
 
         log.info("Chapter {} moderated by {}: {}", chapterId, moderatorId, approved ? "APPROVED" : "REJECTED");
         return mapToChapterResponse(chapter, moderatorId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ChapterResponse getChapterByIdForAdmin(UUID chapterId) {
-        Chapter chapter = chapterRepository.findById(chapterId)
-                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
-
-        // Admin access bypasses ownership checks
-        return mapToChapterResponse(chapter, null);
     }
 
     // Mapping methods
@@ -986,17 +877,10 @@ public class ChapterServiceImpl implements ChapterService {
 
             // Try to access story info safely
             Story story = chapter.getStory();
-            User author = story.getAuthor();
-            ChapterResponse.AuthorInfo authorInfo = ChapterResponse.AuthorInfo.builder()
-                    .id(author.getId())
-                    .username(author.getUsername())
-                    .displayName(author.getDisplayName())
-                    .build();
-
             ChapterResponse.StoryInfo storyInfo = ChapterResponse.StoryInfo.builder()
                     .id(story.getId())
                     .title(story.getTitle())
-                    .author(authorInfo)
+                    .authorUsername(story.getAuthor().getUsername())
                     .totalChapters(story.getTotalChapters())
                     .build();
 
@@ -1039,11 +923,7 @@ public class ChapterServiceImpl implements ChapterService {
                     .story(ChapterResponse.StoryInfo.builder()
                             .id(null)
                             .title("Story Not Found")
-                            .author(ChapterResponse.AuthorInfo.builder()
-                                    .id(null)
-                                    .username("Unknown")
-                                    .displayName("Unknown Author")
-                                    .build())
+                            .authorUsername("Unknown")
                             .totalChapters(0)
                             .build())
                     .views(chapter.getViews())
@@ -1071,7 +951,6 @@ public class ChapterServiceImpl implements ChapterService {
                 .coinPrice(chapter.getCoinPrice())
                 .isFree(chapter.getIsFree())
                 .status(chapter.getStatus())
-                .moderationStatus(chapter.getModerationStatus())
                 .views(chapter.getViews())
                 .likes(chapter.getLikes())
                 .estimatedReadingTime(calculateReadingTime(chapter.getContent()))
@@ -1377,47 +1256,22 @@ public class ChapterServiceImpl implements ChapterService {
             return;
         }
 
-        // Apply AI moderation to all draft chapters
+        // Publish all draft chapters
         LocalDateTime publishTime = LocalDateTime.now();
-        List<Chapter> chaptersToPublish = new ArrayList<>();
-
         for (Chapter chapter : draftChapters) {
-            // Check if chapter is already approved by AI moderation
-            if (chapter.getModerationStatus() == Chapter.ModerationStatus.APPROVED) {
-                // Chapter is already approved, publish directly
-                chapter.setStatus(Chapter.Status.PUBLISHED);
-                chapter.setPublishedAt(publishTime);
-                chaptersToPublish.add(chapter);
-                log.info("Publishing pre-approved chapter in bulk: {}", chapter.getId());
-            } else {
-                // Queue for AI moderation - chapters will be published when approved
-                chapter.setModerationStatus(Chapter.ModerationStatus.PENDING);
-                chapterModerationQueueService.queueChapterForModeration(chapter, "BULK_PUBLISH");
-                log.info("Chapter queued for AI moderation in bulk operation: {}", chapter.getId());
-
-                // Note: These chapters will be published by the background processor when
-                // approved
-                // For now, we don't add them to chaptersToPublish
-                if (false) { // This block will never execute, keeping for structure
-                    chapter.setStatus(Chapter.Status.PUBLISHED);
-                    chapter.setPublishedAt(publishTime);
-                    chaptersToPublish.add(chapter);
-                    log.info("Chapter approved and published by AI in bulk: {}", chapter.getId());
-                } else {
-                    log.info("Chapter not published in bulk - moderation status: {}", chapter.getModerationStatus());
-                }
-            }
+            chapter.setStatus(Chapter.Status.PUBLISHED);
+            chapter.setPublishedAt(publishTime);
         }
 
         chapterRepository.saveAll(draftChapters);
 
         // Update library status for users since new chapters were published
-        if (!chaptersToPublish.isEmpty()) {
+        if (!draftChapters.isEmpty()) {
             updateLibraryStatusForNewChapter(story);
         }
 
         // Notify followers about each newly published chapter
-        for (Chapter publishedChapter : chaptersToPublish) {
+        for (Chapter publishedChapter : draftChapters) {
             try {
                 notificationService.notifyNewChapter(publishedChapter.getStory().getAuthor().getId(),
                         publishedChapter.getStory().getId(), publishedChapter.getId());
@@ -1636,70 +1490,6 @@ public class ChapterServiceImpl implements ChapterService {
             log.error("Error updating library status for new chapter in story {}: {}",
                     story.getId(), e.getMessage(), e);
             // Don't throw exception to avoid breaking the chapter publishing process
-        }
-    }
-
-    /**
-     * Apply AI moderation to a chapter and set its moderation status
-     * NOTE: This method is deprecated - now using asynchronous queue system
-     * 
-     * @deprecated Use ChapterModerationQueueService.queueChapterForModeration()
-     *             instead
-     */
-    @Deprecated
-    private void applyAiModeration(Chapter chapter) {
-        try {
-            ContentModerationResult result = contentModerationService.moderateChapterContent(chapter.getTitle(),
-                    chapter.getContent());
-
-            if (result.isOffensive()) {
-                chapter.setModerationStatus(Chapter.ModerationStatus.REJECTED);
-                log.info("Chapter {} automatically rejected by AI moderation. Confidence: {}, Category: {}",
-                        chapter.getId(), result.getConfidenceScore(), result.getPredictedCategory());
-
-                // Send notification to author about rejection
-                sendNotificationToAuthor(chapter.getStory().getAuthor(), chapter, false);
-            } else if (contentModerationService.shouldAutoApprove(result)) {
-                chapter.setModerationStatus(Chapter.ModerationStatus.APPROVED);
-                log.info("Chapter {} automatically approved by AI moderation. Confidence: {}",
-                        chapter.getId(), result.getConfidenceScore());
-
-                // Send notification to author about approval
-                sendNotificationToAuthor(chapter.getStory().getAuthor(), chapter, true);
-            } else {
-                // Low confidence - keep as PENDING for manual review
-                chapter.setModerationStatus(Chapter.ModerationStatus.PENDING);
-                log.info("Chapter {} requires manual review. AI confidence too low: {}",
-                        chapter.getId(), result.getConfidenceScore());
-            }
-        } catch (Exception e) {
-            log.error("Error during AI moderation for chapter {}: {}", chapter.getId(), e.getMessage());
-            // Fallback to manual review on error
-            chapter.setModerationStatus(Chapter.ModerationStatus.PENDING);
-        }
-    }
-
-    private void sendNotificationToAuthor(User author, Chapter chapter, boolean approved) {
-        try {
-            String title = approved ? "Chapter Moderation Approved" : "Chapter Moderation Rejected";
-            String message = approved
-                    ? String.format(
-                            "Your chapter '%s' in story '%s' has passed moderation review. You can now publish it when ready.",
-                            chapter.getTitle(), chapter.getStory().getTitle())
-                    : String.format(
-                            "Your chapter '%s' in story '%s' has been rejected during moderation. Please review and resubmit.",
-                            chapter.getTitle(), chapter.getStory().getTitle());
-
-            // Use sendModerationNotification to ensure proper preference checking and
-            // multi-channel delivery
-            notificationService.sendModerationNotification(
-                    author.getId(),
-                    title,
-                    message,
-                    Notification.RelatedType.CHAPTER,
-                    chapter.getId());
-        } catch (Exception e) {
-            log.warn("Failed to send moderation notification to author {}: {}", author.getId(), e.getMessage());
         }
     }
 }

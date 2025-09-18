@@ -10,14 +10,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/users")
@@ -28,6 +32,52 @@ public class UserController {
 
     private final UserService userService;
     private final SearchService searchService;
+
+    // Store SSE emitters for real-time social updates
+    private static final Map<UUID, SseEmitter> socialEmitters = new ConcurrentHashMap<>();
+
+    // SSE endpoint for social updates
+    @GetMapping(value = "/sse/social-updates", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeSocialUpdates(HttpServletRequest request) {
+        UUID userId = getCurrentUserId(request);
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+
+        socialEmitters.put(userId, emitter);
+
+        emitter.onCompletion(() -> socialEmitters.remove(userId));
+        emitter.onTimeout(() -> socialEmitters.remove(userId));
+        emitter.onError((ex) -> socialEmitters.remove(userId));
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .data("Connected to social updates"));
+        } catch (IOException e) {
+            log.error("Error sending initial social update message", e);
+            socialEmitters.remove(userId);
+        }
+
+        return emitter;
+    }
+
+    // Broadcast social update to specific user
+    public static void broadcastSocialUpdate(UUID userId, String updateType, Object data) {
+        SseEmitter emitter = socialEmitters.get(userId);
+        if (emitter != null) {
+            try {
+                Map<String, Object> eventData = new HashMap<>();
+                eventData.put("type", updateType);
+                eventData.put("data", data);
+                eventData.put("timestamp", System.currentTimeMillis());
+
+                emitter.send(SseEmitter.event()
+                        .name("social-update")
+                        .data(eventData));
+            } catch (IOException e) {
+                socialEmitters.remove(userId);
+            }
+        }
+    }
 
     // Get current user's statistics
     @GetMapping("/me/stats")
@@ -92,6 +142,13 @@ public class UserController {
         try {
             UUID currentUserId = getCurrentUserId(request);
             userService.followUser(currentUserId, userId);
+
+            // Broadcast real-time update to the followed user
+            Map<String, Object> followData = new HashMap<>();
+            followData.put("followerId", currentUserId);
+            followData.put("followingId", userId);
+            broadcastSocialUpdate(userId, "new_follower", followData);
+
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -107,6 +164,13 @@ public class UserController {
         try {
             UUID currentUserId = getCurrentUserId(request);
             userService.unfollowUser(currentUserId, userId);
+
+            // Broadcast real-time update to the unfollowed user
+            Map<String, Object> unfollowData = new HashMap<>();
+            unfollowData.put("followerId", currentUserId);
+            unfollowData.put("followingId", userId);
+            broadcastSocialUpdate(userId, "follower_removed", unfollowData);
+
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

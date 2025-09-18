@@ -13,6 +13,7 @@ import com.app.nomanweb_backend.repository.ChapterRepository;
 import com.app.nomanweb_backend.repository.CommentRepository;
 import com.app.nomanweb_backend.service.NotificationService;
 import com.app.nomanweb_backend.service.EnhancedNotificationService;
+import com.app.nomanweb_backend.controller.NotificationController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -59,6 +60,10 @@ public class NotificationServiceImpl implements NotificationService {
 
         notification = notificationRepository.save(notification);
         log.info("Created notification for user {}: {}", userId, type);
+
+        // Broadcast new notification to user
+        NotificationController.broadcastNotificationUpdate(userId, "new_notification", notification);
+
         return notification;
     }
 

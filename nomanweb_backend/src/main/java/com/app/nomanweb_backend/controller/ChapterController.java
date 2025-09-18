@@ -11,6 +11,7 @@ import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.service.ContentModerationService;
 import com.app.nomanweb_backend.service.ChapterModerationQueueService;
 import com.app.nomanweb_backend.util.JwtUtil;
+import com.app.nomanweb_backend.controller.UserController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,17 @@ public class ChapterController {
 
             ChapterResponse chapter = chapterService.createChapter(request, authorId);
             log.info("Chapter created successfully: {}", chapter.getId());
+
+            // Broadcast real-time update for new chapter creation
+            Map<String, Object> chapterData = new HashMap<>();
+            chapterData.put("chapterId", chapter.getId().toString());
+            chapterData.put("storyId", request.getStoryId().toString());
+            chapterData.put("authorId", authorId.toString());
+            chapterData.put("title", chapter.getTitle());
+            chapterData.put("chapterNumber", chapter.getChapterNumber());
+            chapterData.put("isDraft", chapter.getStatus() == Chapter.Status.DRAFT);
+            UserController.broadcastSocialUpdate(authorId, "chapter_created", chapterData);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(chapter);
         } catch (IllegalArgumentException e) {
             log.error("Error creating chapter: {}", e.getMessage());

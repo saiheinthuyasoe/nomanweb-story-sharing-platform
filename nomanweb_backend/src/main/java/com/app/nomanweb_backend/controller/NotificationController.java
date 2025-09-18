@@ -9,14 +9,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -26,6 +33,78 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final UserService userService;
+
+    // SSE emitters for notification updates
+    public static final Map<UUID, SseEmitter> notificationEmitters = new ConcurrentHashMap<>();
+
+    // SSE endpoint for notification updates
+    @GetMapping(value = "/sse/updates", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToNotificationUpdates(HttpServletRequest request) {
+        try {
+            UUID userId = getCurrentUserId();
+            SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+
+            // Store emitter for this user
+            notificationEmitters.put(userId, emitter);
+            log.info("✅ User {} connected to notification SSE updates. Total connections: {}", userId,
+                    notificationEmitters.size());
+
+            // Send initial connection message
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .data(Map.of("message", "Connected to notification updates", "userId", userId.toString())));
+
+            // Handle client disconnect
+            emitter.onCompletion(() -> {
+                notificationEmitters.remove(userId);
+                log.info("Notification SSE connection closed for user: {}", userId);
+            });
+
+            emitter.onTimeout(() -> {
+                notificationEmitters.remove(userId);
+                log.info("Notification SSE connection timeout for user: {}", userId);
+            });
+
+            emitter.onError((ex) -> {
+                notificationEmitters.remove(userId);
+                log.error("Notification SSE connection error for user: {}", userId, ex);
+            });
+
+            log.info("User {} subscribed to notification updates", userId);
+            return emitter;
+        } catch (Exception e) {
+            log.error("Error creating notification SSE connection", e);
+            throw new RuntimeException("Failed to create notification SSE connection", e);
+        }
+    }
+
+    // Broadcast notification update to specific user
+    public static void broadcastNotificationUpdate(UUID userId, String type, Object data) {
+        SseEmitter emitter = notificationEmitters.get(userId);
+        log.info("Attempting to broadcast notification update to user {}: {}", userId, type);
+
+        if (emitter != null) {
+            try {
+                Map<String, Object> update = new HashMap<>();
+                update.put("type", type);
+                update.put("userId", userId.toString());
+                update.put("data", data);
+                update.put("timestamp", LocalDateTime.now());
+
+                emitter.send(SseEmitter.event()
+                        .name("notification_update")
+                        .data(update));
+
+                log.info("✅ Successfully broadcasted notification update to user {}: {}", userId, type);
+            } catch (IOException e) {
+                log.error("❌ Error broadcasting notification update to user: {}", userId, e);
+                notificationEmitters.remove(userId);
+            }
+        } else {
+            log.warn("⚠️ No notification SSE emitter found for user: {}. User may not be connected to SSE endpoint.",
+                    userId);
+        }
+    }
 
     @GetMapping
     public ResponseEntity<Page<Notification>> getNotifications(
@@ -72,7 +151,13 @@ public class NotificationController {
     @PostMapping("/{notificationId}/read")
     public ResponseEntity<Map<String, String>> markAsRead(@PathVariable UUID notificationId) {
         try {
+            UUID userId = getCurrentUserId();
             notificationService.markAsRead(notificationId);
+
+            // Broadcast the read status update
+            broadcastNotificationUpdate(userId, "notification_read",
+                    Map.of("notificationId", notificationId.toString()));
+
             return ResponseEntity.ok(Map.of("message", "Notification marked as read"));
         } catch (Exception e) {
             log.error("Error marking notification as read", e);
@@ -85,6 +170,10 @@ public class NotificationController {
         try {
             UUID userId = getCurrentUserId();
             notificationService.markAllAsRead(userId);
+
+            // Broadcast the mark all read update
+            broadcastNotificationUpdate(userId, "all_notifications_read", Map.of("userId", userId.toString()));
+
             return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
         } catch (Exception e) {
             log.error("Error marking all notifications as read", e);

@@ -4,13 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import {
-  BarChart3,
-  BookOpen,
-  DollarSign,
-  Bell,
-  LogOut,
-} from "lucide-react";
+import { BarChart3, BookOpen, DollarSign, Bell, LogOut } from "lucide-react";
+import { useSocialRealtime } from "@/hooks/useSocialRealtime";
 
 // Dashboard Sidebar Navigation Items
 const sidebarItems = [
@@ -48,6 +43,16 @@ export default function DashboardLayout({
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Initialize social realtime updates for the dashboard
+  useSocialRealtime({
+    onConnectionChange: (connected) => {
+      console.log(
+        "Social realtime connection:",
+        connected ? "connected" : "disconnected"
+      );
+    },
+  });
 
   useEffect(() => {
     console.log("🔍 Dashboard layout auth check:", {
@@ -94,7 +99,8 @@ export default function DashboardLayout({
   // Determine active tab based on current pathname
   const getActiveTab = () => {
     if (pathname === "/dashboard") return "statistics";
-    if (pathname.includes("/stories") || pathname.includes("/my-stories")) return "stories";
+    if (pathname.includes("/stories") || pathname.includes("/my-stories"))
+      return "stories";
     if (pathname.includes("/monetization")) return "monetization";
     if (pathname.includes("/notifications")) return "notification";
     return "statistics";
@@ -149,9 +155,7 @@ export default function DashboardLayout({
                           isActive ? "text-white" : "text-gray-400"
                         }`}
                       />
-                      <span className="text-sm font-medium">
-                        {item.label}
-                      </span>
+                      <span className="text-sm font-medium">{item.label}</span>
                     </Link>
                   </li>
                 );

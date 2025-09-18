@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   HeartIcon,
   EllipsisHorizontalIcon,
@@ -35,20 +36,61 @@ import { StoryPreview } from "@/types/story";
 import { StoryCard } from "@/components/stories/StoryCard";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-hot-toast";
+import { useSocialRealtime } from "@/hooks/useSocialRealtime";
 import EnhancedGiftModal from "@/components/monetization/EnhancedGiftModal";
 
 export default function AuthorProfile() {
   const params = useParams();
   const authorId = params.authorId as string;
+  const queryClient = useQueryClient();
 
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // Use React Query for user profile data
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
+    queryKey: ["userProfile", authorId],
+    queryFn: () => usersApi.getUserProfile(authorId),
+    enabled: !!authorId,
+    staleTime: 10 * 1000, // 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+
+  // Use React Query for followers data
+  const { data: followersData } = useQuery({
+    queryKey: ["followers", authorId, 0],
+    queryFn: () => usersApi.getFollowers(authorId, 0, 20),
+    enabled: !!authorId,
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+
+  // Use React Query for following data
+  const { data: followingData } = useQuery({
+    queryKey: ["following", authorId, 0],
+    queryFn: () => usersApi.getFollowing(authorId, 0, 20),
+    enabled: !!authorId,
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+
+  // Use React Query for follow status
+  const { data: isFollowing, isLoading: followStatusLoading } = useQuery({
+    queryKey: ["isFollowing", authorId],
+    queryFn: () => usersApi.isFollowing(authorId),
+    enabled: !!authorId,
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
+
   const [writtenStories, setWrittenStories] = useState<StoryPreview[]>([]);
   const [readingData, setReadingData] = useState<LibraryItem[]>([]);
   const [completedData, setCompletedData] = useState<LibraryItem[]>([]);
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [following, setFollowing] = useState<any[]>([]);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"followers" | "following">(
     "followers"
   );
@@ -56,57 +98,47 @@ export default function AuthorProfile() {
   const [followLoading, setFollowLoading] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
 
-  useEffect(() => {
-    const fetchAuthorData = async () => {
+  // Extract data from queries
+  const followers = followersData?.content || [];
+  const following = followingData?.content || [];
+  const loading = profileLoading;
+
+  // Real-time updates for follow/unfollow
+  useSocialRealtime();
+
+  const fetchAuthorData = async () => {
+    try {
+      // Fetch user's written stories
+      const storiesResponse = await storiesApi.getStoriesByAuthor(authorId, {
+        page: 0,
+        size: 12,
+      });
+      setWrittenStories(storiesResponse.content);
+
+      // Fetch reading data
       try {
-        setLoading(true);
+        const readingResponse = await libraryApi.getUserLibraries(
+          authorId,
+          "READING"
+        );
+        setReadingData(readingResponse);
 
-        // Fetch user profile
-        const profile = await usersApi.getUserProfile(authorId);
-        setUserProfile(profile);
-
-        // Fetch user's written stories
-        const storiesResponse = await storiesApi.getStoriesByAuthor(authorId, {
-          page: 0,
-          size: 12,
-        });
-        setWrittenStories(storiesResponse.content);
-
-        // Fetch followers and following
-        const followersResponse = await usersApi.getFollowers(authorId, 0, 20);
-        setFollowers(followersResponse.content);
-
-        const followingResponse = await usersApi.getFollowing(authorId, 0, 20);
-        setFollowing(followingResponse.content);
-
-        // Fetch reading data
-        try {
-          const readingResponse = await libraryApi.getUserLibraries(authorId, "READING");
-          setReadingData(readingResponse);
-
-          const completedResponse = await libraryApi.getUserLibraries(authorId, "COMPLETED");
-          setCompletedData(completedResponse);
-        } catch (error) {
-          console.error("Error fetching reading data:", error);
-          // Don't show error toast for reading data as it's not critical
-        }
-
-        // Check if current user follows this author
-        try {
-          const followStatus = await usersApi.isFollowing(authorId);
-          setIsFollowing(followStatus);
-        } catch (error) {
-          // User might not be logged in
-          console.log("Not logged in or error checking follow status");
-        }
+        const completedResponse = await libraryApi.getUserLibraries(
+          authorId,
+          "COMPLETED"
+        );
+        setCompletedData(completedResponse);
       } catch (error) {
-        console.error("Error fetching author data:", error);
-        toast.error("Failed to load author profile");
-      } finally {
-        setLoading(false);
+        console.error("Error fetching reading data:", error);
+        // Don't show error toast for reading data as it's not critical
       }
-    };
+    } catch (error) {
+      console.error("Error fetching author data:", error);
+      toast.error("Failed to load author profile");
+    }
+  };
 
+  useEffect(() => {
     if (authorId) {
       fetchAuthorData();
     }
@@ -120,30 +152,23 @@ export default function AuthorProfile() {
 
       if (isFollowing) {
         await usersApi.unfollowUser(authorId);
-        setIsFollowing(false);
         toast.success(
           `Unfollowed ${userProfile.displayName || userProfile.username}`
         );
       } else {
         await usersApi.followUser(authorId);
-        setIsFollowing(true);
         toast.success(
           `Following ${userProfile.displayName || userProfile.username}`
         );
       }
 
-      // Update followers count in profile
-      setUserProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              stats: {
-                ...prev.stats,
-                followers: prev.stats.followers + (isFollowing ? -1 : 1),
-              },
-            }
-          : null
-      );
+      // Invalidate and refetch queries to update UI immediately
+      queryClient.invalidateQueries({ queryKey: ["isFollowing", authorId] });
+      queryClient.invalidateQueries({ queryKey: ["followers", authorId] });
+      queryClient.invalidateQueries({ queryKey: ["userStats"] });
+      queryClient.refetchQueries({ queryKey: ["isFollowing", authorId] });
+      queryClient.refetchQueries({ queryKey: ["followers", authorId] });
+      queryClient.refetchQueries({ queryKey: ["userStats"] });
     } catch (error) {
       console.error("Error toggling follow:", error);
       toast.error("Failed to follow/unfollow user");
@@ -392,7 +417,8 @@ export default function AuthorProfile() {
                   <div className="flex items-center space-x-2">
                     <span>Reading Books</span>
                     <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
-                      {(readingData?.length || 0) + (completedData?.length || 0)}
+                      {(readingData?.length || 0) +
+                        (completedData?.length || 0)}
                     </span>
                   </div>
                 </button>
@@ -461,22 +487,26 @@ export default function AuthorProfile() {
                                       {story.title}
                                     </h4>
                                   </Link>
-                                  <p className="text-sm text-gray-500 mt-1">{story.genre}</p>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    {story.genre}
+                                  </p>
                                   <p className="text-sm text-gray-500 mt-1">
                                     @{story.author?.username || "unknown"}
                                   </p>
                                   <div className="flex items-center text-sm text-gray-500 space-x-3 mt-1">
-                                     <div className="flex items-center space-x-1">
-                                       <BookOpen className="w-3 h-3" />
-                                       <span>{story.totalChapters || 0} chapters</span>
-                                     </div>
-                                     {story.totalViews && (
-                                       <div className="flex items-center space-x-1">
-                                         <Eye className="w-3 h-3" />
-                                         <span>{story.totalViews} views</span>
-                                       </div>
-                                     )}
-                                   </div>
+                                    <div className="flex items-center space-x-1">
+                                      <BookOpen className="w-3 h-3" />
+                                      <span>
+                                        {story.totalChapters || 0} chapters
+                                      </span>
+                                    </div>
+                                    {story.totalViews && (
+                                      <div className="flex items-center space-x-1">
+                                        <Eye className="w-3 h-3" />
+                                        <span>{story.totalViews} views</span>
+                                      </div>
+                                    )}
+                                  </div>
                                   <div className="flex items-center justify-between mt-2">
                                     <span
                                       className={`text-xs px-2 py-1 rounded-full ${
@@ -507,12 +537,12 @@ export default function AuthorProfile() {
                           No books read yet
                         </h3>
                         <p className="text-gray-500">
-                          {userProfile?.displayName || userProfile?.username} hasn't read any books yet.
+                          {userProfile?.displayName || userProfile?.username}{" "}
+                          hasn't read any books yet.
                         </p>
                       </div>
                     );
-                  })()
-                  }
+                  })()}
                 </div>
               )}
             </div>

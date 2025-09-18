@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 
 import { useUnreadCount } from "@/hooks/useNotifications";
+import { useCoinBalanceRealtime } from "@/hooks/useCoinBalanceRealtime";
+import { useCoinBalance } from "@/hooks/useCoinBalance";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -34,6 +36,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const isHydrated = useHydrated();
   const { data: unreadCountData } = useUnreadCount();
+
+  // Initialize real-time coin balance updates
+  useCoinBalanceRealtime();
+  const { data: coinBalance, refetch: refetchCoinBalance } = useCoinBalance();
 
   // Check if on chapter edit page
   const isChapterEditPage =
@@ -404,8 +410,8 @@ export default function Navbar() {
                           <div className="flex items-center justify-between mt-3 bg-yellow-50 rounded-lg p-2">
                             <div className="flex items-center space-x-2">
                               <Coins className="h-4 w-4 text-yellow-600" />
-                              <span className="text-sm font-medium text-gray-700">
-                                {user.coinBalance}
+                              <span className="text-sm font-medium text-gray-700" data-testid="coin-balance">
+                                {coinBalance !== undefined ? coinBalance : user.coinBalance}
                               </span>
                             </div>
                             <button
@@ -555,7 +561,7 @@ export default function Navbar() {
                     <div className="flex items-center space-x-1.5 sm:space-x-2">
                       <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-300" />
                       <span className="text-xs sm:text-sm font-medium text-white">
-                        {user.coinBalance}
+                        {coinBalance !== undefined ? coinBalance : user.coinBalance}
                       </span>
                     </div>
                     <button

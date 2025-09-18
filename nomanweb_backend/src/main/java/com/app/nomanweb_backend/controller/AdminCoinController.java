@@ -456,7 +456,8 @@ public class AdminCoinController {
             log.info("Coin {} completed for user {} ({}), transaction ID: {}, new balance: {}",
                     type, user.getUsername(), user.getEmail(), transaction.getId(), balanceAfter);
 
-            // Broadcast balance update to the affected user
+            // Broadcast balance update to the affected user immediately
+            log.info("Broadcasting balance update immediately at: {}", LocalDateTime.now());
             broadcastCoinBalanceUpdate(user.getId(), balanceAfter);
 
             return ResponseEntity.ok(response);

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useSocialRealtime } from "@/hooks/useSocialRealtime";
 import { authApi } from "@/lib/api/auth";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import { ProfileImageUpload } from "@/components/upload/ProfileImageUpload";
@@ -50,6 +51,9 @@ export default function ProfilePage() {
 
   // Combine reading data
   const readBooksData = [...currentlyReadingData, ...completedStoriesData];
+
+  // Real-time updates for follow/unfollow
+  useSocialRealtime();
 
   const handleUserFollowed = (userId: string) => {
     // Refresh user profile data when a user is followed
