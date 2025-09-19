@@ -84,106 +84,90 @@ export default function WriterDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-y-auto">
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Statistics Centre
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Welcome back, {user?.displayName || user?.username}! Here's your
             writing overview.
           </p>
         </div>
 
         {/* Dashboard Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <DashboardCard
             title="Total Stories"
             value={totalStories}
-            icon={BookOpen}
-            color="blue"
             description="Published stories"
             trend="+2 this month"
           />
           <DashboardCard
             title="Total Reads"
             value={totalReads}
-            icon={Eye}
-            color="green"
             description="All-time views"
             trend="+15% this week"
           />
           <DashboardCard
             title="Coin Balance"
             value={user?.coinBalance || 0}
-            icon={Coins}
-            color="yellow"
             description="Available coins"
             trend="Ready to spend"
           />
           <DashboardCard
             title="Coins Earned"
             value={totalEarnings}
-            icon={TrendingUp}
-            color="purple"
             description="Total earnings"
             trend="+340 this month"
           />
           <DashboardCard
             title="Followers"
             value={followers}
-            icon={Users}
-            color="pink"
             description="Active followers"
             trend="+12 new followers"
           />
           <DashboardCard
             title="Gifts Received"
             value={giftsReceived}
-            icon={Gift}
-            color="red"
             description="Reader gifts"
             trend="3 gifts this week"
           />
           <DashboardCard
             title="Notifications"
             value={notificationsCount}
-            icon={Bell}
-            color="orange"
             description="Unread notifications"
             trend="New activities"
           />
           <DashboardCard
             title="Member Since"
             value={memberSince}
-            icon={Calendar}
-            color="indigo"
             description="Year joined"
             trend={`${new Date().getFullYear() - memberSince} years active`}
           />
         </div>
 
         {/* Analytics Chart Section */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 overflow-hidden relative">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 overflow-hidden relative">
           {/* Background decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full opacity-20 transform translate-x-16 -translate-y-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-100 to-blue-100 rounded-full opacity-20 transform -translate-x-12 translate-y-12"></div>
 
           <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
               <div className="mb-4 sm:mb-0">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                   Analytics Overview
                 </h3>
-                <p className="text-gray-600">Performance insights</p>
+                <p className="text-sm sm:text-base text-gray-600">Performance insights</p>
               </div>
-              <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+              <div className="bg-gray-100 p-1 rounded-lg flex flex-wrap sm:inline-flex gap-1 sm:gap-0">
                 {chartFilters.map((filter) => (
                   <button
                     key={filter.value}
                     onClick={() => setChartFilter(filter.value)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 flex-1 sm:flex-none ${
                       chartFilter === filter.value ? "shadow-sm" : ""
                     }`}
                     style={{
@@ -211,7 +195,7 @@ export default function WriterDashboard() {
             </div>
 
             {/* Chart Placeholder */}
-            <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-xl p-6 h-48 flex items-center justify-center border border-gray-200 shadow-inner relative overflow-hidden">
+            <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 h-40 sm:h-48 flex items-center justify-center border border-gray-200 shadow-inner relative overflow-hidden">
               {/* Chart background pattern */}
               <div className="absolute inset-0 opacity-5">
                 <div className="grid grid-cols-8 h-full">
@@ -233,9 +217,6 @@ export default function WriterDashboard() {
               </div>
 
               <div className="text-center relative z-10">
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-2 inline-block mb-3 shadow-lg">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
                 <h4 className="text-lg font-bold text-gray-800 mb-2">
                   Analytics Overview
                 </h4>
@@ -253,31 +234,25 @@ export default function WriterDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
             Quick Actions
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <QuickAction
               href="/stories/create"
-              icon={PlusIcon}
               title="Write New Story"
               description="Start creating your next masterpiece"
-              color="green"
             />
             <QuickAction
               href="/dashboard/my-stories"
-              icon={FileText}
               title="Manage Stories"
               description="Edit, publish, or organize your stories"
-              color="blue"
             />
             <QuickAction
               href="/dashboard/monetization"
-              icon={Target}
               title="Monetization"
               description="Track earnings, gifts, and manage coins"
-              color="purple"
             />
           </div>
         </div>
@@ -290,46 +265,24 @@ export default function WriterDashboard() {
 function DashboardCard({
   title,
   value,
-  icon: Icon,
-  color,
   description,
   trend,
 }: {
   title: string;
   value: number | string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
   description: string;
   trend: string;
 }) {
-  const colorClasses = {
-    blue: "text-blue-600 bg-blue-50",
-    green: "text-green-600 bg-green-50",
-    yellow: "text-yellow-600 bg-yellow-50",
-    purple: "text-purple-600 bg-purple-50",
-    pink: "text-pink-600 bg-pink-50",
-    red: "text-red-600 bg-red-50",
-    orange: "text-orange-600 bg-orange-50",
-    indigo: "text-indigo-600 bg-indigo-50",
-  };
-
-  const [iconColorClass, bgClass] =
-    colorClasses[color as keyof typeof colorClasses].split(" ");
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all duration-200">
-      <div className="flex items-center space-x-4">
-        <div className={`p-2.5 rounded-md ${bgClass}`}>
-          <Icon className={`h-6 w-6 ${iconColorClass}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-600 truncate">
-            {title}
-          </h3>
-          <p className="text-2xl font-bold text-gray-900 truncate">
-            {typeof value === "number" ? value.toLocaleString() : value}
-          </p>
-        </div>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-all duration-200">
+      <div className="flex-1 min-w-0">
+        <h3 className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+          {title}
+        </h3>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+          {typeof value === "number" ? value.toLocaleString() : value}
+        </p>
       </div>
     </div>
   );
@@ -338,40 +291,21 @@ function DashboardCard({
 // Quick Action Component
 function QuickAction({
   href,
-  icon: Icon,
   title,
   description,
-  color,
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
-  color: string;
 }) {
-  const colorClasses = {
-    green: "bg-green-100 text-green-700 hover:bg-green-200",
-    blue: "bg-blue-100 text-blue-700 hover:bg-blue-200",
-    purple: "bg-purple-100 text-purple-700 hover:bg-purple-200",
-  };
-
-  const colorClass = colorClasses[color as keyof typeof colorClasses];
-
   return (
     <Link
       href={href}
       className="block p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors duration-200 group"
     >
-      <div className="flex items-start space-x-3">
-        <div
-          className={`p-2 rounded-lg ${colorClass} transition-colors duration-200`}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex-1">
-          <h4 className="text-sm font-medium text-gray-900 mb-1">{title}</h4>
-          <p className="text-xs text-gray-600">{description}</p>
-        </div>
+      <div className="flex-1">
+        <h4 className="text-sm font-medium text-gray-900 mb-1">{title}</h4>
+        <p className="text-xs text-gray-600">{description}</p>
       </div>
     </Link>
   );

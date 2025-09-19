@@ -306,17 +306,17 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Library</h1>
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Library</h1>
 
           {/* Main Tabs */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex space-x-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-0 sm:space-x-4 md:space-x-8 mb-3 sm:mb-0">
               <button
                 onClick={() => handleTabChange("library")}
-                className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`pb-1 sm:pb-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === "library"
                     ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -326,54 +326,56 @@ export default function LibraryPage() {
               </button>
               <button
                 onClick={() => handleTabChange("purchased")}
-                className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`pb-1 sm:pb-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === "purchased"
                     ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Purchase History ({purchasedContentCount})
+                <span className="hidden xs:inline">Purchase History</span>
+                <span className="xs:hidden">Purchases</span> ({purchasedContentCount})
               </button>
               <button
                 onClick={() => handleTabChange("history")}
-                className={`pb-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`pb-1 sm:pb-2 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                   activeTab === "history"
                     ? "border-[#18243c] text-[#18243c]"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    : "border-transparent text-gray-500 hover:text-[#18243c] hover:border-[#18243c]"
                 }`}
               >
-                Recent Reading History ({readingHistory.length})
+                <span className="hidden xs:inline">Recent Reading History</span>
+                <span className="xs:hidden">History</span> ({readingHistory.length})
               </button>
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {activeTab === "library" && (
                 <>
                   {isEditMode && selectedItems.size > 0 && (
                     <button
                       onClick={handleBulkRemove}
-                      className="flex items-center space-x-1 px-3 py-2 text-red-600 hover:text-red-700 text-sm"
+                      className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 text-red-600 hover:text-red-700 text-xs sm:text-sm"
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                       <span>Remove ({selectedItems.size})</span>
                     </button>
                   )}
                   <button
                     onClick={handleEditMode}
-                    className={`flex items-center space-x-1 px-3 py-2 text-sm transition-colors ${
+                    className={`flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors ${
                       isEditMode
                         ? "text-blue-600 hover:text-blue-700"
                         : "text-gray-600 hover:text-gray-700"
                     }`}
                   >
-                    <Squares2X2Icon className="w-4 h-4" />
+                    <Squares2X2Icon className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>{isEditMode ? "Done" : "Select"}</span>
                   </button>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white"
+                    className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white"
                   >
                     <option value="recent">Recently Added</option>
                     <option value="title">Title</option>
@@ -385,7 +387,7 @@ export default function LibraryPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white"
+                  className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white"
                 >
                   <option value="recent">Recently Purchased</option>
                   <option value="title">Title</option>
@@ -396,9 +398,9 @@ export default function LibraryPage() {
                 <button
                   onClick={handleClearHistory}
                   disabled={isClearingHistory}
-                  className="flex items-center space-x-1 px-3 py-2 text-red-600 hover:text-red-700 text-sm disabled:opacity-50"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 text-red-600 hover:text-red-700 text-xs sm:text-sm disabled:opacity-50"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>
                     {isClearingHistory ? "Clearing..." : "Clear All History"}
                   </span>
@@ -409,65 +411,68 @@ export default function LibraryPage() {
 
           {/* Library Category Filters */}
           {activeTab === "library" && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
               <button
                 onClick={() => handleLibraryFilterChange("all")}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   libraryFilter === "all"
-                    ? "bg-blue-100 text-blue-700 border border-blue-200"
+                    ? "bg-[#18243c] text-white border border-[#18243c]"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                <BookOpenIcon className="w-4 h-4" />
+                <BookOpenIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>All ({categoryCounts.all})</span>
               </button>
 
               <button
                 onClick={() => handleLibraryFilterChange("reading")}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   libraryFilter === "reading"
-                    ? "bg-orange-100 text-orange-700 border border-orange-200"
+                    ? "bg-[#18243c] text-white border border-[#18243c]"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                <EyeIcon className="w-4 h-4" />
+                <EyeIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Reading ({categoryCounts.reading})</span>
               </button>
 
               <button
                 onClick={() => handleLibraryFilterChange("completed")}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   libraryFilter === "completed"
-                    ? "bg-green-100 text-green-700 border border-green-200"
+                    ? "bg-[#18243c] text-white border border-[#18243c]"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                <CheckCircleIconSolid className="w-4 h-4" />
+                <CheckCircleIconSolid className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Completed ({categoryCounts.completed})</span>
               </button>
 
               <button
                 onClick={() => handleLibraryFilterChange("liked")}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   libraryFilter === "liked"
-                    ? "bg-red-100 text-red-700 border border-red-200"
+                    ? "bg-[#18243c] text-white border border-[#18243c]"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                <HeartIconSolid className="w-4 h-4" />
+                <HeartIconSolid className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Liked ({categoryCounts.liked})</span>
               </button>
 
               <button
                 onClick={() => handleLibraryFilterChange("want_to_read")}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   libraryFilter === "want_to_read"
-                    ? "bg-purple-100 text-purple-700 border border-purple-200"
+                    ? "bg-[#18243c] text-white border border-[#18243c]"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                <BookmarkIconSolid className="w-4 h-4" />
-                <span>Want to Read ({categoryCounts.want_to_read})</span>
+                <BookmarkIconSolid className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>
+                  <span className="hidden xs:inline">Want to Read</span>
+                  <span className="xs:hidden">To Read</span> ({categoryCounts.want_to_read})
+                </span>
               </button>
             </div>
           )}
@@ -520,14 +525,14 @@ function LibraryTab({
       switch (filter) {
         case "reading":
           return {
-            icon: <EyeIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />,
+            icon: <EyeIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />,
             title: "No stories currently reading",
             message: "Stories you're actively reading will appear here",
           };
         case "completed":
           return {
             icon: (
-              <CheckCircleIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <CheckCircleIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             ),
             title: "No completed stories",
             message: "Stories you've finished reading will appear here",
@@ -535,7 +540,7 @@ function LibraryTab({
         case "liked":
           return {
             icon: (
-              <HeartIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <HeartIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             ),
             title: "No liked stories",
             message: "Heart the stories you love to add them here",
@@ -543,7 +548,7 @@ function LibraryTab({
         case "want_to_read":
           return {
             icon: (
-              <BookmarkIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <BookmarkIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             ),
             title: "No stories in your reading list",
             message: "Save stories you want to read later",
@@ -551,7 +556,7 @@ function LibraryTab({
         case "purchased":
           return {
             icon: (
-              <ShoppingBagIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <ShoppingBagIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             ),
             title: "No purchased stories",
             message: "Premium stories you've purchased will appear here",
@@ -559,7 +564,7 @@ function LibraryTab({
         default:
           return {
             icon: (
-              <BookOpenIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <BookOpenIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
             ),
             title: "Your library is empty",
             message:
@@ -571,15 +576,15 @@ function LibraryTab({
     const emptyState = getEmptyStateContent();
 
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-10 sm:py-16">
         {emptyState.icon}
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           {emptyState.title}
         </h3>
-        <p className="text-gray-600 mb-6">{emptyState.message}</p>
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{emptyState.message}</p>
         <Link
           href="/stories"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-[#18243c] text-white px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-lg hover:bg-[#18243c]/90 transition-colors"
         >
           Browse Stories
         </Link>
@@ -588,7 +593,7 @@ function LibraryTab({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {items.map((item, index) => (
         <LibraryBookCard
           key={`${item.story.id}-${index}`}
@@ -615,28 +620,28 @@ function HistoryTab({
 }) {
   if (isLoading) {
     return (
-      <div className="text-center py-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading your reading history...</p>
+      <div className="text-center py-10 sm:py-16">
+        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+        <p className="text-sm sm:text-base text-gray-600">Loading your reading history...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-16">
-        <ClockIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+      <div className="text-center py-10 sm:py-16">
+        <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-red-400 mx-auto mb-3 sm:mb-4" />
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           Failed to load reading history
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
           {error?.response?.data?.error ||
             error?.message ||
             "Something went wrong"}
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="text-white px-6 py-3 rounded-lg transition-colors"
+          className="text-white text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors"
           style={{ backgroundColor: '#18243c' }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
@@ -649,17 +654,17 @@ function HistoryTab({
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-16">
-        <ClockIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+      <div className="text-center py-10 sm:py-16">
+        <ClockIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           No reading history
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
           Your reading history will appear here as you read stories
         </p>
         <Link
           href="/stories"
-          className="text-white px-6 py-3 rounded-lg transition-colors"
+          className="text-white text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors"
           style={{ backgroundColor: '#18243c' }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
@@ -671,7 +676,7 @@ function HistoryTab({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {items.map((item) => (
         <HistoryBookCard key={item.id} item={item} />
       ))}
@@ -769,10 +774,10 @@ function LibraryBookCard({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col sm:flex-row">
         {/* Cover Image */}
         <Link href={`/stories/${item.story.id}`} className="flex-shrink-0">
-          <div className="w-40 h-52 relative bg-gray-200 rounded-l-lg overflow-hidden">
+          <div className="w-full sm:w-32 md:w-40 h-40 sm:h-52 relative bg-gray-200 rounded-t-lg sm:rounded-t-none sm:rounded-l-lg overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
                 src={item.story.coverImageUrl}
@@ -796,7 +801,7 @@ function LibraryBookCard({
                       className="bg-white/90 rounded-full p-0.5 shadow-sm"
                     >
                       {React.cloneElement(icon as React.ReactElement, {
-                        className: "w-3 h-3"
+                        className: "w-3 h-3 sm:w-3.5 sm:h-3.5"
                       })}
                     </div>
                   ))}
@@ -804,7 +809,7 @@ function LibraryBookCard({
               ) : (
                 <div className="bg-white/90 rounded-full p-0.5 shadow-sm">
                   {React.cloneElement(getListTypeIcon(item.listType) as React.ReactElement, {
-                    className: "w-3 h-3"
+                    className: "w-3 h-3 sm:w-3.5 sm:h-3.5"
                   })}
                 </div>
               )}
@@ -813,13 +818,13 @@ function LibraryBookCard({
         </Link>
 
         {/* Content */}
-        <div className="flex-1 p-4 min-w-0">
+        <div className="flex-1 p-3 sm:p-4 min-w-0">
           <Link href={`/stories/${item.story.id}`}>
-            <h3 className="font-medium text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors">
+            <h3 className="font-medium text-gray-900 mb-1 text-sm sm:text-base line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors">
               {item.story.title}
             </h3>
           </Link>
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
             by {item.story.author.displayName || item.story.author.username}
           </p>
           <div className="flex items-center justify-between text-xs text-gray-500">
@@ -831,7 +836,7 @@ function LibraryBookCard({
 
           {/* Reading Progress */}
           {storyProgress && (
-            <div className="mt-2">
+            <div className="mt-1 sm:mt-2">
               <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                 <span>Progress</span>
                 <span>{Math.round(storyProgress.overallProgress)}%</span>
@@ -845,12 +850,12 @@ function LibraryBookCard({
                 ></div>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                <span>
+                <span className="truncate pr-1">
                   {storyProgress.completedChapters} of{" "}
                   {storyProgress.totalChapters} chapters
                 </span>
                 {storyProgress.currentChapter && (
-                  <span className="text-blue-600">
+                  <span className="text-blue-600 flex-shrink-0">
                     Ch. {storyProgress.currentChapter.chapterNumber}
                   </span>
                 )}
@@ -860,21 +865,23 @@ function LibraryBookCard({
 
           {/* Reading Status Management */}
           {!isEditMode && (
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-2 sm:mt-3 flex items-center justify-between">
               {/* Continue Reading / Start Reading Button */}
               {storyProgress?.currentChapter ? (
                 <Link
                   href={`/stories/${item.story.id}/chapters/${storyProgress.currentChapter.chapterNumber}/read`}
-                  className="bg-[#18243c] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                  className="bg-[#18243c] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
                 >
-                  Continue Reading →
+                  <span className="hidden sm:inline">Continue Reading</span>
+                  <span className="sm:hidden">Continue</span> →
                 </Link>
               ) : (
                 <Link
                   href={`/stories/${item.story.id}`}
-                  className="bg-[#18243c] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                  className="bg-[#18243c] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
                 >
-                  Start Reading
+                  <span className="hidden sm:inline">Start Reading</span>
+                  <span className="sm:hidden">Start</span>
                 </Link>
               )}
 
@@ -1039,11 +1046,11 @@ function HistoryBookCard({ item }: { item: any }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-      <div className="flex gap-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Cover Image */}
-        <Link href={`/stories/${item.story.id}`} className="flex-shrink-0">
-          <div className="w-40 h-56 relative bg-gray-200 rounded overflow-hidden">
+        <Link href={`/stories/${item.story.id}`} className="flex-shrink-0 mx-auto sm:mx-0">
+          <div className="w-32 sm:w-32 md:w-40 h-44 sm:h-48 md:h-56 relative bg-gray-200 rounded overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
                 src={item.story.coverImageUrl}
@@ -1064,24 +1071,26 @@ function HistoryBookCard({ item }: { item: any }) {
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <Link href={`/stories/${item.story.id}`}>
-                <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">
                   {item.story.title}
                 </h3>
               </Link>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
                 by {item.story.author.displayName || item.story.author.username}
               </p>
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                <span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
+                <span className="truncate">
                   Chapter {item.chapter.chapterNumber}: {item.chapter.title}
                 </span>
-                <span>•</span>
-                <span>{Math.round(item.progressPercentage)}% complete</span>
-                <span>•</span>
-                <span>Last read: {formatLastRead(item.lastReadAt)}</span>
+                <span className="hidden sm:inline">•</span>
+                <div className="flex items-center space-x-2 sm:space-x-4 mt-1 sm:mt-0">
+                  <span>{Math.round(item.progressPercentage)}% complete</span>
+                  <span>•</span>
+                  <span>Last read: {formatLastRead(item.lastReadAt)}</span>
+                </div>
               </div>
               {item.story.description && (
-                <p className="text-sm text-gray-700 line-clamp-2 mb-4">
+                <p className="text-xs sm:text-sm text-gray-700 line-clamp-2 mb-2 sm:mb-4">
                   {item.story.description}
                 </p>
               )}
@@ -1102,20 +1111,28 @@ function HistoryBookCard({ item }: { item: any }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
             <Link
               href={`/stories/${item.story.id}/chapters/${item.chapter.chapterNumber}/read`}
-              className="bg-[#18243c] text-white px-4 py-2 rounded-lg hover:bg-[#18243c]/90 transition-colors text-sm font-medium"
+              className="bg-[#18243c] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#18243c]/90 transition-colors text-xs sm:text-sm font-medium text-center sm:text-left"
             >
-              {item.isCompleted ? "Read Again" : "Continue Reading"} →
+              {item.isCompleted ? 
+                <>
+                  <span className="hidden sm:inline">Read Again</span>
+                  <span className="sm:hidden">Read</span>
+                </> : 
+                <>
+                  <span className="hidden sm:inline">Continue Reading</span>
+                  <span className="sm:hidden">Continue</span>
+                </>} →
             </Link>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center sm:justify-end space-x-2">
               <button
                 onClick={handleAddToLibrary}
-                className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 hover:text-blue-600 transition-colors text-xs sm:text-sm"
               >
-                <HeartIcon className="w-4 h-4" />
+                <HeartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Like</span>
               </button>
 
@@ -1127,12 +1144,13 @@ function HistoryBookCard({ item }: { item: any }) {
                     e.stopPropagation();
                     setShowStatusMenu(!showStatusMenu);
                   }}
-                  className="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm border border-gray-300 rounded-lg"
+                  className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 hover:text-gray-800 transition-colors text-xs sm:text-sm border border-gray-300 rounded-lg"
                 >
-                  <BookmarkIcon className="w-4 h-4" />
-                  <span>Add to List</span>
+                  <BookmarkIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Add to List</span>
+                  <span className="sm:hidden">Add</span>
                   <svg
-                    className="w-3 h-3"
+                    className="w-2.5 h-2.5 sm:w-3 sm:h-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

@@ -83,14 +83,14 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Minimalist Carousel at Top */}
-      <section className="relative bg-white py-12">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative bg-white py-6 sm:py-8 md:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="relative">
-            <div className="relative bg-gray-50 overflow-hidden">
+            <div className="relative bg-gray-50 overflow-hidden rounded-lg">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
                 {/* Story Cover */}
-                <div className="relative h-96 lg:h-80 flex items-center justify-center">
-                  <div className="w-48 lg:w-56">
+                <div className="relative h-64 sm:h-80 md:h-96 lg:h-80 flex items-center justify-center p-4 sm:p-6">
+                  <div className="w-32 sm:w-40 md:w-48 lg:w-56">
                     <img
                       src={
                         (homepageData?.carousel?.content || [])[currentSlide]
@@ -101,38 +101,38 @@ export default function HomePage() {
                         (homepageData?.carousel?.content || [])[currentSlide]
                           ?.title || "Featured Story"
                       }
-                      className="w-full aspect-[3/4] object-cover shadow-lg"
+                      className="w-full aspect-[3/4] object-cover shadow-lg rounded"
                     />
                   </div>
                 </div>
 
                 {/* Story Info */}
-                <div className="lg:col-span-2 p-8 flex flex-col justify-center">
-                  <div className="mb-6">
-                    <h3 className="text-3xl font-bold text-gray-900 mb-3">
+                <div className="lg:col-span-2 p-4 sm:p-6 md:p-8 flex flex-col justify-center">
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3 leading-tight">
                       {(homepageData?.carousel?.content || [])[currentSlide]
                         ?.title || "Featured Story"}
                     </h3>
-                    <p className="text-lg text-gray-600 mb-4">
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-3 sm:mb-4 line-clamp-3">
                       {(homepageData?.carousel?.content || [])[currentSlide]
                         ?.description ||
                         "Discover amazing stories from our featured collection."}
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-6 text-base text-gray-500 mb-6">
-                    <div className="flex items-center space-x-2">
-                      <Eye className="h-5 w-5" />
-                      <span>
+                  <div className="flex items-center space-x-4 sm:space-x-6 text-sm sm:text-base text-gray-500 mb-4 sm:mb-6">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-xs sm:text-sm">
                         {(
                           (homepageData?.carousel?.content || [])[currentSlide]
                             ?.totalViews || 0
                         ).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Star className="h-5 w-5 text-yellow-400" />
-                      <span>
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
+                      <span className="text-xs sm:text-sm">
                         {(
                           (((homepageData?.carousel?.content || [])[
                             currentSlide
@@ -155,7 +155,7 @@ export default function HomePage() {
                         (homepageData?.carousel?.content || [])[currentSlide]
                           ?.id || "#"
                       }`}
-                      className="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors inline-flex items-center space-x-2"
+                      className="bg-gray-900 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base md:text-lg hover:bg-gray-800 transition-colors inline-flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-start"
                     >
                       <span>Read Now</span>
                     </Link>
@@ -166,24 +166,24 @@ export default function HomePage() {
               {/* Navigation Arrows */}
               <button
                 onClick={prevSlide}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-1.5 rounded-full shadow transition-colors"
+                className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 sm:p-1.5 rounded-full shadow transition-colors z-10 touch-manipulation"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-1.5 rounded-full shadow transition-colors"
+                className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 sm:p-1.5 rounded-full shadow transition-colors z-10 touch-manipulation"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
 
               {/* Slide Indicators */}
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+              <div className="absolute bottom-3 sm:bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2 sm:space-x-1">
                 {(homepageData?.carousel?.content || []).map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
+                    className={`w-3 h-3 sm:w-2 sm:h-2 rounded-full transition-colors touch-manipulation ${
                       index === currentSlide ? "bg-gray-900" : "bg-gray-400"
                     }`}
                   />
@@ -195,13 +195,13 @@ export default function HomePage() {
       </section>
 
       {/* Popular Tags */}
-      <section className="py-12 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Genre</h2>
+      <section className="py-8 sm:py-10 md:py-12 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">Genre</h2>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
             <button
               onClick={() => {
                 const element = document.getElementById("adventure-section");
@@ -214,7 +214,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               ADVENTURE
@@ -232,7 +232,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               COMEDY
@@ -250,7 +250,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               DRAMA
@@ -268,7 +268,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               FANTASY
@@ -286,7 +286,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               HORROR
@@ -304,7 +304,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               MYSTERY
@@ -322,7 +322,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               ROMANCE
@@ -340,7 +340,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               SCIENCE FICTION
@@ -358,7 +358,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               THRILLER
@@ -376,7 +376,7 @@ export default function HomePage() {
                   window.scrollTo({ top: y, behavior: "smooth" });
                 }
               }}
-              className="px-3 py-1 text-white text-xs font-medium rounded-full hover:opacity-90 transition-all cursor-pointer"
+              className="px-3 sm:px-4 py-2 sm:py-1 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-all cursor-pointer touch-manipulation"
               style={{ backgroundColor: "#18243c" }}
             >
               YOUNG ADULT
@@ -386,15 +386,15 @@ export default function HomePage() {
       </section>
 
       {/* Weekly Features */}
-      <section className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <section className="py-8 sm:py-10 md:py-12 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">
               Weekly Featured
             </h2>
           </div>
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -409,7 +409,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(
                 homepageData?.weeklyFeatures?.content || [
                   {
@@ -509,16 +509,16 @@ export default function HomePage() {
       </section>
 
       {/* New Releases */}
-      <section className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <section className="py-8 sm:py-10 md:py-12 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">
               New Releases
             </h2>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -533,7 +533,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.newReleases?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -571,16 +571,16 @@ export default function HomePage() {
       </section>
 
       {/* Best Rating */}
-      <section className="py-16 bg-white">
+      <section className="py-8 sm:py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">
               Best Rating
             </h2>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -595,7 +595,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.bestRating?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -633,16 +633,16 @@ export default function HomePage() {
       </section>
 
       {/* Best of All Time */}
-      <section className="py-16 bg-white">
+      <section className="py-8 sm:py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">
               Best of All Time
             </h2>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -657,7 +657,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.bestOfAllTime?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -695,16 +695,16 @@ export default function HomePage() {
       </section>
 
       {/* Recommended for You */}
-      <section className="py-16 bg-white">
+      <section className="py-8 sm:py-12 md:py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center sm:text-left">
               Recommended for You
             </h2>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-gray-200 w-full aspect-[3/4] mb-2"></div>
@@ -715,7 +715,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.recommended?.content || [])
                 .slice(0, 8)
                 .map((book: Story) => (
@@ -753,22 +753,22 @@ export default function HomePage() {
       </section>
 
       {/* Featured Books by Genre */}
-      <section className="py-8 bg-gradient-to-br from-gray-50 to-slate-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <section className="py-8 sm:py-12 md:py-16 bg-gradient-to-br from-gray-50 to-slate-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-6 sm:mb-8 md:mb-10">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
               Books for Each Genre
             </h2>
-            <p className="text-gray-600 text-sm max-w-2xl mx-auto">
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
               Explore our diverse collection of stories across different genres
             </p>
           </div>
 
           {/* Fantasy Genre */}
-          <div id="fantasy-section" className="mb-8">
+          <div id="fantasy-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Fantasy</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Fantasy</h3>
               </div>
               <Link
                 href="/stories?category=fantasy"
@@ -778,7 +778,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -793,7 +793,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.fantasy?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -828,10 +828,10 @@ export default function HomePage() {
           </div>
 
           {/* Romance Genre */}
-          <div id="romance-section" className="mb-8">
+          <div id="romance-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Romance</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Romance</h3>
               </div>
               <Link
                 href="/stories?category=romance"
@@ -841,7 +841,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -856,7 +856,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.romance?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -893,12 +893,12 @@ export default function HomePage() {
       </section>
 
       {/* Sci-Fi Genre */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div id="sci-fi-section" className="mb-8">
+      <section className="py-8 sm:py-12 md:py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div id="sci-fi-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Sci-Fi</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Sci-Fi</h3>
               </div>
               <Link
                 href="/stories?category=sci-fi"
@@ -908,7 +908,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -923,7 +923,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.scienceFiction?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -959,23 +959,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Mystery Genre */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div id="mystery-section" className="mb-8">
+      {/* Weekly Features */}
+      <section className="py-8 sm:py-12 md:py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div id="mystery-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Mystery</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Mystery</h3>
               </div>
               <Link
                 href="/stories?category=mystery"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -990,7 +990,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.mystery?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1025,20 +1025,20 @@ export default function HomePage() {
           </div>
 
           {/* Adventure Genre */}
-          <div id="adventure-section" className="mb-8">
+          <div id="adventure-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Adventure</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Adventure</h3>
               </div>
               <Link
                 href="/stories?category=adventure"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1053,7 +1053,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.adventure?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1088,20 +1088,20 @@ export default function HomePage() {
           </div>
 
           {/* Horror Genre */}
-          <div id="horror-section" className="mb-8">
+          <div id="horror-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Horror</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Horror</h3>
               </div>
               <Link
                 href="/stories?category=horror"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1116,7 +1116,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.horror?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1151,20 +1151,20 @@ export default function HomePage() {
           </div>
 
           {/* Comedy Genre */}
-          <div id="comedy-section" className="mb-8">
+          <div id="comedy-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Comedy</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Comedy</h3>
               </div>
               <Link
                 href="/stories?category=comedy"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1179,7 +1179,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.comedy?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1214,20 +1214,20 @@ export default function HomePage() {
           </div>
 
           {/* Drama Genre */}
-          <div id="drama-section" className="mb-8">
+          <div id="drama-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Drama</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Drama</h3>
               </div>
               <Link
                 href="/stories?category=drama"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1242,7 +1242,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.drama?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1277,20 +1277,20 @@ export default function HomePage() {
           </div>
 
           {/* Thriller Genre */}
-          <div id="thriller-section" className="mb-8">
+          <div id="thriller-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Thriller</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Thriller</h3>
               </div>
               <Link
                 href="/stories?category=thriller"
-                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-sm sm:text-base text-gray-500 hover:text-gray-700 transition-colors"
               >
                 View All
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1305,7 +1305,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.thriller?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1343,7 +1343,7 @@ export default function HomePage() {
           <div id="young-adult-section" className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg font-bold text-gray-800">Young Adult</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Young Adult</h3>
               </div>
               <Link
                 href="/stories?category=young-adult"
@@ -1405,10 +1405,10 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-900 text-white py-6 sm:py-8 md:py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-sm sm:text-base">
               &copy; 2025 NoManWeb. All rights reserved. Made with ❤️ for book
               lovers.
             </p>

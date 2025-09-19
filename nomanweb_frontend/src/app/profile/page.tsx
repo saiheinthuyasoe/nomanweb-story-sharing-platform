@@ -148,12 +148,12 @@ export default function ProfilePage() {
         {/* Removed Cover Image Section */}
 
         {/* Profile Info Section */}
-        <div className="relative px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="relative px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-4 md:space-x-6">
                 {/* Profile Picture */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
                   <ProfileImageUpload
                     value={user.profileImageUrl || undefined}
                     onChange={handleProfileImageChange}
@@ -166,22 +166,22 @@ export default function ProfilePage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                         {user.displayName || user.username}
                       </h1>
 
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <Mail className="h-4 w-4" />
+                      <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span>{user.email}</span>
                           {user.emailVerified ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                           ) : (
-                            <X className="h-4 w-4 text-red-600" />
+                            <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                           )}
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 sm:space-x-2">
                           <span className="text-gray-500">
                             @{user.username}
                           </span>
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                     <div className="mt-2 sm:mt-0">
                       <button
                         onClick={() => setIsEditModalOpen(true)}
-                        className="flex items-center space-x-1 px-3 py-1.5 text-white rounded-md text-sm font-medium transition-colors"
+                        className="flex items-center space-x-1 px-2 sm:px-3 py-1 sm:py-1.5 text-white rounded-md text-xs sm:text-sm font-medium transition-colors"
                         style={{ backgroundColor: "#18243c" }}
                         onMouseEnter={(e) =>
                           (e.currentTarget.style.backgroundColor = "#1a2a47")
@@ -203,22 +203,23 @@ export default function ProfilePage() {
                         }
                       >
                         <Edit3 className="h-3 w-3" />
-                        <span>Edit Profile</span>
+                        <span className="hidden xs:inline">Edit Profile</span>
+                        <span className="xs:hidden">Edit</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-6">
-                    <div className="text-center py-2">
-                      <div className="text-xl font-semibold text-gray-900">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mt-4 sm:mt-6">
+                    <div className="text-center py-1 sm:py-2">
+                      <div className="text-lg sm:text-xl font-semibold text-gray-900">
                         {stats?.writtenBooks || 0}
                       </div>
                       <div className="text-xs text-gray-500">Written Books</div>
                     </div>
 
-                    <div className="text-center py-2">
-                      <div className="text-xl font-semibold text-gray-900">
+                    <div className="text-center py-1 sm:py-2">
+                      <div className="text-lg sm:text-xl font-semibold text-gray-900">
                         {stats?.readBooks || 0}
                       </div>
                       <div className="text-xs text-gray-500">Read Books</div>
@@ -226,9 +227,9 @@ export default function ProfilePage() {
 
                     <button
                       onClick={() => setActiveTab("followers")}
-                      className="text-center py-2 transition-colors hover:text-gray-700"
+                      className="text-center py-1 sm:py-2 transition-colors hover:text-gray-700"
                     >
-                      <div className="text-xl font-semibold text-gray-900">
+                      <div className="text-lg sm:text-xl font-semibold text-gray-900">
                         {stats?.followers || 0}
                       </div>
                       <div className="text-xs text-gray-500">Followers</div>
@@ -236,9 +237,9 @@ export default function ProfilePage() {
 
                     <button
                       onClick={() => setActiveTab("following")}
-                      className="text-center py-2 transition-colors hover:text-gray-700"
+                      className="text-center py-1 sm:py-2 transition-colors hover:text-gray-700"
                     >
-                      <div className="text-xl font-semibold text-gray-900">
+                      <div className="text-lg sm:text-xl font-semibold text-gray-900">
                         {stats?.following || 0}
                       </div>
                       <div className="text-xs text-gray-500">Following</div>
@@ -252,24 +253,24 @@ export default function ProfilePage() {
       </div>
 
       {/* Bio Section */}
-      <div className="px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-6 sm:mt-8">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Bio</h2>
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Bio</h2>
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="text-black hover:text-gray-700 p-2"
+                className="text-black hover:text-gray-700 p-1.5 sm:p-2"
               >
-                <Edit3 className="h-4 w-4" />
+                <Edit3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             </div>
 
             <div className="prose max-w-none">
               {user.bio ? (
-                <p className="text-gray-700 leading-relaxed">{user.bio}</p>
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{user.bio}</p>
               ) : (
-                <p className="text-gray-500 italic">
+                <p className="text-sm sm:text-base text-gray-500 italic">
                   No bio available. Click edit to add your bio.
                 </p>
               )}
@@ -279,9 +280,9 @@ export default function ProfilePage() {
       </div>
 
       {/* Notification Preferences Section */}
-      <div className="px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-6 sm:mt-8">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
             <NotificationPreferences userId={user.id} />
           </div>
         </div>
@@ -339,7 +340,7 @@ export default function ProfilePage() {
                 <div>
                   {myStoriesData?.content &&
                   myStoriesData.content.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                       {myStoriesData.content.map((story: any) => (
                         <div
                           key={story.id}
@@ -416,7 +417,7 @@ export default function ProfilePage() {
               {booksTab === "read" && (
                 <div>
                   {readBooksData && readBooksData.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                       {readBooksData.map((item: any) => {
                         const story = item.story;
                         const isCompleted = completedStoriesData.some(

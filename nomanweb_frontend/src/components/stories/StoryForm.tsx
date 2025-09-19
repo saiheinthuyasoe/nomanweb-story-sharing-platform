@@ -244,19 +244,19 @@ export function StoryForm({
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-slate-800">
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-800">
           {isEdit ? "Edit Story" : "Create New Story"}
         </h2>
-        <p className="text-slate-500 mt-2">
+        <p className="text-xs sm:text-sm md:text-base text-slate-500 mt-1 sm:mt-2">
           {isEdit
             ? "Update your story details"
             : "Share your story with the world"}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 sm:space-y-6 md:space-y-8">
         {/* Cover Image - Moved to top */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-4">
@@ -286,7 +286,7 @@ export function StoryForm({
                 message: "Title must not exceed 255 characters",
               },
             })}
-            className="w-full px-0 py-3 text-lg bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+            className="w-full px-0 py-2 sm:py-3 text-base sm:text-lg bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
             placeholder="Story Title *"
           />
           {errors.title && (
@@ -304,8 +304,8 @@ export function StoryForm({
               required: "Description is required",
             })}
             placeholder="Describe your story..."
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50 resize-none"
+            rows={3}
+            className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50 resize-none text-sm sm:text-base"
           />
           {errors.description && (
             <p className="text-red-500 text-sm">{errors.description.message}</p>
@@ -313,13 +313,13 @@ export function StoryForm({
         </div>
 
         {/* Category, Content Type, and Content Status Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
           {/* Category */}
           <div className="relative">
             <select
               id="categoryId"
               {...register("categoryId")}
-              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="w-full px-0 py-2 sm:py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer text-sm sm:text-base touch-manipulation"
             >
               <option value="">Select Category</option>
               {categories?.map((category) => (
@@ -350,7 +350,7 @@ export function StoryForm({
             <select
               id="pricingType"
               {...register("pricingType")}
-              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="w-full px-0 py-2 sm:py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer text-sm sm:text-base touch-manipulation"
               onChange={(e) => {
                 const newPricingType = e.target.value;
 
@@ -387,7 +387,7 @@ export function StoryForm({
             <select
               id="bookStatus"
               {...register("bookStatus")}
-              className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="w-full px-0 py-2 sm:py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors appearance-none cursor-pointer text-sm sm:text-base touch-manipulation"
             >
               <option value="ONGOING">Ongoing</option>
               <option value="COMPLETED">Completed</option>
@@ -413,15 +413,15 @@ export function StoryForm({
         {/* Pricing Section - Only show for paid content */}
         {(watchedPricingType === "PAID_PER_CHAPTER" ||
           watchedPricingType === "WHOLE_BOOK") && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-            <h3 className="text-lg font-medium text-slate-800 mb-6 flex items-center">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 md:p-6">
+            <h3 className="text-sm sm:text-base md:text-lg font-medium text-slate-800 mb-3 sm:mb-4 md:mb-6 flex items-center">
               <span className="text-slate-600 mr-2">💰</span>
               Pricing Settings
             </h3>
 
             {/* Whole Book Price - Only show for WHOLE_BOOK type */}
             {watchedPricingType === "WHOLE_BOOK" && (
-              <div className="mb-6 relative max-w-xs">
+              <div className="mb-3 sm:mb-4 md:mb-6 relative w-full max-w-xs">
                 <input
                   type="number"
                   id="bookPrice"
@@ -446,7 +446,7 @@ export function StoryForm({
                       return true;
                     },
                   })}
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+                  className="w-full px-0 py-2 sm:py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400 text-sm sm:text-base"
                   placeholder="Book Price (Coins) *"
                 />
                 {errors.bookPrice && (
@@ -462,7 +462,7 @@ export function StoryForm({
 
             {/* Paid Per Chapter Information - Only show for PAID_PER_CHAPTER */}
             {watchedPricingType === "PAID_PER_CHAPTER" && (
-              <div className="mb-6 p-4 bg-slate-100 border border-slate-200 rounded-lg">
+              <div className="mb-3 sm:mb-4 md:mb-6 p-2 sm:p-3 md:p-4 bg-slate-100 border border-slate-200 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     <span className="text-slate-600 text-lg">📝</span>
@@ -485,7 +485,7 @@ export function StoryForm({
             )}
 
             {/* Pricing Information */}
-            <div className="mt-4 p-4 bg-slate-100 border border-slate-200 rounded-lg">
+            <div className="mt-3 sm:mt-4 p-2 sm:p-3 md:p-4 bg-slate-100 border border-slate-200 rounded-lg">
               <h4 className="text-sm font-medium text-slate-800 mb-2">
                 💡 Pricing Information
               </h4>
@@ -512,14 +512,14 @@ export function StoryForm({
         {/* Tags */}
         <div>
           <div className="space-y-4">
-            <div className="flex space-x-3 items-end">
+            <div className="flex flex-col sm:flex-row sm:space-x-3 sm:items-end space-y-2 sm:space-y-0">
               <div className="flex-1 relative">
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={handleTagInputKeyPress}
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400"
+                  className="w-full px-0 py-2 sm:py-3 bg-transparent border-0 border-b-2 border-slate-300 focus:border-slate-600 focus:ring-0 focus:outline-none transition-colors placeholder-slate-400 text-sm sm:text-base"
                   placeholder="Add Tags (Optional)"
                   maxLength={30}
                 />
@@ -528,7 +528,7 @@ export function StoryForm({
                 type="button"
                 onClick={handleAddTag}
                 disabled={!tagInput.trim() || selectedTags.length >= 10}
-                className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm w-full sm:w-auto touch-manipulation min-h-[44px] flex items-center justify-center"
               >
                 Add
               </button>
@@ -536,7 +536,7 @@ export function StoryForm({
 
             {/* Selected Tags */}
             {selectedTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5 md:gap-2">
                 {selectedTags.map((tag, index) => (
                   <div
                     key={`${tag}-${index}`}
@@ -627,19 +627,19 @@ export function StoryForm({
         </div>
 
         {/* Form Actions */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4 sm:pt-6 border-t border-slate-200">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition-colors w-full sm:w-auto touch-manipulation min-h-[44px] flex items-center justify-center"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+            className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-colors w-full sm:w-auto touch-manipulation min-h-[44px]"
           >
             {isLoading && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

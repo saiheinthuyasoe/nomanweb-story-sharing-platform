@@ -11,7 +11,7 @@ import {
   UserIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { useToggleBookmark } from '@/hooks/useLibraries';
+import { useToggleBookmark, useBookmarkStatus } from '@/hooks/useLibraries';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
@@ -24,8 +24,11 @@ interface StoryCardProps {
 export function StoryCard({ story, showAuthor = true, className = '' }: StoryCardProps) {
   const { user } = useAuth();
   const { mutate: toggleBookmark, isPending: isBookmarkLoading } = useToggleBookmark();
+  const { data: bookmarkStatus } = useBookmarkStatus(story.id, !!user);
 
-  const handleAddToWantToRead = () => {
+  const isInWantToRead = bookmarkStatus?.listTypes?.want_to_read || false;
+
+  const handleToggleWantToRead = () => {
     if (!user) {
       toast.error('Please login to add to library');
       return;
@@ -112,14 +115,21 @@ export function StoryCard({ story, showAuthor = true, className = '' }: StoryCar
                 </div>
               </div>
               
-              {/* ADD button */}
+              {/* Want to Read Toggle button */}
               <button 
-                onClick={handleAddToWantToRead}
+                onClick={handleToggleWantToRead}
                 disabled={isBookmarkLoading}
-                className="px-3 py-1 text-xs text-white hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium rounded-md flex-shrink-0"
-                style={{ backgroundColor: '#18243c' }}
+                className={`px-3 py-1 text-xs hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium rounded-md flex-shrink-0 ${
+                  isInWantToRead 
+                    ? 'text-gray-600 bg-gray-200 hover:bg-gray-300' 
+                    : 'text-white'
+                }`}
+                style={!isInWantToRead ? { backgroundColor: '#18243c' } : {}}
               >
-                {isBookmarkLoading ? 'Adding...' : '+ Want to Read'}
+                {isBookmarkLoading 
+                  ? (isInWantToRead ? 'Removing...' : 'Adding...') 
+                  : (isInWantToRead ? '- Want to Read' : '+ Want to Read')
+                }
               </button>
             </div>
           </div>

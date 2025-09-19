@@ -829,13 +829,13 @@ export function ChapterForm({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-          <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 sm:pt-6 border-t border-gray-100 space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               type="button"
               onClick={handleSaveDraft}
               disabled={isLoading}
-              className="flex items-center px-4 py-2 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md disabled:opacity-50 transition-colors"
+              className="flex items-center justify-center px-4 py-3 sm:py-2 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-md disabled:opacity-50 transition-colors touch-manipulation min-h-[44px] text-sm sm:text-base w-full sm:w-auto"
             >
               <Save size={14} className="mr-2" />
               Save Draft
@@ -845,7 +845,7 @@ export function ChapterForm({
               type="button"
               onClick={handlePublish}
               disabled={isLoading}
-              className="flex items-center px-6 py-2 text-white rounded-md disabled:opacity-50 transition-colors"
+              className="flex items-center justify-center px-6 py-3 sm:py-2 text-white rounded-md disabled:opacity-50 transition-colors touch-manipulation min-h-[44px] text-sm sm:text-base w-full sm:w-auto"
               style={{
                 backgroundColor: "#18243c",
                 ":hover": { backgroundColor: "#0f1a2e" },
@@ -866,7 +866,7 @@ export function ChapterForm({
             </button>
           </div>
 
-          <div className="text-xs text-gray-400">
+          <div className="text-xs sm:text-xs text-gray-400 text-center sm:text-right mt-2 sm:mt-0">
             {isDirty ? "Unsaved changes" : "All changes saved"}
           </div>
         </div>

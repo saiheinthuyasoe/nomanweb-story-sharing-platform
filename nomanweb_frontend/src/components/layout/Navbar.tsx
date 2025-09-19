@@ -166,7 +166,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-15">
             {/* Placeholder content during SSR */}
             <div className="flex items-center flex-shrink-0">
-              <div className="relative w-20 h-15 sm:w-18 sm:h-18 md:w-22 md:h-22 lg:w-20 lg:h-20">
+              <div className="relative w-14 h-14 xs:w-16 xs:h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-22 lg:h-22">
                 <Image
                   src="/logo.png"
                   alt="NoManWeb Logo"
@@ -195,7 +195,7 @@ export default function Navbar() {
             <div className="flex items-center flex-shrink-0">
               {/* Logo */}
               <Link href="/" className="flex items-center group">
-                <div className="relative w-18 h-18 sm:w-20 sm:h-20 md:w-22 md:h-22 lg:w-40 lg:h-40">
+                <div className="relative w-14 h-14 xs:w-16 xs:h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-22 lg:h-22">
                   <Image
                     src="/logo.png"
                     alt="NoManWeb Logo"
@@ -206,7 +206,7 @@ export default function Navbar() {
               </Link>
 
               {/* Desktop Navigation Links */}
-              <div className="hidden lg:flex items-center space-x-1 ml-4 xl:ml-6">
+              <div className="hidden md:flex lg:flex items-center space-x-1 md:space-x-1 lg:space-x-1 ml-3 md:ml-4 xl:ml-6">
                 <NavLink href="/" active={isActive("/")} icon={Home}>
                   Home
                 </NavLink>
@@ -253,25 +253,25 @@ export default function Navbar() {
             </div>
 
             {/* Center Section - Mobile Search */}
-            <div className="flex-1 mx-1 sm:mx-2 lg:hidden max-w-xs">
+            <div className="flex-1 mx-1 xs:mx-1.5 sm:mx-2 md:hidden max-w-xs xs:max-w-sm sm:max-w-md">
               <form
                 onSubmit={handleSearch}
                 className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm"
               >
-                <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 ml-2" />
+                <Search className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-gray-500 ml-1 xs:ml-1.5 sm:ml-2" />
                 <input
                   type="text"
-                  placeholder="Search stories & users..."
+                  placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent text-gray-900 placeholder-gray-500 px-1 sm:px-2 py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
+                  className="bg-transparent text-gray-900 placeholder-gray-500 px-1 xs:px-1.5 sm:px-2 py-1 xs:py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
                 />
                 <select
                   value={searchType}
                   onChange={(e) =>
                     setSearchType(e.target.value as "stories" | "users")
                   }
-                  className="bg-transparent text-gray-900 px-1 sm:px-2 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border-l border-gray-200"
+                  className="bg-transparent text-gray-900 px-1 xs:px-1.5 sm:px-2 py-1 xs:py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border-l border-gray-200"
                 >
                   <option value="stories">Stories</option>
                   <option value="users">Users</option>
@@ -282,7 +282,7 @@ export default function Navbar() {
             {/* Right Section */}
             <div className="flex items-center space-x-3">
               {/* Desktop Search */}
-              <div className="hidden lg:block relative" ref={searchRef}>
+              <div className="hidden md:block lg:block relative" ref={searchRef}>
                 {isSearchOpen ? (
                   <form
                     onSubmit={handleSearch}
@@ -335,7 +335,7 @@ export default function Navbar() {
 
               {/* Desktop User Section */}
               {user ? (
-                <div className="hidden lg:flex items-center space-x-3">
+                <div className="hidden md:flex lg:flex items-center space-x-2 md:space-x-3">
                   {/* Library */}
                   <Link
                     href="/library"
@@ -461,7 +461,7 @@ export default function Navbar() {
                   </div>
                 </div>
               ) : (
-                <div className="hidden lg:flex items-center space-x-3">
+                <div className="hidden md:flex lg:flex items-center space-x-2 md:space-x-3">
                   <Link
                     href="/login"
                     className="px-4 py-2 rounded-lg font-medium btn-navbar-purple flex items-center space-x-2"
@@ -473,15 +473,15 @@ export default function Navbar() {
               )}
 
               {/* Mobile: Notification & Menu Button */}
-              <div className="lg:hidden flex items-center space-x-1 flex-shrink-0">
+              <div className="md:hidden flex items-center space-x-0.5 xs:space-x-1 sm:space-x-1.5 flex-shrink-0">
                 {user && (
                   <Link
                     href="/dashboard/notifications"
-                    className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative"
+                    className="p-1 xs:p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30 relative"
                   >
-                    <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <Bell className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
                     {unreadCountData?.unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                      <span className="absolute -top-0.5 xs:-top-1 -right-0.5 xs:-right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 xs:h-4 xs:w-4 flex items-center justify-center font-medium text-[10px] xs:text-xs">
                         {unreadCountData.unreadCount > 99
                           ? "99+"
                           : unreadCountData.unreadCount}
@@ -491,10 +491,10 @@ export default function Navbar() {
                 )}
                 <button
                   onClick={toggleMobileMenu}
-                  className="p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
+                  className="p-1 xs:p-1.5 sm:p-2 bg-white/10 text-white rounded-md sm:rounded-lg hover:bg-white/20 transition-all-smooth border border-white/20 hover:border-white/30"
                   aria-label="Toggle mobile menu"
                 >
-                  <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Menu className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
                 </button>
               </div>
             </div>
@@ -504,35 +504,35 @@ export default function Navbar() {
 
       {/* Mobile Offcanvas Menu */}
       <div
-        className={`fixed inset-y-0 right-0 w-72 sm:w-80 md:w-84 bg-nomanweb-gradient shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
+        className={`fixed inset-y-0 right-0 w-64 xs:w-72 sm:w-80 md:w-84 bg-nomanweb-gradient shadow-2xl transform transition-transform duration-300 ease-in-out z-50 md:hidden ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/20">
+          <div className="flex items-center justify-between p-2 xs:p-3 sm:p-4 border-b border-white/20">
             <div className="flex items-center space-x-2">
-              <span className="text-base sm:text-lg font-bold text-white">
+              <span className="text-sm xs:text-base sm:text-lg font-bold text-white">
                 NOMANWEB
               </span>
             </div>
             <button
               onClick={closeMobileMenu}
-              className="p-1.5 sm:p-2 bg-white/20 text-white rounded-md sm:rounded-lg hover:bg-white/30 transition-all-smooth"
+              className="p-1 xs:p-1.5 sm:p-2 bg-white/20 text-white rounded-md sm:rounded-lg hover:bg-white/30 transition-all-smooth"
               aria-label="Close menu"
             >
-              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+              <X className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
 
           {/* User Profile Section (Mobile) - Only shown when user is logged in */}
           {user && (
-            <div className="border-b border-white/20 p-3 sm:p-4 bg-gradient-to-b from-transparent to-black/10">
-              <div className="space-y-2 sm:space-y-3">
+            <div className="border-b border-white/20 p-2 xs:p-3 sm:p-4 bg-gradient-to-b from-transparent to-black/10">
+              <div className="space-y-1.5 xs:space-y-2 sm:space-y-3">
                 {/* User Info Card */}
-                <div className="bg-white/20 rounded-md sm:rounded-lg p-2.5 sm:p-3 backdrop-blur-sm">
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="bg-white/20 rounded-md sm:rounded-lg p-2 xs:p-2.5 sm:p-3 backdrop-blur-sm">
+                  <div className="flex items-center space-x-1.5 xs:space-x-2 sm:space-x-3">
+                    <div className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 bg-white/30 rounded-full flex items-center justify-center flex-shrink-0">
                       {user.profileImageUrl ? (
                         <Image
                           src={user.profileImageUrl}
@@ -542,24 +542,24 @@ export default function Navbar() {
                           className="rounded-full object-cover"
                         />
                       ) : (
-                        <User className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                        <User className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 text-white" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs sm:text-sm font-medium text-white truncate">
+                      <div className="text-xs xs:text-xs sm:text-sm font-medium text-white truncate">
                         {user.displayName || user.username}
                       </div>
-                      <div className="text-xs text-white/70 truncate">
+                      <div className="text-[10px] xs:text-xs text-white/70 truncate">
                         @{user.username}
                       </div>
                     </div>
                   </div>
 
                   {/* Coin Balance */}
-                  <div className="flex items-center justify-between mt-2 sm:mt-3 bg-yellow-500/20 rounded-md sm:rounded-lg p-1.5 sm:p-2">
-                    <div className="flex items-center space-x-1.5 sm:space-x-2">
-                      <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-300" />
-                      <span className="text-xs sm:text-sm font-medium text-white">
+                  <div className="flex items-center justify-between mt-1.5 xs:mt-2 sm:mt-3 bg-yellow-500/20 rounded-md sm:rounded-lg p-1 xs:p-1.5 sm:p-2">
+                    <div className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-2">
+                      <Coins className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-yellow-300" />
+                      <span className="text-[10px] xs:text-xs sm:text-sm font-medium text-white">
                         {user.coinBalance}
                       </span>
                     </div>
@@ -568,7 +568,7 @@ export default function Navbar() {
                         closeMobileMenu();
                         router.push("/buy-coins");
                       }}
-                      className="text-xs bg-yellow-400/30 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-sm sm:rounded-md hover:bg-yellow-400/40 transition-colors"
+                      className="text-[10px] xs:text-xs bg-yellow-400/30 text-white px-1 xs:px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-sm sm:rounded-md hover:bg-yellow-400/40 transition-colors"
                     >
                       Buy
                     </button>
@@ -579,8 +579,8 @@ export default function Navbar() {
           )}
 
           {/* Navigation Links */}
-          <div className="flex-1 py-3 sm:py-4 overflow-y-auto">
-            <div className="space-y-1.5 sm:space-y-2 px-3 sm:px-4">
+          <div className="flex-1 py-2 xs:py-3 sm:py-4 overflow-y-auto">
+            <div className="space-y-1 xs:space-y-1.5 sm:space-y-2 px-2 xs:px-3 sm:px-4">
               <MobileNavLink
                 href="/"
                 active={isActive("/")}
@@ -598,8 +598,8 @@ export default function Navbar() {
                 Search
               </MobileNavLink>
               <MobileNavLink
-                href="/dashboard/my-stories"
-                active={isActive("/dashboard/my-stories")}
+                href="/stories"
+                active={isActive("/stories")}
                 icon={BookOpen}
                 onClick={closeMobileMenu}
               >
@@ -640,13 +640,6 @@ export default function Navbar() {
                     Purchase History
                   </MobileNavLink>
                   <MobileNavLink
-                    href="/stories"
-                    icon={BookOpen}
-                    onClick={closeMobileMenu}
-                  >
-                    Stories
-                  </MobileNavLink>
-                  <MobileNavLink
                     href="/library"
                     icon={Library}
                     onClick={closeMobileMenu}
@@ -657,10 +650,10 @@ export default function Navbar() {
                   {/* Logout Button */}
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth bg-red-500/20 text-white hover:bg-red-500/30 border border-red-400/30 mt-1.5 sm:mt-2"
+                    className="w-full flex items-center space-x-1.5 xs:space-x-2 sm:space-x-3 px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth bg-red-500/20 text-white hover:bg-red-500/30 border border-red-400/30 mt-1 xs:mt-1.5 sm:mt-2"
                   >
-                    <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-sm sm:text-base font-medium">
+                    <LogOut className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />
+                    <span className="text-xs xs:text-sm sm:text-base font-medium">
                       Logout
                     </span>
                   </button>
@@ -671,7 +664,7 @@ export default function Navbar() {
                   active={isActive("/login")}
                   onClick={closeMobileMenu}
                 >
-                  Sign in
+                  Log in
                 </MobileNavLink>
               )}
             </div>
@@ -682,7 +675,7 @@ export default function Navbar() {
       {/* Click-outside overlay (transparent) - only for closing menu */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 z-40 md:hidden"
           onClick={closeMobileMenu}
           aria-hidden="true"
         />
@@ -739,15 +732,15 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`relative flex items-center space-x-2 sm:space-x-3 px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth ${
+      className={`relative flex items-center space-x-1.5 xs:space-x-2 sm:space-x-3 px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3 rounded-md sm:rounded-lg font-medium transition-all-smooth ${
         active ? "text-white" : "text-white/90 hover:text-white"
       }`}
     >
-      {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5" />}
-      <span className="relative text-sm sm:text-base">
+      {Icon && <Icon className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5" />}
+      <span className="relative text-xs xs:text-sm sm:text-base">
         {children}
         {active && (
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-10 h-0.5 bg-white rounded-full active-tab-indicator"></div>
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 xs:w-10 h-0.5 bg-white rounded-full active-tab-indicator"></div>
         )}
       </span>
     </Link>

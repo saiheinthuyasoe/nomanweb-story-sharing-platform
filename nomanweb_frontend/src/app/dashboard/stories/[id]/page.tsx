@@ -94,7 +94,7 @@ export default function StoryDetailPage() {
 
     return (
       <span
-        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded ${config.className}`}
+        className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded w-full sm:w-auto text-center ${config.className}`}
       >
         <IconComponent className="h-4 w-4 mr-2" />
         {config.text}
@@ -249,10 +249,10 @@ export default function StoryDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* Story Header */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-8">
-          <div className="flex flex-col md:flex-row">
+          <div className="flex flex-col lg:flex-row">
             {/* Cover Image */}
-            <div className="flex flex-col justify-center md:justify-start p-6 md:p-8">
-              <div className="relative w-[210px] h-[280px] bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg overflow-hidden shadow-md">
+            <div className="flex flex-col items-center lg:items-start justify-center lg:justify-start p-4 sm:p-6 lg:p-8">
+              <div className="relative w-[180px] h-[240px] sm:w-[210px] sm:h-[280px] bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg overflow-hidden shadow-md">
                 {story.coverImageUrl ? (
                   <Image
                     src={story.coverImageUrl}
@@ -278,11 +278,11 @@ export default function StoryDetailPage() {
               </div>
 
               {/* Status Badges - Now under the cover image */}
-              <div className="mt-3 space-y-2 w-[210px]">
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-3 w-[180px] sm:w-[210px]">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 items-center sm:justify-center lg:justify-start">
                   {/* Publish Status Badge */}
                   <span
-                    className={`inline-block px-4 py-2 text-sm font-medium rounded ${
+                    className={`inline-block px-3 py-2 text-sm font-medium rounded w-full sm:w-auto text-center ${
                       story.publishStatus === "PUBLISHED"
                         ? "bg-blue-100 text-blue-600"
                         : story.publishStatus === "DRAFT"
@@ -297,7 +297,7 @@ export default function StoryDetailPage() {
 
                   {/* Book Status Badge */}
                   <span
-                    className={`inline-block px-2 py-2 text-sm font-medium rounded ${
+                    className={`inline-block px-3 py-2 text-sm font-medium rounded w-full sm:w-auto text-center ${
                       story.bookStatus === "ONGOING"
                         ? "bg-green-100 text-green-600"
                         : "bg-purple-100 text-purple-800"
@@ -305,28 +305,28 @@ export default function StoryDetailPage() {
                   >
                     {story.bookStatus}
                   </span>
-                </div>
 
-                {/* Moderation Status Badge */}
-                <div className="mt-2">
-                  {getModerationBadge(story.moderationStatus)}
+                  {/* Moderation Status Badge */}
+                  <div className="w-full sm:w-auto">
+                    {getModerationBadge(story.moderationStatus)}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Story Info */}
-            <div className="flex-1 p-6 md:p-8 lg:p-10">
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10">
               <div className="mb-4">
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-black mb-4 leading-tight">
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black mb-4 leading-tight text-center lg:text-left">
                   {story.title}
                 </h1>
 
                 {/* Author */}
-                <div className="mb-6">
+                <div className="mb-6 text-center lg:text-left">
                   <div>
                     <Link
                       href={`/authors/${story.author.id}`}
-                      className="text-xl font-semibold text-black hover:text-gray-700 transition-colors"
+                      className="text-lg sm:text-xl font-semibold text-black hover:text-gray-700 transition-colors"
                     >
                       {story.author.displayName || story.author.username}
                     </Link>
@@ -336,8 +336,8 @@ export default function StoryDetailPage() {
 
                 {/* Description */}
                 {story.description && (
-                  <div className="border-l-4 border-gray-200 pl-4 mb-6">
-                    <p className="text-gray-600 leading-relaxed">
+                  <div className="border-l-4 border-gray-200 pl-4 mb-6 text-center lg:text-left">
+                    <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
                       {story.description}
                     </p>
                   </div>
@@ -345,7 +345,7 @@ export default function StoryDetailPage() {
 
                 {/* Category */}
                 {story.category && (
-                  <div className="mb-4">
+                  <div className="mb-4 text-center lg:text-left">
                     <Link
                       href={`/categories/${story.category.id}`}
                       className="inline-block px-3 py-1 text-sm font-medium text-black bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
@@ -358,13 +358,13 @@ export default function StoryDetailPage() {
                 {/* Tags */}
                 {story.tags && story.tags.length > 0 && (
                   <div className="mb-6">
-                    <div className="flex items-center space-x-2 mb-3">
+                    <div className="flex items-center justify-center lg:justify-start space-x-2 mb-3">
                       <TagIcon className="w-4 h-4 text-nomanweb-primary" />
                       <span className="text-sm font-medium text-black">
                         Tags
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                       {story.tags.map((tag) => (
                         <span
                           key={tag}
@@ -378,7 +378,7 @@ export default function StoryDetailPage() {
                 )}
 
                 {/* Dates */}
-                <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6">
+                <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-6 justify-center lg:justify-start">
                   <div className="flex items-center space-x-1">
                     <CalendarIcon className="w-4 h-4" />
                     <span>
@@ -402,18 +402,18 @@ export default function StoryDetailPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center justify-center lg:justify-start">
                   {/* Preview Button */}
                   {story.totalChapters > 0 ? (
                     <Link
                       href={`/stories/${story.id}/chapters/1`}
-                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center space-x-2 text-sm"
+                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center justify-center space-x-2 text-sm w-full sm:w-auto sm:min-w-[100px]"
                     >
                       <EyeIcon className="w-4 h-4" />
                       <span>Preview</span>
                     </Link>
                   ) : (
-                    <div className="px-3 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed text-sm">
+                    <div className="px-3 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed text-sm w-full sm:w-auto sm:min-w-[100px] text-center">
                       No Chapters Yet
                     </div>
                   )}
@@ -424,12 +424,12 @@ export default function StoryDetailPage() {
                       <QuickCreateChapter
                         storyId={story.id}
                         totalChapters={story.totalChapters || 0}
-                        className="text-sm px-3 py-2"
+                        className="text-sm px-3 py-2 w-full sm:w-auto sm:min-w-[120px] justify-center"
                       />
 
                       <Link
                         href={`/dashboard/stories/${story.id}/edit`}
-                        className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center space-x-2 text-sm"
+                        className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center justify-center space-x-2 text-sm w-full sm:w-auto sm:min-w-[100px]"
                       >
                         <PencilIcon className="w-4 h-4" />
                         <span>Edit Story</span>
@@ -439,7 +439,7 @@ export default function StoryDetailPage() {
                         <button
                           onClick={handlePublish}
                           disabled={isPublishing}
-                          className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] disabled:opacity-50 transition-colors text-sm"
+                          className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] disabled:opacity-50 transition-colors text-sm w-full sm:w-auto sm:min-w-[120px] justify-center flex items-center"
                         >
                           {isPublishing ? "Publishing..." : "Publish Story"}
                         </button>
@@ -454,6 +454,7 @@ export default function StoryDetailPage() {
                             currentPricingType={story.pricingType}
                             onAction={handleUnpublish}
                             disabled={isUnpublishing}
+                            className="w-full sm:w-auto sm:min-w-[120px] justify-center"
                           >
                             {isUnpublishing
                               ? "Unpublishing..."
@@ -471,6 +472,7 @@ export default function StoryDetailPage() {
                         currentPricingType={story.pricingType}
                         onAction={handleDelete}
                         disabled={isDeleting}
+                        className="w-full sm:w-auto sm:min-w-[100px] justify-center"
                       >
                         {isDeleting ? "Deleting..." : "Delete Story"}
                       </ProtectedActionButton>
@@ -480,7 +482,7 @@ export default function StoryDetailPage() {
                   {/* Public Actions */}
                   <button
                     onClick={handleShare}
-                    className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center space-x-2 text-sm"
+                    className="px-3 py-2 border border-[#18243c] text-[#18243c] rounded-lg hover:bg-[#18243c]/10 transition-colors flex items-center justify-center space-x-2 text-sm w-full sm:w-auto sm:min-w-[80px]"
                   >
                     <ShareIcon className="w-4 h-4" />
                     <span>Share</span>
@@ -490,7 +492,7 @@ export default function StoryDetailPage() {
                   {!isAuthor && (
                     <button
                       onClick={() => setShowGiftModal(true)}
-                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center space-x-2 text-sm"
+                      className="px-3 py-2 bg-[#18243c] text-white rounded-lg hover:bg-[#1e2a42] transition-colors flex items-center justify-center space-x-2 text-sm w-full sm:w-auto sm:min-w-[100px]"
                     >
                       <LucideGift className="w-4 h-4" />
                       <span>Send Gift</span>
@@ -503,13 +505,13 @@ export default function StoryDetailPage() {
         </div>
 
         {/* Story Details - Minimalist */}
-        <div className="bg-white rounded-lg p-4 mb-8">
-          <h3 className="text-xl font-medium text-gray-900 mb-4">
+        <div className="bg-white rounded-lg p-4 sm:p-6 mb-8">
+          <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-4 text-center lg:text-left">
             Story Overview
           </h3>
 
           {/* Essential Details */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <div>
               <span className="text-xs text-gray-500">Publish Status</span>
               <p
@@ -589,10 +591,10 @@ export default function StoryDetailPage() {
           {/* Statistics */}
           <div className="border-t pt-4">
             <div
-              className={`grid gap-1 grid-cols-3 sm:grid-cols-4 ${
+              className={`grid gap-2 sm:gap-1 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${
                 story.pricingType === "WHOLE_BOOK"
-                  ? "md:grid-cols-8"
-                  : "md:grid-cols-7"
+                  ? "lg:grid-cols-8"
+                  : "lg:grid-cols-7"
               }`}
             >
               <StatCard

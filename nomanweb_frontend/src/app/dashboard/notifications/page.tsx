@@ -271,38 +271,73 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-white overflow-y-auto">
-      <div className="p-8">
+      <div className="p-3 sm:p-4 lg:p-6 xl:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 lg:mb-8 gap-3 sm:gap-0">
           <div>
-            <h1 className="text-3xl font-bold text-black">Notifications</h1>
-            <p className="text-black mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black">Notifications</h1>
+            <p className="text-black mt-1 sm:mt-2 text-sm sm:text-base">
               Stay updated with your story activities and reader interactions
             </p>
           </div>
-          <div className="flex items-center space-x-3">
-            <div className="bg-gray-100 text-black px-3 py-1 rounded-full text-sm font-medium">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap">
+            <div className="bg-gray-100 text-black px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
               {unreadCount} unread
             </div>
             <button
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending || unreadCount === 0}
-              className="bg-[#18243c] text-white px-4 py-2 rounded-lg hover:bg-[#0f1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="bg-[#18243c] text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-[#0f1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
             >
               {markAllAsReadMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
               ) : (
-                <Check className="h-4 w-4" />
+                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
               )}
-              <span>Mark All Read</span>
+              <span className="hidden sm:inline">Mark All Read</span>
+              <span className="sm:hidden">Mark All</span>
             </button>
           </div>
         </div>
 
         {/* Selection and Bulk Actions */}
         {filteredNotifications.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+            {/* Mobile: Stack vertically */}
+            <div className="sm:hidden space-y-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
+                />
+                <span className="text-sm font-medium text-black">
+                  Select All ({filteredNotifications.length})
+                </span>
+              </label>
+              {selectedNotifications.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-black">
+                    {selectedNotifications.length} selected
+                  </span>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleteMutation.isPending}
+                    className="bg-[#18243c] text-white px-3 py-2 rounded-lg hover:bg-[#0f1a2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 text-sm"
+                  >
+                    {bulkDeleteMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                    <span>Delete ({selectedNotifications.length})</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Desktop: Horizontal layout */}
+            <div className="hidden sm:flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -339,47 +374,50 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Filters */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-8">
-              <h3 className="text-lg font-semibold text-black mb-4">
-                Filter Notifications
-              </h3>
+        {/* Filter Notifications */}
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-lg font-semibold text-black mb-4">
+            Filter Notifications
+          </h3>
+          
+          {/* Show Unread Toggle */}
+          <div className="mb-4">
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showUnreadOnly}
+                onChange={(e) => setShowUnreadOnly(e.target.checked)}
+                className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
+              />
+              <span className="text-sm font-medium text-black">
+                Show unread only
+              </span>
+            </label>
+          </div>
 
-              {/* Show Unread Toggle */}
-              <div className="mb-6">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showUnreadOnly}
-                    onChange={(e) => setShowUnreadOnly(e.target.checked)}
-                    className="rounded border-gray-300 text-[#18243c] focus:ring-[#18243c]"
-                  />
-                  <span className="text-sm font-medium text-black">
-                    Show unread only
-                  </span>
-                </label>
-              </div>
-
-              {/* Alert Type Filters */}
-              <div className="space-y-2">
+          {/* Horizontal Filter Buttons */}
+          <div className="bg-gray-100 p-1 rounded-lg">
+            {/* Mobile: Horizontal scroll */}
+            <div className="sm:hidden">
+              <div className="flex space-x-1 overflow-x-auto pb-1 scrollbar-hide">
                 {alertTypes.map((type) => (
                   <button
                     key={type.id}
                     onClick={() => setFilter(type.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
+                    className={`flex items-center justify-center px-2 py-2 rounded-md text-center transition-colors min-h-[36px] space-x-1 whitespace-nowrap flex-shrink-0 ${
                       filter === type.id
-                        ? "bg-[#18243c] text-white"
-                        : "text-black hover:bg-gray-50"
+                        ? "bg-[#18243c] text-white shadow-sm"
+                        : "text-black hover:bg-white hover:shadow-sm"
                     }`}
                   >
-                    <span className="font-medium">{type.label}</span>
+                    <span className="font-medium text-xs truncate">
+                      {type.label}
+                    </span>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-1 py-0.5 rounded-full min-w-[16px] ${
                         filter === type.id
                           ? "bg-white text-[#18243c]"
-                          : "bg-gray-100 text-black"
+                          : "bg-gray-200 text-black"
                       }`}
                     >
                       {type.count}
@@ -388,10 +426,38 @@ export default function NotificationsPage() {
                 ))}
               </div>
             </div>
+            {/* Desktop: Grid layout */}
+            <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-1">
+              {alertTypes.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setFilter(type.id)}
+                  className={`flex items-center justify-center px-3 py-2 rounded-md text-center transition-colors min-h-[40px] space-x-2 ${
+                    filter === type.id
+                      ? "bg-[#18243c] text-white shadow-sm"
+                      : "text-black hover:bg-white hover:shadow-sm"
+                  }`}
+                >
+                  <span className="font-medium text-sm truncate">
+                    {type.label}
+                  </span>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full min-w-[20px] ${
+                      filter === type.id
+                        ? "bg-white text-[#18243c]"
+                        : "bg-gray-200 text-black"
+                    }`}
+                  >
+                    {type.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
 
-          {/* Notifications List */}
-          <div className="lg:col-span-3">
+        {/* Notifications List */}
+        <div>
             <div className="space-y-4">
               {filteredNotifications.length > 0 ? (
                 filteredNotifications.map((item) => (
@@ -409,22 +475,21 @@ export default function NotificationsPage() {
                     }
                   />
                 ))
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                  <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-black mb-2">
-                    No notifications found
-                  </h3>
-                  <p className="text-black">
-                    {showUnreadOnly
-                      ? "You don't have any unread notifications at the moment."
-                      : "No notifications match your current filter criteria."}
-                  </p>
-                </div>
-              )}
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-black mb-2">
+                  No notifications found
+                </h3>
+                <p className="text-black">
+                  {showUnreadOnly
+                    ? "You don't have any unread notifications at the moment."
+                    : "No notifications match your current filter criteria."}
+                </p>
+              </div>
+            )}
             </div>
           </div>
-        </div>
       </div>
     </div>
   );
@@ -647,11 +712,11 @@ function AlertCard({
 
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 transition-all duration-300 ${
+      className={`bg-white rounded-xl border border-gray-200 p-3 sm:p-6 hover:border-gray-300 transition-all duration-300 relative ${
         !alert.isRead ? "border-l-4 border-l-[#18243c]" : ""
       }`}
     >
-      <div className="flex items-start space-x-4">
+      <div className="flex items-start space-x-2 sm:space-x-4">
         {/* Selection Checkbox */}
         <div className="flex items-center pt-1">
           <input
@@ -662,21 +727,24 @@ function AlertCard({
           />
         </div>
 
-        {/* Icon */}
-        <div className={`p-3 rounded-lg ${getColorClasses(alert.color)}`}>
-          <alert.icon className="h-5 w-5" />
-        </div>
-
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between mb-2">
+        <div className="flex-1 min-w-0 pr-12 sm:pr-20">
+          {/* Mobile: Stack title and timestamp */}
+          <div className="sm:hidden mb-2">
+            <h4 className="text-base font-semibold text-black mb-1">
+              {alert.title}
+            </h4>
+            <div className="flex items-center space-x-1 text-xs text-gray-600">
+              <Clock className="h-3 w-3" />
+              <span>{alert.timestamp}</span>
+            </div>
+          </div>
+          {/* Desktop: Side by side */}
+          <div className="hidden sm:flex items-start justify-between mb-2">
             <div>
               <h4 className="text-lg font-semibold text-black">
                 {alert.title}
               </h4>
-              {!alert.isRead && (
-                <span className="inline-block w-2 h-2 bg-[#18243c] rounded-full mt-1"></span>
-              )}
             </div>
             <div className="flex items-center space-x-2 text-sm text-black">
               <Clock className="h-4 w-4" />
@@ -706,57 +774,80 @@ function AlertCard({
               </span>
             </p>
           ) : (
-            <p className="text-black mb-3">{alert.message}</p>
-          )}
-
-          {alert.storyTitle && (
-            <div className="mb-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-black">
-                <BookOpen className="h-3 w-3 mr-1" />
-                {alert.storyTitle}
-              </span>
-            </div>
+            <p className="text-black mb-3">
+              {alert.type === "comment" ? (
+                <span>
+                  {(() => {
+                    const commentMatch = alert.message.match(/^(.+?) commented on your story: (.+)$/);
+                    if (commentMatch) {
+                      const [, username, storyTitle] = commentMatch;
+                      return (
+                        <>
+                          <span className="font-bold">{username}</span>
+                          {" commented on your story: "}
+                          <span className="font-bold">{storyTitle}</span>
+                        </>
+                      );
+                    }
+                    const chapterMatch = alert.message.match(/^(.+?) commented on your chapter: (.+)$/);
+                    if (chapterMatch) {
+                      const [, username, chapterTitle] = chapterMatch;
+                      return (
+                        <>
+                          <span className="font-bold">{username}</span>
+                          {" commented on your chapter: "}
+                          <span className="font-bold">{chapterTitle}</span>
+                        </>
+                      );
+                    }
+                    return alert.message;
+                  })()
+                  }
+                </span>
+              ) : (
+                alert.message
+              )}
+            </p>
           )}
 
           {alert.commentContent && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
-              <p className="text-sm text-black mb-1 font-medium">Comment:</p>
-              <p className="text-sm text-black italic">
-                "{alert.commentContent}"
+            <div className="mb-2 pl-2 border-l-2 border-gray-200">
+              <p className="text-xs text-gray-600 leading-snug">
+                {alert.commentContent}
               </p>
             </div>
           )}
-
-          {/* Actions */}
-          <div className="flex items-center space-x-3">
-            {!alert.isRead && (
-              <button
-                onClick={() => onMarkAsRead(alert.id)}
-                disabled={isMarkingAsRead}
-                className="bg-[#18243c] text-white px-3 py-1 rounded text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0f1a2e] transition-colors"
-              >
-                {isMarkingAsRead ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                <span>Mark as read</span>
-              </button>
-            )}
-            <button
-              onClick={() => onDelete(alert.id)}
-              disabled={isDeleting}
-              className="text-black hover:text-red-600 text-sm font-medium flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              <span>Delete</span>
-            </button>
-          </div>
         </div>
+      </div>
+
+      {/* Actions - Responsive positioning */}
+      <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 flex items-center space-x-1 sm:space-x-2">
+        {!alert.isRead && (
+          <button
+            onClick={() => onMarkAsRead(alert.id)}
+            disabled={isMarkingAsRead}
+            className="text-gray-400 hover:text-[#18243c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 sm:p-0"
+            title="Mark as read"
+          >
+            {isMarkingAsRead ? (
+              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+            ) : (
+              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+            )}
+          </button>
+        )}
+        <button
+          onClick={() => onDelete(alert.id)}
+          disabled={isDeleting}
+          className="text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 sm:p-0"
+          title="Delete"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+          )}
+        </button>
       </div>
     </div>
   );

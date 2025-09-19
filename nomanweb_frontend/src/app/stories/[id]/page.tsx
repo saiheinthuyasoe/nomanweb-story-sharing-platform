@@ -641,24 +641,24 @@ export default function StoryReaderView() {
     <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb Navigation */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <nav className="flex items-center flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+            <Link href="/" className="hover:text-blue-600 transition-colors flex-shrink-0">
               Home
             </Link>
-            <span>/</span>
+            <span className="flex-shrink-0">/</span>
             {story.category ? (
               <Link
                 href={`/categories/${story.category.slug}`}
-                className="hover:text-blue-600 transition-colors"
+                className="hover:text-blue-600 transition-colors flex-shrink-0 truncate max-w-[120px] sm:max-w-none"
               >
                 {story.category.name}
               </Link>
             ) : (
-              <span>Uncategorized</span>
+              <span className="flex-shrink-0">Uncategorized</span>
             )}
-            <span>/</span>
-            <span className="text-gray-900 font-medium truncate">
+            <span className="flex-shrink-0">/</span>
+            <span className="text-gray-900 font-medium truncate min-w-0 flex-1">
               {story.title}
             </span>
           </nav>
@@ -667,13 +667,13 @@ export default function StoryReaderView() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Book Details Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-10 lg:p-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-16 lg:gap-10">
             {/* Book Cover */}
-            <div className="lg:col-span-1">
-              <div className="relative w-full max-w-sm mx-auto">
+            <div className="md:col-span-1">
+              <div className="relative w-full max-w-sm mx-auto mb-8 md:mb-0">
                 {story.coverImageUrl ? (
-                  <div className="relative w-[308px] h-[412px] overflow-hidden rounded-lg shadow-xl border border-gray-300 mx-auto">
+                  <div className="relative w-[250px] h-[334px] sm:w-[280px] sm:h-[374px] md:w-[260px] md:h-[347px] lg:w-[308px] lg:h-[412px] overflow-hidden rounded-lg shadow-xl border border-gray-300 mx-auto">
                     <Image
                       src={story.coverImageUrl}
                       alt={story.title}
@@ -686,7 +686,7 @@ export default function StoryReaderView() {
                     <div className="absolute -right-1 top-2 bottom-2 w-3 bg-gradient-to-r from-gray-400/40 to-gray-600/60 rounded-r-lg -z-10"></div>
                   </div>
                 ) : (
-                  <div className="relative w-[308px] h-[412px] bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg shadow-xl border border-gray-300 overflow-hidden mx-auto">
+                  <div className="relative w-[250px] h-[334px] sm:w-[280px] sm:h-[374px] md:w-[260px] md:h-[347px] lg:w-[308px] lg:h-[412px] bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg shadow-xl border border-gray-300 overflow-hidden mx-auto">
                     {/* Book cover design */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100"></div>
                     <div className="absolute top-4 left-4 right-4 bottom-4 border border-blue-200 rounded-md bg-white/50"></div>
@@ -703,13 +703,13 @@ export default function StoryReaderView() {
             </div>
 
             {/* Book Information */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-6 md:space-y-10">
               {/* Title and Author */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 leading-tight">
                   {story.title}
                 </h1>
-                <p className="text-lg text-gray-600 mb-1">
+                <p className="text-base sm:text-lg text-gray-600 mb-1">
                   {story.category?.name || "Uncategorized"}
                 </p>
                 <div className="flex items-center space-x-2">
@@ -724,7 +724,7 @@ export default function StoryReaderView() {
               </div>
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-6 md:mb-10">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Eye className="h-5 w-5 text-gray-400 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-gray-900">
@@ -763,7 +763,7 @@ export default function StoryReaderView() {
               </div>
 
               {/* Rating */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4 mb-4 md:mb-8">
                 <div className="flex items-center space-x-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
@@ -787,7 +787,7 @@ export default function StoryReaderView() {
               </div>
 
               {/* Report Link */}
-              <div>
+              <div className="mb-4 md:mb-8">
                 <button className="text-red-600 hover:text-red-700 text-sm flex items-center space-x-1">
                   <Flag className="h-4 w-4" />
                   <span>Report story</span>
@@ -795,7 +795,7 @@ export default function StoryReaderView() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 md:gap-6">
                 <button
                   onClick={handleReadStory}
                   className="text-white px-6 py-3 rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"

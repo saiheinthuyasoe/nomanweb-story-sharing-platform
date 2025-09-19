@@ -91,17 +91,17 @@ export function QuickCreateChapter({
     <button
       onClick={handleQuickCreate}
       disabled={isCreating}
-      className={`inline-flex items-center px-4 py-2 bg-[#18243c] hover:bg-[#1e2a42] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`flex items-center justify-center px-4 py-3 bg-[#18243c] hover:bg-[#1e2a42] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed space-x-2 text-sm touch-manipulation ${className}`}
     >
       {isCreating ? (
         <>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-          Creating...
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          <span>Creating...</span>
         </>
       ) : (
         <>
-          <PlusIcon className="w-5 h-5 mr-2" />
-          New Chapter
+          <PlusIcon className="w-4 h-4" />
+          <span>New Chapter</span>
         </>
       )}
     </button>

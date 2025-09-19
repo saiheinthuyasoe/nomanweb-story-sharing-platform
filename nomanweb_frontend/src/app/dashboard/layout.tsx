@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -10,6 +10,8 @@ import {
   DollarSign,
   Bell,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 // Dashboard Sidebar Navigation Items
@@ -48,6 +50,7 @@ export default function DashboardLayout({
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     console.log("🔍 Dashboard layout auth check:", {
@@ -111,8 +114,8 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-48 bg-white shadow-sm border-r border-gray-100 flex flex-col">
+      {/* Desktop Sidebar - hidden on mobile/tablet */}
+      <div className="hidden lg:flex w-48 bg-white shadow-sm border-r border-gray-100 flex-col">
         {/* Sidebar Header */}
         <div className="p-3 border-b border-gray-100">
           <div className="flex items-center space-x-2">
@@ -173,7 +176,34 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-hidden">
+        <div className="pb-16 lg:pb-0">{children}</div>
+      </div>
+
+      {/* Bottom Navigation - visible on mobile/tablet only */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="flex justify-around items-center py-2">
+          {sidebarItems.slice(0, 4).map((item) => {
+            const isActive = getActiveTab() === item.id;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center p-2 rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <item.icon className="h-5 w-5 mb-1" />
+                <span className="text-xs font-medium truncate max-w-12">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

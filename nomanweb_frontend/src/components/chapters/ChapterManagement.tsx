@@ -339,21 +339,22 @@ export default function ChapterManagement({
   return (
     <div key={refreshKey} className="card-elevated p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h3 className="text-xl font-medium text-black">Chapter Management</h3>
           {isUploading && (
             <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>Real-time updates active</span>
+              <span className="hidden sm:inline">Real-time updates active</span>
+              <span className="sm:hidden">Updating...</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Link
             href={`/dashboard/stories/${storyId}/chapters/bulk-edit`}
-            className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+            className="w-full px-4 py-3 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm font-medium touch-manipulation"
             style={{
               backgroundColor: "#18243c",
               ":hover": { backgroundColor: "#0f1a2e" },
@@ -368,7 +369,7 @@ export default function ChapterManagement({
               setShowBulkUpload(true);
               setIsUploading(true);
             }}
-            className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2 text-sm"
+            className="w-full px-4 py-3 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm font-medium touch-manipulation"
             style={{
               backgroundColor: "#18243c",
               ":hover": { backgroundColor: "#0f1a2e" },
@@ -379,97 +380,109 @@ export default function ChapterManagement({
           </button>
 
           {isAuthor && (
-            <QuickCreateChapter
-              storyId={storyId}
-              totalChapters={chapters.length}
-              className="text-sm"
-            />
+            <div className="sm:col-span-2 lg:col-span-1">
+              <QuickCreateChapter
+                storyId={storyId}
+                totalChapters={chapters.length}
+                className="text-sm w-full"
+              />
+            </div>
           )}
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "all"
-                ? "shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            style={
-              activeTab === "all"
-                ? { backgroundColor: "#18243c", color: "#ffffff" }
-                : {}
-            }
-          >
-            All ({chapters.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("published")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-              activeTab === "published"
-                ? "shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            style={
-              activeTab === "published"
-                ? { backgroundColor: "#18243c", color: "#ffffff" }
-                : {}
-            }
-          >
-            <GlobeAltIcon className="w-4 h-4" />
-            <span>Published ({publishedChapters.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("draft")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-              activeTab === "draft"
-                ? "shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            style={
-              activeTab === "draft"
-                ? { backgroundColor: "#18243c", color: "#ffffff" }
-                : {}
-            }
-          >
-            <ClockIcon className="w-4 h-4" />
-            <span>Drafts ({draftChapters.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-              activeTab === "pending"
-                ? "shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            style={
-              activeTab === "pending"
-                ? { backgroundColor: "#18243c", color: "#ffffff" }
-                : {}
-            }
-          >
-            <AlertTriangle className="w-4 h-4" />
-            <span>Pending ({pendingChapters.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("trash")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 ${
-              activeTab === "trash"
-                ? "shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-            style={
-              activeTab === "trash"
-                ? { backgroundColor: "#18243c", color: "#ffffff" }
-                : {}
-            }
-          >
-            <TrashIcon className="w-4 h-4" />
-            <span>Trash ({trashChapters.length})</span>
-          </button>
+      <div className="mb-6">
+        <div className="bg-gray-100 p-1 rounded-lg overflow-x-auto">
+          <div className="flex gap-1 min-w-max">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap min-w-[70px] touch-manipulation ${
+                activeTab === "all"
+                  ? "shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              style={
+                activeTab === "all"
+                  ? { backgroundColor: "#18243c", color: "#ffffff" }
+                  : {}
+              }
+            >
+              All ({chapters.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("published")}
+              className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 whitespace-nowrap touch-manipulation ${
+                activeTab === "published"
+                  ? "shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              style={
+                activeTab === "published"
+                  ? { backgroundColor: "#18243c", color: "#ffffff" }
+                  : {}
+              }
+            >
+              <GlobeAltIcon className="w-4 h-4" />
+              <span className="hidden xs:inline">Published</span>
+              <span className="xs:hidden">Pub</span>
+              <span>({publishedChapters.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("draft")}
+              className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 whitespace-nowrap touch-manipulation ${
+                activeTab === "draft"
+                  ? "shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              style={
+                activeTab === "draft"
+                  ? { backgroundColor: "#18243c", color: "#ffffff" }
+                  : {}
+              }
+            >
+              <ClockIcon className="w-4 h-4" />
+              <span className="hidden xs:inline">Drafts</span>
+              <span className="xs:hidden">Draft</span>
+              <span>({draftChapters.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 whitespace-nowrap touch-manipulation ${
+                activeTab === "pending"
+                  ? "shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              style={
+                activeTab === "pending"
+                  ? { backgroundColor: "#18243c", color: "#ffffff" }
+                  : {}
+              }
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span className="hidden xs:inline">Pending</span>
+              <span className="xs:hidden">Pend</span>
+              <span>({pendingChapters.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("trash")}
+              className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center space-x-1 whitespace-nowrap touch-manipulation ${
+                activeTab === "trash"
+                  ? "shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              style={
+                activeTab === "trash"
+                  ? { backgroundColor: "#18243c", color: "#ffffff" }
+                  : {}
+              }
+            >
+              <TrashIcon className="w-4 h-4" />
+              <span className="hidden xs:inline">Trash</span>
+              <span className="xs:hidden">Del</span>
+              <span>({trashChapters.length})</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1018,17 +1031,19 @@ function ChapterManagementCard({
   isTrashView?: boolean;
 }) {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
-      <div className="flex items-start space-x-3">
+    <div className="border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow bg-white touch-manipulation">
+      <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-3">
         {/* Selection Checkbox */}
         {onSelect && (
-          <input
-            type="checkbox"
-            checked={isSelected || false}
-            onChange={() => onSelect(chapter.id)}
-            className="mt-1 rounded border-gray-300 text-nomanweb-primary focus:ring-nomanweb-secondary"
-            aria-label={`Select chapter ${chapter.chapterNumber}: ${chapter.title}`}
-          />
+          <div className="flex items-center sm:mt-1">
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={() => onSelect(chapter.id)}
+              className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-nomanweb-primary focus:ring-nomanweb-secondary touch-manipulation"
+              aria-label={`Select chapter ${chapter.chapterNumber}: ${chapter.title}`}
+            />
+          </div>
         )}
 
         {/* Chapter content */}
@@ -1132,15 +1147,15 @@ function ChapterContent({
     story?.pricingType === "PAID_PER_CHAPTER" && !isTrashView;
 
   return (
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-4 sm:space-y-0">
       <div className="flex-1 min-w-0">
         {/* Chapter Header */}
-        <div className="flex items-center space-x-3 mb-2">
-          <span className="text-sm font-medium text-gray-500">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="text-sm font-medium text-gray-500 whitespace-nowrap">
             Chapter {chapter.chapterNumber}
           </span>
           <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
+            className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
               chapter.status === "PUBLISHED"
                 ? "bg-blue-100 text-blue-800"
                 : "bg-yellow-100 text-yellow-800"
@@ -1254,27 +1269,27 @@ function ChapterContent({
         </div>
 
         {/* Chapter Title */}
-        <h4 className="text-lg font-semibold text-black mb-2 truncate">
+        <h4 className="text-lg font-semibold text-black mb-3 line-clamp-2 sm:truncate">
           {chapter.title}
         </h4>
 
         {/* Chapter Stats */}
-        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 mb-4">
           <div className="flex items-center space-x-1">
-            <DocumentTextIcon className="w-4 h-4" />
-            <span>{chapter.wordCount} words</span>
+            <DocumentTextIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{chapter.wordCount} words</span>
           </div>
           <div className="flex items-center space-x-1">
-            <EyeIcon className="w-4 h-4" />
-            <span>{chapter.views}</span>
+            <EyeIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{chapter.views}</span>
           </div>
           <div className="flex items-center space-x-1">
-            <HeartIcon className="w-4 h-4" />
-            <span>{chapter.likes}</span>
+            <HeartIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{chapter.likes}</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <ClockIcon className="w-4 h-4" />
-            <span>
+          <div className="flex items-center space-x-1 col-span-2 sm:col-span-1">
+            <ClockIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">
               {formatDistanceToNow(new Date(chapter.createdAt), {
                 addSuffix: true,
               })}
@@ -1284,27 +1299,27 @@ function ChapterContent({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center space-x-2 ml-4">
+      <div className="flex items-center justify-end sm:justify-start space-x-2 sm:ml-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
         {isTrashView ? (
           <>
             {/* Restore from Trash */}
             <button
               onClick={onRestore}
               disabled={isRestoring}
-              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+              className="p-3 sm:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
               title="Restore Chapter"
             >
-              <ArchiveBoxIcon className="w-4 h-4" />
+              <ArchiveBoxIcon className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Permanently Delete */}
             <button
               onClick={onDelete}
               disabled={isPermanentlyDeleting}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              className="p-3 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
               title="Delete Forever"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           </>
         ) : (
@@ -1312,10 +1327,10 @@ function ChapterContent({
             {/* Edit */}
             <Link
               href={`/stories/${storyId}/chapters/${chapter.chapterNumber}/edit`}
-              className="p-2 text-black hover:bg-gray-50 rounded-lg transition-colors"
+              className="p-3 sm:p-2 text-black hover:bg-gray-50 rounded-lg transition-colors touch-manipulation"
               title="Edit Chapter"
             >
-              <PencilIcon className="w-4 h-4" />
+              <PencilIcon className="w-5 h-5 sm:w-4 sm:h-4" />
             </Link>
 
             {/* Publish/Unpublish */}
@@ -1323,10 +1338,10 @@ function ChapterContent({
               <button
                 onClick={() => onPublish(chapter.id)}
                 disabled={isPublishing}
-                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                className="p-3 sm:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
                 title="Publish Chapter"
               >
-                <GlobeAltIcon className="w-4 h-4" />
+                <GlobeAltIcon className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
             ) : (
               <ProtectedActionButton
@@ -1337,7 +1352,7 @@ function ChapterContent({
                 currentPublishStatus={chapter.status}
                 currentPricingType={story?.pricingType}
                 onAction={onUnpublish}
-                className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
+                className="p-3 sm:p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
                 disabled={isUnpublishing}
                 variant="outline"
               />
@@ -1352,7 +1367,7 @@ function ChapterContent({
               currentPublishStatus={chapter.status}
               currentPricingType={story?.pricingType}
               onAction={onDelete}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              className="p-3 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
               disabled={isDeleting}
               variant="outline"
             />

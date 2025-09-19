@@ -318,68 +318,7 @@ export default function BuyCoinsPage() {
           favorite authors
         </p>
 
-        {/* Debug Test Button */}
-        <div className="mt-4">
-          <button
-            onClick={async () => {
-              console.log("🧪 Testing broadcast...");
-              try {
-                const response = await fetch("/api/test-broadcast", {
-                  method: "POST",
-                });
-                const result = await response.json();
-                console.log("🧪 Test broadcast result:", result);
-                toast.success("Test broadcast sent!");
-              } catch (error) {
-                console.error("🧪 Test broadcast error:", error);
-                toast.error("Test broadcast failed");
-              }
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm mr-2"
-          >
-            🧪 Test Real-time Connection
-          </button>
 
-          <button
-            onClick={async () => {
-              console.log("🔍 Checking connections...");
-              try {
-                const response = await fetch("/api/debug-connections");
-                const result = await response.json();
-                console.log("🔍 Connection status:", result);
-                toast.success(`Active connections: ${result.connectionCount}`);
-              } catch (error) {
-                console.error("🔍 Connection check error:", error);
-                toast.error("Connection check failed");
-              }
-            }}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm mr-2"
-          >
-            🔍 Check Connections
-          </button>
-
-          <button
-            onClick={() => {
-              console.log("📊 Current coin packages data:", coinPackages);
-              coinPackages.forEach((pkg, index) => {
-                console.log(`Package ${index + 1}:`, {
-                  name: pkg.name,
-                  price: pkg.price,
-                  currency: pkg.currency,
-                  formattedPrice: formatPrice(pkg.price),
-                });
-              });
-              toast.success("Package data logged to console");
-            }}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
-          >
-            📊 Debug Package Data
-          </button>
-
-          <span className="ml-2 text-sm text-gray-500">
-            (Click to test if SSE connection is working)
-          </span>
-        </div>
       </div>
 
       {/* Current Balance */}

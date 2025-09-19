@@ -336,18 +336,18 @@ export default function EditProfileModal({ user, isOpen, onClose, onSave }: Edit
           </div>
 
           {/* Enhanced Action Buttons */}
-          <div className="flex space-x-3 pt-6 border-t border-gray-200/50">
+          <div className="flex space-x-2 sm:space-x-3 pt-4 sm:pt-6 border-t border-gray-200/50">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 rounded-xl font-medium transition-all duration-300 hover:scale-105 backdrop-blur-sm border border-gray-200/60"
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 rounded-xl font-medium transition-all duration-300 hover:scale-105 backdrop-blur-sm border border-gray-200/60"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-[#18243c] to-[#22325a] hover:from-[#22325a] hover:to-[#2d4574] text-white rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 hover:scale-105 shadow-lg hover:shadow-xl"
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm bg-gradient-to-r from-[#18243c] to-[#22325a] hover:from-[#22325a] hover:to-[#2d4574] text-white rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1 sm:space-x-2 hover:scale-105 shadow-lg hover:shadow-xl"
             >
               {isLoading ? (
                 <>
