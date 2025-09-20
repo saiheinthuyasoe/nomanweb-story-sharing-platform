@@ -23,6 +23,7 @@ import {
   Library,
   Users,
   LogIn,
+  DollarSign,
 } from "lucide-react";
 
 import { useUnreadCount } from "@/hooks/useNotifications";
@@ -452,6 +453,9 @@ export default function Navbar() {
                             icon={History}
                           >
                             Purchase History
+                          </DropdownLink>
+                          <DropdownLink href="/withdraw" icon={DollarSign}>
+                            Withdraw
                           </DropdownLink>
                           <button
                             onClick={handleLogout}

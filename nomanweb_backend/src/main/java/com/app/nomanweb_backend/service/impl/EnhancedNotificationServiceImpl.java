@@ -27,6 +27,29 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
     private String frontendUrl;
 
     @Override
+    public String sendLineNotificationWithImage(User user, Notification.NotificationType type, String title,
+            String message,
+            String coverImageUrl, String actionUrl) {
+        if (!shouldNotifyUser(user, type)) {
+            log.debug("User {} has disabled {} notifications", user.getId(), type);
+            return null;
+        }
+
+        try {
+            String lineMessageId = lineMessagingService.sendNotificationWithImage(user, title, message, coverImageUrl,
+                    actionUrl);
+            if (lineMessageId != null) {
+                log.info("Successfully sent LINE notification with image to user: {}", user.getId());
+            }
+            return lineMessageId;
+        } catch (Exception e) {
+            log.error("Failed to send LINE notification with image to user {}: {}", user.getId(), e.getMessage(), e);
+            // Fallback to regular notification without image
+            return sendLineNotification(user, type, title, message, actionUrl);
+        }
+    }
+
+    @Override
     public Notification sendMultiChannelNotification(User user, Notification.NotificationType type,
             String title, String message,
             Notification.RelatedType relatedType, UUID relatedId) {

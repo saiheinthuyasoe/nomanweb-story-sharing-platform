@@ -26,6 +26,18 @@ public interface LineMessagingService {
     String sendNotificationWithAction(User user, String title, String message, String actionUrl);
 
     /**
+     * Send a notification with story cover image to a user via LINE
+     * 
+     * @param user          The user to send the message to
+     * @param title         The notification title
+     * @param message       The notification message
+     * @param coverImageUrl The story cover image URL
+     * @param actionUrl     Optional action URL for "View" button
+     * @return The LINE message ID if successful, null if failed
+     */
+    String sendNotificationWithImage(User user, String title, String message, String coverImageUrl, String actionUrl);
+
+    /**
      * Check if user has LINE integration enabled and can receive LINE notifications
      * 
      * @param user The user to check

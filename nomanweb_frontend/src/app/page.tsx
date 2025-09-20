@@ -203,7 +203,7 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start md:flex-nowrap md:overflow-x-auto md:scrollbar-hide">
             <button
               onClick={() => {
                 const element = document.getElementById("adventure-section");

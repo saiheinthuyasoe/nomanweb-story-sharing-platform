@@ -181,11 +181,11 @@ public class NotificationServiceImpl implements NotificationService {
             Story story = storyRepository.findById(storyId)
                     .orElseThrow(() -> new IllegalArgumentException("Story not found"));
 
-            String title = "New Story Published";
-            String message = String.format("%s published a new story: %s",
+            String title = "📚 New Story Published!";
+            String message = String.format("'%s' by %s is now available to read!",
+                    story.getTitle(),
                     story.getAuthor().getDisplayName() != null ? story.getAuthor().getDisplayName()
-                            : story.getAuthor().getUsername(),
-                    story.getTitle());
+                            : story.getAuthor().getUsername());
 
             sendNotificationsToFollowers(authorId, title, message,
                     Notification.NotificationType.NEW_STORY,
@@ -230,15 +230,27 @@ public class NotificationServiceImpl implements NotificationService {
             Story story = storyRepository.findById(storyId)
                     .orElseThrow(() -> new IllegalArgumentException("Story not found"));
 
-            String title = "Story Liked";
-            String message = String.format("%s liked your story: %s",
+            String title = "❤️ Story Liked!";
+            String message = String.format("%s liked your story '%s'",
                     liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
                     story.getTitle());
 
-            // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(storyAuthor,
-                    Notification.NotificationType.LIKE, title, message,
+            // Create in-app notification
+            createNotification(storyAuthor, Notification.NotificationType.LIKE, title, message,
                     Notification.RelatedType.STORY, storyId);
+
+            // Send LINE notification with story cover image
+            String actionUrl = enhancedNotificationService.generateActionUrl(
+                    Notification.NotificationType.LIKE, Notification.RelatedType.STORY, storyId);
+
+            if (story.getCoverImageUrl() != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(
+                        storyAuthor, Notification.NotificationType.LIKE, title, message,
+                        story.getCoverImageUrl(), actionUrl);
+            } else {
+                enhancedNotificationService.sendLineNotification(
+                        storyAuthor, Notification.NotificationType.LIKE, title, message, actionUrl);
+            }
         } catch (Exception e) {
             log.error("Failed to send story like notification", e);
         }
@@ -329,36 +341,56 @@ public class NotificationServiceImpl implements NotificationService {
                 return;
             }
 
+            User contentAuthor = userRepository.findById(contentAuthorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Content author not found"));
             User commenter = userRepository.findById(commenterId)
                     .orElseThrow(() -> new IllegalArgumentException("Commenter not found"));
+            Comment comment = commentRepository.findById(commentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
 
-            String title;
+            String title = "💬 New Comment!";
             String message;
-            Notification.RelatedType relatedType;
-            UUID relatedId;
+            String actionUrl;
+            Story story = null;
 
             if (chapterId != null) {
                 Chapter chapter = chapterRepository.findById(chapterId)
                         .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
-                title = "Chapter Comment";
-                message = String.format("%s commented on your chapter: %s",
+                if (chapter.getStory() != null) {
+                    story = chapter.getStory();
+                }
+                message = String.format("%s commented on your chapter '%s'",
                         commenter.getDisplayName() != null ? commenter.getDisplayName() : commenter.getUsername(),
                         chapter.getTitle());
-                relatedType = Notification.RelatedType.CHAPTER;
-                relatedId = chapterId;
+                actionUrl = enhancedNotificationService.generateActionUrl(
+                        Notification.NotificationType.COMMENT, Notification.RelatedType.CHAPTER, chapterId);
             } else {
-                Story story = storyRepository.findById(storyId)
+                story = storyRepository.findById(storyId)
                         .orElseThrow(() -> new IllegalArgumentException("Story not found"));
-                title = "Story Comment";
-                message = String.format("%s commented on your story: %s",
+                message = String.format("%s commented on your story '%s'",
                         commenter.getDisplayName() != null ? commenter.getDisplayName() : commenter.getUsername(),
                         story.getTitle());
-                relatedType = Notification.RelatedType.STORY;
-                relatedId = storyId;
+                actionUrl = enhancedNotificationService.generateActionUrl(
+                        Notification.NotificationType.COMMENT, Notification.RelatedType.STORY, storyId);
             }
 
-            createNotification(contentAuthorId, Notification.NotificationType.COMMENT,
-                    title, message, relatedType, relatedId);
+            // Create in-app notification
+            Notification.RelatedType relatedType = chapterId != null ? Notification.RelatedType.CHAPTER
+                    : Notification.RelatedType.STORY;
+            UUID relatedId = chapterId != null ? chapterId : storyId;
+
+            createNotification(contentAuthor, Notification.NotificationType.COMMENT, title, message,
+                    relatedType, relatedId);
+
+            // Send LINE notification with story cover image if available
+            if (story != null && story.getCoverImageUrl() != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(
+                        contentAuthor, Notification.NotificationType.COMMENT, title, message,
+                        story.getCoverImageUrl(), actionUrl);
+            } else {
+                enhancedNotificationService.sendLineNotification(
+                        contentAuthor, Notification.NotificationType.COMMENT, title, message, actionUrl);
+            }
         } catch (Exception e) {
             log.error("Failed to send comment notification", e);
         }
@@ -405,11 +437,26 @@ public class NotificationServiceImpl implements NotificationService {
                     .map(follow -> follow.getFollower())
                     .toList();
 
+            // Get story for cover image if it's a story-related notification
+            Story story = null;
+            if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
+                story = storyRepository.findById(relatedId).orElse(null);
+            }
+
             // Send notifications to all followers
             for (User follower : followers) {
-                // Send multi-channel notification (email + LINE)
-                enhancedNotificationService.sendMultiChannelNotification(follower, type,
-                        title, message, relatedType, relatedId);
+                // Create in-app notification
+                createNotification(follower, type, title, message, relatedType, relatedId);
+
+                // Send LINE notification with image if story is available
+                String actionUrl = enhancedNotificationService.generateActionUrl(type, relatedType, relatedId);
+                if (story != null && story.getCoverImageUrl() != null) {
+                    enhancedNotificationService.sendLineNotificationWithImage(
+                            follower, type, title, message, story.getCoverImageUrl(), actionUrl);
+                } else {
+                    enhancedNotificationService.sendLineNotification(
+                            follower, type, title, message, actionUrl);
+                }
             }
 
             log.info("Sent {} notifications to {} followers of user {}", type, followers.size(), authorId);
@@ -440,14 +487,34 @@ public class NotificationServiceImpl implements NotificationService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(user,
-                    Notification.NotificationType.PURCHASE, title, message, relatedType, relatedId);
+            // Create in-app notification
+            createNotification(user, Notification.NotificationType.PURCHASE, title, message,
+                    relatedType, relatedId);
+
+            // Send LINE notification with story cover image if it's a story purchase
+            String actionUrl = enhancedNotificationService.generateActionUrl(
+                    Notification.NotificationType.PURCHASE, relatedType, relatedId);
+
+            if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
+                Story story = storyRepository.findById(relatedId).orElse(null);
+                if (story != null && story.getCoverImageUrl() != null) {
+                    enhancedNotificationService.sendLineNotificationWithImage(
+                            user, Notification.NotificationType.PURCHASE, title, message,
+                            story.getCoverImageUrl(), actionUrl);
+                } else {
+                    enhancedNotificationService.sendLineNotification(
+                            user, Notification.NotificationType.PURCHASE, title, message, actionUrl);
+                }
+            } else {
+                enhancedNotificationService.sendLineNotification(
+                        user, Notification.NotificationType.PURCHASE, title, message, actionUrl);
+            }
         } catch (Exception e) {
             log.error("Failed to send purchase notification", e);
         }
     }
 
+    @Override
     @Transactional
     public void sendModerationNotification(UUID userId, String title, String message,
             Notification.RelatedType relatedType, UUID relatedId) {
@@ -455,9 +522,29 @@ public class NotificationServiceImpl implements NotificationService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(user,
-                    Notification.NotificationType.MODERATION, title, message, relatedType, relatedId);
+            // Create in-app notification
+            createNotification(user, Notification.NotificationType.MODERATION, title, message,
+                    relatedType, relatedId);
+
+            // Send LINE notification with story cover image if it's story-related
+            // moderation
+            String actionUrl = enhancedNotificationService.generateActionUrl(
+                    Notification.NotificationType.MODERATION, relatedType, relatedId);
+
+            if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
+                Story story = storyRepository.findById(relatedId).orElse(null);
+                if (story != null && story.getCoverImageUrl() != null) {
+                    enhancedNotificationService.sendLineNotificationWithImage(
+                            user, Notification.NotificationType.MODERATION, title, message,
+                            story.getCoverImageUrl(), actionUrl);
+                } else {
+                    enhancedNotificationService.sendLineNotification(
+                            user, Notification.NotificationType.MODERATION, title, message, actionUrl);
+                }
+            } else {
+                enhancedNotificationService.sendLineNotification(
+                        user, Notification.NotificationType.MODERATION, title, message, actionUrl);
+            }
         } catch (Exception e) {
             log.error("Failed to send moderation notification", e);
         }
