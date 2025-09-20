@@ -102,6 +102,76 @@ export default function ChapterReadPage() {
 
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Prevent text selection and copying
+  useEffect(() => {
+    const preventSelection = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const preventCopy = (e: KeyboardEvent) => {
+      // Prevent common copy/select shortcuts
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'x' || 
+         e.key.toLowerCase() === 'v' || e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'p')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      // Prevent F12, Ctrl+Shift+I, Ctrl+U, Win+Shift+S, Win+Shift+T
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') ||
+        (e.ctrlKey && e.key.toLowerCase() === 'u') ||
+        (e.metaKey && e.shiftKey && e.key.toLowerCase() === 's') ||
+        (e.metaKey && e.shiftKey && e.key.toLowerCase() === 't')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    const preventContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const preventDragStart = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    // Add event listeners with capture phase for better blocking
+    document.addEventListener('selectstart', preventSelection, true);
+    document.addEventListener('contextmenu', preventContextMenu, true);
+    document.addEventListener('keydown', preventCopy, true);
+    document.addEventListener('keyup', preventCopy, true);
+    document.addEventListener('keypress', preventCopy, true);
+    document.addEventListener('dragstart', preventDragStart, true);
+    document.addEventListener('copy', preventSelection, true);
+    document.addEventListener('cut', preventSelection, true);
+    document.addEventListener('paste', preventSelection, true);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('selectstart', preventSelection, true);
+      document.removeEventListener('contextmenu', preventContextMenu, true);
+      document.removeEventListener('keydown', preventCopy, true);
+      document.removeEventListener('keyup', preventCopy, true);
+      document.removeEventListener('keypress', preventCopy, true);
+      document.removeEventListener('dragstart', preventDragStart, true);
+      document.removeEventListener('copy', preventSelection, true);
+      document.removeEventListener('cut', preventSelection, true);
+      document.removeEventListener('paste', preventSelection, true);
+    };
+  }, []);
+
   // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem("reading-settings");
@@ -664,7 +734,7 @@ export default function ChapterReadPage() {
 
           {/* Chapter Content */}
           <div
-            className="prose prose-lg max-w-none mb-8"
+            className="prose prose-lg max-w-none mb-8 select-none"
             style={{
               fontFamily: settings.fontFamily,
               fontSize: `${settings.fontSize}px`,
@@ -674,7 +744,18 @@ export default function ChapterReadPage() {
               overflowWrap: "break-word",
               wordBreak: "break-word",
               hyphens: "auto",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              MozUserSelect: "none",
+              msUserSelect: "none",
+              WebkitTouchCallout: "none",
+              WebkitTapHighlightColor: "transparent",
             }}
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onPaste={(e) => e.preventDefault()}
             dangerouslySetInnerHTML={{ __html: chapter.content }}
           />
         </div>

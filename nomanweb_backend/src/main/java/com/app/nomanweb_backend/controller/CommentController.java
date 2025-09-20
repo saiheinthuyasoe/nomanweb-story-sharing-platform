@@ -2,22 +2,22 @@ package com.app.nomanweb_backend.controller;
 
 import com.app.nomanweb_backend.entity.Comment;
 import com.app.nomanweb_backend.service.CommentService;
+import com.app.nomanweb_backend.controller.UserController;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -139,7 +139,7 @@ public class CommentController {
     public ResponseEntity<Map<String, Object>> toggleCommentLike(
             @PathVariable UUID commentId,
             Authentication authentication) {
-        
+
         try {
             // Check authentication first
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -165,10 +165,23 @@ public class CommentController {
 
             boolean liked = !alreadyLiked;
 
+            // Broadcast real-time update for comment like/unlike
+            Map<String, Object> likeData = new HashMap<>();
+            likeData.put("commentId", commentId);
+            likeData.put("userId", userId);
+            likeData.put("liked", liked);
+
+            // Get comment to find the author and broadcast to them
+            Comment comment = commentService.getCommentById(commentId);
+            if (comment != null && comment.getUser() != null) {
+                UserController.broadcastSocialUpdate(comment.getUser().getId(),
+                        liked ? "comment_liked" : "comment_unliked", likeData);
+            }
+
             return ResponseEntity.ok(Map.of(
                     "liked", liked,
                     "message", liked ? "Comment liked" : "Comment unliked"));
-                    
+
         } catch (Exception e) {
             System.err.println("Error in toggleCommentLike: " + e.getMessage());
             e.printStackTrace();

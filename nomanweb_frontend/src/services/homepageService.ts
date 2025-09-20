@@ -1,6 +1,8 @@
 import { Story } from "../types/story";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api$/, '');
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+).replace(/\/api$/, "");
 
 export interface PagedResponse<T> {
   content: T[];
@@ -219,11 +221,28 @@ class HomepageService {
 
   async getAllHomepageSections(
     page: number = 0,
-    size: number = 6
+    size: number = 8
   ): Promise<HomepageSections> {
     try {
       // Fetch all sections in parallel
-      const [newReleases, bestRating, weeklyFeatures, bestOfAllTime, recommended, carousel, adventure, comedy, drama, fantasy, horror, mystery, romance, scienceFiction, thriller, youngAdult] = await Promise.all([
+      const [
+        newReleases,
+        bestRating,
+        weeklyFeatures,
+        bestOfAllTime,
+        recommended,
+        carousel,
+        adventure,
+        comedy,
+        drama,
+        fantasy,
+        horror,
+        mystery,
+        romance,
+        scienceFiction,
+        thriller,
+        youngAdult,
+      ] = await Promise.all([
         this.getNewReleases(page, size),
         this.getBestRating(page, size),
         this.getWeeklyFeatures(page, size),
@@ -239,7 +258,7 @@ class HomepageService {
         this.getRomance(page, size),
         this.getScienceFiction(page, size),
         this.getThriller(page, size),
-        this.getYoungAdult(page, size)
+        this.getYoungAdult(page, size),
       ]);
 
       return {
@@ -258,10 +277,10 @@ class HomepageService {
         romance,
         scienceFiction,
         thriller,
-        youngAdult
+        youngAdult,
       };
     } catch (error) {
-      console.error('Error fetching all homepage sections:', error);
+      console.error("Error fetching all homepage sections:", error);
       throw error;
     }
   }

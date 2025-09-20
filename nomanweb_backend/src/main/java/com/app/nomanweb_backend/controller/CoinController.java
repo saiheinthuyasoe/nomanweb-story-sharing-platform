@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,19 +37,40 @@ public class CoinController {
     // SSE endpoint for coin balance updates (accessible to all authenticated users)
     @GetMapping(value = "/sse/balance-updates", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasRole('USER')")
-    public SseEmitter subscribeToBalanceUpdates(HttpServletRequest request) {
+    public SseEmitter subscribeToBalanceUpdates(HttpServletRequest request, HttpServletResponse response) {
         try {
             UUID userId = getCurrentUserId(request);
-            SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+            
+            // Set proper headers for SSE to prevent chunked encoding issues
+            response.setHeader("Cache-Control", "no-cache");
+            response.setHeader("Connection", "keep-alive");
+            response.setHeader("Content-Type", "text/event-stream");
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Headers", "Cache-Control");
+            
+            // Use a shorter timeout to prevent connection issues
+            SseEmitter emitter = new SseEmitter(300000L); // 5 minutes instead of Long.MAX_VALUE
 
             // Store emitter for this user
             coinBalanceEmitters.put(userId, emitter);
             log.info("✅ User {} connected to SSE balance updates. Total connections: {}", userId, coinBalanceEmitters.size());
 
-            // Send initial connection message
-            emitter.send(SseEmitter.event()
-                    .name("connected")
-                    .data(Map.of("message", "Connected to coin balance updates", "userId", userId.toString())));
+            // Send initial connection message with proper formatting
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("connected")
+                        .data(Map.of("message", "Connected to coin balance updates", "userId", userId.toString())));
+                
+                // Send a heartbeat immediately to establish the connection
+                emitter.send(SseEmitter.event()
+                        .name("heartbeat")
+                        .data(Map.of("timestamp", System.currentTimeMillis())));
+                        
+            } catch (IOException e) {
+                log.error("Error sending initial SSE message to user: {}", userId, e);
+                coinBalanceEmitters.remove(userId);
+                throw new RuntimeException("Failed to send initial SSE message", e);
+            }
 
             // Handle client disconnect
             emitter.onCompletion(() -> {
@@ -77,8 +99,9 @@ public class CoinController {
     // Broadcast coin balance update to specific user (static method accessible from
     // AdminCoinController)
     public static void broadcastCoinBalanceUpdate(UUID userId, BigDecimal newBalance) {
+        long startTime = System.currentTimeMillis();
         SseEmitter emitter = coinBalanceEmitters.get(userId);
-        log.info("Attempting to broadcast balance update to user {}: {}", userId, newBalance);
+        log.info("Attempting to broadcast balance update to user {}: {} at {}", userId, newBalance, LocalDateTime.now());
         log.info("Active SSE connections: {}", coinBalanceEmitters.keySet());
         
         if (emitter != null) {
@@ -93,7 +116,8 @@ public class CoinController {
                         .name("balance_update")
                         .data(update));
 
-                log.info("✅ Successfully broadcasted balance update to user {}: {}", userId, newBalance);
+                long endTime = System.currentTimeMillis();
+                log.info("✅ Successfully broadcasted balance update to user {}: {} in {}ms", userId, newBalance, (endTime - startTime));
             } catch (IOException e) {
                 log.error("❌ Error broadcasting balance update to user: {}", userId, e);
                 coinBalanceEmitters.remove(userId);

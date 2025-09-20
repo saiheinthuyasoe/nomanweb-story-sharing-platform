@@ -165,7 +165,7 @@ public class OAuthServiceImpl implements OAuthService {
                         .profileImageUrl(cloudinaryImageUrl)
                         .role(User.Role.USER)
                         .status(User.Status.ACTIVE)
-                        .emailVerified(false) // LINE doesn't provide email verification
+                        .emailVerified(true) // LINE users are automatically verified through OAuth
                         .lastLoginAt(LocalDateTime.now())
                         .build();
             }
@@ -240,6 +240,40 @@ public class OAuthServiceImpl implements OAuthService {
         } catch (Exception e) {
             log.error("Failed to link LINE account", e);
             throw new RuntimeException("Failed to link LINE account");
+        }
+    }
+
+    @Override
+    public void unlinkGoogleAccount(String userId) {
+        try {
+            User user = userRepository.findById(UUID.fromString(userId))
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            user.setGoogleId(null);
+            userRepository.save(user);
+
+            log.info("Google account unlinked successfully for user: {}", user.getEmail());
+
+        } catch (Exception e) {
+            log.error("Failed to unlink Google account", e);
+            throw new RuntimeException("Failed to unlink Google account");
+        }
+    }
+
+    @Override
+    public void unlinkLineAccount(String userId) {
+        try {
+            User user = userRepository.findById(UUID.fromString(userId))
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            user.setLineUserId(null);
+            userRepository.save(user);
+
+            log.info("LINE account unlinked successfully for user: {}", user.getEmail());
+
+        } catch (Exception e) {
+            log.error("Failed to unlink LINE account", e);
+            throw new RuntimeException("Failed to unlink LINE account");
         }
     }
 

@@ -66,7 +66,6 @@ public class ChapterServiceImpl implements ChapterService {
     private final LibraryRepository libraryRepository;
     private final ReadingProgressRepository readingProgressRepository;
 
-
     private final ViewTrackingService viewTrackingService;
     private final PurchaseProtectionService purchaseProtectionService;
     private final MonetizationService monetizationService;
@@ -728,8 +727,6 @@ public class ChapterServiceImpl implements ChapterService {
             log.info("Access granted - User is the author");
             return true;
         }
-
-
 
         // Chapter must be published for public access
         if (chapter.getStatus() != Chapter.Status.PUBLISHED) {

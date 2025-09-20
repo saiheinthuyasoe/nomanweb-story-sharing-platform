@@ -166,7 +166,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-15">
             {/* Placeholder content during SSR */}
             <div className="flex items-center flex-shrink-0">
-              <div className="relative w-14 h-14 xs:w-16 xs:h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-22 lg:h-22">
+              <div className="relative w-28 h-28 xs:w-30 xs:h-30 sm:w-32 sm:h-32 md:w-35 md:h-35 lg:w-38 lg:h-38">
                 <Image
                   src="/logo.png"
                   alt="NoManWeb Logo"
@@ -195,7 +195,7 @@ export default function Navbar() {
             <div className="flex items-center flex-shrink-0">
               {/* Logo */}
               <Link href="/" className="flex items-center group">
-                <div className="relative w-14 h-14 xs:w-16 xs:h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-22 lg:h-22">
+                <div className="relative w-28 h-28 xs:w-30 xs:h-30 sm:w-32 sm:h-32 md:w-35 md:h-35 lg:w-38 lg:h-38">
                   <Image
                     src="/logo.png"
                     alt="NoManWeb Logo"
@@ -247,13 +247,12 @@ export default function Navbar() {
                     Collaborating
                   </span>
                   {/* Note: We would need the actual chapter ID here for real functionality */}
-  
                 </div>
               )}
             </div>
 
             {/* Center Section - Mobile Search */}
-            <div className="flex-1 mx-1 xs:mx-1.5 sm:mx-2 md:hidden max-w-xs xs:max-w-sm sm:max-w-md">
+            <div className="flex-1 mx-1 xs:mx-1.5 sm:mx-2 md:hidden max-w-[200px] xs:max-w-[100px] sm:max-w-[400px]">
               <form
                 onSubmit={handleSearch}
                 className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm"
@@ -282,7 +281,10 @@ export default function Navbar() {
             {/* Right Section */}
             <div className="flex items-center space-x-3">
               {/* Desktop Search */}
-              <div className="hidden md:block lg:block relative" ref={searchRef}>
+              <div
+                className="hidden md:block lg:block relative"
+                ref={searchRef}
+              >
                 {isSearchOpen ? (
                   <form
                     onSubmit={handleSearch}
@@ -445,7 +447,10 @@ export default function Navbar() {
                           <DropdownLink href="/library" icon={Library}>
                             Library
                           </DropdownLink>
-                          <DropdownLink href="/library?tab=purchased" icon={History}>
+                          <DropdownLink
+                            href="/library?tab=purchased"
+                            icon={History}
+                          >
                             Purchase History
                           </DropdownLink>
                           <button

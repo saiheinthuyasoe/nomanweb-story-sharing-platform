@@ -40,6 +40,8 @@ public class AdminCoinController {
     private final CoinPackageService coinPackageService;
     private final CoinTransactionRepository coinTransactionRepository;
     private final JwtUtil jwtUtil;
+    private final com.app.nomanweb_backend.repository.ChapterPurchaseRepository chapterPurchaseRepository;
+    private final com.app.nomanweb_backend.repository.BookPurchaseRepository bookPurchaseRepository;
 
     // SSE emitters for coin package updates
     private static final List<SseEmitter> coinPackageEmitters = new CopyOnWriteArrayList<>();
@@ -53,25 +55,52 @@ public class AdminCoinController {
             // Calculate real statistics from database
             List<User> allUsers = userRepository.findAll();
 
-            BigDecimal totalIssued = allUsers.stream()
-                    .map(User::getTotalEarnedCoins)
-                    .filter(Objects::nonNull)
+            // Calculate total revenue from actual purchases
+            BigDecimal totalChapterRevenue = chapterPurchaseRepository.findAll().stream()
+                    .filter(purchase -> !purchase.getIsRefunded())
+                    .map(purchase -> purchase.getCoinsSpent())
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            BigDecimal totalBookRevenue = bookPurchaseRepository.findAll().stream()
+                    .filter(purchase -> !purchase.getIsRefunded())
+                    .map(purchase -> purchase.getCoinsSpent())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalPurchaseRevenue = totalChapterRevenue.add(totalBookRevenue);
+
+            // Count total purchases
+            long totalChapterPurchases = chapterPurchaseRepository.findAll().stream()
+                    .filter(purchase -> !purchase.getIsRefunded())
+                    .count();
+
+            long totalBookPurchases = bookPurchaseRepository.findAll().stream()
+                    .filter(purchase -> !purchase.getIsRefunded())
+                    .count();
+
+            long totalPurchases = totalChapterPurchases + totalBookPurchases;
+
+            // Calculate current balance (all users' coin balances)
             BigDecimal totalBalance = allUsers.stream()
                     .map(User::getCoinBalance)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // Calculate total issued coins (from coin transactions)
+            BigDecimal totalIssued = allUsers.stream()
+                    .map(User::getTotalEarnedCoins)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             Map<String, Object> stats = new HashMap<>();
             stats.put("totalIssued", totalIssued.longValue());
-            stats.put("totalPurchases", totalIssued.longValue()); // Mock: same as issued for now
+            stats.put("totalPurchases", totalPurchases);
+            stats.put("totalPurchaseRevenue", totalPurchaseRevenue.longValue());
             stats.put("totalWithdrawals", totalIssued.subtract(totalBalance).longValue());
             stats.put("currentBalance", totalBalance.longValue());
             stats.put("totalUsers", allUsers.size());
 
-            log.info("Coin stats: Issued={}, Balance={}, Users={}",
-                    totalIssued, totalBalance, allUsers.size());
+            log.info("Coin stats: Revenue={}, Purchases={}, Balance={}, Users={}",
+                    totalPurchaseRevenue, totalPurchases, totalBalance, allUsers.size());
 
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
@@ -456,7 +485,8 @@ public class AdminCoinController {
             log.info("Coin {} completed for user {} ({}), transaction ID: {}, new balance: {}",
                     type, user.getUsername(), user.getEmail(), transaction.getId(), balanceAfter);
 
-            // Broadcast balance update to the affected user
+            // Broadcast balance update to the affected user immediately
+            log.info("Broadcasting balance update immediately at: {}", LocalDateTime.now());
             broadcastCoinBalanceUpdate(user.getId(), balanceAfter);
 
             return ResponseEntity.ok(response);

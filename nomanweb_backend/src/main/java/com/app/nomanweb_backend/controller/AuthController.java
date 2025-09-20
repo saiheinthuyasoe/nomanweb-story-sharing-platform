@@ -11,6 +11,7 @@ import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.service.AuthService;
 import com.app.nomanweb_backend.service.RateLimitService;
 import com.app.nomanweb_backend.util.JwtUtil;
+import com.app.nomanweb_backend.controller.UserController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +89,17 @@ public class AuthController {
         try {
             UUID userId = getUserIdFromRequest(request);
             User user = authService.updateProfile(userId, updateData);
+
+            // Broadcast real-time update for profile changes
+            Map<String, Object> profileData = new HashMap<>();
+            profileData.put("userId", userId.toString());
+            profileData.put("displayName", user.getDisplayName());
+            profileData.put("bio", user.getBio());
+            profileData.put("profileImageUrl", user.getProfileImageUrl());
+            profileData.put("coverImageUrl", user.getCoverImageUrl());
+
+            UserController.broadcastSocialUpdate(userId, "profile_updated", profileData);
+
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

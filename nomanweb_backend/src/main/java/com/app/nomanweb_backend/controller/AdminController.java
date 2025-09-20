@@ -15,6 +15,11 @@ import com.app.nomanweb_backend.service.FeaturedContentService;
 import com.app.nomanweb_backend.service.ProfileImageDownloadService;
 import com.app.nomanweb_backend.service.StoryService;
 import com.app.nomanweb_backend.service.ViewMigrationService;
+import com.app.nomanweb_backend.service.WithdrawService;
+import com.app.nomanweb_backend.service.StripeWithdrawService;
+import com.app.nomanweb_backend.service.WithdrawalScheduledService;
+import com.app.nomanweb_backend.dto.withdraw.WithdrawResponse;
+import com.app.nomanweb_backend.entity.Withdraw;
 import com.app.nomanweb_backend.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +28,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +61,9 @@ public class AdminController {
         private final UserRepository userRepository;
         private final ProfileImageDownloadService profileImageDownloadService;
         private final ViewMigrationService viewMigrationService;
+        private final WithdrawService withdrawService;
+        private final StripeWithdrawService stripeWithdrawService;
+        private final WithdrawalScheduledService withdrawalScheduledService;
 
         // Dashboard Statistics
         @GetMapping("/dashboard/stats")
@@ -1025,13 +1035,184 @@ public class AdminController {
                 }
         }
 
+        // Withdrawal Management Endpoints
+        @GetMapping("/withdrawals")
+        public ResponseEntity<Page<WithdrawResponse>> getAllWithdrawals(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size,
+                        @RequestParam(required = false) String status) {
+                try {
+                        Withdraw.WithdrawStatus withdrawStatus = null;
+                        if (status != null && !status.isEmpty()) {
+                                withdrawStatus = Withdraw.WithdrawStatus.valueOf(status.toUpperCase());
+                        }
+
+                        Page<WithdrawResponse> withdrawals = withdrawService.getAllWithdrawals(page, size,
+                                        withdrawStatus);
+                        return ResponseEntity.ok(withdrawals);
+                } catch (IllegalArgumentException e) {
+                        log.error("Invalid withdrawal status: {}", status);
+                        return ResponseEntity.badRequest().build();
+                } catch (Exception e) {
+                        log.error("Error getting withdrawals", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/withdrawals/{withdrawId}/process")
+        public ResponseEntity<WithdrawResponse> processWithdrawal(@PathVariable UUID withdrawId) {
+                try {
+                        log.info("Admin processing withdrawal: {}", withdrawId);
+                        WithdrawResponse response = withdrawService.processWithdraw(withdrawId);
+                        return ResponseEntity.ok(response);
+                } catch (RuntimeException e) {
+                        log.error("Error processing withdrawal {}: {}", withdrawId, e.getMessage());
+                        return ResponseEntity.badRequest().body(null);
+                } catch (Exception e) {
+                        log.error("Unexpected error processing withdrawal {}", withdrawId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/withdrawals/{withdrawId}/reject")
+        public ResponseEntity<WithdrawResponse> rejectWithdrawal(
+                        @PathVariable UUID withdrawId,
+                        @RequestParam String reason) {
+                try {
+                        log.info("Admin rejecting withdrawal: {} with reason: {}", withdrawId, reason);
+                        WithdrawResponse response = withdrawService.rejectWithdraw(withdrawId, reason);
+                        return ResponseEntity.ok(response);
+                } catch (RuntimeException e) {
+                        log.error("Error rejecting withdrawal {}: {}", withdrawId, e.getMessage());
+                        return ResponseEntity.badRequest().body(null);
+                } catch (Exception e) {
+                        log.error("Unexpected error rejecting withdrawal {}", withdrawId, e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/withdrawals/stats")
+        public ResponseEntity<Map<String, Object>> getWithdrawalStats(
+                        @RequestParam(required = false) String startDate,
+                        @RequestParam(required = false) String endDate) {
+                try {
+                        LocalDateTime start = startDate != null ? LocalDateTime.parse(startDate)
+                                        : LocalDateTime.now().minusDays(30);
+                        LocalDateTime end = endDate != null ? LocalDateTime.parse(endDate) : LocalDateTime.now();
+
+                        var stats = withdrawService.getWithdrawStats(start, end);
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("totalRequests", stats.getTotalRequests());
+                        response.put("totalAmount", stats.getTotalAmount());
+                        response.put("pendingCount", stats.getPendingCount());
+                        response.put("processedCount", stats.getProcessedCount());
+                        response.put("rejectedCount", stats.getRejectedCount());
+
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        log.error("Error getting withdrawal stats", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/stripe/simulation-info")
+        public ResponseEntity<Map<String, Object>> getStripeSimulationInfo() {
+                try {
+                        Map<String, Object> info = stripeWithdrawService.getSimulationInfo();
+                        return ResponseEntity.ok(info);
+                } catch (Exception e) {
+                        log.error("Error getting Stripe simulation info", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/stripe/test-withdrawal")
+        public ResponseEntity<Map<String, Object>> testStripeWithdrawal(
+                        @RequestParam BigDecimal amount,
+                        @RequestParam(defaultValue = "Test Bank") String bankName) {
+                try {
+                        // Create a test withdrawal object
+                        Withdraw testWithdraw = new Withdraw();
+                        testWithdraw.setId(UUID.randomUUID());
+                        testWithdraw.setAmount(amount);
+                        testWithdraw.setBankName(bankName);
+                        testWithdraw.setAccountHolderName("Test User");
+                        testWithdraw.setAccountNumber("****1234");
+                        testWithdraw.setRoutingNumber("123456789");
+
+                        // Create a test user
+                        User testUser = new User();
+                        testUser.setId(UUID.randomUUID());
+                        testUser.setEmail("test@example.com");
+                        testWithdraw.setUser(testUser);
+
+                        long startTime = System.currentTimeMillis();
+                        String transferId = stripeWithdrawService.processWithdrawal(testWithdraw);
+                        long processingTime = System.currentTimeMillis() - startTime;
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("success", true);
+                        result.put("transferId", transferId);
+                        result.put("processingTimeMs", processingTime);
+                        result.put("simulationMode", stripeWithdrawService.isSimulationMode());
+                        result.put("testAmount", amount);
+
+                        return ResponseEntity.ok(result);
+                } catch (Exception e) {
+                        log.error("Error testing Stripe withdrawal", e);
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("success", false);
+                        result.put("error", e.getMessage());
+                        result.put("simulationMode", stripeWithdrawService.isSimulationMode());
+                        return ResponseEntity.ok(result);
+                }
+        }
+
+        @GetMapping("/withdrawals/auto-processing-stats")
+        public ResponseEntity<Map<String, Object>> getAutoProcessingStats() {
+                try {
+                        var stats = withdrawalScheduledService.getAutoProcessingStats();
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("autoProcessedLast24h", stats.getAutoProcessedLast24h());
+                        response.put("currentPending", stats.getCurrentPending());
+                        response.put("currentProcessing", stats.getCurrentProcessing());
+                        response.put("simulationMode", stripeWithdrawService.isSimulationMode());
+
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        log.error("Error getting auto-processing stats", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @PostMapping("/withdrawals/trigger-auto-processing")
+        public ResponseEntity<Map<String, String>> triggerAutoProcessing() {
+                try {
+                        // Manually trigger the scheduled processing for testing
+                        withdrawalScheduledService.processAutomaticWithdrawals();
+
+                        Map<String, String> response = new HashMap<>();
+                        response.put("message", "Auto-processing triggered successfully");
+                        response.put("timestamp", LocalDateTime.now().toString());
+
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        log.error("Error triggering auto-processing", e);
+                        Map<String, String> response = new HashMap<>();
+                        response.put("error", "Failed to trigger auto-processing: " + e.getMessage());
+                        return ResponseEntity.internalServerError().body(response);
+                }
+        }
+
         // Utility method to get current user ID
         private UUID getCurrentUserId(HttpServletRequest request) {
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                        String token = authHeader.substring(7);
-                        return jwtUtil.getUserIdFromToken(token);
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.isAuthenticated() &&
+                                !authentication.getPrincipal().equals("anonymousUser")) {
+                        return UUID.fromString(authentication.getName());
                 }
-                throw new IllegalArgumentException("No valid authorization token found");
+                throw new IllegalArgumentException("No valid authentication found");
         }
 }

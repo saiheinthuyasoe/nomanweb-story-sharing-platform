@@ -1617,26 +1617,7 @@ export default function StoryReaderView() {
         }}
       />
 
-      {/* Buy Again Button for refunded book */}
-      {!isAuthor &&
-        hasBookAccess === false &&
-        story?.pricingType === "WHOLE_BOOK" && (
-          <div className="my-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-            <h2 className="text-xl font-bold text-yellow-800 mb-2">
-              You no longer own this book
-            </h2>
-            <p className="text-yellow-700 mb-4">
-              This book was refunded and republished. You must buy it again to
-              regain access to all chapters.
-            </p>
-            <button
-              onClick={() => setShowBookPurchaseModal(true)}
-              className="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 transition-colors"
-            >
-              Buy Again
-            </button>
-          </div>
-        )}
+
     </div>
   );
 }

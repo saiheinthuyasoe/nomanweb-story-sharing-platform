@@ -77,6 +77,14 @@ public class EnhancedNotificationServiceImpl implements EnhancedNotificationServ
         log.info("Multi-channel notification sent to user {}: email={}, line={}",
                 user.getId(), emailSent, lineMessageId != null);
 
+        // Broadcast real-time notification update via SSE
+        try {
+            com.app.nomanweb_backend.controller.NotificationController.broadcastNotificationUpdate(
+                    user.getId(), "new_notification", notification);
+        } catch (Exception e) {
+            log.error("Failed to broadcast notification update via SSE for user {}: {}", user.getId(), e.getMessage());
+        }
+
         return notification;
     }
 

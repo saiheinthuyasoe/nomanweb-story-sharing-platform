@@ -46,7 +46,7 @@ export default function RegisterPage() {
   };
 
   return (
-      <div
+    <div
       className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: "url(/mountain.png)",
@@ -60,9 +60,7 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
             Create Account
           </h1>
-          <p className="text-white/80 text-sm">
-            Join NoManWeb today
-          </p>
+          <p className="text-white/80 text-sm">Join NoManWeb today</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>

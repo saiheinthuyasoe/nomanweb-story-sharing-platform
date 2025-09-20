@@ -193,11 +193,11 @@ const BookSuggestionModal: React.FC<BookSuggestionModalProps> = ({
         
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-sm truncate">{book.title}</h4>
-          <p className="text-xs text-gray-600 truncate">by {book.author.displayName}</p>
+          <p className="text-xs text-gray-600 truncate">by {book.author?.displayName || 'Unknown Author'}</p>
           
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="secondary" className="text-xs">
-              {book.category.name}
+              {book.category?.name || 'Uncategorized'}
             </Badge>
           </div>
           

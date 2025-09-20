@@ -127,7 +127,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-2 xs:p-3 sm:p-4 md:p-6 lg:p-8"
+      className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: "url(/mountain.png)",
         backgroundSize: "cover",
@@ -135,18 +135,18 @@ export default function LoginPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl w-full bg-white/10 backdrop-blur-md rounded-xl xs:rounded-2xl shadow-2xl p-3 xs:p-4 sm:p-5 md:p-6 lg:p-8 border border-white/30">
-        <div className="text-center mb-3 xs:mb-4 sm:mb-5 md:mb-6">
-          <h1 className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1 xs:mb-2 sm:mb-3 drop-shadow-lg">
+      <div className="max-w-sm w-full bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-4 border border-white/30">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
             Welcome Back
           </h1>
-          <p className="text-white/80 text-xs xs:text-sm sm:text-base md:text-lg">
+          <p className="text-white/80 text-sm">
             Sign in to your NoManWeb account
           </p>
         </div>
 
         {/* OAuth Sign-In */}
-        <div className="mb-3 xs:mb-4 sm:mb-5 md:mb-6 space-y-2 xs:space-y-3 sm:space-y-4">
+        <div className="mb-4 space-y-4">
           <GoogleSignIn
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -154,18 +154,21 @@ export default function LoginPage() {
           <LineSignIn onSuccess={handleLineSuccess} onError={handleLineError} />
         </div>
 
-        <div className="relative mb-3 xs:mb-4 sm:mb-5 md:mb-6">
-          <div className="relative flex justify-center text-xs xs:text-sm sm:text-base">
-            <span className="px-2 xs:px-3 sm:px-4 bg-transparent text-white/80 font-medium">
+        <div className="relative mb-4">
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-transparent text-white/80 font-medium">
               Or continue with email
             </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 xs:space-y-4 sm:space-y-5 md:space-y-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
           <div>
             <div className="relative">
-              <Mail className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+              <Mail className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
                 {...register("email", {
                   required: "Email is required",
@@ -175,7 +178,7 @@ export default function LoginPage() {
                   },
                 })}
                 type="email"
-                className="w-full pl-6 xs:pl-7 sm:pl-8 md:pl-10 pr-3 xs:pr-4 sm:pr-5 py-1.5 xs:py-2 sm:py-2.5 md:py-3 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white text-sm xs:text-base sm:text-lg"
+                className="w-full pl-7 pr-4 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white text-base"
                 placeholder="Email"
               />
             </div>
@@ -188,7 +191,7 @@ export default function LoginPage() {
 
           <div>
             <div className="relative">
-              <Lock className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+              <Lock className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
               <input
                 {...register("password", {
                   required: "Password is required",
@@ -198,7 +201,7 @@ export default function LoginPage() {
                   },
                 })}
                 type={showPassword ? "text" : "password"}
-                className="w-full pl-6 xs:pl-7 sm:pl-8 md:pl-10 pr-10 xs:pr-12 sm:pr-14 md:pr-16 py-1.5 xs:py-2 sm:py-2.5 md:py-3 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white text-sm xs:text-base sm:text-lg"
+                className="w-full pl-7 pr-12 py-2 bg-transparent border-0 border-b-2 border-white/40 focus:outline-none focus:border-white focus:border-b-2 transition-all duration-300 placeholder-white/60 text-white text-base"
                 placeholder="Password"
               />
               <button
@@ -207,9 +210,9 @@ export default function LoginPage() {
                 className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors"
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <EyeOff className="h-5 w-5" />
                 ) : (
-                  <Eye className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6" />
+                  <Eye className="h-5 w-5" />
                 )}
               </button>
             </div>
@@ -249,11 +252,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center py-2 xs:py-2.5 sm:py-3 md:py-3.5 px-3 xs:px-4 sm:px-5 md:px-6 border border-white/30 rounded-xl shadow-lg text-xs xs:text-sm sm:text-base md:text-lg font-semibold text-white bg-[#20243c] hover:bg-[#23274a] focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-xl"
+            className="w-full flex justify-center py-3 px-4 mt-6 border border-white/30 rounded-xl shadow-lg text-sm font-semibold text-white bg-[#20243c] hover:bg-[#23274a] focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-xl"
           >
             {isSubmitting ? (
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 border-b-2 border-white mr-2 xs:mr-3"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 Signing in...
               </div>
             ) : (
@@ -262,8 +265,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center mt-4 xs:mt-5 sm:mt-6 md:mt-8">
-          <p className="text-white/80 text-xs xs:text-sm sm:text-base md:text-lg">
+        <div className="text-center mt-4">
+          <p className="text-white/80 text-xs">
             Don't have an account?{" "}
             <Link
               href="/register"

@@ -713,6 +713,10 @@ public class MonetizationServiceImpl implements MonetizationService {
 
         log.info("Successfully added {} coins to user {} (balance: {} -> {}), payment reference: {}",
                 amount, user.getId(), balanceBefore, user.getCoinBalance(), paymentReference);
+
+        // Broadcast balance update to the user immediately via SSE
+        log.info("Broadcasting balance update immediately at: {}", java.time.LocalDateTime.now());
+        com.app.nomanweb_backend.controller.CoinController.broadcastCoinBalanceUpdate(user.getId(), user.getCoinBalance());
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.app.nomanweb_backend.controller;
 import com.app.nomanweb_backend.dto.admin.AdminLoginRequest;
 import com.app.nomanweb_backend.dto.auth.LoginResponse;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.AdminAuthService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +31,7 @@ public class AdminAuthController {
 
     private final AdminAuthService adminAuthService;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     @Operation(summary = "Admin login with enhanced security")
@@ -43,6 +46,43 @@ public class AdminAuthController {
         LoginResponse response = adminAuthService.adminLogin(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh admin access token using refresh token")
+    public ResponseEntity<LoginResponse> refreshAdminToken(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            String clientIp = getClientIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            LoginResponse response = adminAuthService.refreshAdminToken(refreshToken, clientIp, userAgent);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.warn("Admin token refresh failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Admin logout with refresh token revocation")
+    public ResponseEntity<Void> adminLogout(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            String clientIp = getClientIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            adminAuthService.adminLogout(refreshToken, clientIp, userAgent);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            // Even if logout fails, we return success to avoid information leakage
+            log.warn("Admin logout error: {}", e.getMessage());
+            return ResponseEntity.ok().build();
+        }
     }
 
     @PostMapping("/users/{userId}/promote")
@@ -96,8 +136,14 @@ public class AdminAuthController {
         try {
             UUID adminId = extractAdminIdFromToken(token);
             adminAuthService.validateAdminPermissions(adminId, "VERIFY_ACCESS");
+
+            // Get the admin user details to return complete user information
+            User adminUser = userRepository.findById(adminId)
+                    .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
             return ResponseEntity.ok(Map.of(
                     "message", "Admin access verified",
+                    "user", adminUser,
                     "adminId", adminId,
                     "timestamp", System.currentTimeMillis()));
         } catch (RuntimeException e) {

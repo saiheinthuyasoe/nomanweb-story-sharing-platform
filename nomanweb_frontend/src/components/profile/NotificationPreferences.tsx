@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Bell, Check, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { apiClient } from "@/lib/api/client";
 
 interface NotificationPreference {
   id: string;
@@ -26,122 +27,61 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`/api/notifications/preferences`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await apiClient.get("/notifications/preferences");
 
-        if (response.ok) {
-          const data = await response.json();
-          // Convert backend response to frontend format
-          const preferencesArray: NotificationPreference[] = [
-            {
-              id: "chapter_moderation",
-              type: "CHAPTER_MODERATION",
-              enabled: data.notifyChapterModeration || false,
-              description:
-                "Receive notifications when your chapters are approved or rejected",
-            },
-            {
-              id: "new_follower",
-              type: "NEW_FOLLOWER",
-              enabled: data.notifyNewFollowers || false,
-              description: "Receive notifications when someone follows you",
-            },
-            {
-              id: "new_stories",
-              type: "NEW_STORIES",
-              enabled: data.notifyNewStories || false,
-              description:
-                "Receive notifications about new stories from followed authors",
-            },
-            {
-              id: "new_chapters",
-              type: "NEW_CHAPTERS",
-              enabled: data.notifyNewChapters || false,
-              description:
-                "Receive notifications when authors you follow publish new chapters",
-            },
-            {
-              id: "likes",
-              type: "LIKES",
-              enabled: data.notifyLikes || false,
-              description:
-                "Receive notifications when someone likes your content",
-            },
-            {
-              id: "comments",
-              type: "COMMENTS",
-              enabled: data.notifyComments || false,
-              description:
-                "Receive notifications when someone comments on your content",
-            },
-            {
-              id: "system_messages",
-              type: "SYSTEM_MESSAGES",
-              enabled: data.notifySystemMessages || false,
-              description:
-                "Receive important system notifications and announcements",
-            },
-          ];
-          setPreferences(preferencesArray);
-        } else {
-          // If no preferences exist, set default ones
-          const defaultPreferencesArray: NotificationPreference[] = [
-            {
-              id: "chapter_moderation",
-              type: "CHAPTER_MODERATION",
-              enabled: true,
-              description:
-                "Receive notifications when your chapters are approved or rejected",
-            },
-            {
-              id: "new_follower",
-              type: "NEW_FOLLOWER",
-              enabled: true,
-              description: "Receive notifications when someone follows you",
-            },
-            {
-              id: "new_stories",
-              type: "NEW_STORIES",
-              enabled: true,
-              description:
-                "Receive notifications about new stories from followed authors",
-            },
-            {
-              id: "new_chapters",
-              type: "NEW_CHAPTERS",
-              enabled: true,
-              description:
-                "Receive notifications when authors you follow publish new chapters",
-            },
-            {
-              id: "likes",
-              type: "LIKES",
-              enabled: true,
-              description:
-                "Receive notifications when someone likes your content",
-            },
-            {
-              id: "comments",
-              type: "COMMENTS",
-              enabled: true,
-              description:
-                "Receive notifications when someone comments on your content",
-            },
-            {
-              id: "system_messages",
-              type: "SYSTEM_MESSAGES",
-              enabled: true,
-              description:
-                "Receive important system notifications and announcements",
-            },
-          ];
-          setPreferences(defaultPreferencesArray);
-        }
+        const data = response.data;
+        // Convert backend response to frontend format
+        const preferencesArray: NotificationPreference[] = [
+          {
+            id: "chapter_moderation",
+            type: "CHAPTER_MODERATION",
+            enabled: data.notifyChapterModeration || false,
+            description:
+              "Receive notifications when your chapters are approved or rejected",
+          },
+          {
+            id: "new_follower",
+            type: "NEW_FOLLOWER",
+            enabled: data.notifyNewFollowers || false,
+            description: "Receive notifications when someone follows you",
+          },
+          {
+            id: "new_stories",
+            type: "NEW_STORIES",
+            enabled: data.notifyNewStories || false,
+            description:
+              "Receive notifications about new stories from followed authors",
+          },
+          {
+            id: "new_chapters",
+            type: "NEW_CHAPTERS",
+            enabled: data.notifyNewChapters || false,
+            description:
+              "Receive notifications when authors you follow publish new chapters",
+          },
+          {
+            id: "likes",
+            type: "LIKES",
+            enabled: data.notifyLikes || false,
+            description:
+              "Receive notifications when someone likes your content",
+          },
+          {
+            id: "comments",
+            type: "COMMENTS",
+            enabled: data.notifyComments || false,
+            description:
+              "Receive notifications when someone comments on your content",
+          },
+          {
+            id: "system_messages",
+            type: "SYSTEM_MESSAGES",
+            enabled: data.notifySystemMessages || false,
+            description:
+              "Receive important system notifications and announcements",
+          },
+        ];
+        setPreferences(preferencesArray);
       } catch (error) {
         console.error("Error fetching notification preferences:", error);
         toast.error("Failed to load notification preferences");
@@ -157,48 +97,20 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
   const updatePreference = async (preferenceId: string, enabled: boolean) => {
     setUpdating(preferenceId);
     try {
-      const token = localStorage.getItem("token");
       const preference = preferences.find((p) => p.id === preferenceId);
       if (!preference) return;
 
-      // Map frontend preference types to backend field names
-      const fieldMapping: { [key: string]: string } = {
-        CHAPTER_MODERATION: "notifyChapterModeration",
-        NEW_FOLLOWER: "notifyNewFollowers",
-        NEW_STORIES: "notifyNewStories",
-        NEW_CHAPTERS: "notifyNewChapters",
-        LIKES: "notifyLikes",
-        COMMENTS: "notifyComments",
-        SYSTEM_MESSAGES: "notifySystemMessages",
-      };
-
-      const fieldName = fieldMapping[preference.type];
-      if (!fieldName) {
-        toast.error("Invalid preference type");
-        return;
-      }
-
-      const response = await fetch(`/api/notifications/preferences`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          [fieldName]: enabled,
-        }),
+      const response = await apiClient.put("/notifications/preferences", {
+        type: preference.type,
+        enabled: enabled,
       });
 
-      if (response.ok) {
-        setPreferences((prev) =>
-          prev.map((pref) =>
-            pref.id === preferenceId ? { ...pref, enabled } : pref
-          )
-        );
-        toast.success("Notification preference updated");
-      } else {
-        toast.error("Failed to update notification preference");
-      }
+      setPreferences((prev) =>
+        prev.map((pref) =>
+          pref.id === preferenceId ? { ...pref, enabled } : pref
+        )
+      );
+      toast.success("Notification preference updated");
     } catch (error) {
       console.error("Error updating notification preference:", error);
       toast.error("Failed to update notification preference");

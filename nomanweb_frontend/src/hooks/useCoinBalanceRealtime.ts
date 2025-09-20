@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 
 interface CoinBalanceUpdate {
@@ -10,8 +11,9 @@ interface CoinBalanceUpdate {
 }
 
 export function useCoinBalanceRealtime() {
-  console.log("🎯 useCoinBalanceRealtime hook initialized");
+  console.log("🎯 useCoinBalanceRealtime hook initialized at:", new Date().toISOString());
   const { user, updateUser } = useAuth();
+  const queryClient = useQueryClient();
   console.log("🔍 AuthContext user:", user);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -65,7 +67,7 @@ export function useCoinBalanceRealtime() {
           throw new Error(`SSE connection failed: ${response.status}`);
         }
 
-        console.log("✅ Connected to coin balance updates SSE (Backend)");
+        console.log("✅ Connected to coin balance updates SSE (Backend) at:", new Date().toISOString());
 
         const reader = response.body?.getReader();
         if (!reader) {
@@ -74,93 +76,76 @@ export function useCoinBalanceRealtime() {
 
         const decoder = new TextDecoder();
         let buffer = "";
+        let currentEvent = '';
 
-        while (true) {
-          const { done, value } = await reader.read();
+        const processStream = async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              console.log("🔚 SSE stream ended");
+              break;
+            }
 
-          if (done) {
-            console.log("🔌 SSE stream ended");
-            break;
-          }
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+              if (line.trim() === '') continue;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+              console.log("📨 Raw SSE line received:", line);
 
-          for (const line of lines) {
-            if (line.startsWith("event: ")) {
-              const eventType = line.substring(7);
-              const dataLine = lines[lines.indexOf(line) + 1];
-
-              if (dataLine && dataLine.startsWith("data: ")) {
-                const data = dataLine.substring(6);
-
-                try {
-                  if (eventType === "connected") {
-                    const parsedData = JSON.parse(data);
-                    console.log("✅ SSE connected:", parsedData);
-                  } else if (eventType === "balance_update") {
+              if (line.startsWith('event:')) {
+                currentEvent = line.slice(6);
+                console.log("🎯 SSE event type:", currentEvent);
+              } else if (line.startsWith('data:')) {
+                const data = line.slice(5);
+                console.log("📦 SSE data payload:", data);
+                
+                if (data === 'connected' || currentEvent === 'connected') {
+                  console.log("✅ SSE connection established");
+                } else if (currentEvent === 'balance_update') {
+                  try {
                     const update: CoinBalanceUpdate = JSON.parse(data);
-                    console.log("📨 Received balance update:", update);
-                    console.log(
-                      "🔍 Current user ID:",
-                      user.id,
-                      "(type:",
-                      typeof user.id,
-                      ")"
-                    );
-                    console.log(
-                      "🔍 Update user ID:",
-                      update.userId,
-                      "(type:",
-                      typeof update.userId,
-                      ")"
-                    );
+                    console.log("💰 Balance update received:", update);
+                    console.log("🔍 Current user ID:", user.id, "(type:", typeof user.id, ")");
+                    console.log("🔍 Update user ID:", update.userId, "(type:", typeof update.userId, ")");
 
                     // Only update if this is for the current user
-                    if (
-                      update.userId === user.id ||
-                      update.userId === String(user.id)
-                    ) {
-                      console.log(
-                        "✅ Updating balance for current user from",
-                        user.coinBalance,
-                        "to",
-                        update.newBalance
-                      );
+                    if (update.userId === user.id || update.userId === String(user.id)) {
+                      const updateStartTime = new Date().toISOString();
+                      console.log("✅ Processing balance update for current user from", user.coinBalance, "to", update.newBalance, "at:", updateStartTime);
 
-                      // Update user's coin balance in context
+                      // Update user's coin balance in context immediately
                       updateUser({ coinBalance: update.newBalance });
 
-                      // Show a notification
-                      console.log(
-                        `💰 Balance updated: ${update.newBalance} coins`
-                      );
+                      // Force immediate query data update without network request
+                      queryClient.setQueryData(['coin-balance'], update.newBalance);
+                      
+                      // Trigger component re-renders by invalidating queries
+                      await queryClient.invalidateQueries({ queryKey: ['coin-balance'] });
+
+                      const updateCompleteTime = new Date().toISOString();
+                      console.log(`💰 Balance updated successfully: ${update.newBalance} coins at:`, updateCompleteTime);
+                      console.log("⚡ Update processing time (ms):", new Date(updateCompleteTime).getTime() - new Date(updateStartTime).getTime());
                     } else {
-                      console.log(
-                        "❌ Balance update for different user:",
-                        update.userId,
-                        "vs",
-                        user.id
-                      );
-                      console.log("🔍 Comparison results:");
-                      console.log(
-                        "  - update.userId === user.id:",
-                        update.userId === user.id
-                      );
-                      console.log(
-                        "  - update.userId === String(user.id):",
-                        update.userId === String(user.id)
-                      );
+                      console.log("❌ Balance update for different user:", update.userId, "vs", user.id);
                     }
+                  } catch (error) {
+                    console.error("❌ Error parsing SSE data:", error, "Raw data:", data);
                   }
-                } catch (error) {
-                  console.error("❌ Error parsing SSE data:", error);
+                } else if (currentEvent === 'heartbeat') {
+                  console.log("💓 Heartbeat received:", data);
+                } else {
+                  console.log("❓ Unknown event type:", currentEvent, "with data:", data);
                 }
               }
             }
           }
-        }
+        };
+
+        await processStream();
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           console.log("🔄 SSE connection aborted");
@@ -184,7 +169,7 @@ export function useCoinBalanceRealtime() {
         abortControllerRef.current = null;
       }
     };
-  }, [user, updateUser]);
+  }, [user, updateUser, queryClient]);
 
   return null; // This hook doesn't return anything, it just manages the SSE connection
 }

@@ -94,6 +94,36 @@ public class OAuthController {
         }
     }
 
+    @PostMapping("/unlink-google")
+    public ResponseEntity<Map<String, String>> unlinkGoogleAccount(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserIdFromAuthHeader(authHeader);
+
+            oAuthService.unlinkGoogleAccount(userId);
+            return ResponseEntity.ok(Map.of("message", "Google account unlinked successfully"));
+        } catch (Exception e) {
+            log.error("Failed to unlink Google account", e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/unlink-line")
+    public ResponseEntity<Map<String, String>> unlinkLineAccount(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserIdFromAuthHeader(authHeader);
+
+            oAuthService.unlinkLineAccount(userId);
+            return ResponseEntity.ok(Map.of("message", "LINE account unlinked successfully"));
+        } catch (Exception e) {
+            log.error("Failed to unlink LINE account", e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     private String extractUserIdFromAuthHeader(String authHeader) {
         // This would use JwtUtil to extract user ID from token
         // For now, returning a placeholder

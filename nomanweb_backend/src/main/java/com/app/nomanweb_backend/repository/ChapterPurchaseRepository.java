@@ -86,7 +86,9 @@ public interface ChapterPurchaseRepository extends JpaRepository<ChapterPurchase
     @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.user = :user AND cp.isRefunded = true ORDER BY cp.refundedAt DESC")
     Page<ChapterPurchase> findByUserAndIsRefundedTrueOrderByRefundedAtDesc(@Param("user") User user, Pageable pageable);
 
-    // Find all refunded chapter purchases for stories authored by a specific user (paginated)
+    // Find all refunded chapter purchases for stories authored by a specific user
+    // (paginated)
     @Query("SELECT cp FROM ChapterPurchase cp WHERE cp.chapter.story.author = :author AND cp.isRefunded = true ORDER BY cp.refundedAt DESC")
-    Page<ChapterPurchase> findByChapter_Story_AuthorAndIsRefundedTrueOrderByRefundedAtDesc(@Param("author") User author, Pageable pageable);
+    Page<ChapterPurchase> findByChapter_Story_AuthorAndIsRefundedTrueOrderByRefundedAtDesc(@Param("author") User author,
+            Pageable pageable);
 }

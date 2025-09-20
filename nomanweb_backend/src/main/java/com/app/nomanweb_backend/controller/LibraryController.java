@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.controller.UserController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -68,6 +69,14 @@ public class LibraryController {
                 updateStoryCountsOnRemove(story, type);
                 storyRepository.save(story);
 
+                // Broadcast real-time update for bookmark removal
+                Map<String, Object> bookmarkData = new HashMap<>();
+                bookmarkData.put("storyId", storyId.toString());
+                bookmarkData.put("userId", userId.toString());
+                bookmarkData.put("listType", type.name());
+                bookmarkData.put("bookmarked", false);
+                UserController.broadcastSocialUpdate(userId, "bookmark_removed", bookmarkData);
+
                 response.put("bookmarked", false);
                 response.put("message", "Removed from " + type.name().toLowerCase());
             } else {
@@ -82,6 +91,14 @@ public class LibraryController {
                 // Update story counts
                 updateStoryCountsOnAdd(story, type);
                 storyRepository.save(story);
+
+                // Broadcast real-time update for bookmark addition
+                Map<String, Object> bookmarkData = new HashMap<>();
+                bookmarkData.put("storyId", storyId.toString());
+                bookmarkData.put("userId", userId.toString());
+                bookmarkData.put("listType", type.name());
+                bookmarkData.put("bookmarked", true);
+                UserController.broadcastSocialUpdate(userId, "bookmark_added", bookmarkData);
 
                 response.put("bookmarked", true);
                 response.put("message", "Added to " + type.name().toLowerCase());

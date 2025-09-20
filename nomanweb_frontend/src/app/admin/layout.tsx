@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   HomeIcon,
@@ -13,7 +13,10 @@ import {
   ArrowLeftOnRectangleIcon,
   CurrencyDollarIcon,
   StarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
+import { useAdminAuth, AdminAuthProvider } from "@/contexts/AdminAuthContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -51,150 +54,23 @@ const adminNavItems = [
     icon: CurrencyDollarIcon,
   },
   {
-    name: "Content Reports",
-    href: "/admin/reports",
-    icon: DocumentTextIcon,
-  },
-  {
-    name: "Analytics",
-    href: "/admin/analytics",
-    icon: ChartBarIcon,
-  },
-  {
-    name: "OAuth Migration",
-    href: "/admin/migration",
-    icon: CogIcon,
-  },
-  {
-    name: "Settings",
-    href: "/admin/settings",
-    icon: CogIcon,
+    name: "Withdrawal Management",
+    href: "/admin/withdrawals",
+    icon: CurrencyDollarIcon,
   },
 ];
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [adminUser, setAdminUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+function AdminLayoutContent({ children }: AdminLayoutProps) {
+  const { adminUser, loading: isLoading, logout } = useAdminAuth();
   const pathname = usePathname();
-
-  useEffect(() => {
-    const checkAdminAuth = async () => {
-      // Allow access to login page without authentication
-      if (pathname === "/admin/login") {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const adminToken = localStorage.getItem("adminToken");
-        const adminUserData = localStorage.getItem("adminUser");
-
-        if (!adminToken || !adminUserData) {
-          router.push("/admin/login");
-          return;
-        }
-
-        // Verify admin token is still valid
-        const response = await fetch("/api/admin/auth/verify-admin", {
-          headers: {
-            Authorization: `Bearer ${adminToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Admin authentication failed");
-        }
-
-        const adminUser = JSON.parse(adminUserData);
-
-        // Double-check user role
-        if (adminUser.role !== "ADMIN") {
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("adminUser");
-          router.push("/admin/login");
-          return;
-        }
-
-        setAdminUser(adminUser);
-      } catch (error) {
-        console.error("Admin auth check failed:", error);
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminUser");
-        router.push("/admin/login");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAdminAuth();
-  }, [router, pathname]);
-
-  // Add effect to listen for storage changes (when login happens in same tab)
-  useEffect(() => {
-    const handleStorageChange = async () => {
-      if (pathname === "/admin/login") {
-        return;
-      }
-
-      const adminToken = localStorage.getItem("adminToken");
-      const adminUserData = localStorage.getItem("adminUser");
-
-      if (adminToken && adminUserData && !adminUser) {
-        // Authentication just happened, re-check auth
-        setIsLoading(true);
-        try {
-          // Verify the token is valid
-          const response = await fetch("/api/admin/auth/verify-admin", {
-            headers: {
-              Authorization: `Bearer ${adminToken}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            const adminUser = JSON.parse(adminUserData);
-            setAdminUser(adminUser);
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem("adminToken");
-            localStorage.removeItem("adminUser");
-            router.push("/admin/login");
-          }
-        } catch (error) {
-          console.error("Token verification failed:", error);
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("adminUser");
-          router.push("/admin/login");
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (!adminToken && adminUser) {
-        // Logout happened
-        setAdminUser(null);
-        router.push("/admin/login");
-      }
-    };
-
-    // Listen for storage events (cross-tab) and custom events (same-tab)
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("adminAuthChange", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("adminAuthChange", handleStorageChange);
-    };
-  }, [adminUser, router, pathname]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
+    logout();
+  };
 
-    // Dispatch custom event to notify of auth change
-    window.dispatchEvent(new Event("adminAuthChange"));
-
-    router.push("/admin/login");
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
   };
 
   // Show loading while checking authentication
@@ -244,106 +120,124 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+      <div
+        className={`fixed inset-y-0 left-0 z-50 ${
+          isCollapsed ? "w-16" : "w-64"
+        } bg-white shadow-sm border-r border-gray-100 flex-col hidden lg:flex transition-all duration-300`}
+      >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center space-x-2"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
+          {/* Sidebar Header */}
+          <div className="p-3 border-b border-gray-100 relative">
+            {!isCollapsed && (
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-white font-medium text-xs">
+                  {adminUser.displayName?.charAt(0) ||
+                    adminUser.username.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-sm font-medium text-gray-900 truncate">
+                    {adminUser.displayName || adminUser.username}
+                  </h2>
+                  <p className="text-xs text-gray-500">Admin Panel</p>
+                </div>
               </div>
-              <span className="text-xl font-bold text-gray-900">
-                Admin Panel
-              </span>
-            </Link>
+            )}
+            {isCollapsed && (
+              <div className="flex justify-center">
+                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-white font-medium text-xs">
+                  {adminUser.displayName?.charAt(0) ||
+                    adminUser.username.charAt(0)}
+                </div>
+              </div>
+            )}
+            {/* Toggle Button */}
+            <button
+              onClick={toggleSidebar}
+              className="absolute -right-3 top-1/2 transform -translate-y-1/2 bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:shadow-md transition-shadow"
+            >
+              {isCollapsed ? (
+                <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+              ) : (
+                <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+              )}
+            </button>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {adminNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-blue-600 transition-colors"
-                >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="flex-1 overflow-y-auto">
+            <nav className="p-3">
+              <ul className="space-y-3">
+                {adminNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={`w-full flex items-center ${
+                          isCollapsed ? "justify-center px-2 py-3" : "px-3 py-3"
+                        } rounded-md transition-colors duration-150 ${
+                          isActive
+                            ? "bg-gray-900 text-white"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                        title={isCollapsed ? item.name : undefined}
+                      >
+                        <Icon
+                          className={`h-4 w-4 ${isCollapsed ? "" : "mr-3"} ${
+                            isActive ? "text-white" : "text-gray-400"
+                          }`}
+                        />
+                        {!isCollapsed && (
+                          <span className="text-sm font-medium">
+                            {item.name}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </div>
 
-          {/* User Info & Logout */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {adminUser.displayName?.charAt(0) ||
-                    adminUser.username.charAt(0)}
-                </span>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">
-                  {adminUser.displayName || adminUser.username}
-                </p>
-                <p className="text-xs text-red-600 font-medium">
-                  Administrator
-                </p>
-              </div>
-            </div>
-
+          {/* Sidebar Footer */}
+          <div className="p-2 border-t border-gray-100">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`w-full flex items-center ${
+                isCollapsed ? "justify-center px-2 py-2" : "px-3 py-2"
+              } rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors`}
+              title={isCollapsed ? "Sign Out" : undefined}
             >
-              <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3" />
-              Sign Out
+              <ArrowLeftOnRectangleIcon
+                className={`h-4 w-4 ${isCollapsed ? "" : "mr-3"} text-gray-400`}
+              />
+              {!isCollapsed && (
+                <span className="text-sm font-medium">Sign Out</span>
+              )}
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="pl-64">
-        {/* Top Bar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                ← Back to Main Site
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium flex items-center">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Secure Admin Access
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div
+        className={`${
+          isCollapsed ? "pl-16" : "pl-64"
+        } transition-all duration-300`}
+      >
         {/* Page Content */}
         <main className="flex-1">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <AdminAuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminAuthProvider>
   );
 }

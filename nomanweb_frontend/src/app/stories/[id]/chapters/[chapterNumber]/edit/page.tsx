@@ -147,7 +147,10 @@ export default function EditChapterPage() {
           ? data.chapterNumber
           : undefined,
       shouldPublish:
-        !data.isDraft && (chapter.status === "DRAFT" || chapter.status === "PENDING") ? true : undefined,
+        !data.isDraft &&
+        (chapter.status === "DRAFT" || chapter.status === "PENDING")
+          ? true
+          : undefined,
     };
 
     console.log("EditPage - Update data being sent:", updateData);
@@ -183,11 +186,12 @@ export default function EditChapterPage() {
     try {
       const autoSaveData: UpdateChapterRequest = {
         content: data.content,
-        // Include other form fields in auto-save to prevent them from being overwritten
-        title: data.title !== chapter.title ? data.title : undefined,
+        // Always include current form values to prevent them from being overwritten
+        // Use !== undefined to allow empty strings (deleted titles)
+        title: data.title !== undefined ? data.title : chapter.title,
         coinPrice:
-          data.coinPrice !== chapter.coinPrice ? data.coinPrice : undefined,
-        isFree: data.isFree !== chapter.isFree ? data.isFree : undefined,
+          data.coinPrice !== undefined ? data.coinPrice : chapter.coinPrice,
+        isFree: data.isFree !== undefined ? data.isFree : chapter.isFree,
         isAutoSave: true,
       };
 
@@ -371,7 +375,8 @@ export default function EditChapterPage() {
               content: chapter.content,
               coinPrice: chapter.coinPrice,
               isFree: chapter.isFree,
-              isDraft: chapter.status === "DRAFT" || chapter.status === "PENDING",
+              isDraft:
+                chapter.status === "DRAFT" || chapter.status === "PENDING",
               chapterNumber: chapter.chapterNumber,
             }}
             onSubmit={handleSubmit}

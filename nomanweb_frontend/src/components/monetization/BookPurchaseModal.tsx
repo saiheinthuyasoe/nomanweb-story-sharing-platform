@@ -51,13 +51,13 @@ export default function BookPurchaseModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-5">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-xl font-bold flex items-center gap-2">
+              <h2 className="text-lg font-bold flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 Purchase Whole Book
               </h2>
@@ -71,7 +71,7 @@ export default function BookPurchaseModal({
           </div>
 
           {/* Book Info */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-medium text-blue-900 mb-2">{storyTitle}</h3>
             <p className="text-sm text-blue-700 mb-2">
               Complete access to all {totalChapters} chapters
@@ -83,7 +83,7 @@ export default function BookPurchaseModal({
           </div>
 
           {/* Balance Info */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-yellow-800">Your Balance:</span>
               <div className="flex items-center gap-2 text-yellow-800">
@@ -99,7 +99,7 @@ export default function BookPurchaseModal({
           </div>
 
           {/* Purchase Info */}
-          <div className="mb-6">
+          <div className="mb-4">
             <PurchaseBenefitDisplay
               itemType="story"
               itemTitle={storyTitle}
@@ -108,7 +108,7 @@ export default function BookPurchaseModal({
             />
           </div>
 
-          <div className="mb-6 p-4 border rounded-lg">
+          <div className="mb-4 p-3 border rounded-lg">
             <h4 className="font-medium mb-2">What you'll get:</h4>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>• Unlimited access to all {totalChapters} chapters</li>
@@ -160,4 +160,4 @@ export default function BookPurchaseModal({
       </div>
     </div>
   );
-} 
+}

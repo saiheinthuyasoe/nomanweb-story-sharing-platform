@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 import { XMarkIcon, ClockIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { FeaturedContent } from "../../services/adminHomepageService";
 import DatePicker from "../ui/DatePicker";
@@ -85,7 +86,7 @@ const BulkExpirationModal: React.FC<BulkExpirationModalProps> = ({
           {
             method: "PUT",
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+              Authorization: `Bearer ${Cookies.get("adminToken")}`,
               "Content-Type": "application/json",
             },
           }

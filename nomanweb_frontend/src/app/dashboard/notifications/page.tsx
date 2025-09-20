@@ -26,6 +26,7 @@ import {
   useDeleteNotification,
   useBulkDeleteNotifications,
 } from "@/hooks/useNotifications";
+import { useNotificationsRealtime } from "@/hooks/useNotificationsRealtime";
 import { useStory } from "@/hooks/useStories";
 import { useChapter } from "@/hooks/useChapters";
 import {
@@ -64,6 +65,22 @@ export default function NotificationsPage() {
 
   const notifications = notificationsData?.content || [];
   const unreadCount = unreadCountData?.unreadCount || 0;
+
+  // Set up real-time notifications
+  useNotificationsRealtime({
+    onNewNotification: (notification) => {
+      console.log("🔔 New notification received in dashboard:", notification);
+    },
+    onNotificationRead: (notificationId) => {
+      console.log("✅ Notification marked as read:", notificationId);
+    },
+    onAllNotificationsRead: () => {
+      console.log("✅ All notifications marked as read");
+    },
+    onConnectionChange: (connected) => {
+      console.log("🔗 Notification SSE connection status:", connected);
+    },
+  });
 
   // Get icon for notification type
   const getNotificationIcon = (type: string) => {

@@ -2,9 +2,11 @@ package com.app.nomanweb_backend.service.impl;
 
 import com.app.nomanweb_backend.dto.admin.AdminLoginRequest;
 import com.app.nomanweb_backend.dto.auth.LoginResponse;
+import com.app.nomanweb_backend.entity.RefreshToken;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.repository.UserRepository;
 import com.app.nomanweb_backend.service.AdminAuthService;
+import com.app.nomanweb_backend.service.RefreshTokenService;
 import com.app.nomanweb_backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class AdminAuthServiceImpl implements AdminAuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public LoginResponse adminLogin(AdminLoginRequest request) {
@@ -46,8 +49,9 @@ public class AdminAuthServiceImpl implements AdminAuthService {
             throw new RuntimeException("Invalid admin credentials");
         }
 
-        // Generate JWT token
+        // Generate JWT tokens - both access and refresh tokens
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        RefreshToken refreshToken = refreshTokenService.createRefreshTokenForLogin(user);
 
         logAdminActivity("ADMIN_LOGIN", user.getId(),
                 String.format("IP: %s, User-Agent: %s", request.getIpAddress(), request.getUserAgent()));
@@ -56,11 +60,68 @@ public class AdminAuthServiceImpl implements AdminAuthService {
 
         return LoginResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken.getToken())
                 .user(user)
                 .build();
     }
 
+    @Override
+    public LoginResponse refreshAdminToken(String refreshTokenValue, String clientIp, String userAgent) {
+        log.info("Admin token refresh attempt from IP: {}", clientIp);
 
+        // Validate and rotate refresh token
+        RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(refreshTokenValue, clientIp, userAgent);
+
+        if (newRefreshToken == null) {
+            log.warn("Invalid or expired admin refresh token from IP: {}", clientIp);
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
+
+        User user = newRefreshToken.getUser();
+
+        // Verify user is still an admin
+        if (!user.getRole().equals(User.Role.ADMIN)) {
+            log.warn("Non-admin user attempted admin token refresh: {}", user.getEmail());
+            refreshTokenService.revokeRefreshToken(newRefreshToken.getToken(), clientIp, userAgent);
+            throw new RuntimeException("Access denied. Admin privileges required.");
+        }
+
+        // Generate new access token
+        String newAccessToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+
+        logAdminActivity("ADMIN_TOKEN_REFRESH", user.getId(),
+                String.format("IP: %s, User-Agent: %s", clientIp, userAgent));
+
+        log.info("Admin tokens refreshed successfully for: {}", user.getEmail());
+
+        return LoginResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken.getToken())
+                .user(user)
+                .build();
+    }
+
+    @Override
+    public void adminLogout(String refreshTokenValue, String clientIp, String userAgent) {
+        try {
+            // Validate the refresh token first to get user info for logging
+            RefreshToken refreshToken = refreshTokenService.validateRefreshToken(refreshTokenValue);
+            if (refreshToken != null) {
+                User user = refreshToken.getUser();
+
+                // Verify user is an admin before logging the activity
+                if (user.getRole().equals(User.Role.ADMIN)) {
+                    logAdminActivity("ADMIN_LOGOUT", user.getId(),
+                            String.format("IP: %s, User-Agent: %s", clientIp, userAgent));
+                }
+            }
+
+            refreshTokenService.revokeRefreshToken(refreshTokenValue, clientIp, userAgent);
+            log.info("Admin logged out successfully from IP: {}", clientIp);
+        } catch (Exception e) {
+            log.warn("Error during admin logout from IP {}: {}", clientIp, e.getMessage());
+        }
+    }
 
     @Override
     public void promoteToAdmin(UUID userId, UUID currentAdminId) {

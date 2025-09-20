@@ -29,21 +29,30 @@ public class FeaturedContentService {
     @Autowired
     private StoryRepository storyRepository;
 
-    // Get stories for homepage sections - now uses admin-curated featured content
+    @Autowired
+    private AutomaticBookSelectionService automaticBookSelectionService;
+
+    // Get stories for homepage sections - only returns manually curated content
     public Page<Story> getStoriesForSection(FeaturedContent.SectionType sectionType, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        // Get active featured content for this section
+        // Get manually curated featured content only
         Page<FeaturedContent> featuredContent = featuredContentRepository.findActiveBySectionType(
                 sectionType, LocalDateTime.now(), pageable);
 
-        // Extract stories from featured content
-        List<Story> stories = featuredContent.getContent().stream()
-                .map(FeaturedContent::getStory)
-                .collect(Collectors.toList());
+        // If we have manual content, use it
+        if (featuredContent.hasContent()) {
+            // Extract stories from featured content
+            List<Story> stories = featuredContent.getContent().stream()
+                    .map(FeaturedContent::getStory)
+                    .collect(Collectors.toList());
 
-        // Return as Page with proper pagination info
-        return new PageImpl<>(stories, pageable, featuredContent.getTotalElements());
+            // Return as Page with proper pagination info
+            return new PageImpl<>(stories, pageable, featuredContent.getTotalElements());
+        }
+
+        // Return empty page if no manual content exists (no automatic fallback)
+        return Page.empty(pageable);
     }
 
     // Admin methods for managing featured content

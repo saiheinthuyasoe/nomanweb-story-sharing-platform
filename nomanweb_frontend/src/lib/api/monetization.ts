@@ -1,4 +1,5 @@
-import { apiClient } from "./client";
+import { apiClient } from './client';
+import { validateAndFormatUUID } from '@/utils/uuid';
 
 export interface Gift {
   id: string;
@@ -90,9 +91,14 @@ export const monetizationApi = {
 
   // Book purchases
   async purchaseBook(request: PurchaseBookRequest): Promise<PurchaseResponse> {
+    // Validate and format storyId as UUID before sending to backend
+    const validatedRequest = {
+      storyId: validateAndFormatUUID(request.storyId, 'Story ID')
+    };
+    
     const response = await apiClient.post(
       "/monetization/books/purchase",
-      request
+      validatedRequest
     );
     return response.data;
   },
