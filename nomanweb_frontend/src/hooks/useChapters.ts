@@ -173,22 +173,8 @@ export const useUpdateChapter = () => {
       id: string;
       data: UpdateChapterRequest;
     }) => {
-      // First update the chapter
+      // Update the chapter - backend handles story publishing automatically when needed
       const updatedChapter = await chaptersApi.updateChapter(id, data);
-
-      // If this update is publishing the chapter (shouldPublish is true), also publish the story
-      if (data.shouldPublish) {
-        try {
-          await storiesApi.publishStory(updatedChapter.story.id, false);
-          console.log("Story auto-published along with chapter update");
-        } catch (storyError: any) {
-          // If story is already published or other error, we can ignore it
-          console.log(
-            "Story publish error (may already be published):",
-            storyError.response?.data?.message
-          );
-        }
-      }
 
       return updatedChapter;
     },
@@ -318,23 +304,8 @@ export const usePublishChapter = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // First publish the chapter
+      // Publish the chapter - backend handles story publishing automatically when needed
       const publishedChapter = await chaptersApi.publishChapter(id);
-
-      // Then automatically publish the story if it's not already published
-      // Set autoPublishChapters=false to prevent bulk publishing of other chapters
-      try {
-        await storiesApi.publishStory(publishedChapter.story.id, false);
-        console.log(
-          "Story auto-published along with chapter (without bulk chapter publishing)"
-        );
-      } catch (storyError: any) {
-        // If story is already published or other error, we can ignore it
-        console.log(
-          "Story publish error (may already be published):",
-          storyError.response?.data?.message
-        );
-      }
 
       return publishedChapter;
     },
@@ -357,9 +328,7 @@ export const usePublishChapter = () => {
       queryClient.invalidateQueries({ queryKey: ["stories"] });
       queryClient.invalidateQueries({ queryKey: ["my-stories"] });
 
-      toast.success(
-        "Chapter published successfully! Story is now also published."
-      );
+      toast.success("Chapter published successfully!");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Failed to publish chapter");

@@ -387,7 +387,7 @@ const HomepageManagementPage = () => {
                 Pending Reviews
               </h3>
               <p className="text-3xl font-bold">
-                {dashboardStats.pendingModerations}
+                {String(dashboardStats.pendingModerations || 0)}
               </p>
               <p className="text-xs opacity-75 mt-1">Awaiting moderation</p>
             </div>
@@ -396,7 +396,7 @@ const HomepageManagementPage = () => {
                 Recent Activity
               </h3>
               <p className="text-3xl font-bold">
-                {dashboardStats.recentActivity}
+                {String(dashboardStats.recentActivity || 0)}
               </p>
               <p className="text-xs opacity-75 mt-1">Last 24 hours</p>
             </div>
@@ -410,25 +410,25 @@ const HomepageManagementPage = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Total Active</h3>
             <p className="text-2xl font-bold text-green-600">
-              {stats.totalActive}
+              {String(stats.totalActive || 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Total Expired</h3>
             <p className="text-2xl font-bold text-red-600">
-              {stats.totalExpired}
+              {String(stats.totalExpired || 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">New Releases</h3>
             <p className="text-2xl font-bold text-blue-600">
-              {stats.sectionCounts.NEW_RELEASES || 0}
+              {String(stats.sectionCounts.NEW_RELEASES || 0)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Best Rating</h3>
             <p className="text-2xl font-bold text-purple-600">
-              {stats.sectionCounts.BEST_RATING || 0}
+              {String(stats.sectionCounts.BEST_RATING || 0)}
             </p>
           </div>
         </div>

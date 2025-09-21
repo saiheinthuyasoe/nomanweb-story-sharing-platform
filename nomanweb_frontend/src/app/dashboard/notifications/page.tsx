@@ -249,9 +249,9 @@ export default function NotificationsPage() {
       count: notificationItems.filter((a) => a.type === "like").length,
     },
     {
-      id: "system",
+      id: "purchase",
       label: "Purchase",
-      count: notificationItems.filter((a) => a.type === "system").length,
+      count: notificationItems.filter((a) => a.type === "purchase").length,
     },
     {
       id: "moderation",

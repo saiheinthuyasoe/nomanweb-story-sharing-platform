@@ -303,14 +303,19 @@ public class ChapterServiceImpl implements ChapterService {
         if (wasJustPublished) {
             updateLibraryStatusForNewChapter(chapter.getStory());
 
-            // Notify followers about new chapter publication
-            try {
-                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
-                        chapter.getId());
-                log.info("Notifications sent to followers for new chapter: {}", chapterId);
-            } catch (Exception e) {
-                log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
-                // Don't fail the chapter update if notification fails
+            // Only notify followers if chapter is actually published (not pending)
+            if (chapter.getStatus() == Chapter.Status.PUBLISHED) {
+                // Notify followers about new chapter publication
+                try {
+                    notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
+                            chapter.getId());
+                    log.info("Notifications sent to followers for new chapter: {}", chapterId);
+                } catch (Exception e) {
+                    log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
+                    // Don't fail the chapter update if notification fails
+                }
+            } else {
+                log.info("Chapter is pending moderation, notifications will be sent after approval: {}", chapterId);
             }
         }
 
@@ -491,6 +496,21 @@ public class ChapterServiceImpl implements ChapterService {
             chapter.setStatus(Chapter.Status.PUBLISHED);
             chapter.setPublishedAt(LocalDateTime.now());
             log.info("Publishing pre-approved chapter: {}", chapterId);
+            
+            chapter = chapterRepository.save(chapter);
+
+            // Update library status for users who had completed this story
+            updateLibraryStatusForNewChapter(chapter.getStory());
+
+            // Notify followers about new chapter publication (only when actually published)
+            try {
+                notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
+                        chapter.getId());
+                log.info("Notifications sent to followers for new chapter: {}", chapterId);
+            } catch (Exception e) {
+                log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
+                // Don't fail the chapter publishing if notification fails
+            }
         } else {
             // Queue for AI moderation
             chapter.setStatus(Chapter.Status.PENDING);
@@ -501,21 +521,13 @@ public class ChapterServiceImpl implements ChapterService {
             // Chapter status is now PENDING until AI moderation completes
             // The background processor will handle publishing when approved
             log.info("Chapter queued for moderation - will be published when approved: {}", chapterId);
-        }
+            
+            chapter = chapterRepository.save(chapter);
 
-        chapter = chapterRepository.save(chapter);
-
-        // Update library status for users who had completed this story
-        updateLibraryStatusForNewChapter(chapter.getStory());
-
-        // Notify followers about new chapter publication
-        try {
-            notificationService.notifyNewChapter(chapter.getStory().getAuthor().getId(), chapter.getStory().getId(),
-                    chapter.getId());
-            log.info("Notifications sent to followers for new chapter: {}", chapterId);
-        } catch (Exception e) {
-            log.warn("Failed to send notifications for new chapter: {} - {}", chapterId, e.getMessage());
-            // Don't fail the chapter publishing if notification fails
+            // Update library status for users who had completed this story
+            updateLibraryStatusForNewChapter(chapter.getStory());
+            
+            // No notifications sent for pending chapters - they will be sent by ChapterModerationProcessor when approved
         }
 
         log.info("Chapter published: {}", chapterId);
@@ -927,6 +939,7 @@ public class ChapterServiceImpl implements ChapterService {
         if (approved) {
             // If approved, change status from PENDING to PUBLISHED
             chapter.setStatus(Chapter.Status.PUBLISHED);
+            chapter.setPublishedAt(java.time.LocalDateTime.now());
             log.info("Chapter {} approved by {}: Status changed to PUBLISHED", chapterId, moderatorId);
         } else {
             // If rejected, change status back to DRAFT
@@ -936,6 +949,22 @@ public class ChapterServiceImpl implements ChapterService {
         }
 
         chapter = chapterRepository.save(chapter);
+
+        // If approved, notify followers about new chapter publication
+        if (approved) {
+            try {
+                notificationService.notifyNewChapter(
+                    chapter.getStory().getAuthor().getId(), 
+                    chapter.getStory().getId(),
+                    chapter.getId()
+                );
+                log.info("Notifications sent to followers for admin-approved chapter: {}", chapterId);
+            } catch (Exception e) {
+                log.warn("Failed to send notifications for admin-approved chapter: {} - {}", 
+                    chapterId, e.getMessage());
+                // Don't fail the moderation process if notification fails
+            }
+        }
 
         // Send notification to author about moderation result
         try {

@@ -6,6 +6,7 @@ import com.app.nomanweb_backend.entity.*;
 import com.app.nomanweb_backend.repository.*;
 import com.app.nomanweb_backend.service.MonetizationService;
 import com.app.nomanweb_backend.service.NotificationService;
+import com.app.nomanweb_backend.service.EnhancedNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,7 @@ public class MonetizationServiceImpl implements MonetizationService {
     private final ChapterRepository chapterRepository;
     private final StoryRepository storyRepository;
     private final NotificationService notificationService;
+    private final EnhancedNotificationService enhancedNotificationService;
 
     @Override
     public List<GiftResponse> getAvailableGifts() {
@@ -442,13 +444,27 @@ public class MonetizationServiceImpl implements MonetizationService {
 
         // Send notification to author
         try {
-            notificationService.createNotification(
-                    chapter.getStory().getAuthor().getId(),
-                    Notification.NotificationType.PURCHASE,
-                    "Chapter Purchased",
-                    user.getDisplayNameOrUsername() + " purchased your chapter: " + chapter.getTitle(),
-                    Notification.RelatedType.CHAPTER,
-                    chapter.getId());
+            // Send multi-channel notification (email + LINE) with book cover image
+            if (chapter.getStory().getCoverImageUrl() != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(
+                        chapter.getStory().getAuthor(),
+                        Notification.NotificationType.PURCHASE,
+                        "Chapter Purchased",
+                        user.getDisplayNameOrUsername() + " purchased your chapter: " + chapter.getTitle(),
+                        chapter.getStory().getCoverImageUrl(),
+                        enhancedNotificationService.generateActionUrl(
+                                Notification.NotificationType.PURCHASE,
+                                Notification.RelatedType.CHAPTER,
+                                chapter.getId()));
+            } else {
+                enhancedNotificationService.sendMultiChannelNotification(
+                        chapter.getStory().getAuthor(),
+                        Notification.NotificationType.PURCHASE,
+                        "Chapter Purchased",
+                        user.getDisplayNameOrUsername() + " purchased your chapter: " + chapter.getTitle(),
+                        Notification.RelatedType.CHAPTER,
+                        chapter.getId());
+            }
         } catch (Exception e) {
             log.warn("Failed to send purchase notification", e);
         }
@@ -643,13 +659,27 @@ public class MonetizationServiceImpl implements MonetizationService {
 
         // Send notification to author
         try {
-            notificationService.createNotification(
-                    story.getAuthor().getId(),
-                    Notification.NotificationType.PURCHASE,
-                    "Book Purchased",
-                    user.getDisplayNameOrUsername() + " purchased your book: " + story.getTitle(),
-                    Notification.RelatedType.STORY,
-                    story.getId());
+            // Send multi-channel notification (email + LINE) with book cover image
+            if (story.getCoverImageUrl() != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(
+                        story.getAuthor(),
+                        Notification.NotificationType.PURCHASE,
+                        "Book Purchased",
+                        user.getDisplayNameOrUsername() + " purchased your book: " + story.getTitle(),
+                        story.getCoverImageUrl(),
+                        enhancedNotificationService.generateActionUrl(
+                                Notification.NotificationType.PURCHASE,
+                                Notification.RelatedType.STORY,
+                                story.getId()));
+            } else {
+                enhancedNotificationService.sendMultiChannelNotification(
+                        story.getAuthor(),
+                        Notification.NotificationType.PURCHASE,
+                        "Book Purchased",
+                        user.getDisplayNameOrUsername() + " purchased your book: " + story.getTitle(),
+                        Notification.RelatedType.STORY,
+                        story.getId());
+            }
         } catch (Exception e) {
             log.warn("Failed to send book purchase notification", e);
         }
@@ -716,7 +746,8 @@ public class MonetizationServiceImpl implements MonetizationService {
 
         // Broadcast balance update to the user immediately via SSE
         log.info("Broadcasting balance update immediately at: {}", java.time.LocalDateTime.now());
-        com.app.nomanweb_backend.controller.CoinController.broadcastCoinBalanceUpdate(user.getId(), user.getCoinBalance());
+        com.app.nomanweb_backend.controller.CoinController.broadcastCoinBalanceUpdate(user.getId(),
+                user.getCoinBalance());
     }
 
     @Override

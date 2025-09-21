@@ -272,16 +272,29 @@ public class NotificationServiceImpl implements NotificationService {
             Chapter chapter = chapterRepository.findById(chapterId)
                     .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
 
-            String title = "Chapter Liked";
+            String title = "❤️ Chapter Liked!";
             String message = String.format("%s liked your chapter: %s from story: %s",
                     liker.getDisplayName() != null ? liker.getDisplayName() : liker.getUsername(),
                     chapter.getTitle(),
                     chapter.getStory().getTitle());
 
-            // Send multi-channel notification (email + LINE)
-            enhancedNotificationService.sendMultiChannelNotification(chapterAuthor,
-                    Notification.NotificationType.LIKE,
-                    title, message, Notification.RelatedType.CHAPTER, chapterId);
+            // Create in-app notification
+            createNotification(chapterAuthor, Notification.NotificationType.LIKE, title, message,
+                    Notification.RelatedType.CHAPTER, chapterId);
+
+            // Send LINE notification with story cover image
+            String actionUrl = enhancedNotificationService.generateActionUrl(
+                    Notification.NotificationType.LIKE, Notification.RelatedType.CHAPTER, chapterId);
+
+            if (chapter.getStory().getCoverImageUrl() != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(chapterAuthor,
+                        Notification.NotificationType.LIKE, title, message,
+                        chapter.getStory().getCoverImageUrl(), actionUrl);
+            } else {
+                enhancedNotificationService.sendMultiChannelNotification(chapterAuthor,
+                        Notification.NotificationType.LIKE,
+                        title, message, Notification.RelatedType.CHAPTER, chapterId);
+            }
         } catch (Exception e) {
             log.error("Failed to send chapter like notification", e);
         }
@@ -437,10 +450,16 @@ public class NotificationServiceImpl implements NotificationService {
                     .map(follow -> follow.getFollower())
                     .toList();
 
-            // Get story for cover image if it's a story-related notification
+            // Get story for cover image if it's a story or chapter-related notification
             Story story = null;
             if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
                 story = storyRepository.findById(relatedId).orElse(null);
+            } else if (relatedType == Notification.RelatedType.CHAPTER && relatedId != null) {
+                // For chapter notifications, get the story from the chapter
+                Chapter chapter = chapterRepository.findById(relatedId).orElse(null);
+                if (chapter != null) {
+                    story = chapter.getStory();
+                }
             }
 
             // Send notifications to all followers
@@ -526,21 +545,28 @@ public class NotificationServiceImpl implements NotificationService {
             createNotification(user, Notification.NotificationType.MODERATION, title, message,
                     relatedType, relatedId);
 
-            // Send LINE notification with story cover image if it's story-related
-            // moderation
+            // Send LINE notification with book cover image for both story and chapter moderation
             String actionUrl = enhancedNotificationService.generateActionUrl(
                     Notification.NotificationType.MODERATION, relatedType, relatedId);
 
+            String coverImageUrl = null;
+            
             if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
                 Story story = storyRepository.findById(relatedId).orElse(null);
-                if (story != null && story.getCoverImageUrl() != null) {
-                    enhancedNotificationService.sendLineNotificationWithImage(
-                            user, Notification.NotificationType.MODERATION, title, message,
-                            story.getCoverImageUrl(), actionUrl);
-                } else {
-                    enhancedNotificationService.sendLineNotification(
-                            user, Notification.NotificationType.MODERATION, title, message, actionUrl);
+                if (story != null) {
+                    coverImageUrl = story.getCoverImageUrl();
                 }
+            } else if (relatedType == Notification.RelatedType.CHAPTER && relatedId != null) {
+                Chapter chapter = chapterRepository.findById(relatedId).orElse(null);
+                if (chapter != null && chapter.getStory() != null) {
+                    coverImageUrl = chapter.getStory().getCoverImageUrl();
+                }
+            }
+
+            if (coverImageUrl != null) {
+                enhancedNotificationService.sendLineNotificationWithImage(
+                        user, Notification.NotificationType.MODERATION, title, message,
+                        coverImageUrl, actionUrl);
             } else {
                 enhancedNotificationService.sendLineNotification(
                         user, Notification.NotificationType.MODERATION, title, message, actionUrl);

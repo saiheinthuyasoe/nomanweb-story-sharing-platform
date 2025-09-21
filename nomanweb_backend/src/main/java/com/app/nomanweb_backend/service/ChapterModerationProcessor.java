@@ -209,6 +209,19 @@ public class ChapterModerationProcessor {
                 chapter.setPublishedAt(java.time.LocalDateTime.now());
                 log.info("Chapter {} approved by AI moderation - published (operation: {})",
                         chapter.getId(), operation);
+
+                // Notify followers about new chapter publication
+                try {
+                    notificationService.notifyNewChapter(
+                            chapter.getStory().getAuthor().getId(),
+                            chapter.getStory().getId(),
+                            chapter.getId());
+                    log.info("Notifications sent to followers for AI-approved chapter: {}", chapter.getId());
+                } catch (Exception e) {
+                    log.warn("Failed to send notifications for AI-approved chapter: {} - {}",
+                            chapter.getId(), e.getMessage());
+                    // Don't fail the moderation process if notification fails
+                }
             }
         }
 
