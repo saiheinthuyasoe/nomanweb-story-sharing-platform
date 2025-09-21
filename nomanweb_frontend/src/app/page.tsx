@@ -87,10 +87,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="relative">
             <div className="relative bg-gray-50 overflow-hidden rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
                 {/* Story Cover */}
-                <div className="relative h-80 sm:h-96 md:h-80 flex items-center justify-center p-4 sm:p-6">
-                  <div className="w-48 sm:w-56 md:w-48 lg:w-56">
+                <div className="relative h-64 sm:h-80 md:h-96 lg:h-80 flex items-center justify-center p-4 sm:p-6">
+                  <div className="w-32 sm:w-40 md:w-48 lg:w-56">
                     <img
                       src={
                         (homepageData?.carousel?.content || [])[currentSlide]
@@ -107,7 +107,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Story Info */}
-                <div className="md:col-span-2 p-4 sm:p-6 md:p-8 flex flex-col justify-center">
+                <div className="lg:col-span-2 p-4 sm:p-6 md:p-8 flex flex-col justify-center">
                   <div className="mb-4 sm:mb-6">
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3 leading-tight">
                       {(homepageData?.carousel?.content || [])[currentSlide]
@@ -198,9 +198,7 @@ export default function HomePage() {
       <section className="py-8 sm:py-10 md:py-12 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">
-              Genre
-            </h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">Genre</h2>
           </div>
 
           <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
@@ -396,7 +394,7 @@ export default function HomePage() {
             </h2>
           </div>
           {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -411,7 +409,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(
                 homepageData?.weeklyFeatures?.content || [
                   {
@@ -474,26 +472,6 @@ export default function HomePage() {
                     totalViews: 2500,
                     createdAt: new Date().toISOString(),
                   },
-                  {
-                    id: "7",
-                    title: "The Enchanted Forest",
-                    author: { username: "MysticWriter" },
-                    coverImageUrl:
-                      "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=200&h=300&fit=crop",
-                    totalLikes: 720,
-                    totalViews: 4200,
-                    createdAt: new Date().toISOString(),
-                  },
-                  {
-                    id: "8",
-                    title: "Digital Dreams",
-                    author: { username: "TechNovelist" },
-                    coverImageUrl:
-                      "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=200&h=300&fit=crop",
-                    totalLikes: 890,
-                    totalViews: 3800,
-                    createdAt: new Date().toISOString(),
-                  },
                 ]
               )
                 .slice(0, 8)
@@ -540,7 +518,7 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -555,7 +533,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.newReleases?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -602,7 +580,7 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -617,7 +595,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.bestRating?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -664,7 +642,7 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -679,7 +657,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.bestOfAllTime?.content || [])
                 .slice(0, 8)
                 .map((story: Story) => (
@@ -726,7 +704,7 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-gray-200 w-full aspect-[3/4] mb-2"></div>
@@ -737,7 +715,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
               {(homepageData?.recommended?.content || [])
                 .slice(0, 8)
                 .map((book: Story) => (
@@ -790,9 +768,7 @@ export default function HomePage() {
           <div id="fantasy-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Fantasy
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Fantasy</h3>
               </div>
               <Link
                 href="/stories?category=fantasy"
@@ -802,7 +778,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -817,7 +793,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.fantasy?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -855,9 +831,7 @@ export default function HomePage() {
           <div id="romance-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Romance
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Romance</h3>
               </div>
               <Link
                 href="/stories?category=romance"
@@ -867,7 +841,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -882,7 +856,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.romance?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -924,9 +898,7 @@ export default function HomePage() {
           <div id="sci-fi-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Sci-Fi
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Sci-Fi</h3>
               </div>
               <Link
                 href="/stories?category=sci-fi"
@@ -936,7 +908,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -951,7 +923,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.scienceFiction?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -993,9 +965,7 @@ export default function HomePage() {
           <div id="mystery-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Mystery
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Mystery</h3>
               </div>
               <Link
                 href="/stories?category=mystery"
@@ -1005,7 +975,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1020,7 +990,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.mystery?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1058,9 +1028,7 @@ export default function HomePage() {
           <div id="adventure-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Adventure
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Adventure</h3>
               </div>
               <Link
                 href="/stories?category=adventure"
@@ -1070,7 +1038,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1085,7 +1053,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.adventure?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1123,9 +1091,7 @@ export default function HomePage() {
           <div id="horror-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Horror
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Horror</h3>
               </div>
               <Link
                 href="/stories?category=horror"
@@ -1135,7 +1101,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1150,7 +1116,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.horror?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1188,9 +1154,7 @@ export default function HomePage() {
           <div id="comedy-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Comedy
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Comedy</h3>
               </div>
               <Link
                 href="/stories?category=comedy"
@@ -1200,7 +1164,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1215,7 +1179,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.comedy?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1253,9 +1217,7 @@ export default function HomePage() {
           <div id="drama-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Drama
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Drama</h3>
               </div>
               <Link
                 href="/stories?category=drama"
@@ -1265,7 +1227,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1280,7 +1242,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.drama?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1318,9 +1280,7 @@ export default function HomePage() {
           <div id="thriller-section" className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Thriller
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Thriller</h3>
               </div>
               <Link
                 href="/stories?category=thriller"
@@ -1330,7 +1290,7 @@ export default function HomePage() {
               </Link>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -1345,7 +1305,7 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                 {(homepageData?.thriller?.content || [])
                   .slice(0, 8)
                   .map((book: Story) => (
@@ -1383,9 +1343,7 @@ export default function HomePage() {
           <div id="young-adult-section" className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
-                  Young Adult
-                </h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Young Adult</h3>
               </div>
               <Link
                 href="/stories?category=young-adult"

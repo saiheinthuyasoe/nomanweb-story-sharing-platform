@@ -485,70 +485,45 @@ export default function AdminUsersPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <UserIcon className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Total Users</p>
+            <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircleIcon className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Users</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.status === "active").length}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Active Users</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {users.filter((u) => u.status === "active").length}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Suspended</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.status === "suspended").length}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Suspended</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {users.filter((u) => u.status === "suspended").length}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <XCircleIcon className="h-6 w-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Banned</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.status === "banned").length}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Banned</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {users.filter((u) => u.status === "banned").length}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <ShieldCheckIcon className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Admins</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.role === "ADMIN").length}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Admins</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {users.filter((u) => u.role === "ADMIN").length}
+            </p>
           </div>
         </div>
       </div>
@@ -558,18 +533,13 @@ export default function AdminUsersPage() {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <MagnifyingGlassIcon className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Search & Filter Users
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Find users by applying filters below
-                </p>
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Search & Filter Users
+              </h3>
+              <p className="text-sm text-gray-500">
+                Find users by applying filters below
+              </p>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
               <span className="font-medium">{users.length}</span>
@@ -602,12 +572,12 @@ export default function AdminUsersPage() {
                     </span>
                   )}
                   {statusFilter && (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Status: {statusFilter}
                     </span>
                   )}
                   {roleFilter && (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       Role: {roleFilter}
                     </span>
                   )}
@@ -669,7 +639,8 @@ export default function AdminUsersPage() {
                   placeholder="Search by username, email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                  className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  style={{"--tw-ring-color": "#18243c"}}
                 />
               </div>
             </div>
@@ -682,7 +653,7 @@ export default function AdminUsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white"
+                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white"
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
@@ -699,7 +670,7 @@ export default function AdminUsersPage() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white"
+                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white"
               >
                 <option value="">All Roles</option>
                 <option value="USER">User</option>
@@ -715,7 +686,7 @@ export default function AdminUsersPage() {
               <select
                 value={emailVerifiedFilter}
                 onChange={(e) => setEmailVerifiedFilter(e.target.value)}
-                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white"
+                className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white"
               >
                 <option value="">All Users</option>
                 <option value="verified">Verified</option>
@@ -728,7 +699,8 @@ export default function AdminUsersPage() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+                  className="flex-1 px-4 py-3 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                  style={{"backgroundColor": "#18243c", "--tw-ring-color": "#18243c"}}
                 >
                   Search
                 </button>
@@ -762,7 +734,8 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700"
+                className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700"
+                style={{"color": "#18243c"}}
               >
                 <span>{showAdvancedFilters ? "Hide" : "Show"} Advanced</span>
                 {showAdvancedFilters ? (
@@ -783,7 +756,7 @@ export default function AdminUsersPage() {
                   <select
                     value={reportedFilter}
                     onChange={(e) => setReportedFilter(e.target.value)}
-                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white"
+                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-white"
                   >
                     <option value="">All Users</option>
                     <option value="reported">Has Reports</option>
@@ -800,7 +773,7 @@ export default function AdminUsersPage() {
                     type="date"
                     value={dateFromFilter}
                     onChange={(e) => setDateFromFilter(e.target.value)}
-                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   />
                 </div>
 
@@ -812,7 +785,7 @@ export default function AdminUsersPage() {
                     type="date"
                     value={dateToFilter}
                     onChange={(e) => setDateToFilter(e.target.value)}
-                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                    className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   />
                 </div>
               </div>

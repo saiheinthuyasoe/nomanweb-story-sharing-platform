@@ -48,7 +48,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
   );
   const [loading, setLoading] = useState(true);
   const [addingToSection, setAddingToSection] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("top-rated");
+  const [activeTab, setActiveTab] = useState("all");
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [selectedBookForSection, setSelectedBookForSection] =
     useState<BookInsight | null>(null);
@@ -106,13 +106,19 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       ...insightsData.topRated,
       ...insightsData.mostReadWeekly,
       ...insightsData.newReleases,
+      ...Object.values(insightsData.byGenre).flat()
     ];
+    
+    // Remove duplicates based on book ID
+    const uniqueBooks = allBooks.filter((book, index, self) => 
+      index === self.findIndex(b => b.id === book.id)
+    );
 
     const sectionsMap: Record<string, string[]> = {};
     const booksToFetch: BookInsight[] = [];
 
     // First, try to get sections from cache
-    for (const book of allBooks) {
+    for (const book of uniqueBooks) {
       const cachedSections = bookSectionCache.get(book.id);
       if (cachedSections !== null) {
         sectionsMap[book.id] = cachedSections;
@@ -621,26 +627,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             Analytics and performance metrics for intelligent content curation
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-          </Button>
-          <Button onClick={() => loadInsightsData(false)} variant="outline">
-            Refresh Data
-          </Button>
-          <Button
-            onClick={() => loadInsightsData(true)}
-            variant="outline"
-            className="text-orange-600 border-orange-300 hover:bg-orange-50"
-          >
-            Clear Cache & Refresh
-          </Button>
-        </div>
+
       </div>
 
       {/* Filter Panel */}
@@ -778,89 +765,145 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" />
-              <div>
-                <p className="text-sm text-gray-600">Top Rated</p>
-                <p className="text-xl font-bold">
-                  {insightsData.topRated.length}
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600">Top Rated</p>
+              <p className="text-xl font-bold">
+                {insightsData.topRated.length}
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="text-sm text-gray-600">Weekly Trending</p>
-                <p className="text-xl font-bold">
-                  {insightsData.mostReadWeekly.length}
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600">Weekly Trending</p>
+              <p className="text-xl font-bold">
+                {insightsData.mostReadWeekly.length}
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-600">New Releases</p>
-                <p className="text-xl font-bold">
-                  {insightsData.newReleases.length}
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600">New Releases</p>
+              <p className="text-xl font-bold">
+                {insightsData.newReleases.length}
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-gray-600">Total Genres</p>
-                <p className="text-xl font-bold">
-                  {Object.keys(insightsData.byGenre).length}
-                </p>
-              </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Genres</p>
+              <p className="text-xl font-bold">
+                {Object.keys(insightsData.byGenre).length}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
+      {/* Filter Dropdown */}
       <div className="space-y-4">
-        <div className="flex border-b border-gray-200 mb-4">
-          {[
-            { key: "top-rated", label: "Top Rated" },
-            { key: "weekly-trending", label: "Weekly Trending" },
-            { key: "new-releases", label: "New Releases" },
-            { key: "by-genre", label: "By Genre" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <label className="text-sm font-medium text-gray-700">Filter by:</label>
+          </div>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+          >
+            <option value="all">All</option>
+            <option value="top-rated">Top Rated</option>
+            <option value="weekly-trending">Weekly Trending</option>
+            <option value="new-releases">New Releases</option>
+            <option value="by-genre">By Genre</option>
+            {insightsData && Object.keys(insightsData.byGenre).map((genre) => (
+              <option key={genre} value={`genre-${genre}`}>
+                {genre.charAt(0).toUpperCase() + genre.slice(1)}
+              </option>
+            ))}
+          </select>
+          
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 text-gray-500" />
+            <label className="text-sm font-medium text-gray-700">Search:</label>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search books by title, author, or genre..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-80 px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
         </div>
+
+        {activeTab === "all" && (() => {
+          // Get all unique books from all categories
+          const allBooks = [
+            ...insightsData.topRated,
+            ...insightsData.mostReadWeekly,
+            ...insightsData.newReleases,
+            ...Object.values(insightsData.byGenre).flat()
+          ];
+          
+          // Remove duplicates based on book ID
+          const uniqueBooks = allBooks.filter((book, index, self) => 
+            index === self.findIndex(b => b.id === book.id)
+          );
+          
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  All Available Books
+                  <Badge variant="secondary" className="ml-2">
+                    {filterBooks(uniqueBooks).length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filterBooks(uniqueBooks).map((book) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      sectionType="ALL"
+                    />
+                  ))}
+                </div>
+                {filterBooks(uniqueBooks).length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No books match your current filters</p>
+                    <Button
+                      onClick={clearFilters}
+                      variant="outline"
+                      className="mt-2"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {activeTab === "top-rated" && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500" />
                 Highest Rated Books
                 <Badge variant="secondary" className="ml-2">
                   {filterBooks(insightsData.topRated).length}
@@ -898,7 +941,6 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
                 Most Read This Week
                 <Badge variant="secondary" className="ml-2">
                   {filterBooks(insightsData.mostReadWeekly).length}
@@ -937,7 +979,6 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-500" />
                 Latest Published Books
                 <Badge variant="secondary" className="ml-2">
                   {filterBooks(insightsData.newReleases).length}
@@ -1017,6 +1058,50 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             )}
           </div>
         )}
+
+        {/* Individual Genre Section */}
+        {activeTab.startsWith('genre-') && (() => {
+          const selectedGenre = activeTab.replace('genre-', '');
+          const genreBooks = insightsData.byGenre[selectedGenre] || [];
+          const filteredBooks = filterBooks(genreBooks);
+          
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="capitalize flex items-center gap-2">
+                  {selectedGenre} Books
+                  <Badge variant="secondary" className="ml-2">
+                    {filteredBooks.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredBooks.map((book) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      sectionType={selectedGenre.toUpperCase()}
+                    />
+                  ))}
+                </div>
+                {filteredBooks.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No books match your current filters in {selectedGenre}</p>
+                    <Button
+                      onClick={clearFilters}
+                      variant="outline"
+                      className="mt-2"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
 
       {/* Section Selection Modal */}

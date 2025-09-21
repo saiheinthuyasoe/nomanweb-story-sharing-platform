@@ -845,59 +845,16 @@ export default function AdminModerationPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <SparklesIcon className="h-8 w-8 mr-3 text-blue-500" />
+              <h1 className="text-3xl font-bold text-gray-900">
                 AI Content Moderation
               </h1>
-              <p className="text-gray-600 mt-1 ml-11">
+              <p className="text-gray-600 mt-1">
                 Automated content analysis with AI-powered approval and
                 rejection
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by title, author, keyword..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
 
-              {/* Quick Filters */}
-              <div className="flex items-center space-x-2">
-                <FunnelIcon className="h-5 w-5 text-gray-400" />
-                <select
-                  value={currentFilter}
-                  onChange={(e) =>
-                    setCurrentFilter(e.target.value as FilterType)
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="ALL">All</option>
-                  <option value="PENDING">Pending Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="AUTO_FLAGGED">Auto-Flagged</option>
-                </select>
-              </div>
-
-              {/* Sort Options */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortType)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="NEWEST">Newest First</option>
-                <option value="OLDEST">Oldest First</option>
-                <option value="HIGHEST_RISK">Highest Risk</option>
-                <option value="MOST_FLAGGED">Most Flagged</option>
-              </select>
-            </div>
           </div>
         </div>
 
@@ -909,42 +866,24 @@ export default function AdminModerationPage() {
                 onClick={() => setActiveTab("overview")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "overview"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                📊 Overview
+                Overview
               </button>
+
               <button
-                onClick={() => setActiveTab("flagged")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "flagged"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🚩 Flagged Content
-              </button>
-              <button
-                onClick={() => setActiveTab("queue")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "queue"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🕑 Queue Status
-              </button>
-              <button
-                onClick={() => setActiveTab("reports")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "reports"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                👤 User Reports
-              </button>
+                  onClick={() => setActiveTab("queue")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "queue"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  AI Moderation Queue
+                </button>
+
             </nav>
           </div>
         </div>
@@ -956,10 +895,7 @@ export default function AdminModerationPage() {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <FlagIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Flagged Today
                     </p>
@@ -972,10 +908,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <ClockIcon className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Pending Reviews
                     </p>
@@ -988,10 +921,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Approved
                     </p>
@@ -1004,10 +934,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <XCircleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Rejected
                     </p>
@@ -1020,10 +947,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ChartBarIcon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Detection Accuracy
                     </p>
@@ -1149,7 +1073,7 @@ export default function AdminModerationPage() {
             {/* Main Content Table */}
             <Card className="overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">
                     Content Items ({filteredChapters.length})
                   </h2>
@@ -1162,6 +1086,51 @@ export default function AdminModerationPage() {
                       ? "Deselect All"
                       : "Select All"}
                   </Button>
+                </div>
+                
+                {/* Search and Filter Controls */}
+                <div className="flex items-center space-x-4">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by title, author, keyword..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Quick Filters */}
+                  <div className="flex items-center space-x-2">
+                    <FunnelIcon className="h-5 w-5 text-gray-400" />
+                    <select
+                      value={currentFilter}
+                      onChange={(e) =>
+                        setCurrentFilter(e.target.value as FilterType)
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="ALL">All</option>
+                      <option value="PENDING">Pending Review</option>
+                      <option value="APPROVED">Approved</option>
+                      <option value="REJECTED">Rejected</option>
+                      <option value="AUTO_FLAGGED">Auto-Flagged</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Options */}
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortType)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="NEWEST">Newest First</option>
+                    <option value="OLDEST">Oldest First</option>
+                    <option value="HIGHEST_RISK">Highest Risk</option>
+                    <option value="MOST_FLAGGED">Most Flagged</option>
+                  </select>
                 </div>
               </div>
 
@@ -1388,45 +1357,7 @@ export default function AdminModerationPage() {
           </>
         )}
 
-        {/* Flagged Content Tab */}
-        {activeTab === "flagged" && (
-          <Card className="p-6">
-            <div className="text-center py-12">
-              <FlagIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Flagged Content
-              </h3>
-              <p className="text-gray-600">
-                Content that has been automatically flagged by AI or reported by
-                users.
-              </p>
-              <div className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
-                      {stats.rejected}
-                    </div>
-                    <div className="text-sm text-red-700">Auto-Rejected</div>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {stats.pendingReviews}
-                    </div>
-                    <div className="text-sm text-yellow-700">
-                      Pending Review
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {stats.flaggedToday}
-                    </div>
-                    <div className="text-sm text-orange-700">Flagged Today</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+
 
         {/* Queue Status Tab */}
         {activeTab === "queue" && (
@@ -1434,8 +1365,7 @@ export default function AdminModerationPage() {
             {queueStatus && (
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <CogIcon className="h-6 w-6 mr-3 text-blue-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">
                     Processing Queue Status
                   </h3>
                   <div className="flex items-center space-x-3">
@@ -1506,8 +1436,7 @@ export default function AdminModerationPage() {
             {/* AI Moderation Controls */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <SparklesIcon className="h-6 w-6 mr-3 text-purple-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
                   AI Moderation Control
                 </h3>
                 <div className="flex items-center space-x-4">
@@ -1825,28 +1754,7 @@ export default function AdminModerationPage() {
           </div>
         )}
 
-        {/* User Reports Tab */}
-        {activeTab === "reports" && (
-          <Card className="p-6">
-            <div className="text-center py-12">
-              <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                User Reports
-              </h3>
-              <p className="text-gray-600">
-                Content reported by community members for review.
-              </p>
-              <div className="mt-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-sm text-blue-700">
-                    📝 This feature will display user-reported content for
-                    manual review.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+
       </div>
     </div>
   );

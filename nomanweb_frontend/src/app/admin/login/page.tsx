@@ -133,7 +133,7 @@ const AdminLoginPage = () => {
           <p className="text-white/80 text-xs">
             <Link
               href="/login"
-              className="text-blue-300 hover:text-blue-200 font-semibold transition-colors underline"
+              className="text-white/90 hover:text-white font-semibold transition-colors underline"
             >
               ← Back to User Login
             </Link>

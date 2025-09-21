@@ -76,9 +76,9 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
   // Show loading while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#18243c] via-[#1a2640] to-[#18243c] flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#18243c] mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Verifying Admin Access
           </h2>
@@ -93,7 +93,7 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
   // Allow access to login page without admin user
   if (!adminUser && pathname !== "/admin/login") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#18243c] via-[#1a2640] to-[#18243c] flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Access Denied
@@ -103,7 +103,7 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
           </p>
           <Link
             href="/admin/login"
-            className="text-red-600 hover:text-red-700 font-medium"
+            className="text-[#18243c] hover:text-[#1a2640] font-medium"
           >
             Admin Login
           </Link>
