@@ -1,23 +1,25 @@
-'use client';
+"use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { CheckCircle, XCircle, Mail, Loader2 } from 'lucide-react';
-import { authApi } from '@/lib/api/auth';
-import toast from 'react-hot-toast';
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { CheckCircle, XCircle, Mail, Loader2 } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
+import toast from "react-hot-toast";
 
 function VerifyEmailContent() {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading"
+  );
+  const [message, setMessage] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
   useEffect(() => {
     if (!token) {
-      setStatus('error');
-      setMessage('Invalid verification link');
+      setStatus("error");
+      setMessage("Invalid verification link");
       return;
     }
 
@@ -27,18 +29,18 @@ function VerifyEmailContent() {
   const verifyEmail = async (verificationToken: string) => {
     try {
       await authApi.verifyEmail(verificationToken);
-      setStatus('success');
-      setMessage('Your email has been verified successfully!');
-      toast.success('Email verified successfully!');
-      
+      setStatus("success");
+      setMessage("Your email has been verified successfully!");
+      toast.success("Email verified successfully!");
+
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        router.push('/login?verified=true');
+        router.push("/login?verified=true");
       }, 3000);
     } catch (error: any) {
-      setStatus('error');
-      setMessage(error.response?.data?.error || 'Failed to verify email');
-      toast.error('Email verification failed');
+      setStatus("error");
+      setMessage(error.response?.data?.error || "Failed to verify email");
+      toast.error("Email verification failed");
     }
   };
 
@@ -46,7 +48,7 @@ function VerifyEmailContent() {
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full p-8 text-center">
         <div className="mb-6">
-          {status === 'loading' && (
+          {status === "loading" && (
             <div className="flex flex-col items-center">
               <Loader2 className="h-12 w-12 text-gray-400 animate-spin mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -58,30 +60,26 @@ function VerifyEmailContent() {
             </div>
           )}
 
-          {status === 'success' && (
+          {status === "success" && (
             <div className="flex flex-col items-center">
               <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Email Verified!
               </h1>
-              <p className="text-gray-600 mb-4">
-                {message}
-              </p>
+              <p className="text-gray-600 mb-4">{message}</p>
               <p className="text-sm text-gray-500">
                 You will be redirected to login in a few seconds...
               </p>
             </div>
           )}
 
-          {status === 'error' && (
+          {status === "error" && (
             <div className="flex flex-col items-center">
               <XCircle className="h-12 w-12 text-red-500 mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Verification Failed
               </h1>
-              <p className="text-gray-600 mb-6">
-                {message}
-              </p>
+              <p className="text-gray-600 mb-6">{message}</p>
               <div className="space-y-3">
                 <Link
                   href="/resend-verification"
@@ -103,7 +101,7 @@ function VerifyEmailContent() {
           )}
         </div>
 
-        {status === 'success' && (
+        {status === "success" && (
           <div className="space-y-3">
             <Link
               href="/login"
@@ -120,21 +118,23 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-8 text-center">
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 text-gray-400 animate-spin mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Loading...
-            </h1>
-            <p className="text-gray-600">
-              Please wait while we prepare the verification page...
-            </p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-8 text-center">
+            <div className="flex flex-col items-center">
+              <Loader2 className="h-12 w-12 text-gray-400 animate-spin mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Loading...
+              </h1>
+              <p className="text-gray-600">
+                Please wait while we prepare the verification page...
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

@@ -94,16 +94,18 @@ const PaymentSuccessContent: React.FC = () => {
 
 const PaymentSuccessPage: React.FC = () => {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
-            <p className="mt-4">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardContent className="flex flex-col items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
+              <p className="mt-4">Loading...</p>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
       <PaymentSuccessContent />
     </Suspense>
   );

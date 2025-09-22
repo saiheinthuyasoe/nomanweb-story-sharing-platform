@@ -55,9 +55,13 @@ type LibraryFilter = "all" | "reading" | "completed" | "liked" | "want_to_read";
 
 export default function LibraryPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
-    </div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
+        </div>
+      }
+    >
       <LibraryContent />
     </Suspense>
   );
@@ -81,10 +85,7 @@ function LibraryContent() {
   const { data: historyStoriesData = [] } = useHistoryStories();
 
   // Fetch purchase history for count calculation
-  const {
-    data: purchaseHistory,
-    isLoading: isLoadingPurchases,
-  } = useQuery({
+  const { data: purchaseHistory, isLoading: isLoadingPurchases } = useQuery({
     queryKey: ["purchaseHistory"],
     queryFn: () => monetizationApi.getPurchaseHistory(),
     enabled: !!user,
@@ -105,9 +106,9 @@ function LibraryContent() {
 
   // Handle tab query parameter
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab === 'purchased') {
-      setActiveTab('purchased');
+    const tab = searchParams.get("tab");
+    if (tab === "purchased") {
+      setActiveTab("purchased");
     }
   }, [searchParams]);
 
@@ -209,15 +210,18 @@ function LibraryContent() {
   // Calculate purchased content count by grouping purchases by story
   const purchasedContentCount = useMemo(() => {
     if (!purchaseHistory?.content) return 0;
-    
-    const groupedPurchases = purchaseHistory.content.reduce((groups, purchase) => {
-      const storyId = purchase.story.id;
-      if (!groups[storyId]) {
-        groups[storyId] = true;
-      }
-      return groups;
-    }, {} as Record<string, boolean>);
-    
+
+    const groupedPurchases = purchaseHistory.content.reduce(
+      (groups, purchase) => {
+        const storyId = purchase.story.id;
+        if (!groups[storyId]) {
+          groups[storyId] = true;
+        }
+        return groups;
+      },
+      {} as Record<string, boolean>
+    );
+
     return Object.keys(groupedPurchases).length;
   }, [purchaseHistory]);
 
@@ -319,7 +323,9 @@ function LibraryContent() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Header */}
         <div className="mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Library</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">
+            Library
+          </h1>
 
           {/* Main Tabs */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6">
@@ -343,7 +349,8 @@ function LibraryContent() {
                 }`}
               >
                 <span className="hidden xs:inline">Purchase History</span>
-                <span className="xs:hidden">Purchases</span> ({purchasedContentCount})
+                <span className="xs:hidden">Purchases</span> (
+                {purchasedContentCount})
               </button>
               <button
                 onClick={() => handleTabChange("history")}
@@ -354,7 +361,8 @@ function LibraryContent() {
                 }`}
               >
                 <span className="hidden xs:inline">Recent Reading History</span>
-                <span className="xs:hidden">History</span> ({readingHistory.length})
+                <span className="xs:hidden">History</span> (
+                {readingHistory.length})
               </button>
             </div>
 
@@ -481,7 +489,8 @@ function LibraryContent() {
                 <BookmarkIconSolid className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>
                   <span className="hidden xs:inline">Want to Read</span>
-                  <span className="xs:hidden">To Read</span> ({categoryCounts.want_to_read})
+                  <span className="xs:hidden">To Read</span> (
+                  {categoryCounts.want_to_read})
                 </span>
               </button>
             </div>
@@ -535,7 +544,9 @@ function LibraryTab({
       switch (filter) {
         case "reading":
           return {
-            icon: <EyeIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />,
+            icon: (
+              <EyeIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            ),
             title: "No stories currently reading",
             message: "Stories you're actively reading will appear here",
           };
@@ -591,7 +602,9 @@ function LibraryTab({
         <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
           {emptyState.title}
         </h3>
-        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{emptyState.message}</p>
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+          {emptyState.message}
+        </p>
         <Link
           href="/stories"
           className="bg-[#18243c] text-white px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-lg hover:bg-[#18243c]/90 transition-colors"
@@ -632,7 +645,9 @@ function HistoryTab({
     return (
       <div className="text-center py-10 sm:py-16">
         <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
-        <p className="text-sm sm:text-base text-gray-600">Loading your reading history...</p>
+        <p className="text-sm sm:text-base text-gray-600">
+          Loading your reading history...
+        </p>
       </div>
     );
   }
@@ -652,9 +667,13 @@ function HistoryTab({
         <button
           onClick={() => window.location.reload()}
           className="text-white text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors"
-          style={{ backgroundColor: '#18243c' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
+          style={{ backgroundColor: "#18243c" }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#0f1a2e")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "#18243c")
+          }
         >
           Try Again
         </button>
@@ -675,9 +694,13 @@ function HistoryTab({
         <Link
           href="/stories"
           className="text-white text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors"
-          style={{ backgroundColor: '#18243c' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0f1a2e'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#18243c'}
+          style={{ backgroundColor: "#18243c" }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#0f1a2e")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "#18243c")
+          }
         >
           Start Reading
         </Link>
@@ -811,16 +834,19 @@ function LibraryBookCard({
                       className="bg-white/90 rounded-full p-0.5 shadow-sm"
                     >
                       {React.cloneElement(icon as React.ReactElement, {
-                        className: "w-3 h-3 sm:w-3.5 sm:h-3.5"
+                        className: "w-3 h-3 sm:w-3.5 sm:h-3.5",
                       })}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="bg-white/90 rounded-full p-0.5 shadow-sm">
-                  {React.cloneElement(getListTypeIcon(item.listType) as React.ReactElement, {
-                    className: "w-3 h-3 sm:w-3.5 sm:h-3.5"
-                  })}
+                  {React.cloneElement(
+                    getListTypeIcon(item.listType) as React.ReactElement,
+                    {
+                      className: "w-3 h-3 sm:w-3.5 sm:h-3.5",
+                    }
+                  )}
                 </div>
               )}
             </div>
@@ -1059,7 +1085,10 @@ function HistoryBookCard({ item }: { item: any }) {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 hover:shadow-md transition-shadow">
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Cover Image */}
-        <Link href={`/stories/${item.story.id}`} className="flex-shrink-0 mx-auto sm:mx-0">
+        <Link
+          href={`/stories/${item.story.id}`}
+          className="flex-shrink-0 mx-auto sm:mx-0"
+        >
           <div className="w-32 sm:w-32 md:w-40 h-44 sm:h-48 md:h-56 relative bg-gray-200 rounded overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
@@ -1126,15 +1155,18 @@ function HistoryBookCard({ item }: { item: any }) {
               href={`/stories/${item.story.id}/chapters/${item.chapter.chapterNumber}/read`}
               className="bg-[#18243c] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#18243c]/90 transition-colors text-xs sm:text-sm font-medium text-center sm:text-left"
             >
-              {item.isCompleted ? 
+              {item.isCompleted ? (
                 <>
                   <span className="hidden sm:inline">Read Again</span>
                   <span className="sm:hidden">Read</span>
-                </> : 
+                </>
+              ) : (
                 <>
                   <span className="hidden sm:inline">Continue Reading</span>
                   <span className="sm:hidden">Continue</span>
-                </>} →
+                </>
+              )}{" "}
+              →
             </Link>
 
             <div className="flex items-center justify-center sm:justify-end space-x-2">
