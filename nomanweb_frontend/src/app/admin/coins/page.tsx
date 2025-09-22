@@ -98,6 +98,7 @@ export default function CoinManagementPage() {
     useState<Transaction | null>(null);
 
   // Coin transfer state
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferForm, setTransferForm] = useState({
     userIdentifier: "",
     amount: "",
@@ -646,8 +647,7 @@ export default function CoinManagementPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <CurrencyDollarIcon className="w-8 h-8 mr-3 text-yellow-600" />
+        <h1 className="text-3xl font-bold text-gray-900">
           Coin Management
         </h1>
         <p className="text-gray-600 mt-2">
@@ -679,6 +679,7 @@ export default function CoinManagementPage() {
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
+                  style={activeTab === tab.id ? { borderColor: '#18243c', color: '#18243c' } : {}}
                 >
                   <Icon className="w-5 h-5 mr-2" />
                   {tab.name}
@@ -695,50 +696,35 @@ export default function CoinManagementPage() {
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <CurrencyDollarIcon className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Coins Issued
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {transactionStats.totalIssued.toLocaleString()}
-                  </p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Coins Issued
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {transactionStats.totalIssued.toLocaleString()}
+                </p>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ArrowUpIcon className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Purchases
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {transactionStats.totalPurchases.toLocaleString()}
-                  </p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Purchases
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {transactionStats.totalPurchases.toLocaleString()}
+                </p>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ArrowDownIcon className="h-8 w-8 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Withdrawals
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {transactionStats.totalWithdrawals.toLocaleString()}
-                  </p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Withdrawals
+                </p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {transactionStats.totalWithdrawals.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
@@ -850,7 +836,10 @@ export default function CoinManagementPage() {
             <div className="mt-4 flex gap-2">
               <button
                 onClick={fetchTransactions}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                className="text-white px-4 py-2 rounded-lg flex items-center"
+                style={{ backgroundColor: '#18243c' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1419'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
               >
                 <FunnelIcon className="w-4 h-4 mr-2" />
                 Apply Filters
@@ -866,7 +855,13 @@ export default function CoinManagementPage() {
                   });
                   fetchTransactions();
                 }}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                className="text-white px-4 py-2 rounded-lg"
+                style={{ 
+                  backgroundColor: '#4ca1af',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#3a8a96'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#4ca1af'}
               >
                 Clear
               </button>
@@ -1014,7 +1009,13 @@ export default function CoinManagementPage() {
                 });
                 setShowPackageModal(true);
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+              className="text-white px-4 py-2 rounded-lg flex items-center"
+              style={{ backgroundColor: '#18243c' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1419'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
+              style={{ backgroundColor: '#18243c' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1419'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
               Add Package
@@ -1022,29 +1023,32 @@ export default function CoinManagementPage() {
           </div>
 
           {/* Packages Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {loading ? (
-              <div className="col-span-3 flex justify-center py-8">
+              <div className="col-span-full flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : coinPackages.length === 0 ? (
-              <div className="col-span-3 text-center py-8 text-gray-500">
+              <div className="col-span-full text-center py-8 text-gray-500">
                 No coin packages found
               </div>
             ) : (
               coinPackages.map((pkg) => (
                 <div
                   key={pkg.id}
-                  className={`bg-white rounded-lg shadow-lg p-6 border-2 ${
-                    pkg.isActive ? "border-green-200" : "border-gray-200"
+                  className={`bg-white rounded-md shadow-sm p-4 border ${
+                    pkg.isActive ? "border-gray-200" : "border-gray-200"
                   }`}
+                  style={{
+                    borderColor: pkg.isActive ? '#18243c' : '#e5e7eb'
+                  }}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-base font-medium text-gray-900">
                       {pkg.name}
                     </h3>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                         pkg.isActive
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
@@ -1054,14 +1058,14 @@ export default function CoinManagementPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
+                  <div className="space-y-1 mb-3">
+                    <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Coins:</span>
                       <span className="font-medium">
                         {pkg.coins.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Price:</span>
                       <span className="font-medium">
                         {formatCurrency(pkg.price, pkg.currency)}
@@ -1070,24 +1074,34 @@ export default function CoinManagementPage() {
                   </div>
 
                   {pkg.description && (
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-xs text-gray-600 mb-3 line-clamp-2">
                       {pkg.description}
                     </p>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <button
                       onClick={() => handleEditPackage(pkg)}
-                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center"
+                      className="flex-1 text-white px-2 py-1.5 rounded text-xs flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: '#18243c',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
                     >
-                      <PencilIcon className="w-4 h-4 mr-1" />
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeletePackage(pkg.id)}
-                      className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
+                      className="flex-1 text-white px-2 py-1.5 rounded text-xs flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: '#dc2626',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
                     >
-                      <TrashIcon className="w-4 h-4 mr-1" />
                       Delete
                     </button>
                   </div>
@@ -1118,7 +1132,10 @@ export default function CoinManagementPage() {
                 });
                 setShowGiftForm(true);
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+              className="text-white px-4 py-2 rounded-lg flex items-center"
+              style={{ backgroundColor: '#18243c' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1419'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
               Add Gift
@@ -1126,32 +1143,35 @@ export default function CoinManagementPage() {
           </div>
 
           {/* Gifts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {loading ? (
-              <div className="col-span-3 flex justify-center py-8">
+              <div className="col-span-full flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : gifts.length === 0 ? (
-              <div className="col-span-3 text-center py-8 text-gray-500">
+              <div className="col-span-full text-center py-8 text-gray-500">
                 No gifts found
               </div>
             ) : (
               gifts.map((gift) => (
                 <div
                   key={gift.id}
-                  className={`bg-white rounded-lg shadow-lg p-6 border-2 ${
-                    gift.isActive ? "border-green-200" : "border-gray-200"
+                  className={`bg-white rounded-md shadow-sm p-4 border ${
+                    gift.isActive ? "border-gray-200" : "border-gray-200"
                   }`}
+                  style={{
+                    borderColor: gift.isActive ? '#18243c' : '#e5e7eb'
+                  }}
                 >
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center">
-                      <div className="text-2xl mr-3">{gift.iconUrl}</div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <div className="text-lg mr-2">{gift.iconUrl}</div>
+                      <h3 className="text-base font-medium text-gray-900">
                         {gift.name}
                       </h3>
                     </div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                         gift.isActive
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
@@ -1161,32 +1181,42 @@ export default function CoinManagementPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
+                  <div className="space-y-1 mb-3">
+                    <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Cost:</span>
                       <span className="font-medium">{gift.coinCost} coins</span>
                     </div>
                   </div>
 
                   {gift.description && (
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-xs text-gray-600 mb-3 line-clamp-2">
                       {gift.description}
                     </p>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <button
                       onClick={() => handleEditGift(gift)}
-                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 flex items-center justify-center"
+                      className="flex-1 text-white px-2 py-1.5 rounded text-xs flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: '#18243c',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
                     >
-                      <PencilIcon className="w-4 h-4 mr-1" />
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteGift(gift.id)}
-                      className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 flex items-center justify-center"
+                      className="flex-1 text-white px-2 py-1.5 rounded text-xs flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: '#dc2626',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#b91c1c'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#dc2626'}
                     >
-                      <TrashIcon className="w-4 h-4 mr-1" />
                       Delete
                     </button>
                   </div>
@@ -1200,243 +1230,41 @@ export default function CoinManagementPage() {
       {/* Coin Transfer Tab */}
       {activeTab === "transfer" && (
         <div className="space-y-6">
-          {/* Transfer Form */}
+          {/* Transfer Actions */}
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-6">
-              <div className="flex-shrink-0">
-                <ArrowUpIcon className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Coin Transfer & Withdrawal
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Transfer coins to users or withdraw coins from user accounts
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* User Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                  User Information
-                </h3>
-
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User Identifier <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter username or email (e.g., john_doe or john@example.com)"
-                    value={transferForm.userIdentifier}
-                    onChange={(e) =>
-                      setTransferForm((prev) => ({
-                        ...prev,
-                        userIdentifier: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the user's username or email address
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Coin Transfer & Withdrawal
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Transfer coins to users or withdraw coins from user accounts
                   </p>
                 </div>
               </div>
-
-              {/* Transaction Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                  Transaction Details
-                </h3>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Enter coin amount"
-                      value={transferForm.amount}
-                      onChange={(e) =>
-                        setTransferForm((prev) => ({
-                          ...prev,
-                          amount: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 text-sm">🪙</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the number of coins to transfer
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Transaction Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={transferForm.type}
-                    onChange={(e) =>
-                      setTransferForm((prev) => ({
-                        ...prev,
-                        type: e.target.value as "transfer" | "withdraw",
-                      }))
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="transfer">
-                      ➕ Transfer Coins (Add to User)
-                    </option>
-                    <option value="withdraw">
-                      ➖ Withdraw Coins (Remove from User)
-                    </option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {transferForm.type === "transfer"
-                      ? "Add coins to user account (BONUS transaction type)"
-                      : "Remove coins from user account (PENALTY transaction type)"}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    placeholder="Enter detailed reason for this transaction (e.g., 'Compensation for service issue', 'Bonus for loyal user', 'Penalty for violation')"
-                    value={transferForm.reason}
-                    onChange={(e) =>
-                      setTransferForm((prev) => ({
-                        ...prev,
-                        reason: e.target.value,
-                      }))
-                    }
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    This will be recorded in the transaction log
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
-                onClick={handleTransfer}
-                disabled={transferLoading}
-                className={`flex-1 px-6 py-3 rounded-lg font-medium flex items-center justify-center ${
-                  transferForm.type === "transfer"
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-red-600 hover:bg-red-700 text-white"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={() => setShowTransferModal(true)}
+                className="text-white px-4 py-2 rounded-lg flex items-center justify-center"
+                style={{ 
+                  backgroundColor: '#18243c',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
               >
-                {transferLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {transferForm.type === "transfer" ? (
-                      <ArrowUpIcon className="w-4 h-4 mr-2" />
-                    ) : (
-                      <ArrowDownIcon className="w-4 h-4 mr-2" />
-                    )}
-                    {transferForm.type === "transfer"
-                      ? "Transfer Coins"
-                      : "Withdraw Coins"}
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() =>
-                  setTransferForm({
-                    userIdentifier: "",
-                    amount: "",
-                    type: "transfer",
-                    reason: "",
-                  })
-                }
-                className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium"
-              >
-                Clear Form
+                New Transfer
               </button>
             </div>
 
-            {/* Information Panel */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-blue-400"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    Important Information
-                  </h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>
-                        All transactions are logged with admin ID for audit
-                        purposes
-                      </li>
-                      <li>Transfer creates a BONUS transaction type</li>
-                      <li>Withdrawal creates a PENALTY transaction type</li>
-                      <li>User balance is automatically updated</li>
-                      <li>Transaction history is preserved in the database</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Recent Transfers - Real-time Updates */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Recent Transfers
-                </h3>
-                <div className="ml-3 flex items-center">
-                  <div
-                    className={`w-2 h-2 rounded-full mr-2 ${
-                      transferConnectionStatus ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  ></div>
-                  <span
-                    className={`text-sm ${
-                      transferConnectionStatus
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {transferConnectionStatus ? "Connected" : "Disconnected"}
-                  </span>
-                </div>
-              </div>
-              <span className="text-sm text-gray-500">Live Updates</span>
+              <h3 className="text-lg font-medium text-gray-900">
+                Recent Transfers
+              </h3>
             </div>
 
             {recentTransfers.length === 0 ? (
@@ -1505,7 +1333,7 @@ export default function CoinManagementPage() {
 
       {/* Coin Package Modal */}
       {showPackageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingPackage ? "Edit Coin Package" : "Add New Coin Package"}
@@ -1627,15 +1455,27 @@ export default function CoinManagementPage() {
             <div className="flex gap-4 mt-6">
               <button
                 onClick={resetPackageModal}
-                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                className="flex-1 text-white px-4 py-2 rounded-lg"
                 disabled={packageLoading}
+                style={{ 
+                  backgroundColor: '#4ca1af',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#3a8a96'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#4ca1af'}
               >
                 Cancel
               </button>
               <button
                 onClick={handlePackageSubmit}
                 disabled={packageLoading}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ 
+                  backgroundColor: '#18243c',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
               >
                 {packageLoading
                   ? "Saving..."
@@ -1650,7 +1490,7 @@ export default function CoinManagementPage() {
 
       {/* Gift Form Modal */}
       {showGiftForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingGift ? "Edit Gift" : "Add New Gift"}
@@ -1753,15 +1593,27 @@ export default function CoinManagementPage() {
                 <button
                   type="button"
                   onClick={resetGiftForm}
-                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  className="flex-1 text-white px-4 py-2 rounded-lg"
                   disabled={giftLoading}
+                  style={{ 
+                    backgroundColor: '#4ca1af',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#3a8a96'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#4ca1af'}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={giftLoading}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ 
+                    backgroundColor: '#18243c',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
                 >
                   {giftLoading
                     ? "Saving..."
@@ -1777,7 +1629,7 @@ export default function CoinManagementPage() {
 
       {/* Transaction Details Modal */}
       {showTransactionModal && selectedTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -1907,9 +1759,172 @@ export default function CoinManagementPage() {
                   setShowTransactionModal(false);
                   setSelectedTransaction(null);
                 }}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                className="text-white px-4 py-2 rounded-lg"
+                style={{ 
+                  backgroundColor: '#4ca1af',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#3a8a96'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#4ca1af'}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coin Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(8px)' }}>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Coin Transfer & Withdrawal
+            </h3>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* User Information */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    User Information
+                  </h4>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      User Identifier <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter username or email"
+                      value={transferForm.userIdentifier}
+                      onChange={(e) =>
+                        setTransferForm((prev) => ({
+                          ...prev,
+                          userIdentifier: e.target.value,
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Transaction Details */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    Transaction Details
+                  </h4>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Amount <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter coin amount"
+                        value={transferForm.amount}
+                        onChange={(e) =>
+                          setTransferForm((prev) => ({
+                            ...prev,
+                            amount: e.target.value,
+                          }))
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transaction Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={transferForm.type}
+                  onChange={(e) =>
+                    setTransferForm((prev) => ({
+                      ...prev,
+                      type: e.target.value as "transfer" | "withdraw",
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="transfer">
+                    Transfer Coins (Add to User)
+                  </option>
+                  <option value="withdraw">
+                    Withdraw Coins (Remove from User)
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  placeholder="Enter detailed reason for this transaction"
+                  value={transferForm.reason}
+                  onChange={(e) =>
+                    setTransferForm((prev) => ({
+                      ...prev,
+                      reason: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setTransferForm({
+                    userIdentifier: "",
+                    amount: "",
+                    type: "transfer",
+                    reason: "",
+                  });
+                }}
+                className="flex-1 text-white px-4 py-2 rounded-lg"
+                disabled={transferLoading}
+                style={{ 
+                  backgroundColor: '#4ca1af',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#3a8a96'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#4ca1af'}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferLoading}
+                className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ 
+                  backgroundColor: '#18243c',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#0f1a2a'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#18243c'}
+              >
+                {transferLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  transferForm.type === "transfer"
+                    ? "Transfer Coins"
+                    : "Withdraw Coins"
+                )}
               </button>
             </div>
           </div>

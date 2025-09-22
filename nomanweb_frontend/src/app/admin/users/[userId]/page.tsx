@@ -264,20 +264,21 @@ export default function AdminUserDetailPage() {
             <button
               onClick={() => router.push(`/admin/users/${userId}/edit`)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+              style={{ backgroundColor: '#18243c' }}
             >
               <PencilIcon className="h-4 w-4 mr-2" />
               Edit User
             </button>
 
             {user.status === "active" && user.role !== "ADMIN" && (
-              <button className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center" style={{ backgroundColor: '#18243c' }}>
                 <ShieldExclamationIcon className="h-4 w-4 mr-2" />
                 Suspend
               </button>
             )}
 
             {user.role !== "ADMIN" && (
-              <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center" style={{ backgroundColor: '#18243c' }}>
                 <TrashIcon className="h-4 w-4 mr-2" />
                 Delete
               </button>
@@ -348,58 +349,38 @@ export default function AdminUserDetailPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <ChartBarIcon className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Stories</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {user.totalStories}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Stories</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {user.totalStories}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <UserIcon className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Followers</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {user.totalFollowers}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Followers</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {user.totalFollowers}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <UserIcon className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Following</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {user.totalFollowing}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Following</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {user.totalFollowing}
+            </p>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <EnvelopeIcon className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Comments</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {user.totalComments}
-              </p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Comments</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {user.totalComments}
+            </p>
           </div>
         </div>
       </div>
@@ -419,9 +400,10 @@ export default function AdminUserDetailPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`${
                   activeTab === tab.id
-                    ? "border-red-500 text-red-600"
+                    ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+                style={activeTab === tab.id ? { borderColor: '#18243c', color: '#18243c' } : {}}
               >
                 <tab.icon className="h-4 w-4 mr-2" />
                 {tab.name}
@@ -683,13 +665,13 @@ export default function AdminUserDetailPage() {
                   Security Actions
                 </h4>
                 <div className="space-y-3">
-                  <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" style={{ backgroundColor: '#18243c' }}>
                     Force Password Reset
                   </button>
-                  <button className="w-full md:w-auto px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 ml-0 md:ml-3">
+                  <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-0 md:ml-3" style={{ backgroundColor: '#18243c' }}>
                     Send Verification Email
                   </button>
-                  <button className="w-full md:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ml-0 md:ml-3">
+                  <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-0 md:ml-3" style={{ backgroundColor: '#18243c' }}>
                     Revoke All Sessions
                   </button>
                 </div>

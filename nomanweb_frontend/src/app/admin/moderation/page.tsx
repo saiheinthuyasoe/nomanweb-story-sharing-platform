@@ -494,7 +494,7 @@ export default function AdminModerationPage() {
         return (
           <Badge
             variant="outline"
-            className="text-yellow-600 border-yellow-300"
+            className="text-yellow-600 border-yellow-600 border-2 font-bold"
           >
             <ClockIcon className="h-3 w-3 mr-1" />
             Pending Review
@@ -609,8 +609,7 @@ export default function AdminModerationPage() {
             <div className="space-y-6">
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <SparklesIcon className="h-5 w-5 mr-2 text-purple-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">
                     AI Detection Summary
                   </h3>
                   <Button
@@ -794,39 +793,34 @@ export default function AdminModerationPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex justify-between items-center gap-3">
                     <Button
                       onClick={() => moderateChapter(selectedChapter.id, true)}
                       disabled={moderating}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white w-fit px-6"
                     >
                       {moderating ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       ) : (
                         <CheckCircleIcon className="h-4 w-4 mr-2" />
                       )}
-                      ✅ Approve
+                      Approve
                     </Button>
 
                     <Button
                       onClick={() => moderateChapter(selectedChapter.id, false)}
                       disabled={moderating}
                       variant="destructive"
+                      size="sm"
+                      className="w-fit px-6"
                     >
                       {moderating ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       ) : (
                         <XCircleIcon className="h-4 w-4 mr-2" />
                       )}
-                      ❌ Reject
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                    >
-                      <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
-                      ⚠️ Escalate
+                      Reject
                     </Button>
                   </div>
                 </div>
@@ -845,59 +839,16 @@ export default function AdminModerationPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <SparklesIcon className="h-8 w-8 mr-3 text-blue-500" />
+              <h1 className="text-3xl font-bold text-gray-900">
                 AI Content Moderation
               </h1>
-              <p className="text-gray-600 mt-1 ml-11">
+              <p className="text-gray-600 mt-1">
                 Automated content analysis with AI-powered approval and
                 rejection
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by title, author, keyword..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
 
-              {/* Quick Filters */}
-              <div className="flex items-center space-x-2">
-                <FunnelIcon className="h-5 w-5 text-gray-400" />
-                <select
-                  value={currentFilter}
-                  onChange={(e) =>
-                    setCurrentFilter(e.target.value as FilterType)
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="ALL">All</option>
-                  <option value="PENDING">Pending Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                  <option value="AUTO_FLAGGED">Auto-Flagged</option>
-                </select>
-              </div>
-
-              {/* Sort Options */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortType)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="NEWEST">Newest First</option>
-                <option value="OLDEST">Oldest First</option>
-                <option value="HIGHEST_RISK">Highest Risk</option>
-                <option value="MOST_FLAGGED">Most Flagged</option>
-              </select>
-            </div>
           </div>
         </div>
 
@@ -909,42 +860,24 @@ export default function AdminModerationPage() {
                 onClick={() => setActiveTab("overview")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "overview"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-[#18243c] text-[#18243c]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                📊 Overview
+                Overview
               </button>
+
               <button
-                onClick={() => setActiveTab("flagged")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "flagged"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🚩 Flagged Content
-              </button>
-              <button
-                onClick={() => setActiveTab("queue")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "queue"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🕑 Queue Status
-              </button>
-              <button
-                onClick={() => setActiveTab("reports")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "reports"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                👤 User Reports
-              </button>
+                  onClick={() => setActiveTab("queue")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "queue"
+                      ? "border-[#18243c] text-[#18243c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  AI Moderation Queue
+                </button>
+
             </nav>
           </div>
         </div>
@@ -956,10 +889,7 @@ export default function AdminModerationPage() {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <FlagIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Flagged Today
                     </p>
@@ -972,10 +902,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <ClockIcon className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Pending Reviews
                     </p>
@@ -988,10 +915,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Approved
                     </p>
@@ -1004,10 +928,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <XCircleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Rejected
                     </p>
@@ -1020,10 +941,7 @@ export default function AdminModerationPage() {
 
               <Card className="p-4">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <ChartBarIcon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">
                       Detection Accuracy
                     </p>
@@ -1039,22 +957,10 @@ export default function AdminModerationPage() {
             {queueStatus && (
               <Card className="p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <CogIcon className="h-5 w-5 mr-2 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">
                     Processing Queue Status
                   </h3>
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        queueStatus.processing
-                          ? "bg-green-500 animate-pulse"
-                          : "bg-gray-400"
-                      }`}
-                    ></div>
-                    <span className="text-sm text-gray-600">
-                      {queueStatus.processing ? "Processing" : "Idle"}
-                    </span>
-                  </div>
+
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1098,17 +1004,17 @@ export default function AdminModerationPage() {
 
             {/* Bulk Actions */}
             {selectedChapters.size > 0 && (
-              <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+              <Card className="p-4 mb-6 bg-blue-50 border-[#18243c]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium text-blue-900">
+                    <span className="text-sm font-medium text-[#18243c]">
                       {selectedChapters.size} item(s) selected
                     </span>
                     <Button
                       onClick={() => setSelectedChapters(new Set())}
                       variant="outline"
                       size="sm"
-                      className="text-blue-600 border-blue-300"
+                      className="text-[#18243c] border-[#18243c]"
                     >
                       Clear Selection
                     </Button>
@@ -1133,14 +1039,7 @@ export default function AdminModerationPage() {
                       <XCircleIcon className="h-4 w-4 mr-1" />
                       Reject Selected
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                    >
-                      <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-                      Escalate Selected
-                    </Button>
+
                   </div>
                 </div>
               </Card>
@@ -1149,7 +1048,7 @@ export default function AdminModerationPage() {
             {/* Main Content Table */}
             <Card className="overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">
                     Content Items ({filteredChapters.length})
                   </h2>
@@ -1162,6 +1061,51 @@ export default function AdminModerationPage() {
                       ? "Deselect All"
                       : "Select All"}
                   </Button>
+                </div>
+                
+                {/* Search and Filter Controls */}
+                <div className="flex items-center space-x-4">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by title, author, keyword..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Quick Filters */}
+                  <div className="flex items-center space-x-2">
+                    <FunnelIcon className="h-5 w-5 text-gray-400" />
+                    <select
+                      value={currentFilter}
+                      onChange={(e) =>
+                        setCurrentFilter(e.target.value as FilterType)
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="ALL">All</option>
+                      <option value="PENDING">Pending Review</option>
+                      <option value="APPROVED">Approved</option>
+                      <option value="REJECTED">Rejected</option>
+                      <option value="AUTO_FLAGGED">Auto-Flagged</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Options */}
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortType)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="NEWEST">Newest First</option>
+                    <option value="OLDEST">Oldest First</option>
+                    <option value="HIGHEST_RISK">Highest Risk</option>
+                    <option value="MOST_FLAGGED">Most Flagged</option>
+                  </select>
                 </div>
               </div>
 
@@ -1189,9 +1133,7 @@ export default function AdminModerationPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Detected Issue
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Confidence
-                      </th>
+
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         User Info
                       </th>
@@ -1250,25 +1192,7 @@ export default function AdminModerationPage() {
                               {detectedIssue}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                <div
-                                  className={`h-2 rounded-full ${
-                                    confidence >= 80
-                                      ? "bg-red-500"
-                                      : confidence >= 60
-                                      ? "bg-yellow-500"
-                                      : "bg-green-500"
-                                  }`}
-                                  style={{ width: `${confidence}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm text-gray-600">
-                                {confidence}%
-                              </span>
-                            </div>
-                          </td>
+
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
@@ -1343,7 +1267,7 @@ export default function AdminModerationPage() {
                                       moderateChapter(chapter.id, true)
                                     }
                                     disabled={moderating}
-                                    size="sm"
+                                    size="xs"
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                     title="Manual Override: Approve"
                                   >
@@ -1355,7 +1279,7 @@ export default function AdminModerationPage() {
                                     }
                                     disabled={moderating}
                                     variant="destructive"
-                                    size="sm"
+                                    size="xs"
                                     title="Manual Override: Reject"
                                   >
                                     <XCircleIcon className="h-4 w-4" />
@@ -1388,74 +1312,21 @@ export default function AdminModerationPage() {
           </>
         )}
 
-        {/* Flagged Content Tab */}
-        {activeTab === "flagged" && (
-          <Card className="p-6">
-            <div className="text-center py-12">
-              <FlagIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Flagged Content
-              </h3>
-              <p className="text-gray-600">
-                Content that has been automatically flagged by AI or reported by
-                users.
-              </p>
-              <div className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">
-                      {stats.rejected}
-                    </div>
-                    <div className="text-sm text-red-700">Auto-Rejected</div>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {stats.pendingReviews}
-                    </div>
-                    <div className="text-sm text-yellow-700">
-                      Pending Review
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {stats.flaggedToday}
-                    </div>
-                    <div className="text-sm text-orange-700">Flagged Today</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+
 
         {/* Queue Status Tab */}
         {activeTab === "queue" && (
           <div className="space-y-6">
             {queueStatus && (
               <Card className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <CogIcon className="h-6 w-6 mr-3 text-blue-600" />
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">
                     Processing Queue Status
                   </h3>
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-4 h-4 rounded-full ${
-                        queueStatus.processing
-                          ? "bg-green-500 animate-pulse"
-                          : "bg-gray-400"
-                      }`}
-                    ></div>
-                    <span className="text-sm font-medium text-gray-700">
-                      {queueStatus.processing
-                        ? "Processing Active"
-                        : "Queue Idle"}
-                    </span>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-center p-4 rounded-lg">
                     <div className="text-3xl font-bold text-blue-600">
                       {queueStatus.queueStats.queueSize}
                     </div>
@@ -1464,7 +1335,7 @@ export default function AdminModerationPage() {
                     </div>
                   </div>
 
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <div className="text-center p-4 rounded-lg">
                     <div className="text-3xl font-bold text-yellow-600">
                       {queueStatus.queueStats.processing}
                     </div>
@@ -1473,7 +1344,7 @@ export default function AdminModerationPage() {
                     </div>
                   </div>
 
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-center p-4 rounded-lg">
                     <div className="text-3xl font-bold text-green-600">
                       {queueStatus.queueStats.completed}
                     </div>
@@ -1482,7 +1353,7 @@ export default function AdminModerationPage() {
                     </div>
                   </div>
 
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-center p-4 rounded-lg">
                     <div className="text-3xl font-bold text-red-600">
                       {queueStatus.queueStats.failed}
                     </div>
@@ -1506,8 +1377,7 @@ export default function AdminModerationPage() {
             {/* AI Moderation Controls */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <SparklesIcon className="h-6 w-6 mr-3 text-purple-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
                   AI Moderation Control
                 </h3>
                 <div className="flex items-center space-x-4">
@@ -1534,9 +1404,9 @@ export default function AdminModerationPage() {
 
               {/* Progress Panel */}
               {queueStatus?.aiModerationEnabled && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-medium text-blue-900">
+                    <h4 className="text-lg font-medium text-[#18243c]">
                       AI Moderation: Running...
                       {queueStatus.queueStats && (
                         <span className="text-sm font-normal">
@@ -1545,7 +1415,7 @@ export default function AdminModerationPage() {
                         </span>
                       )}
                     </h4>
-                    <div className="text-sm text-blue-700">
+                    <div className="text-sm text-gray-600">
                       {queueStatus.queueStats && (
                         <span>
                           Completed: {queueStatus.queueStats.completed} |
@@ -1558,9 +1428,9 @@ export default function AdminModerationPage() {
                   {/* Queue Progress Bar */}
                   {queueStatus.queueStats &&
                     queueStatus.queueStats.queueSize > 0 && (
-                      <div className="w-full bg-blue-200 rounded-full h-3 mb-6">
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
                         <div
-                          className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                          className="bg-[#18243c] h-3 rounded-full transition-all duration-300"
                           style={{
                             width: `${Math.max(
                               10,
@@ -1578,17 +1448,17 @@ export default function AdminModerationPage() {
                   {queueStatus.processingJobs &&
                     queueStatus.processingJobs.length > 0 && (
                       <div className="mb-4 space-y-2">
-                        <h5 className="text-sm font-medium text-blue-900">
+                        <h5 className="text-sm font-medium text-[#18243c]">
                           Currently Processing:
                         </h5>
                         {queueStatus.processingJobs.map((job) => (
                           <div
                             key={job.jobId}
-                            className="p-3 bg-white border border-blue-200 rounded-lg"
+                            className="p-3 bg-white border border-gray-200 rounded-lg"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
-                                <ClockIcon className="h-4 w-4 text-blue-600 animate-spin" />
+                                <ClockIcon className="h-4 w-4 text-[#18243c] animate-spin" />
                                 <span className="text-sm font-medium text-gray-900">
                                   Chapter ID: {job.chapterId}
                                 </span>
@@ -1613,26 +1483,26 @@ export default function AdminModerationPage() {
                   {/* Queue Statistics */}
                   {queueStatus.queueStats && (
                     <div className="grid grid-cols-4 gap-4 mt-4">
-                      <div className="text-center p-2 bg-white rounded-lg border border-blue-200">
-                        <div className="text-lg font-bold text-blue-600">
+                      <div className="text-center p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="text-lg font-bold text-[#18243c]">
                           {queueStatus.queueStats.queueSize}
                         </div>
                         <div className="text-xs text-gray-600">In Queue</div>
                       </div>
-                      <div className="text-center p-2 bg-white rounded-lg border border-blue-200">
-                        <div className="text-lg font-bold text-yellow-600">
+                      <div className="text-center p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="text-lg font-bold text-[#18243c]">
                           {queueStatus.queueStats.processing}
                         </div>
                         <div className="text-xs text-gray-600">Processing</div>
                       </div>
-                      <div className="text-center p-2 bg-white rounded-lg border border-blue-200">
-                        <div className="text-lg font-bold text-green-600">
+                      <div className="text-center p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="text-lg font-bold text-[#18243c]">
                           {queueStatus.queueStats.completed}
                         </div>
                         <div className="text-xs text-gray-600">Completed</div>
                       </div>
-                      <div className="text-center p-2 bg-white rounded-lg border border-blue-200">
-                        <div className="text-lg font-bold text-red-600">
+                      <div className="text-center p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="text-lg font-bold text-[#18243c]">
                           {queueStatus.queueStats.failed}
                         </div>
                         <div className="text-xs text-gray-600">Failed</div>
@@ -1645,13 +1515,16 @@ export default function AdminModerationPage() {
               {/* Paused State */}
               {!queueStatus?.aiModerationEnabled &&
                 stats.pendingReviews > 0 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />
-                      <span className="text-yellow-800 font-medium">
-                        AI Moderation: Paused ({stats.pendingReviews} items
-                        still pending)
-                      </span>
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-lg font-semibold text-amber-900">AI Moderation Paused</h4>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-medium rounded-full">
+                          {stats.pendingReviews}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1659,58 +1532,52 @@ export default function AdminModerationPage() {
               {/* Pending Chapters List - Always show when there are pending chapters */}
               {queueStatus?.pendingChapters &&
                 queueStatus.pendingChapters.length > 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <ClockIcon className="h-5 w-5 mr-2 text-blue-600" />
-                      Pending Chapters ({queueStatus.pendingChapters.length})
-                    </h4>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {queueStatus.pendingChapters.map((chapter) => (
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <div className="px-6 py-4 border-b border-gray-50">
+                      <h4 className="text-lg font-medium text-gray-900">
+                        Pending Chapters
+                        <span className="ml-2 text-sm font-normal text-gray-500">({queueStatus.pendingChapters.length})</span>
+                      </h4>
+                    </div>
+                    <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                      {queueStatus.pendingChapters.map((chapter, index) => (
                         <div
                           key={chapter.id}
-                          className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                          className="px-6 py-4 hover:bg-gray-25 transition-colors duration-150"
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h5 className="font-medium text-gray-900 truncate">
-                                {chapter.title}
-                              </h5>
-                              <p className="text-sm text-gray-600 mt-1">
-                                Story:{" "}
-                                <span className="font-medium">
-                                  {chapter.storyTitle}
-                                </span>
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                Author: {chapter.authorName}
-                              </p>
-                              <div className="flex items-center mt-2 space-x-4">
-                                <span className="text-xs text-gray-500">
-                                  Queued:{" "}
-                                  {new Date(chapter.createdAt).toLocaleString()}
-                                </span>
-                                <span
-                                  className={`px-2 py-1 text-xs rounded-full ${
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0">
+                                  <div className={`w-1.5 h-8 rounded-full ${
                                     chapter.priority === 1
-                                      ? "bg-red-100 text-red-800"
+                                      ? "bg-red-400"
                                       : chapter.priority === 2
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-blue-100 text-blue-800"
-                                  }`}
-                                >
-                                  Priority:{" "}
-                                  {chapter.priority === 1
-                                    ? "High"
-                                    : chapter.priority === 2
-                                    ? "Medium"
-                                    : "Low"}
-                                </span>
+                                      ? "bg-amber-400"
+                                      : "bg-blue-400"
+                                  }`}></div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="text-sm font-medium text-gray-900 truncate">
+                                    {chapter.title}
+                                  </h5>
+                                  <p className="text-xs text-gray-500 mt-0.5 truncate">
+                                    {chapter.storyTitle} • {chapter.authorName}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                            <div className="ml-4">
-                              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                                {chapter.moderationStatus}
+                            <div className="flex items-center space-x-3 ml-4">
+                              <span className="text-xs text-gray-400">
+                                {new Date(chapter.createdAt).toLocaleDateString()}
                               </span>
+                              <div className={`w-2 h-2 rounded-full ${
+                                chapter.priority === 1
+                                  ? "bg-red-400"
+                                  : chapter.priority === 2
+                                  ? "bg-amber-400"
+                                  : "bg-blue-400"
+                              }`}></div>
                             </div>
                           </div>
                         </div>
@@ -1739,7 +1606,7 @@ export default function AdminModerationPage() {
               queueStatus.processingJobs.length > 0 && (
                 <Card className="p-6">
                   <div className="flex items-center mb-6">
-                    <ClockIcon className="h-6 w-6 mr-3 text-blue-600" />
+                    <ClockIcon className="h-6 w-6 mr-3 text-[#18243c]" />
                     <h3 className="text-xl font-semibold text-gray-900">
                       Currently Processing ({queueStatus.processingJobs.length})
                     </h3>
@@ -1754,7 +1621,7 @@ export default function AdminModerationPage() {
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                              <div className="w-3 h-3 bg-[#18243c] rounded-full animate-pulse"></div>
                               <div>
                                 <div className="font-medium text-gray-900">
                                   Chapter ID: {job.chapterId}
@@ -1765,7 +1632,7 @@ export default function AdminModerationPage() {
                                     {job.operation}
                                   </span>
                                   {job.priority && (
-                                    <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                                    <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-[#18243c] rounded">
                                       Priority {job.priority}
                                     </span>
                                   )}
@@ -1825,28 +1692,7 @@ export default function AdminModerationPage() {
           </div>
         )}
 
-        {/* User Reports Tab */}
-        {activeTab === "reports" && (
-          <Card className="p-6">
-            <div className="text-center py-12">
-              <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                User Reports
-              </h3>
-              <p className="text-gray-600">
-                Content reported by community members for review.
-              </p>
-              <div className="mt-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-sm text-blue-700">
-                    📝 This feature will display user-reported content for
-                    manual review.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
+
       </div>
     </div>
   );

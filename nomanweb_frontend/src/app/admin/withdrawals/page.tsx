@@ -5,6 +5,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  Cog6ToothIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
 import { Alert } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 
@@ -302,161 +309,175 @@ const WithdrawalsPage = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div>
         <h1 className="text-3xl font-bold">Withdrawal Management</h1>
-        <Button onClick={triggerAutoProcessing}>
-          Trigger Auto-Processing
-        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats && (
-          <>
-            <Card className="p-4">
-              <div className="text-2xl font-bold text-yellow-600">{stats.totalPending}</div>
-              <div className="text-sm text-gray-600">Pending</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalProcessing}</div>
-              <div className="text-sm text-gray-600">Processing</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-2xl font-bold text-green-600">{stats.totalCompleted}</div>
-              <div className="text-sm text-gray-600">Completed</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-2xl font-bold text-red-600">{stats.totalRejected}</div>
-              <div className="text-sm text-gray-600">Rejected</div>
-            </Card>
-          </>
-        )}
-      </div>
+
 
       {/* Auto-Processing Stats */}
       {autoStats && (
-        <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-2">Auto-Processing Status</h3>
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Auto-Processing Status</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-xl font-bold">{autoStats.autoProcessedLast24h}</div>
-              <div className="text-sm text-gray-600">Auto-processed (24h)</div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-3xl font-bold text-gray-900">
+                {autoStats.autoProcessedLast24h}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">
+                Auto-processed (24h)
+              </div>
             </div>
-            <div>
-              <div className="text-xl font-bold">{autoStats.currentPending}</div>
-              <div className="text-sm text-gray-600">Current Pending</div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-3xl font-bold text-gray-900">
+                {autoStats.currentPending}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">
+                Current Pending
+              </div>
             </div>
-            <div>
-              <div className="text-xl font-bold">{autoStats.currentProcessing}</div>
-              <div className="text-sm text-gray-600">Current Processing</div>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-3xl font-bold text-gray-900">
+                {autoStats.currentProcessing}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">
+                Current Processing
+              </div>
             </div>
-            <div>
-              <Badge variant={autoStats.simulationMode ? 'secondary' : 'default'}>
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-lg font-bold text-gray-900 mb-2">
                 {autoStats.simulationMode ? 'Simulation Mode' : 'Live Mode'}
-              </Badge>
+              </div>
+              <div className="text-sm text-gray-600 font-medium">
+                Processing Mode
+              </div>
             </div>
           </div>
         </Card>
       )}
 
+      {/* Navigation Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              {
+                id: "all",
+                name: "All",
+                icon: ClipboardDocumentListIcon,
+              },
+              { id: "pending", name: "Pending", icon: ClockIcon },
+              { id: "processing", name: "Processing", icon: Cog6ToothIcon },
+              { id: "completed", name: "Completed", icon: CheckCircleIcon },
+              { id: "rejected", name: "Rejected", icon: XCircleIcon },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                  style={activeTab === tab.id ? { borderColor: '#18243c', color: '#18243c' } : {}}
+                >
+                  <Icon className="w-5 h-5 mr-2" />
+                  {tab.name}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
       {/* Withdrawals Table */}
       <Card className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="processing">Processing</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          </TabsList>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left p-2 font-normal">ID</th>
+                <th className="text-left p-2 font-normal">User ID</th>
+                <th className="text-left p-2 font-normal">Amount</th>
+                <th className="text-left p-2 font-normal">Bank Details</th>
+                <th className="text-left p-2 font-normal">Status</th>
+                <th className="text-left p-2 font-normal">Created</th>
+                <th className="text-left p-2 font-normal">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredWithdrawals.map((withdrawal) => (
+                <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
+                  <td className="p-2 font-mono text-sm">
+                    {withdrawal.id.substring(0, 8)}...
+                  </td>
+                  <td className="p-2 font-mono text-sm">
+                    {withdrawal.userId.substring(0, 8)}...
+                  </td>
+                  <td className="p-2 font-semibold">
+                    ${withdrawal.amount.toFixed(2)}
+                  </td>
+                  <td className="p-2">
+                    <div className="text-sm">
+                      <div>{withdrawal.bankName}</div>
+                      <div className="text-gray-600">
+                        {withdrawal.accountHolderName}
+                      </div>
+                      <div className="font-mono text-xs">
+                        ***{withdrawal.accountNumber?.slice(-4) || '****'}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    {getStatusBadge(withdrawal.status)}
+                  </td>
+                  <td className="p-2 text-sm">
+                    {new Date(withdrawal.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-2">
+                    {withdrawal.status === 'PENDING' && (
+                      <div className="space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => processWithdrawal(withdrawal.id)}
+                          disabled={processingIds.has(withdrawal.id)}
+                        >
+                          {processingIds.has(withdrawal.id) ? 'Processing...' : 'Process'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => rejectWithdrawal(withdrawal.id)}
+                          disabled={processingIds.has(withdrawal.id)}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                    {withdrawal.status === 'REJECTED' && withdrawal.rejectionReason && (
+                      <div className="text-sm text-red-600">
+                        {withdrawal.rejectionReason}
+                      </div>
+                    )}
+                    {withdrawal.transferId && (
+                      <div className="text-xs font-mono text-gray-600">
+                        Transfer: {withdrawal.transferId}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           
-          <TabsContent value={activeTab} className="mt-4">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">ID</th>
-                    <th className="text-left p-2">User ID</th>
-                    <th className="text-left p-2">Amount</th>
-                    <th className="text-left p-2">Bank Details</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Created</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredWithdrawals.map((withdrawal) => (
-                    <tr key={withdrawal.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-mono text-sm">
-                        {withdrawal.id.substring(0, 8)}...
-                      </td>
-                      <td className="p-2 font-mono text-sm">
-                        {withdrawal.userId.substring(0, 8)}...
-                      </td>
-                      <td className="p-2 font-semibold">
-                        ${withdrawal.amount.toFixed(2)}
-                      </td>
-                      <td className="p-2">
-                        <div className="text-sm">
-                          <div>{withdrawal.bankName}</div>
-                          <div className="text-gray-600">
-                            {withdrawal.accountHolderName}
-                          </div>
-                          <div className="font-mono text-xs">
-                            ***{withdrawal.accountNumber?.slice(-4) || '****'}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-2">
-                        {getStatusBadge(withdrawal.status)}
-                      </td>
-                      <td className="p-2 text-sm">
-                        {new Date(withdrawal.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-2">
-                        {withdrawal.status === 'PENDING' && (
-                          <div className="space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => processWithdrawal(withdrawal.id)}
-                              disabled={processingIds.has(withdrawal.id)}
-                            >
-                              {processingIds.has(withdrawal.id) ? 'Processing...' : 'Process'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => rejectWithdrawal(withdrawal.id)}
-                              disabled={processingIds.has(withdrawal.id)}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                        {withdrawal.status === 'REJECTED' && withdrawal.rejectionReason && (
-                          <div className="text-sm text-red-600">
-                            {withdrawal.rejectionReason}
-                          </div>
-                        )}
-                        {withdrawal.transferId && (
-                          <div className="text-xs font-mono text-gray-600">
-                            Transfer: {withdrawal.transferId}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {filteredWithdrawals.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No withdrawals found for the selected status.
-                </div>
-              )}
+          {filteredWithdrawals.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No withdrawals found for the selected status.
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </Card>
     </div>
   );

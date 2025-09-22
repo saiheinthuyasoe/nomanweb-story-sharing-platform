@@ -18,19 +18,7 @@ import {
   LineElement,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import {
-  UserGroupIcon,
-  BookOpenIcon,
-  DocumentTextIcon,
-  ExclamationTriangleIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
-  EyeIcon,
-  HeartIcon,
-} from "@heroicons/react/24/outline";
+// Icons removed for minimalist design
 
 // Register Chart.js components
 ChartJS.register(
@@ -365,50 +353,37 @@ export default function AdminDashboard() {
         {/* 1. Core Platform Analytics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <ChartBarIcon className="w-6 h-6 mr-2 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900">
               Core Platform Analytics
             </h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <BookOpenIcon className="w-8 h-8 text-blue-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-blue-600">Total Stories</p>
-                  <p className="text-2xl font-bold text-blue-900">{stats.totalStories}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-blue-600">Total Stories</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.totalStories}</p>
               </div>
             </div>
             
             <div className="bg-green-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <DocumentTextIcon className="w-8 h-8 text-green-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-green-600">Total Chapters</p>
-                  <p className="text-2xl font-bold text-green-900">{stats.totalChapters}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-green-600">Total Chapters</p>
+                <p className="text-2xl font-bold text-green-900">{stats.totalChapters}</p>
               </div>
             </div>
             
             <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <UserGroupIcon className="w-8 h-8 text-purple-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-purple-600">Total Users</p>
-                  <p className="text-2xl font-bold text-purple-900">{stats.totalUsers}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-purple-600">Total Users</p>
+                <p className="text-2xl font-bold text-purple-900">{stats.totalUsers}</p>
               </div>
             </div>
             
             <div className="bg-orange-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <ExclamationTriangleIcon className="w-8 h-8 text-orange-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-orange-600">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-orange-900">{stats.pendingModerations}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-orange-600">Pending Reviews</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.pendingModerations}</p>
               </div>
             </div>
           </div>
@@ -421,40 +396,30 @@ export default function AdminDashboard() {
         {/* 2. Content Performance Analytics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-               <ArrowTrendingUpIcon className="w-6 h-6 mr-2 text-green-600" />
+             <h2 className="text-xl font-semibold text-gray-900">
                Content Performance Analytics
              </h2>
            </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-indigo-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <EyeIcon className="w-8 h-8 text-indigo-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-indigo-600">Total Views</p>
-                  <p className="text-2xl font-bold text-indigo-900">{(stats.totalStories * 1250).toLocaleString()}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-indigo-600">Total Views</p>
+                <p className="text-2xl font-bold text-indigo-900">{(stats.totalStories * 1250).toLocaleString()}</p>
               </div>
             </div>
             
             <div className="bg-pink-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <HeartIcon className="w-8 h-8 text-pink-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-pink-600">Total Likes</p>
-                  <p className="text-2xl font-bold text-pink-900">{(stats.totalStories * 89).toLocaleString()}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-pink-600">Total Likes</p>
+                <p className="text-2xl font-bold text-pink-900">{(stats.totalStories * 89).toLocaleString()}</p>
               </div>
             </div>
             
             <div className="bg-emerald-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <ClockIcon className="w-8 h-8 text-emerald-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-emerald-600">Recent Activity</p>
-                  <p className="text-2xl font-bold text-emerald-900">{stats.recentActivity}</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-600">Recent Activity</p>
+                <p className="text-2xl font-bold text-emerald-900">{stats.recentActivity}</p>
               </div>
             </div>
           </div>
@@ -471,8 +436,7 @@ export default function AdminDashboard() {
         {/* 3. Financial Metrics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <CurrencyDollarIcon className="w-6 h-6 mr-2 text-green-600" />
+            <h2 className="text-xl font-semibold text-gray-900">
               Financial Metrics
             </h2>
           </div>
@@ -480,46 +444,34 @@ export default function AdminDashboard() {
           {/* Revenue Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-emerald-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <CurrencyDollarIcon className="w-8 h-8 text-emerald-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-emerald-600">Total Platform Revenue</p>
-                  <p className="text-2xl font-bold text-emerald-900">${coinStats.totalPurchaseRevenue || 0}</p>
-                  <p className="text-xs text-emerald-600 mt-1">Overall earnings</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-600">Total Platform Revenue</p>
+                <p className="text-2xl font-bold text-emerald-900">${coinStats.totalPurchaseRevenue || 0}</p>
+                <p className="text-xs text-emerald-600 mt-1">Overall earnings</p>
               </div>
             </div>
             
             <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <BanknotesIcon className="w-8 h-8 text-blue-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-blue-600">Author Earnings (70%)</p>
-                  <p className="text-2xl font-bold text-blue-900">${(((coinStats.totalPurchaseRevenue || 0) * 0.7).toFixed(0))}</p>
-                  <p className="text-xs text-blue-600 mt-1">70/30 split</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-blue-600">Author Earnings (70%)</p>
+                <p className="text-2xl font-bold text-blue-900">${(((coinStats.totalPurchaseRevenue || 0) * 0.7).toFixed(0))}</p>
+                <p className="text-xs text-blue-600 mt-1">70/30 split</p>
               </div>
             </div>
             
             <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <ChartBarIcon className="w-8 h-8 text-purple-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-purple-600">Platform Share (30%)</p>
-                  <p className="text-2xl font-bold text-purple-900">${(((coinStats.totalPurchaseRevenue || 0) * 0.3).toFixed(0))}</p>
-                  <p className="text-xs text-purple-600 mt-1">Platform revenue</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-purple-600">Platform Share (30%)</p>
+                <p className="text-2xl font-bold text-purple-900">${(((coinStats.totalPurchaseRevenue || 0) * 0.3).toFixed(0))}</p>
+                <p className="text-xs text-purple-600 mt-1">Platform revenue</p>
               </div>
             </div>
             
             <div className="bg-orange-50 p-4 rounded-lg">
-              <div className="flex items-center">
-                <ClockIcon className="w-8 h-8 text-orange-600" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-orange-600">Current Balance</p>
-                  <p className="text-2xl font-bold text-orange-900">${coinStats.currentBalance || 0}</p>
-                  <p className="text-xs text-orange-600 mt-1">Available coins</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-orange-600">Current Balance</p>
+                <p className="text-2xl font-bold text-orange-900">${coinStats.currentBalance || 0}</p>
+                <p className="text-xs text-orange-600 mt-1">Available coins</p>
               </div>
             </div>
           </div>
@@ -531,12 +483,9 @@ export default function AdminDashboard() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Overview</h3>
               <div className="grid grid-cols-1 gap-4 mb-4">
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600">Total Purchases</p>
-                      <p className="text-xl font-bold text-green-900">{coinStats.totalPurchases || 0}</p>
-                    </div>
-                    <BanknotesIcon className="w-8 h-8 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Total Purchases</p>
+                    <p className="text-xl font-bold text-green-900">{coinStats.totalPurchases || 0}</p>
                   </div>
                 </div>
                 
@@ -581,8 +530,7 @@ export default function AdminDashboard() {
         {/* 4. Withdrawal Management */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <BanknotesIcon className="w-6 h-6 mr-2 text-purple-600" />
+            <h2 className="text-xl font-semibold text-gray-900">
               Withdrawal Management
             </h2>
           </div>
@@ -626,8 +574,7 @@ export default function AdminDashboard() {
         {/* 5. User Analytics */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <UserGroupIcon className="w-6 h-6 mr-2 text-indigo-600" />
+            <h2 className="text-xl font-semibold text-gray-900">
               User Analytics
             </h2>
           </div>
@@ -666,8 +613,7 @@ export default function AdminDashboard() {
         {/* 6. Author Performance */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <BookOpenIcon className="w-6 h-6 mr-2 text-emerald-600" />
+            <h2 className="text-xl font-semibold text-gray-900">
               Author Performance
             </h2>
           </div>

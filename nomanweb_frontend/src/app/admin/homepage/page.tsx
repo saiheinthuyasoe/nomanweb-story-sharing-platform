@@ -346,63 +346,29 @@ const HomepageManagementPage = () => {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Homepage Management
-        </h1>
-        <p className="text-gray-600">
-          Manage featured content sections on the homepage
-        </p>
-      </div>
-
-      {/* Dashboard Analytics */}
-      {dashboardStats && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Platform Overview
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-sm font-medium opacity-90">Total Stories</h3>
-              <p className="text-3xl font-bold">
-                {dashboardStats.totalStories.toLocaleString()}
-              </p>
-              <p className="text-xs opacity-75 mt-1">Published content</p>
-            </div>
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-sm font-medium opacity-90">Total Chapters</h3>
-              <p className="text-3xl font-bold">
-                {dashboardStats.totalChapters.toLocaleString()}
-              </p>
-              <p className="text-xs opacity-75 mt-1">Content pieces</p>
-            </div>
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-sm font-medium opacity-90">Total Users</h3>
-              <p className="text-3xl font-bold">
-                {dashboardStats.totalUsers.toLocaleString()}
-              </p>
-              <p className="text-xs opacity-75 mt-1">Registered members</p>
-            </div>
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-sm font-medium opacity-90">
-                Pending Reviews
-              </h3>
-              <p className="text-3xl font-bold">
-                {String(dashboardStats.pendingModerations || 0)}
-              </p>
-              <p className="text-xs opacity-75 mt-1">Awaiting moderation</p>
-            </div>
-            <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-sm font-medium opacity-90">
-                Recent Activity
-              </h3>
-              <p className="text-3xl font-bold">
-                {String(dashboardStats.recentActivity || 0)}
-              </p>
-              <p className="text-xs opacity-75 mt-1">Last 24 hours</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Homepage Management
+            </h1>
+            <p className="text-gray-600">
+              Manage featured content sections on the homepage
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.open('/', '_blank')}
+              className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              style={{backgroundColor: '#18243c'}}
+            >
+              <EyeIcon className="h-4 w-4 mr-2" />
+              Preview Homepage
+            </button>
           </div>
         </div>
-      )}
+      </div>
+
+
 
       {/* Featured Content Stats */}
       {stats && (
@@ -410,25 +376,25 @@ const HomepageManagementPage = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Total Active</h3>
             <p className="text-2xl font-bold text-green-600">
-              {String(stats.totalActive || 0)}
+              {stats.totalActive}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Total Expired</h3>
             <p className="text-2xl font-bold text-red-600">
-              {String(stats.totalExpired || 0)}
+              {stats.totalExpired}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">New Releases</h3>
-            <p className="text-2xl font-bold text-blue-600">
-              {String(stats.sectionCounts.NEW_RELEASES || 0)}
+            <p className="text-2xl font-bold" style={{color: '#18243c'}}>
+              {stats.sectionCounts.NEW_RELEASES || 0}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Best Rating</h3>
             <p className="text-2xl font-bold text-purple-600">
-              {String(stats.sectionCounts.BEST_RATING || 0)}
+              {stats.sectionCounts.BEST_RATING || 0}
             </p>
           </div>
         </div>
@@ -470,7 +436,8 @@ const HomepageManagementPage = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowAddModal(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+                      style={{backgroundColor: '#18243c'}}
                     >
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Manual Search
@@ -489,7 +456,7 @@ const HomepageManagementPage = () => {
                       </button>
                     )}
                     {selectedItems.size > 0 && (
-                      <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                      <div className="px-2 py-1 text-white text-xs rounded-full font-medium" style={{backgroundColor: '#18243c'}}>
                         {selectedItems.size} selected
                       </div>
                     )}
@@ -611,7 +578,7 @@ const HomepageManagementPage = () => {
                     {featuredContent.length} items
                   </span>
                   {selectedItems.size > 0 && (
-                    <span className="text-blue-600 font-medium">
+                    <span className="font-medium" style={{color: '#18243c'}}>
                       • {selectedItems.size} selected
                     </span>
                   )}
@@ -622,11 +589,11 @@ const HomepageManagementPage = () => {
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 text-sm">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-medium text-blue-800">
+                      <span className="font-medium" style={{color: '#18243c'}}>
                         Carousel Display Settings
                       </span>
                     </div>
-                    <div className="mt-2 text-xs text-blue-700 space-y-1">
+                    <div className="mt-2 text-xs space-y-1" style={{color: '#18243c'}}>
                       <p>
                         • Books will appear in a horizontal scrolling carousel
                         on the homepage
@@ -725,7 +692,8 @@ const HomepageManagementPage = () => {
                             clearSelection();
                           }
                         }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 focus:ring-gray-500"
+                        style={{accentColor: '#18243c'}}
                       />
                       <label className="text-sm font-medium text-gray-700">
                         Select All ({filteredAndSortedContent.length} items)
@@ -743,16 +711,17 @@ const HomepageManagementPage = () => {
                             type="checkbox"
                             checked={selectedItems.has(item.id)}
                             onChange={() => toggleItemSelection(item.id)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 focus:ring-gray-500"
+                        style={{accentColor: '#18243c'}}
                           />
                         )}
                         <img
                           src={
                             item.story.coverImageUrl ||
-                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"
+                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=80&h=120&fit=crop"
                           }
                           alt={item.story.title}
-                          className="w-12 h-16 object-cover rounded"
+                          className="w-20 h-28 object-cover rounded shadow-sm"
                         />
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">
@@ -766,11 +735,11 @@ const HomepageManagementPage = () => {
                             <span className="text-xs text-gray-400">
                               Order: {item.displayOrder}
                             </span>
-                            <span className="text-xs text-blue-600">
-                              👁 {item.story.totalViews.toLocaleString()} views
+                            <span className="text-xs" style={{color: '#18243c'}}>
+                              {item.story.totalViews.toLocaleString()} views
                             </span>
                             <span className="text-xs text-red-600">
-                              ❤ {item.story.totalLikes.toLocaleString()} likes
+                              {item.story.totalLikes.toLocaleString()} likes
                             </span>
                             <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
                               {item.story.category.name}
@@ -809,7 +778,8 @@ const HomepageManagementPage = () => {
                                     onClick={() =>
                                       openEditExpirationModal(item)
                                     }
-                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                    className="text-xs underline hover:opacity-80"
+                        style={{color: '#18243c'}}
                                     title="Edit expiration date"
                                   >
                                     Edit
@@ -864,7 +834,8 @@ const HomepageManagementPage = () => {
                             </span>
                             <button
                               onClick={() => updateDisplayOrder(item.id, "up")}
-                              className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded"
+                              className="p-1 text-white hover:opacity-90 rounded"
+                              style={{backgroundColor: '#18243c'}}
                               title="Move left in carousel"
                             >
                               <ArrowUpIcon className="h-3 w-3" />
@@ -873,7 +844,8 @@ const HomepageManagementPage = () => {
                               onClick={() =>
                                 updateDisplayOrder(item.id, "down")
                               }
-                              className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded"
+                              className="p-1 text-white hover:opacity-90 rounded"
+                              style={{backgroundColor: '#18243c'}}
                               title="Move right in carousel"
                             >
                               <ArrowDownIcon className="h-3 w-3" />
@@ -990,10 +962,10 @@ const HomepageManagementPage = () => {
                         <img
                           src={
                             story.coverImageUrl ||
-                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=40&h=60&fit=crop"
+                            "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=60&h=80&fit=crop"
                           }
                           alt={story.title}
-                          className="w-8 h-12 object-cover rounded"
+                          className="w-12 h-16 object-cover rounded shadow-sm"
                         />
                         <div>
                           <h4 className="text-sm font-medium text-gray-900">
@@ -1027,7 +999,8 @@ const HomepageManagementPage = () => {
                         ) : (
                           <button
                             onClick={() => addToFeatured(story.id, 0)} // 0 means permanent (no expiration)
-                            className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="text-xs px-3 py-1 text-white rounded hover:opacity-90"
+                            style={{backgroundColor: '#18243c'}}
                           >
                             Add to Home Page Section
                           </button>
