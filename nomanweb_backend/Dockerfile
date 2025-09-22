@@ -1,5 +1,5 @@
 # Multi-stage build for Spring Boot application
-FROM maven:3.9.6-openjdk-17-slim AS build
+FROM maven:3.9.9-amazoncorretto-23-al2023 AS build
 
 # Set working directory
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+FROM amazoncorretto:23-alpine-jdk
 
 # Install curl for health checks
 RUN apk add --no-cache curl
