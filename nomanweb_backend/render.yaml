@@ -1,9 +1,7 @@
 services:
   - type: web
     name: nomanweb-backend
-    env: java
-    buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -Dserver.port=$PORT -jar target/nomanweb_backend-0.0.1-SNAPSHOT.jar
+    env: docker
     plan: free
     healthCheckPath: /actuator/health
     envVars:
