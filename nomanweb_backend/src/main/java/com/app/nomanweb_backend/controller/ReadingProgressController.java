@@ -26,7 +26,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/reading-progress")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class ReadingProgressController {
 
         private final ReadingProgressRepository readingProgressRepository;

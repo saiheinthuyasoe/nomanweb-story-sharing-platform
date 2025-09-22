@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/coins")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 public class CoinPackageController {
 

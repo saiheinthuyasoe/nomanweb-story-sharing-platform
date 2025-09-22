@@ -28,6 +28,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/monetization")
 @RequiredArgsConstructor
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @Tag(name = "Monetization", description = "Monetization and coin management APIs")
 public class MonetizationController {

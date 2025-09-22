@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 public class NotificationController {
 

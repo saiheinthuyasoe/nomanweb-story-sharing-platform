@@ -29,7 +29,7 @@ import java.util.UUID;
 @RequestMapping("/api/stories/{storyId}/ratings")
 @RequiredArgsConstructor
 @Tag(name = "Story Ratings", description = "Story rating management operations")
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class StoryRatingController {
 
     private final StoryRatingService storyRatingService;

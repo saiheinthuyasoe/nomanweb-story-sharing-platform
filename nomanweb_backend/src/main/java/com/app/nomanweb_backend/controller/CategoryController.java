@@ -17,8 +17,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" })
 @Slf4j
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class CategoryController {
 
     private final CategoryService categoryService;

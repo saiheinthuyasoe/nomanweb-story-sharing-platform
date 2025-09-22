@@ -25,6 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @Tag(name = "Admin Authentication", description = "Secure admin authentication and invitation management")
 public class AdminAuthController {

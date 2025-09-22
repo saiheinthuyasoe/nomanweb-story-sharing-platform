@@ -47,7 +47,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 @RestController
 @RequestMapping("/api/chapters")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 public class ChapterController {
 

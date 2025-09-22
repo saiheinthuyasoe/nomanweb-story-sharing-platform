@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://localhost:3000" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class UserController {
 
     private final UserService userService;

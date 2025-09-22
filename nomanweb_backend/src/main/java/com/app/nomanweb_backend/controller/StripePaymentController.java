@@ -35,6 +35,7 @@ import java.util.UUID;
 @RequestMapping("/api/stripe")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Tag(name = "Stripe Payment", description = "Stripe payment processing APIs")
 public class StripePaymentController {
 

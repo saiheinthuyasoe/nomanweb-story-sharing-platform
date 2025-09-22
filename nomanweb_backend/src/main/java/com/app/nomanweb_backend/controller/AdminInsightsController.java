@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/insights")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminInsightsController {

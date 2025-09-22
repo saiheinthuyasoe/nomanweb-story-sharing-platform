@@ -21,7 +21,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/libraries")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class LibraryController {
 
     private final LibraryRepository libraryRepository;

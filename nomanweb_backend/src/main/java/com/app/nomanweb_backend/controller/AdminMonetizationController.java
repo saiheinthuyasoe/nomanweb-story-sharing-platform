@@ -26,6 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/monetization")
 @RequiredArgsConstructor
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @Tag(name = "Admin Monetization", description = "Admin monetization management APIs")
 @PreAuthorize("hasRole('ADMIN')")

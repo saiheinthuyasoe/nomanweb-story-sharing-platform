@@ -15,6 +15,7 @@ import java.util.UUID;
 @RequestMapping("/api/redis")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class RedisHealthController {
 
     private final RedisTemplate<String, Object> redisTemplate;
