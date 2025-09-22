@@ -3,12 +3,12 @@
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { authApi } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
 import { handleApiError } from '@/lib/utils/errorHandling';
 
-export default function VerifyEmailPendingPage() {
+function VerifyEmailPendingContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   const [isLoading, setIsLoading] = useState(false);
@@ -134,5 +134,19 @@ export default function VerifyEmailPendingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPendingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-xl shadow-2xl p-8 text-center border border-white/20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        </div>
+      </div>
+    }>
+      <VerifyEmailPendingContent />
+    </Suspense>
   );
 }

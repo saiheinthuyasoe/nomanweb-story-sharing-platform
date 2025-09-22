@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
-import { authApi } from '@/lib/api/auth';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { authApi } from "@/lib/api/auth";
+import toast from "react-hot-toast";
 
 interface GoogleSignInProps {
   onSuccess?: (response: any) => void;
   onError?: (error: any) => void;
   className?: string;
   children?: React.ReactNode;
-  mode?: 'login' | 'link'; // Add mode prop to distinguish between login and linking
+  mode?: "login" | "link"; // Add mode prop to distinguish between login and linking
 }
 
-export default function GoogleSignIn({ 
-  onSuccess, 
-  onError, 
-  className = '',
+export default function GoogleSignIn({
+  onSuccess,
+  onError,
+  className = "",
   children,
-  mode = 'login'
+  mode = "login",
 }: GoogleSignInProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,19 +31,19 @@ export default function GoogleSignIn({
       const idToken = await result.user.getIdToken();
 
       let response;
-      if (mode === 'link') {
+      if (mode === "link") {
         // For linking accounts, pass the credential directly
         response = { credential: idToken };
         onSuccess?.(response);
       } else {
         // For login, send to backend
         response = await authApi.googleLogin(idToken);
-        toast.success('Google sign-in successful!');
+        toast.success("Google sign-in successful!");
         onSuccess?.(response);
       }
     } catch (error: any) {
-      console.error('Google sign-in failed:', error);
-      toast.error('Google sign-in failed');
+      console.error("Google sign-in failed:", error);
+      toast.error("Google sign-in failed");
       onError?.(error);
     } finally {
       setIsLoading(false);
@@ -89,7 +89,7 @@ export default function GoogleSignIn({
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {children || 'Continue with Google'}
+          {children || "Continue with Google"}
         </>
       )}
     </button>

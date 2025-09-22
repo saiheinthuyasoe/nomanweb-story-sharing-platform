@@ -190,8 +190,8 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       filtered = filtered.filter(
         (book) =>
           book.title.toLowerCase().includes(query) ||
-          (book.author?.displayName || '').toLowerCase().includes(query) ||
-          (book.category?.name || '').toLowerCase().includes(query)
+          (book.author?.displayName || "").toLowerCase().includes(query) ||
+          (book.category?.name || "").toLowerCase().includes(query)
       );
     }
 
@@ -251,7 +251,9 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       ...Object.values(insightsData.byGenre).flat(),
     ];
 
-    const genres = new Set(allBooks.map((book) => book.category?.name).filter(Boolean));
+    const genres = new Set(
+      allBooks.map((book) => book.category?.name).filter(Boolean)
+    );
     return Array.from(genres).sort();
   };
 
@@ -484,12 +486,12 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-sm truncate">{book.title}</h4>
             <p className="text-xs text-gray-600 truncate">
-              by {book.author?.displayName || 'Unknown Author'}
+              by {book.author?.displayName || "Unknown Author"}
             </p>
 
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs">
-                {book.category?.name || 'Uncategorized'}
+                {book.category?.name || "Uncategorized"}
               </Badge>
             </div>
 

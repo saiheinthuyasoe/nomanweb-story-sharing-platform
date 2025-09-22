@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StoryList } from "@/components/stories/StoryList";
 import {
@@ -11,7 +11,7 @@ import {
 import { MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
-export default function StoriesPage() {
+function StoriesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(0);
@@ -263,5 +263,17 @@ export default function StoriesPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function StoriesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
+      </div>
+    }>
+      <StoriesContent />
+    </Suspense>
   );
 }

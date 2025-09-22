@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,13 @@ interface PaymentResult {
   transactionId?: string;
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,29 +35,29 @@ export default function PaymentSuccessPage() {
       if (authLoading) {
         return;
       }
-      
+
       // Check if user is authenticated
       if (!user) {
-        setError('Please log in to verify your payment');
+        setError("Please log in to verify your payment");
         setLoading(false);
         return;
       }
-      
-      const sessionId = searchParams.get('session_id');
-      
+
+      const sessionId = searchParams.get("session_id");
+
       if (!sessionId) {
-        setError('Payment session not found');
+        setError("Payment session not found");
         setLoading(false);
         return;
       }
 
       try {
         // Verify payment with backend
-        const response = await fetch('/api/stripe/verify-session', {
-          method: 'POST',
+        const response = await fetch("/api/stripe/verify-session", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Cookies.get('token')}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("token")}`,
           },
           body: JSON.stringify({
             sessionId,
@@ -64,18 +66,22 @@ export default function PaymentSuccessPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Payment verification failed');
+          throw new Error(errorData.message || "Payment verification failed");
         }
 
         const result = await response.json();
         setPaymentResult(result);
-        
+
         if (result.success) {
-          toast.success(`Successfully added ${result.coinsAdded} coins to your account!`);
+          toast.success(
+            `Successfully added ${result.coinsAdded} coins to your account!`
+          );
         }
       } catch (error) {
-        console.error('Payment verification error:', error);
-        setError(error instanceof Error ? error.message : 'Payment verification failed');
+        console.error("Payment verification error:", error);
+        setError(
+          error instanceof Error ? error.message : "Payment verification failed"
+        );
       } finally {
         setLoading(false);
       }
@@ -103,20 +109,22 @@ export default function PaymentSuccessPage() {
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
               <span className="text-red-600 text-2xl">✕</span>
             </div>
-            <CardTitle className="text-red-600">Payment Verification Failed</CardTitle>
+            <CardTitle className="text-red-600">
+              Payment Verification Failed
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-gray-600">{error}</p>
             <div className="flex flex-col gap-2">
               <Button
-                onClick={() => router.push('/buy-coins')}
+                onClick={() => router.push("/buy-coins")}
                 className="w-full"
               >
                 Try Again
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="w-full"
               >
                 Go to Dashboard
@@ -144,14 +152,14 @@ export default function PaymentSuccessPage() {
             </p>
             <div className="flex flex-col gap-2">
               <Button
-                onClick={() => router.push('/buy-coins')}
+                onClick={() => router.push("/buy-coins")}
                 className="w-full"
               >
                 Try Again
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="w-full"
               >
                 Go to Dashboard
@@ -170,7 +178,9 @@ export default function PaymentSuccessPage() {
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <CardTitle className="text-green-600 text-2xl">Payment Successful!</CardTitle>
+          <CardTitle className="text-green-600 text-2xl">
+            Payment Successful!
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Payment Details */}
@@ -182,7 +192,8 @@ export default function PaymentSuccessPage() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Amount Paid:</span>
               <span className="font-medium">
-                {(paymentResult.amountTotal / 100).toFixed(2)} {paymentResult.currency.toUpperCase()}
+                {(paymentResult.amountTotal / 100).toFixed(2)}{" "}
+                {paymentResult.currency.toUpperCase()}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -210,7 +221,7 @@ export default function PaymentSuccessPage() {
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
             <Button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push("/dashboard")}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
               <Home className="h-4 w-4 mr-2" />
@@ -218,7 +229,7 @@ export default function PaymentSuccessPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/buy-coins')}
+              onClick={() => router.push("/buy-coins")}
               className="w-full"
             >
               Buy More Coins
@@ -234,5 +245,20 @@ export default function PaymentSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

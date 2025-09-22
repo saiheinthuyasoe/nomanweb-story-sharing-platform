@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSearchStories } from "@/hooks/useStories";
 import { useUserSearch } from "@/hooks/useUserSearch";
@@ -21,7 +21,7 @@ interface SearchUser {
   email?: string;
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -299,5 +299,17 @@ function UserSearchResults({
         </Link>
       ))}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

@@ -1,12 +1,28 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, X, Loader2, Link, Camera, Plus, Edit3, Trash2, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import toast from 'react-hot-toast';
-import { apiClient } from '@/lib/api/client';
-import { preloadImage, isImageCached, markImageAsCached, getCachedImageResult, shouldAttemptOAuthImageLoad } from '@/lib/imageLoader';
-import { ImageCropModal } from './ImageCropModal';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Upload,
+  X,
+  Loader2,
+  Link,
+  Camera,
+  Plus,
+  Edit3,
+  Trash2,
+  User,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
+import { apiClient } from "@/lib/api/client";
+import {
+  preloadImage,
+  isImageCached,
+  markImageAsCached,
+  getCachedImageResult,
+  shouldAttemptOAuthImageLoad,
+} from "@/lib/imageLoader";
+import { ImageCropModal } from "./ImageCropModal";
 
 interface ProfileImageUploadProps {
   value?: string;
@@ -14,7 +30,7 @@ interface ProfileImageUploadProps {
   onRemove?: () => void;
   disabled?: boolean;
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   acceptedFileTypes?: string[];
   maxFileSize?: number; // in MB
   placeholder?: string;
@@ -30,13 +46,13 @@ interface UploadResponse {
   folder?: string;
 }
 
-type UploadMode = 'choose' | 'file' | 'url';
+type UploadMode = "choose" | "file" | "url";
 
 const sizeConfig = {
-  sm: { container: 'w-16 h-16', text: 'text-xs', icon: 'w-4 h-4' },
-  md: { container: 'w-24 h-24', text: 'text-sm', icon: 'w-6 h-6' },
-  lg: { container: 'w-32 h-32', text: 'text-base', icon: 'w-8 h-8' },
-  xl: { container: 'w-40 h-40', text: 'text-lg', icon: 'w-10 h-10' },
+  sm: { container: "w-16 h-16", text: "text-xs", icon: "w-4 h-4" },
+  md: { container: "w-24 h-24", text: "text-sm", icon: "w-6 h-6" },
+  lg: { container: "w-32 h-32", text: "text-base", icon: "w-8 h-8" },
+  xl: { container: "w-40 h-40", text: "text-lg", icon: "w-10 h-10" },
 };
 
 export function ProfileImageUpload({
@@ -45,168 +61,201 @@ export function ProfileImageUpload({
   onRemove,
   disabled = false,
   className,
-  size = 'lg',
-  acceptedFileTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+  size = "lg",
+  acceptedFileTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ],
   maxFileSize = 10, // 10MB
-  placeholder = 'Upload profile image'
+  placeholder = "Upload profile image",
 }: ProfileImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [mode, setMode] = useState<UploadMode>('choose');
-  const [urlInput, setUrlInput] = useState('');
+  const [mode, setMode] = useState<UploadMode>("choose");
+  const [urlInput, setUrlInput] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
-  const [imageToCrop, setImageToCrop] = useState<string>('');
+  const [imageToCrop, setImageToCrop] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const config = sizeConfig[size] || sizeConfig.lg;
 
-  const validateFile = useCallback((file: File): string | null => {
-    if (!acceptedFileTypes.includes(file.type)) {
-      return `Invalid file type. Accepted types: ${acceptedFileTypes.join(', ')}`;
-    }
-
-    if (file.size > maxFileSize * 1024 * 1024) {
-      return `File size too large. Maximum size: ${maxFileSize}MB`;
-    }
-
-    return null;
-  }, [acceptedFileTypes, maxFileSize]);
-
-  const uploadFile = useCallback(async (file: File) => {
-    const validationError = validateFile(file);
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
-    // Create a preview URL for cropping
-    const imageUrl = URL.createObjectURL(file);
-    setImageToCrop(imageUrl);
-    setShowCropModal(true);
-    setShowModal(false);
-    setMode('choose');
-  }, [validateFile]);
-
-  const handleCropComplete = useCallback(async (croppedFile: File) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', croppedFile);
-
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-      const response = await apiClient.post('/upload/profile-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      const result = response.data;
-
-      if (result.success && result.imageUrl) {
-        toast.success('Profile image uploaded successfully!');
-        onChange?.(result.imageUrl);
-        setShowCropModal(false);
-        setImageToCrop('');
-      } else {
-        throw new Error(result.message || 'Upload failed');
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      if (!acceptedFileTypes.includes(file.type)) {
+        return `Invalid file type. Accepted types: ${acceptedFileTypes.join(
+          ", "
+        )}`;
       }
 
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Upload failed';
-      toast.error(errorMessage);
-    } finally {
-      setIsUploading(false);
+      if (file.size > maxFileSize * 1024 * 1024) {
+        return `File size too large. Maximum size: ${maxFileSize}MB`;
+      }
+
+      return null;
+    },
+    [acceptedFileTypes, maxFileSize]
+  );
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const validationError = validateFile(file);
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+
+      // Create a preview URL for cropping
+      const imageUrl = URL.createObjectURL(file);
+      setImageToCrop(imageUrl);
+      setShowCropModal(true);
+      setShowModal(false);
+      setMode("choose");
+    },
+    [validateFile]
+  );
+
+  const handleCropComplete = useCallback(
+    async (croppedFile: File) => {
+      setIsUploading(true);
       setUploadProgress(0);
-    }
-  }, [onChange]);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", croppedFile);
+
+        const progressInterval = setInterval(() => {
+          setUploadProgress((prev) => Math.min(prev + 10, 90));
+        }, 200);
+
+        const response = await apiClient.post(
+          "/upload/profile-image",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+
+        const result = response.data;
+
+        if (result.success && result.imageUrl) {
+          toast.success("Profile image uploaded successfully!");
+          onChange?.(result.imageUrl);
+          setShowCropModal(false);
+          setImageToCrop("");
+        } else {
+          throw new Error(result.message || "Upload failed");
+        }
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        const errorMessage =
+          error.response?.data?.message || error.message || "Upload failed";
+        toast.error(errorMessage);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    },
+    [onChange]
+  );
 
   const handleUrlSubmit = useCallback(() => {
     if (!urlInput.trim()) {
-      toast.error('Please enter a valid image URL');
+      toast.error("Please enter a valid image URL");
       return;
     }
 
     try {
       const url = new URL(urlInput.trim());
-      if (!url.protocol.startsWith('http')) {
-        throw new Error('Invalid URL protocol');
+      if (!url.protocol.startsWith("http")) {
+        throw new Error("Invalid URL protocol");
       }
-      
+
       onChange?.(urlInput.trim());
-      setUrlInput('');
+      setUrlInput("");
       setShowModal(false);
-      setMode('choose');
-      toast.success('Profile image URL added successfully!');
+      setMode("choose");
+      toast.success("Profile image URL added successfully!");
     } catch (error) {
-      toast.error('Please enter a valid URL');
+      toast.error("Please enter a valid URL");
     }
   }, [urlInput, onChange]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    if (!disabled && mode === 'file') {
-      setIsDragging(true);
-    }
-  }, [disabled, mode]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      if (!disabled && mode === "file") {
+        setIsDragging(true);
+      }
+    },
+    [disabled, mode]
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
 
-    if (disabled || mode !== 'file') return;
+      if (disabled || mode !== "file") return;
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      uploadFile(files[0]);
-    }
-  }, [disabled, mode, uploadFile]);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        uploadFile(files[0]);
+      }
+    },
+    [disabled, mode, uploadFile]
+  );
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      uploadFile(files[0]);
-    }
-    e.target.value = '';
-  }, [uploadFile]);
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        uploadFile(files[0]);
+      }
+      e.target.value = "";
+    },
+    [uploadFile]
+  );
 
-  const handleRemove = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!disabled) {
-      onRemove?.();
-      setMode('choose');
-    }
-  }, [disabled, onRemove]);
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!disabled) {
+        onRemove?.();
+        setMode("choose");
+      }
+    },
+    [disabled, onRemove]
+  );
 
   const openModal = () => {
     setShowModal(true);
-    setMode('choose');
+    setMode("choose");
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setMode('choose');
-    setUrlInput('');
+    setMode("choose");
+    setUrlInput("");
   };
 
   const closeCropModal = () => {
     setShowCropModal(false);
-    setImageToCrop('');
+    setImageToCrop("");
     // Clean up the object URL to prevent memory leaks
     if (imageToCrop) {
       URL.revokeObjectURL(imageToCrop);
@@ -222,9 +271,10 @@ export function ProfileImageUpload({
     useEffect(() => {
       if (value && value.trim()) {
         // Check if it's an external OAuth image
-        const isExternal = value.includes('googleusercontent.com') || 
-                          value.includes('profile-cdn.line-scdn.net') ||
-                          value.includes('graph.facebook.com');
+        const isExternal =
+          value.includes("googleusercontent.com") ||
+          value.includes("profile-cdn.line-scdn.net") ||
+          value.includes("graph.facebook.com");
         setIsExternalOAuth(isExternal);
 
         // Check if image is already cached
@@ -240,20 +290,20 @@ export function ProfileImageUpload({
           // OAuth image is in cooldown, show error state immediately
           setImageLoaded(false);
           setImageError(true);
-          console.warn('OAuth image load skipped - in cooldown period');
+          console.warn("OAuth image load skipped - in cooldown period");
           return;
         }
-        
+
         setImageLoaded(false);
         setImageError(false);
-        
+
         // Use preloader for better image loading
         preloadImage(value).then((result) => {
           setImageLoaded(result.success);
           setImageError(!result.success);
           if (!result.success && !isExternalOAuth) {
             // Only log non-OAuth errors to reduce console noise
-            console.error('Image preload failed:', result.error);
+            console.error("Image preload failed:", result.error);
           }
         });
       } else {
@@ -280,17 +330,31 @@ export function ProfileImageUpload({
           <div className="inline-block relative">
             {/* Loading state */}
             {!imageLoaded && !imageError && (
-              <div className={`${config.container} border-2 border-gray-200 rounded-full bg-gray-50 flex items-center justify-center`}>
-                <Loader2 className={`${config.icon} animate-spin text-[#18243c]`} />
+              <div
+                className={`${config.container} border-2 border-gray-200 rounded-full bg-gray-50 flex items-center justify-center`}
+              >
+                <Loader2
+                  className={`${config.icon} animate-spin text-[#18243c]`}
+                />
               </div>
             )}
 
             {/* Error state - show default avatar for OAuth errors, X for other errors */}
             {imageError && (
-              <div 
-                className={`${config.container} border-2 ${isExternalOAuth ? 'border-[#18243c]/30 bg-[#18243c]/5' : 'border-red-300 bg-red-50'} rounded-full flex items-center justify-center cursor-pointer ${isExternalOAuth ? 'hover:bg-[#18243c]/10' : 'hover:bg-red-100'}`}
+              <div
+                className={`${config.container} border-2 ${
+                  isExternalOAuth
+                    ? "border-[#18243c]/30 bg-[#18243c]/5"
+                    : "border-red-300 bg-red-50"
+                } rounded-full flex items-center justify-center cursor-pointer ${
+                  isExternalOAuth ? "hover:bg-[#18243c]/10" : "hover:bg-red-100"
+                }`}
                 onClick={openModal}
-                title={isExternalOAuth ? "Social media image temporarily unavailable - click to upload a new one" : "Image failed to load - click to try again"}
+                title={
+                  isExternalOAuth
+                    ? "Social media image temporarily unavailable - click to upload a new one"
+                    : "Image failed to load - click to try again"
+                }
               >
                 {isExternalOAuth ? (
                   <User className={`${config.icon} text-[#18243c]`} />
@@ -308,9 +372,11 @@ export function ProfileImageUpload({
 
             {/* Profile image display - only show if successfully preloaded */}
             {!imageError && value && imageLoaded && (
-              <div className={`${config.container} border-2 border-gray-200 rounded-full overflow-hidden group-hover:border-[#18243c]/30 transition-colors duration-300`}>
-                <img 
-                  src={value} 
+              <div
+                className={`${config.container} border-2 border-gray-200 rounded-full overflow-hidden group-hover:border-[#18243c]/30 transition-colors duration-300`}
+              >
+                <img
+                  src={value}
                   alt="Profile"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                   onLoad={handleImageLoad}
@@ -332,17 +398,19 @@ export function ProfileImageUpload({
               </button>
             )}
           </div>
-          
+
           {/* Controls and status */}
           <div className="mt-2">
-            {size === 'lg' && (
+            {size === "lg" && (
               <div className="space-y-1">
-                <p className={`${config.text} font-medium text-gray-700`}>Profile Picture</p>
-                
+                <p className={`${config.text} font-medium text-gray-700`}>
+                  Profile Picture
+                </p>
+
                 {!imageLoaded && !imageError && (
                   <p className="text-xs text-gray-500">Loading...</p>
                 )}
-                
+
                 {imageError && (
                   <div className="space-y-1">
                     {isExternalOAuth ? (
@@ -362,9 +430,13 @@ export function ProfileImageUpload({
                     <div className="space-x-2">
                       <button
                         onClick={openModal}
-                        className={`text-xs ${isExternalOAuth ? 'text-[#18243c] hover:text-[#22325a]' : 'text-[#18243c] hover:text-[#22325a]'}`}
+                        className={`text-xs ${
+                          isExternalOAuth
+                            ? "text-[#18243c] hover:text-[#22325a]"
+                            : "text-[#18243c] hover:text-[#22325a]"
+                        }`}
                       >
-                        {isExternalOAuth ? 'Upload new image' : 'Try again'}
+                        {isExternalOAuth ? "Upload new image" : "Try again"}
                       </button>
                       {onRemove && (
                         <button
@@ -396,19 +468,23 @@ export function ProfileImageUpload({
     // Empty state - circular placeholder
     return (
       <div className="text-center">
-        <div 
-          onClick={openModal} 
+        <div
+          onClick={openModal}
           className={`${config.container} border-2 border-dashed border-gray-300 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 hover:border-[#18243c] hover:from-[#18243c]/5 hover:to-[#22325a]/5 transition-all duration-300 mx-auto cursor-pointer flex items-center justify-center group`}
         >
           <div className="text-center">
-            <Plus className={`${config.icon} text-gray-500 mx-auto group-hover:text-[#18243c] transition-colors duration-300`} />
-            {size === 'lg' && (
-              <p className="text-xs text-gray-500 mt-1 group-hover:text-[#18243c] transition-colors duration-300">Add Photo</p>
+            <Plus
+              className={`${config.icon} text-gray-500 mx-auto group-hover:text-[#18243c] transition-colors duration-300`}
+            />
+            {size === "lg" && (
+              <p className="text-xs text-gray-500 mt-1 group-hover:text-[#18243c] transition-colors duration-300">
+                Add Photo
+              </p>
             )}
           </div>
         </div>
-        
-        {size === 'lg' && (
+
+        {size === "lg" && (
           <p className="text-xs text-gray-500 mt-2">Click to upload</p>
         )}
       </div>
@@ -422,13 +498,17 @@ export function ProfileImageUpload({
         <div className="w-16 h-16 bg-gradient-to-br from-[#18243c] to-[#22325a] rounded-full flex items-center justify-center mx-auto mb-4">
           <User className="w-8 h-8 text-white" />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Add Profile Picture</h3>
-        <p className="text-gray-600">Choose how you'd like to add your profile image</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          Add Profile Picture
+        </h3>
+        <p className="text-gray-600">
+          Choose how you'd like to add your profile image
+        </p>
       </div>
-      
+
       <div className="grid grid-cols-1 gap-4">
         <button
-          onClick={() => setMode('file')}
+          onClick={() => setMode("file")}
           className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
         >
           <div className="flex items-center">
@@ -436,7 +516,9 @@ export function ProfileImageUpload({
               <Camera className="w-6 h-6 text-[#18243c]" />
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">Upload from Device</h4>
+              <h4 className="font-semibold text-gray-900 mb-1">
+                Upload from Device
+              </h4>
               <p className="text-sm text-gray-600">
                 Choose a file from your computer or drag and drop
               </p>
@@ -445,7 +527,7 @@ export function ProfileImageUpload({
         </button>
 
         <button
-          onClick={() => setMode('url')}
+          onClick={() => setMode("url")}
           className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
         >
           <div className="flex items-center">
@@ -467,9 +549,11 @@ export function ProfileImageUpload({
   const FileUploadMode = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-900">Upload Profile Picture</h3>
+        <h3 className="text-xl font-bold text-gray-900">
+          Upload Profile Picture
+        </h3>
         <button
-          onClick={() => setMode('choose')}
+          onClick={() => setMode("choose")}
           className="text-gray-500 hover:text-gray-700 transition-colors"
         >
           <X className="w-5 h-5" />
@@ -479,7 +563,7 @@ export function ProfileImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept={acceptedFileTypes.join(',')}
+        accept={acceptedFileTypes.join(",")}
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled || isUploading}
@@ -487,11 +571,12 @@ export function ProfileImageUpload({
 
       <div
         className={cn(
-          'relative border-2 border-dashed rounded-xl transition-all duration-300 aspect-square w-full max-w-sm mx-auto',
+          "relative border-2 border-dashed rounded-xl transition-all duration-300 aspect-square w-full max-w-sm mx-auto",
           {
-            'border-[#18243c] bg-[#18243c]/5': isDragging && !disabled,
-            'border-gray-300 hover:border-gray-400 bg-gray-50': !isDragging && !disabled,
-            'border-gray-200 cursor-not-allowed opacity-50': disabled,
+            "border-[#18243c] bg-[#18243c]/5": isDragging && !disabled,
+            "border-gray-300 hover:border-gray-400 bg-gray-50":
+              !isDragging && !disabled,
+            "border-gray-200 cursor-not-allowed opacity-50": disabled,
           }
         )}
         onDragOver={handleDragOver}
@@ -504,9 +589,11 @@ export function ProfileImageUpload({
             <div className="w-16 h-16 bg-[#18243c]/10 rounded-full flex items-center justify-center mb-4">
               <Loader2 className="w-8 h-8 animate-spin text-[#18243c]" />
             </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">Uploading...</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Uploading...
+            </h4>
             <div className="w-64 bg-gray-200 rounded-full h-3 mb-2">
-              <div 
+              <div
                 className="bg-gradient-to-r from-[#18243c] to-[#22325a] h-3 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               />
@@ -515,24 +602,38 @@ export function ProfileImageUpload({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center cursor-pointer">
-            <div className={cn(
-              'w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300',
-              isDragging ? 'bg-[#18243c]/20 text-[#18243c]' : 'bg-gray-200 text-gray-500'
-            )}>
+            <div
+              className={cn(
+                "w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300",
+                isDragging
+                  ? "bg-[#18243c]/20 text-[#18243c]"
+                  : "bg-gray-200 text-gray-500"
+              )}
+            >
               <Upload className="w-8 h-8" />
             </div>
-            
+
             <h4 className="text-lg font-semibold text-gray-900 mb-2">
-              {isDragging ? 'Drop your image here' : 'Upload Profile Picture'}
+              {isDragging ? "Drop your image here" : "Upload Profile Picture"}
             </h4>
-            
+
             <p className="text-gray-600 mb-4">
-              {isDragging ? 'Release to upload' : 'Drag and drop your image, or click to browse'}
+              {isDragging
+                ? "Release to upload"
+                : "Drag and drop your image, or click to browse"}
             </p>
-            
+
             <div className="space-y-2 text-sm text-gray-500">
-              <p>Supports: {acceptedFileTypes.map(type => type.split('/')[1]).join(', ').toUpperCase()}</p>
-              <p>Max size: {maxFileSize}MB • Will be cropped to square format</p>
+              <p>
+                Supports:{" "}
+                {acceptedFileTypes
+                  .map((type) => type.split("/")[1])
+                  .join(", ")
+                  .toUpperCase()}
+              </p>
+              <p>
+                Max size: {maxFileSize}MB • Will be cropped to square format
+              </p>
             </div>
           </div>
         )}
@@ -545,7 +646,7 @@ export function ProfileImageUpload({
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-gray-900">Add Image from URL</h3>
         <button
-          onClick={() => setMode('choose')}
+          onClick={() => setMode("choose")}
           className="text-gray-500 hover:text-gray-700 transition-colors"
         >
           <X className="w-5 h-5" />
@@ -578,14 +679,18 @@ export function ProfileImageUpload({
                 alt="URL Preview"
                 className="w-full h-full object-cover object-center"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                  e.currentTarget.style.display = "none";
+                  const nextSibling = e.currentTarget
+                    .nextElementSibling as HTMLElement;
                   if (nextSibling) {
-                    nextSibling.style.display = 'flex';
+                    nextSibling.style.display = "flex";
                   }
                 }}
               />
-              <div className="w-full h-full flex items-center justify-center text-gray-400" style={{display: 'none'}}>
+              <div
+                className="w-full h-full flex items-center justify-center text-gray-400"
+                style={{ display: "none" }}
+              >
                 <div className="text-center">
                   <X className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-sm">Invalid image URL</p>
@@ -607,7 +712,7 @@ export function ProfileImageUpload({
   );
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn("w-full", className)}>
       <ProfileDisplay />
 
       {/* Modal */}
@@ -615,12 +720,16 @@ export function ProfileImageUpload({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
             <div className="p-6">
-              {mode === 'choose' ? <ModeSelector /> :
-               mode === 'file' ? <FileUploadMode /> :
-               mode === 'url' ? <UrlInputMode /> : null}
+              {mode === "choose" ? (
+                <ModeSelector />
+              ) : mode === "file" ? (
+                <FileUploadMode />
+              ) : mode === "url" ? (
+                <UrlInputMode />
+              ) : null}
             </div>
-            
-            {mode === 'choose' && (
+
+            {mode === "choose" && (
               <div className="px-6 pb-6">
                 <button
                   onClick={closeModal}
@@ -645,4 +754,4 @@ export function ProfileImageUpload({
       />
     </div>
   );
-} 
+}

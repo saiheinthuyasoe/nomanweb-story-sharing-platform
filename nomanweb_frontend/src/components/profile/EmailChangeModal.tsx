@@ -1,11 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, AlertCircle, CheckCircle, Shield, Clock, RefreshCw } from 'lucide-react';
-import { User as UserType } from '@/types/user';
-import { authApi } from '@/lib/api/auth';
-import toast from 'react-hot-toast';
-import { handleApiError } from '@/lib/utils/errorHandling';
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Mail,
+  Lock,
+  AlertCircle,
+  CheckCircle,
+  Shield,
+  Clock,
+  RefreshCw,
+} from "lucide-react";
+import { User as UserType } from "@/types/user";
+import { authApi } from "@/lib/api/auth";
+import toast from "react-hot-toast";
+import { handleApiError } from "@/lib/utils/errorHandling";
 
 interface EmailChangeModalProps {
   user: UserType;
@@ -14,13 +23,18 @@ interface EmailChangeModalProps {
   onEmailChanged: (newEmail: string) => void;
 }
 
-export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged }: EmailChangeModalProps) {
+export default function EmailChangeModal({
+  user,
+  isOpen,
+  onClose,
+  onEmailChanged,
+}: EmailChangeModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'pending'>('form');
-  const [pendingEmail, setPendingEmail] = useState('');
+  const [step, setStep] = useState<"form" | "pending">("form");
+  const [pendingEmail, setPendingEmail] = useState("");
   const [formData, setFormData] = useState({
-    currentPassword: '',
-    newEmail: '',
+    currentPassword: "",
+    newEmail: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [cooldownTime, setCooldownTime] = useState(0);
@@ -28,14 +42,14 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
 
   // Check if user has OAuth accounts
   const hasOAuthAccount = !!(user.googleId || user.lineUserId);
-  
+
   // Use backend flag if available, otherwise use conservative approach
   const canUseOAuthEndpoints = user.canUseOAuthEndpoints ?? false;
-  
+
   const isOAuthOnlyUser = canUseOAuthEndpoints;
   const isHybridUser = hasOAuthAccount && !canUseOAuthEndpoints;
   const isPasswordOnlyUser = !hasOAuthAccount;
-  
+
   // Use OAuth endpoint only if backend explicitly allows it
   const isOAuthUser = isOAuthOnlyUser;
 
@@ -61,16 +75,21 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if ((isPasswordOnlyUser || isHybridUser) && !formData.currentPassword.trim()) {
-      newErrors.currentPassword = 'Current password is required';
+    if (
+      (isPasswordOnlyUser || isHybridUser) &&
+      !formData.currentPassword.trim()
+    ) {
+      newErrors.currentPassword = "Current password is required";
     }
 
     if (!formData.newEmail.trim()) {
-      newErrors.newEmail = 'New email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.newEmail)) {
-      newErrors.newEmail = 'Please enter a valid email address';
+      newErrors.newEmail = "New email is required";
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.newEmail)
+    ) {
+      newErrors.newEmail = "Please enter a valid email address";
     } else if (formData.newEmail.toLowerCase() === user.email.toLowerCase()) {
-      newErrors.newEmail = 'New email must be different from current email';
+      newErrors.newEmail = "New email must be different from current email";
     }
 
     setErrors(newErrors);
@@ -79,7 +98,7 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -98,10 +117,10 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
       }
 
       setPendingEmail(formData.newEmail);
-      setStep('pending');
-      toast.success('Email change verification sent to new email address');
+      setStep("pending");
+      toast.success("Email change verification sent to new email address");
     } catch (error: any) {
-      handleApiError(error, 'Failed to initiate email change');
+      handleApiError(error, "Failed to initiate email change");
     } finally {
       setIsLoading(false);
     }
@@ -116,23 +135,23 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
     setIsLoading(true);
     try {
       await authApi.resendEmailChangeVerification(pendingEmail);
-      toast.success('Verification email resent successfully');
-      
+      toast.success("Verification email resent successfully");
+
       // Start cooldown timer (60 seconds)
       setCooldownTime(60);
       setCanResend(false);
     } catch (error: any) {
-      handleApiError(error, 'Failed to resend verification email');
+      handleApiError(error, "Failed to resend verification email");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    setStep('form');
-    setFormData({ currentPassword: '', newEmail: '' });
+    setStep("form");
+    setFormData({ currentPassword: "", newEmail: "" });
     setErrors({});
-    setPendingEmail('');
+    setPendingEmail("");
     setCooldownTime(0);
     setCanResend(true);
     onClose();
@@ -150,10 +169,14 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
               </div>
               <div>
                 <h2 className="text-xl font-bold bg-gradient-to-r from-[#18243c] to-[#22325a] bg-clip-text text-transparent">
-                  {step === 'form' ? 'Change Email Address' : 'Verify New Email'}
+                  {step === "form"
+                    ? "Change Email Address"
+                    : "Verify New Email"}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {step === 'form' ? 'Update your email address' : 'Check your email for verification'}
+                  {step === "form"
+                    ? "Update your email address"
+                    : "Check your email for verification"}
                 </p>
               </div>
             </div>
@@ -166,7 +189,7 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
           </div>
         </div>
 
-        {step === 'form' ? (
+        {step === "form" ? (
           /* Enhanced Email Change Form */
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Current Email Section */}
@@ -178,7 +201,9 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
               <div className="p-3 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border border-gray-200/60 rounded-xl backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-blue-500" />
-                  <span className="text-gray-700 font-medium">{user.email}</span>
+                  <span className="text-gray-700 font-medium">
+                    {user.email}
+                  </span>
                   {user.emailVerified && (
                     <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
@@ -192,7 +217,10 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
             {/* Current Password Section - Required for password-only and hybrid users */}
             {(isPasswordOnlyUser || isHybridUser) && (
               <div className="space-y-3">
-                <label htmlFor="currentPassword" className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+                <label
+                  htmlFor="currentPassword"
+                  className="flex items-center space-x-2 text-sm font-semibold text-gray-700"
+                >
                   <Lock className="w-4 h-4 text-[#18243c]" />
                   <span>Current Password *</span>
                 </label>
@@ -202,14 +230,19 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                     id="currentPassword"
                     value={formData.currentPassword}
                     onChange={(e) => {
-                      setFormData({ ...formData, currentPassword: e.target.value });
+                      setFormData({
+                        ...formData,
+                        currentPassword: e.target.value,
+                      });
                       if (errors.currentPassword) {
-                        setErrors({ ...errors, currentPassword: '' });
+                        setErrors({ ...errors, currentPassword: "" });
                       }
                     }}
                     placeholder="Enter your current password"
                     className={`w-full pl-4 pr-4 py-3 bg-white/80 backdrop-blur-sm border rounded-xl focus:ring-2 focus:ring-[#18243c]/20 focus:border-[#18243c]/40 transition-all duration-300 placeholder-gray-400 ${
-                      errors.currentPassword ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200/60'
+                      errors.currentPassword
+                        ? "border-red-300 focus:ring-red-200 focus:border-red-400"
+                        : "border-gray-200/60"
                     }`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#18243c]/5 to-[#22325a]/5 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -231,8 +264,13 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-blue-800 mb-1">OAuth Account</p>
-                    <p className="text-blue-700">Since you signed up with Google or LINE, no password verification is required to change your email address.</p>
+                    <p className="font-semibold text-blue-800 mb-1">
+                      OAuth Account
+                    </p>
+                    <p className="text-blue-700">
+                      Since you signed up with Google or LINE, no password
+                      verification is required to change your email address.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -246,8 +284,13 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                     <AlertCircle className="h-4 w-4 text-yellow-600" />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-yellow-800 mb-1">Hybrid Account</p>
-                    <p className="text-yellow-700">You have both a password and OAuth accounts linked. Password verification is required for security.</p>
+                    <p className="font-semibold text-yellow-800 mb-1">
+                      Hybrid Account
+                    </p>
+                    <p className="text-yellow-700">
+                      You have both a password and OAuth accounts linked.
+                      Password verification is required for security.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -255,7 +298,10 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
 
             {/* New Email Section */}
             <div className="space-y-3">
-              <label htmlFor="newEmail" className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+              <label
+                htmlFor="newEmail"
+                className="flex items-center space-x-2 text-sm font-semibold text-gray-700"
+              >
                 <Mail className="w-4 h-4 text-[#18243c]" />
                 <span>New Email Address *</span>
               </label>
@@ -267,12 +313,14 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                   onChange={(e) => {
                     setFormData({ ...formData, newEmail: e.target.value });
                     if (errors.newEmail) {
-                      setErrors({ ...errors, newEmail: '' });
+                      setErrors({ ...errors, newEmail: "" });
                     }
                   }}
                   placeholder="Enter new email address"
                   className={`w-full pl-4 pr-4 py-3 bg-white/80 backdrop-blur-sm border rounded-xl focus:ring-2 focus:ring-[#18243c]/20 focus:border-[#18243c]/40 transition-all duration-300 placeholder-gray-400 ${
-                    errors.newEmail ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-200/60'
+                    errors.newEmail
+                      ? "border-red-300 focus:ring-red-200 focus:border-red-400"
+                      : "border-gray-200/60"
                   }`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#18243c]/5 to-[#22325a]/5 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -292,11 +340,15 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                   <Shield className="h-4 w-4 text-[#18243c]" />
                 </div>
                 <div className="text-sm">
-                  <p className="font-semibold text-gray-800 mb-2">Email Change Process</p>
+                  <p className="font-semibold text-gray-800 mb-2">
+                    Email Change Process
+                  </p>
                   <ul className="space-y-1 text-gray-700">
                     <li className="flex items-center space-x-2">
                       <div className="w-1.5 h-1.5 bg-[#18243c] rounded-full" />
-                      <span>Verification email will be sent to new address</span>
+                      <span>
+                        Verification email will be sent to new address
+                      </span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <div className="w-1.5 h-1.5 bg-[#18243c] rounded-full" />
@@ -349,8 +401,13 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 </div>
                 <div className="text-sm">
-                  <p className="font-semibold text-green-800 mb-1">Verification Email Sent!</p>
-                  <p className="text-green-700">We've sent a verification email to <span className="font-medium">{pendingEmail}</span></p>
+                  <p className="font-semibold text-green-800 mb-1">
+                    Verification Email Sent!
+                  </p>
+                  <p className="text-green-700">
+                    We've sent a verification email to{" "}
+                    <span className="font-medium">{pendingEmail}</span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -389,8 +446,12 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                     <Clock className="h-4 w-4 text-[#18243c]" />
                   </div>
                   <div className="text-sm">
-                    <p className="font-semibold text-gray-800">Didn't receive the email?</p>
-                    <p className="text-gray-600">You can resend the verification email</p>
+                    <p className="font-semibold text-gray-800">
+                      Didn't receive the email?
+                    </p>
+                    <p className="text-gray-600">
+                      You can resend the verification email
+                    </p>
                   </div>
                 </div>
                 <button
@@ -398,10 +459,14 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
                   disabled={!canResend || isLoading}
                   className="group flex items-center space-x-2 px-4 py-2 bg-[#18243c]/10 hover:bg-[#18243c]/20 text-[#18243c] rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-300'}`} />
-                  <span>
-                    {canResend ? 'Resend' : `${cooldownTime}s`}
-                  </span>
+                  <RefreshCw
+                    className={`h-4 w-4 ${
+                      isLoading
+                        ? "animate-spin"
+                        : "group-hover:rotate-180 transition-transform duration-300"
+                    }`}
+                  />
+                  <span>{canResend ? "Resend" : `${cooldownTime}s`}</span>
                 </button>
               </div>
             </div>
@@ -417,7 +482,7 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
               </button>
               <button
                 type="button"
-                onClick={() => setStep('form')}
+                onClick={() => setStep("form")}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-[#18243c] to-[#22325a] hover:from-[#22325a] hover:to-[#2d4574] text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Change Email
@@ -428,4 +493,4 @@ export default function EmailChangeModal({ user, isOpen, onClose, onEmailChanged
       </div>
     </div>
   );
-} 
+}
