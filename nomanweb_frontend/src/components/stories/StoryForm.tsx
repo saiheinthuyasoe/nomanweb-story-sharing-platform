@@ -9,7 +9,7 @@ import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationM
 
 interface StoryFormProps {
   story?: Story;
-  onSubmit: (data: CreateStoryRequest | UpdateStoryRequest) => void;
+  onSubmit: (data: CreateStoryRequest | UpdateStoryRequest, shouldRedirect?: boolean) => void;
   onCancel: () => void;
   isLoading?: boolean;
   isEdit?: boolean;
@@ -142,11 +142,45 @@ export function StoryForm({
     }
   };
 
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+
   const handleCoverImageChange = useCallback((url: string) => {
     console.log("🖼️ StoryForm: handleCoverImageChange called with URL:", url);
     setValue("coverImageUrl", url);
     setStableCoverImage(url);
-  }, [setValue]);
+    
+    // Don't auto-save if we're already in an auto-save process to prevent loops
+    if (isAutoSaving) {
+      return;
+    }
+    
+    // Auto-save cover image change without redirecting
+    if (isEdit && story?.id) {
+      setIsAutoSaving(true);
+      const currentFormData = watch();
+      const submissionData = { 
+        ...currentFormData, 
+        coverImageUrl: url,
+        tags: selectedTags 
+      };
+      
+      // Clean up pricing fields based on pricing type
+      if (submissionData.pricingType === "FREE") {
+        delete submissionData.bookPrice;
+        delete submissionData.defaultChapterPrice;
+      } else if (submissionData.pricingType === "WHOLE_BOOK") {
+        delete submissionData.defaultChapterPrice;
+      } else if (submissionData.pricingType === "PAID_PER_CHAPTER") {
+        delete submissionData.bookPrice;
+      }
+      
+      // Submit without redirect
+      onSubmit(submissionData, false);
+      
+      // Reset auto-saving flag after a short delay
+      setTimeout(() => setIsAutoSaving(false), 1000);
+    }
+  }, [setValue, isEdit, story?.id, watch, selectedTags, onSubmit, isAutoSaving]);
 
   const handleCoverImageRemove = useCallback(() => {
     setValue("coverImageUrl", "");
@@ -217,12 +251,12 @@ export function StoryForm({
     }
 
     // Submit normally if no refund needed
-    onSubmit(submissionData);
+    onSubmit(submissionData, true);
   };
 
   const handleRefundConfirm = () => {
     if (pendingFormData) {
-      onSubmit(pendingFormData);
+      onSubmit(pendingFormData, true);
       setShowRefundModal(false);
       setPendingFormData(null);
       setRefundData({

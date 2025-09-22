@@ -438,7 +438,12 @@ export function ImageCropModal({
               </div>
             </div>
             <button
-              onClick={onClose}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
               className="p-1 hover:bg-gray-700 rounded"
               aria-label="Close crop modal"
             >
@@ -469,7 +474,12 @@ export function ImageCropModal({
                     </div>
                   </div>
                   <button
-                    onClick={toggleMode}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleMode();
+                    }}
                     className="px-3 py-1 bg-gray-800 text-white text-xs rounded hover:bg-gray-700"
                   >
                     {mode === "crop" ? "Move" : "Crop"}
@@ -562,7 +572,12 @@ export function ImageCropModal({
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={handleZoomOut}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleZoomOut();
+                      }}
                       disabled={scale <= scaleLimits.min}
                       className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Zoom out"
@@ -581,7 +596,12 @@ export function ImageCropModal({
                       className="flex-1 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
                     />
                     <button
-                      onClick={handleZoomIn}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleZoomIn();
+                      }}
                       disabled={scale >= scaleLimits.max}
                       className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                       aria-label="Zoom in"
@@ -609,7 +629,12 @@ export function ImageCropModal({
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={handleRotateLeft}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRotateLeft();
+                      }}
                       className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
                       aria-label="Rotate left"
                     >
@@ -626,7 +651,12 @@ export function ImageCropModal({
                       className="flex-1 h-2 bg-gray-200 rounded appearance-none cursor-pointer"
                     />
                     <button
-                      onClick={handleRotateRight}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRotateRight();
+                      }}
                       className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
                       aria-label="Rotate right"
                     >
@@ -651,7 +681,12 @@ export function ImageCropModal({
                 </div>
 
                 <button
-                  onClick={handleReset}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleReset();
+                  }}
                   className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -668,7 +703,12 @@ export function ImageCropModal({
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setMode("move")}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMode("move");
+                    }}
                     className={`p-2 rounded text-sm ${
                       mode === "move"
                         ? "bg-gray-800 text-white"
@@ -679,7 +719,12 @@ export function ImageCropModal({
                     Move
                   </button>
                   <button
-                    onClick={() => setMode("crop")}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMode("crop");
+                    }}
                     className={`p-2 rounded text-sm ${
                       mode === "crop"
                         ? "bg-gray-800 text-white"
@@ -733,14 +778,24 @@ export function ImageCropModal({
 
             <div className="flex items-center space-x-3">
               <button
-                onClick={onClose}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
                 disabled={isProcessing}
                 className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 transition-all duration-200 font-medium text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCrop}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCrop();
+                }}
                 disabled={isProcessing}
                 className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-[#18243c] to-[#18243c]/80 text-white rounded-lg hover:from-[#22325a] hover:to-[#18243c] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg"
               >
