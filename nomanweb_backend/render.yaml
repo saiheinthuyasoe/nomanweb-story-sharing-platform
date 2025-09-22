@@ -26,6 +26,8 @@ services:
         value: "6379"
       - key: SPRING_DATA_REDIS_PASSWORD
         sync: false
+      - key: SPRING_DATA_REDIS_SSL
+        value: "true"
       - key: TYPESENSE_HOST
         sync: false
       - key: TYPESENSE_PORT
