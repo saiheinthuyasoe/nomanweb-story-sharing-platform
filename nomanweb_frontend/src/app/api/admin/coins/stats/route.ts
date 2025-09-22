@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/stats`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/stats`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
@@ -40,4 +40,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

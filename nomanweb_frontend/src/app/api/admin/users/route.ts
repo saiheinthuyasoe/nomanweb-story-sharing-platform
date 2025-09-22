@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/users?${params}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/users?${params}`;
     
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -51,4 +51,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

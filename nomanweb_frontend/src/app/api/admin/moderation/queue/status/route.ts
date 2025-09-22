@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Ensure BACKEND_URL doesn't end with /api to avoid double /api/api
-const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Forward the request to the Spring Boot backend
-    const response = await fetch(`${BACKEND_URL}/api/admin/moderation/queue/status`, {
+    const response = await fetch(`${BACKEND_URL}/admin/moderation/queue/status`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

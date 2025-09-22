@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // Verify admin token
 function verifyAdminToken(request: NextRequest) {
@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/admin/monetization/gifts/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/admin/monetization/gifts/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const { id } = params;
 
-    const response = await fetch(`${BACKEND_URL}/api/admin/monetization/gifts/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/admin/monetization/gifts/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

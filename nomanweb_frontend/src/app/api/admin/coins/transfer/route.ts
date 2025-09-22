@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const transferData = await request.json();
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/transfer`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/transfer`;
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
@@ -58,4 +58,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

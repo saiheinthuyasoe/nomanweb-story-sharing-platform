@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function POST(
   request: NextRequest,
@@ -16,7 +16,7 @@ export async function POST(
 
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/admin/withdrawals/${withdrawalId}/reject`, {
+    const response = await fetch(`${BACKEND_URL}/admin/withdrawals/${withdrawalId}/reject`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No authorization header' }, { status: 401 });
     }
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/admin/migrate-oauth-images`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/migrate-oauth-images`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
@@ -28,4 +28,4 @@ export async function POST(request: NextRequest) {
     console.error('Error migrating OAuth images:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

@@ -28,7 +28,8 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001",
+        "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 public class AuthController {
 
     private final AuthService authService;

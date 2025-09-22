@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const packageData = await request.json();
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages`;
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages/${id}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${id}`;
     const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
@@ -190,7 +190,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages/${packageId}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
@@ -220,4 +220,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

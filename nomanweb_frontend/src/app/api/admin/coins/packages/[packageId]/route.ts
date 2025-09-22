@@ -20,7 +20,7 @@ export async function PUT(
     const { packageId } = params;
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages/${packageId}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
@@ -81,7 +81,7 @@ export async function DELETE(
     const { packageId } = params;
 
     // Forward request to backend
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/admin/coins/packages/${packageId}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
@@ -113,4 +113,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

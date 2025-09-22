@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/admin/withdrawals/trigger-auto-processing`, {
+    const response = await fetch(`${BACKEND_URL}/admin/withdrawals/trigger-auto-processing`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
