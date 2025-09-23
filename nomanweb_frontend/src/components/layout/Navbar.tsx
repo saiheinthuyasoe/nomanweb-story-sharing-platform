@@ -258,7 +258,16 @@ export default function Navbar() {
                 onSubmit={handleSearch}
                 className="flex items-center bg-white rounded-md sm:rounded-lg border border-gray-200 shadow-sm"
               >
-                <Search className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-gray-500 ml-1 xs:ml-1.5 sm:ml-2" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSearch(e as any);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <Search className="h-3 w-3 xs:h-3.5 xs:w-3.5 sm:h-4 sm:w-4 text-gray-500" />
+                </button>
                 <input
                   type="text"
                   placeholder="Search"
