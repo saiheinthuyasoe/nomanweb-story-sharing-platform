@@ -2,14 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Forward request to backend (no authentication required for public packages)
+    // Get authorization header from request
+    const authHeader = request.headers.get('authorization');
+    
+    // Forward request to backend
     const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
     const backendUrl = `${BACKEND_URL}/api`;
+    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    // Add authorization header if present
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+    
     const response = await fetch(`${backendUrl}/coins/packages`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (!response.ok) {
