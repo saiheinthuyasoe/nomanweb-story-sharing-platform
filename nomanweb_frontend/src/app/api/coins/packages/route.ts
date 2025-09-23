@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // Forward request to backend (no authentication required for public packages)
-    const backendUrl = `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/coins/packages`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/coins/packages`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
