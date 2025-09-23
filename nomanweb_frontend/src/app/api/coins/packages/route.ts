@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get authorization header from request
+    // Get authorization header from request (optional for this public endpoint)
     const authHeader = request.headers.get('authorization');
     
     // Forward request to backend
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       "Content-Type": "application/json",
     };
     
-    // Add authorization header if present
+    // Add authorization header if present (but it's not required for this public endpoint)
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
