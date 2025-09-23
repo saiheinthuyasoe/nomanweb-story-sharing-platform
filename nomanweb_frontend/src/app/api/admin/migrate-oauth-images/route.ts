@@ -8,7 +8,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No authorization header' }, { status: 401 });
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/migrate-oauth-images`, {
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const response = await fetch(`${BACKEND_URL}/api/admin/migrate-oauth-images`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

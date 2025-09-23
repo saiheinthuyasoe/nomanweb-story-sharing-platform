@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
     params.append('page', page.toString());
     params.append('size', size.toString());
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/transactions?${params}`;
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/transactions?${params}`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {

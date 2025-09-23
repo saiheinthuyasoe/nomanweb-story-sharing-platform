@@ -20,7 +20,8 @@ export async function POST(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/unban`, {
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendResponse = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/unban`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -52,4 +53,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

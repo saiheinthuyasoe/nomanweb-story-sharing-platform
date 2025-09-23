@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { broadcastCoinPackageUpdate } from '@/lib/broadcast';
 
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+
 export async function GET(request: NextRequest) {
   try {
-    // Get admin token from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     const packageData = await request.json();
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages`;
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
@@ -124,7 +125,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${id}`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages/${id}`;
     const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
@@ -190,7 +191,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {

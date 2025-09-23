@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const { userId } = await params;
-
+    
     // Get admin token from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -19,7 +21,7 @@ export async function GET(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/admin/users/${userId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -76,7 +78,7 @@ export async function PUT(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/admin/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -130,7 +132,7 @@ export async function DELETE(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/admin/users/${userId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -162,4 +164,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

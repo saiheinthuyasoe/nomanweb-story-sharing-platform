@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/stats`;
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/stats`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {

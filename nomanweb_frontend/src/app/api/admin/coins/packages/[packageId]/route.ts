@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { broadcastCoinPackageUpdate } from '@/lib/broadcast';
 
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { packageId: string } }
+  { params }: { params: Promise<{ packageId: string }> }
 ) {
   try {
+    const { packageId } = await params;
+    
     // Get admin token from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,10 +21,9 @@ export async function PUT(
 
     const adminToken = authHeader.substring(7);
     const packageData = await request.json();
-    const { packageId } = params;
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
@@ -65,9 +68,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { packageId: string } }
+  { params }: { params: Promise<{ packageId: string }> }
 ) {
   try {
+    const { packageId } = await params;
+    
     // Get admin token from Authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -78,10 +83,9 @@ export async function DELETE(
     }
 
     const adminToken = authHeader.substring(7);
-    const { packageId } = params;
 
     // Forward request to backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}/admin/coins/packages/${packageId}`;
+    const backendUrl = `${BACKEND_URL}/api/admin/coins/packages/${packageId}`;
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {

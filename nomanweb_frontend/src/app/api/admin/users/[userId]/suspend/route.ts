@@ -28,7 +28,8 @@ export async function POST(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/suspend`, {
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const response = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/suspend`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -61,4 +62,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

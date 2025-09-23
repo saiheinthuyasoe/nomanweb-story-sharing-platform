@@ -19,7 +19,8 @@ export async function GET(
     const adminToken = authHeader.substring(7);
 
     // Forward request to backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/reports`, {
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const response = await fetch(`${BACKEND_URL}/api/admin/users/${userId}/reports`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -51,4 +52,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}
