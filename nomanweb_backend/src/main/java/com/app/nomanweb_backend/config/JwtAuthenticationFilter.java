@@ -113,6 +113,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/auth/resend-verification") ||
                 path.equals("/api/auth/refresh") ||
                 path.equals("/api/test/public") ||
+                path.equals("/api/coins/packages") || // Public coin packages endpoint
                 path.equals("/error") || // Exclude error page to prevent misleading auth errors
                 path.startsWith("/api/oauth/") ||
                 path.startsWith("/api/public/") ||
