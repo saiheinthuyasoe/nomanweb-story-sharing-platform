@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers/Providers";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import ConditionalNavbar from "@/components/layout/ConditionalNavbar";
 import ConditionalMainContent from "@/components/layout/ConditionalMainContent";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
           </ConditionalMainContent>
           <ToastProvider />
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
