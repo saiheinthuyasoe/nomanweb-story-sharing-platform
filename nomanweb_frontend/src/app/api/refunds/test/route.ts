@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/refunds/test`,
+      `${backendUrl}/refunds/test`,
       {
         method: "GET",
         headers: {

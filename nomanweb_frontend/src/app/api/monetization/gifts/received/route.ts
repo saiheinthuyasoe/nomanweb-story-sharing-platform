@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to the backend
     const backendUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+      const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
     const response = await fetch(
       `${backendUrl}/monetization/gifts/received${
         queryString ? `?${queryString}` : ""

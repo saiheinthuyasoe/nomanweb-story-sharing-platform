@@ -48,8 +48,10 @@ export async function GET(
     }
 
     // Use the existing StoryController endpoint instead of RefundController
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/stories/${storyId}/has-purchases`,
+      `${backendUrl}/stories/${storyId}/has-purchases`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

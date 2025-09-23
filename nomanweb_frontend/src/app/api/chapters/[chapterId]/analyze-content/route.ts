@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Ensure BACKEND_URL doesn't end with /api to avoid double /api/api
-const BACKEND_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api$/, "");
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
 
 export async function POST(
   request: NextRequest,

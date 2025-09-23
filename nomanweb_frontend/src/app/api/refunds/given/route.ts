@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    let url = `${process.env.NEXT_PUBLIC_API_URL}/refunds/given?page=${page}&size=${size}`;
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
+    let url = `${backendUrl}/refunds/given?page=${page}&size=${size}`;
 
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;

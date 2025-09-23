@@ -47,8 +47,11 @@ export async function GET(
       );
     }
 
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/refunds/chapters/${chapterId}/has-purchases`,
+      `${backendUrl}/refunds/chapters/${chapterId}/has-purchases`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -190,10 +190,9 @@ export async function POST(
       const wordCount = calculateWordCount(htmlContent);
 
       // Create chapter via backend API
-      const BACKEND_URL = (
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-      ).replace(/\/api$/, "");
-      const backendResponse = await fetch(`${BACKEND_URL}/api/chapters`, {
+      const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+      const backendUrl = `${BACKEND_URL}/api`;
+      const backendResponse = await fetch(`${backendUrl}/chapters`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -37,7 +37,8 @@ export async function GET(
     }
 
     // Forward the request to the backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
 const response = await fetch(`${backendUrl}/monetization/chapters/access/${chapterId}`, {
   headers: {
     'Authorization': `Bearer ${token}`,
@@ -62,4 +63,4 @@ const response = await fetch(`${backendUrl}/monetization/chapters/access/${chapt
       { status: 500 }
     );
   }
-} 
+}

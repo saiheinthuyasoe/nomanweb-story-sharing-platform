@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
     const size = searchParams.get('size') || '20';
 
     // Forward the request to the backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
     const response = await fetch(`${backendUrl}/monetization/purchases/history?page=${page}&size=${size}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -62,4 +63,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

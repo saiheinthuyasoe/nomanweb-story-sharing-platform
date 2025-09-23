@@ -47,8 +47,11 @@ export async function POST(
       );
     }
 
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/api$/, '');
+    const backendUrl = `${BACKEND_URL}/api`;
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/stories/${storyId}/calculate-refund`,
+      `${backendUrl}/stories/${storyId}/calculate-refund`,
       {
         method: "POST",
         headers: {
