@@ -264,6 +264,12 @@ export default function Navbar() {
                   placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch(e as any);
+                    }
+                  }}
                   className="bg-transparent text-gray-900 placeholder-gray-500 px-1 xs:px-1.5 sm:px-2 py-1 xs:py-1.5 sm:py-2 flex-1 focus:outline-none text-xs sm:text-sm min-w-0"
                 />
                 <select
