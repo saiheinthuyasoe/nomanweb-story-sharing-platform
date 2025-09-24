@@ -1001,17 +1001,7 @@ export default function StoryReaderView() {
                     )}
                 </button>
 
-                {/* Gift Button - Only show if not the author */}
-                {!isAuthor && (
-                  <button
-                    onClick={() => setShowGiftModal(true)}
-                    className="px-6 py-3 text-white rounded-lg hover:opacity-80 transition-all font-medium flex items-center space-x-2"
-                    style={{ backgroundColor: "#18243c" }}
-                  >
-                    <Gift className="h-5 w-5" />
-                    <span>Send Gift</span>
-                  </button>
-                )}
+
               </div>
             </div>
           </div>
