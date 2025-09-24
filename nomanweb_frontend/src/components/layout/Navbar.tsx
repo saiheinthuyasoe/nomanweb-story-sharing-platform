@@ -240,16 +240,7 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Active Collaborators for Chapter Edit Pages */}
-              {isChapterEditPage && (
-                <div className="hidden lg:flex items-center ml-6 px-3 py-1 bg-white/10 rounded-lg">
-                  <Users className="w-4 h-4 text-white mr-2" />
-                  <span className="text-white text-sm font-medium">
-                    Collaborating
-                  </span>
-                  {/* Note: We would need the actual chapter ID here for real functionality */}
-                </div>
-              )}
+
             </div>
 
             {/* Center Section - Mobile Search */}
@@ -669,6 +660,13 @@ export default function Navbar() {
                     onClick={closeMobileMenu}
                   >
                     Library
+                  </MobileNavLink>
+                  <MobileNavLink
+                    href="/withdraw"
+                    icon={DollarSign}
+                    onClick={closeMobileMenu}
+                  >
+                    Withdraw
                   </MobileNavLink>
 
                   {/* Logout Button */}

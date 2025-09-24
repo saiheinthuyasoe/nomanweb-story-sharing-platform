@@ -616,7 +616,7 @@ function LibraryTab({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
       {items.map((item, index) => (
         <LibraryBookCard
           key={`${item.story.id}-${index}`}
@@ -807,10 +807,10 @@ function LibraryBookCard({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col sm:flex-row">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow flex flex-col h-full">
         {/* Cover Image */}
         <Link href={`/stories/${item.story.id}`} className="flex-shrink-0">
-          <div className="w-full sm:w-32 md:w-40 h-40 sm:h-52 relative bg-gray-200 rounded-t-lg sm:rounded-t-none sm:rounded-l-lg overflow-hidden">
+          <div className="w-full aspect-[3/4] relative bg-gray-200 rounded-t-lg overflow-hidden">
             {item.story.coverImageUrl ? (
               <Image
                 src={item.story.coverImageUrl}
@@ -854,44 +854,40 @@ function LibraryBookCard({
         </Link>
 
         {/* Content */}
-        <div className="flex-1 p-3 sm:p-4 min-w-0">
+        <div className="flex-1 p-2 sm:p-3 min-w-0 flex flex-col">
           <Link href={`/stories/${item.story.id}`}>
-            <h3 className="font-medium text-gray-900 mb-1 text-sm sm:text-base line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors">
+            <h3 className="font-medium text-gray-900 mb-1 text-xs sm:text-sm line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors">
               {item.story.title}
             </h3>
           </Link>
-          <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
+          <p className="text-xs text-gray-600 mb-1 truncate">
             by {item.story.author.displayName || item.story.author.username}
           </p>
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="text-xs text-gray-500 mb-1">
             <span>{item.story.totalChapters} chapters</span>
-            <span className="capitalize">
-              {item.listType.toLowerCase().replace("_", " ")}
-            </span>
           </div>
 
           {/* Reading Progress */}
           {storyProgress && (
-            <div className="mt-1 sm:mt-2">
+            <div className="mt-1 mb-2">
               <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                 <span>Progress</span>
                 <span>{Math.round(storyProgress.overallProgress)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="w-full bg-gray-200 rounded-full h-1">
                 <div
-                  className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
+                  className="bg-orange-500 h-1 rounded-full transition-all duration-300"
                   style={{
                     width: `${Math.round(storyProgress.overallProgress)}%`,
                   }}
                 ></div>
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                <span className="truncate pr-1">
-                  {storyProgress.completedChapters} of{" "}
-                  {storyProgress.totalChapters} chapters
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="truncate">
+                  {storyProgress.completedChapters}/{storyProgress.totalChapters}
                 </span>
                 {storyProgress.currentChapter && (
-                  <span className="text-blue-600 flex-shrink-0">
+                  <span className="text-blue-600 ml-1">
                     Ch. {storyProgress.currentChapter.chapterNumber}
                   </span>
                 )}
@@ -901,140 +897,25 @@ function LibraryBookCard({
 
           {/* Reading Status Management */}
           {!isEditMode && (
-            <div className="mt-2 sm:mt-3 flex items-center justify-between">
+            <div className="mt-auto pt-2">
               {/* Continue Reading / Start Reading Button */}
               {storyProgress?.currentChapter ? (
                 <Link
                   href={`/stories/${item.story.id}/chapters/${storyProgress.currentChapter.chapterNumber}/read`}
-                  className="bg-[#18243c] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                  className="block w-full bg-[#18243c] text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors text-center"
                 >
-                  <span className="hidden sm:inline">Continue Reading</span>
-                  <span className="sm:hidden">Continue</span> →
+                  Continue →
                 </Link>
               ) : (
                 <Link
                   href={`/stories/${item.story.id}`}
-                  className="bg-[#18243c] text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors"
+                  className="block w-full bg-[#18243c] text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-[#18243c]/90 transition-colors text-center"
                 >
-                  <span className="hidden sm:inline">Start Reading</span>
-                  <span className="sm:hidden">Start</span>
+                  Start Reading
                 </Link>
               )}
 
-              {/* Status Management Dropdown */}
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowStatusMenu(!showStatusMenu);
-                  }}
-                  className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-                </button>
 
-                {showStatusMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
-                    <div className="py-1">
-                      {item.listType !== "READING" && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            updateReadingStatus({
-                              storyId: item.story.id,
-                              status: "READING",
-                            });
-                            setShowStatusMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        >
-                          <EyeIcon className="w-4 h-4 text-orange-500" />
-                          <span>Mark as Reading</span>
-                        </button>
-                      )}
-                      {item.listType !== "COMPLETED" && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            updateReadingStatus({
-                              storyId: item.story.id,
-                              status: "COMPLETED",
-                            });
-                            setShowStatusMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                          <span>Mark as Completed</span>
-                        </button>
-                      )}
-                      {item.listType !== "WANT_TO_READ" && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            updateReadingStatus({
-                              storyId: item.story.id,
-                              status: "WANT_TO_READ",
-                            });
-                            setShowStatusMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                        >
-                          <BookmarkIcon className="w-4 h-4 text-purple-500" />
-                          <span>Want to Read</span>
-                        </button>
-                      )}
-                      {/* Show reset progress button only if there's reading progress */}
-                      {storyProgress && storyProgress.overallProgress > 0 && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (
-                              confirm(
-                                "Are you sure you want to reset all reading progress for this story? This action cannot be undone."
-                              )
-                            ) {
-                              resetStoryProgress(item.story.id);
-                            }
-                            setShowStatusMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center space-x-2"
-                        >
-                          <ArrowPathIcon className="w-4 h-4" />
-                          <span>Reset Reading Progress</span>
-                        </button>
-                      )}
-                      <hr className="my-1" />
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          updateReadingStatus({
-                            storyId: item.story.id,
-                            status: "REMOVE",
-                          });
-                          setShowStatusMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                        <span>Remove from Library</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>

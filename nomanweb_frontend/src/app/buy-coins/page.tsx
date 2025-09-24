@@ -295,10 +295,7 @@ export default function BuyCoinsPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("th-TH", {
-      style: "currency",
-      currency: "THB",
-    }).format(price);
+    return "";
   };
 
   return (
@@ -322,7 +319,7 @@ export default function BuyCoinsPage() {
       </div>
 
       {/* Current Balance */}
-      <Card className="mb-8 bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+      <Card className="mb-8 text-white" style={{backgroundColor: '#18243c'}}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Coins className="h-6 w-6" />
@@ -395,31 +392,14 @@ export default function BuyCoinsPage() {
                         <div className="text-2xl font-bold text-gray-900">
                           {package_.coins.toLocaleString()} Coins
                         </div>
-                        {package_.bonusCoins && package_.bonusCoins > 0 && (
-                          <div className="text-sm text-green-600 font-medium">
-                            +{package_.bonusCoins} Bonus Coins
-                          </div>
-                        )}
-                        {package_.bonusCoins && package_.bonusCoins > 0 && (
-                          <div className="text-xs text-gray-500">
-                            Total: {totalCoins.toLocaleString()} Coins
-                          </div>
-                        )}
+
                       </div>
 
                       <div className="text-xl font-bold text-blue-600">
                         {formatPrice(package_.price)}
                       </div>
 
-                      {package_.bonusCoins && package_.bonusCoins > 0 && (
-                        <div className="text-xs text-green-600 mt-1">
-                          Save{" "}
-                          {Math.round(
-                            (package_.bonusCoins / package_.coins) * 100
-                          )}
-                          %
-                        </div>
-                      )}
+
                     </CardContent>
                   </Card>
                 );
@@ -432,73 +412,20 @@ export default function BuyCoinsPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
               Need Help with Your Purchase?
             </h2>
-            <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-green-800">
-                  <MessageCircle className="h-6 w-6" />
-                  Contact Admin for Manual Purchase
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-gray-700">
-                  <p className="mb-3">
-                    Prefer to purchase coins manually? Our admin team can help
-                    you with:
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mb-4">
-                    <li>Custom coin packages</li>
-                    <li>Bank transfer payment</li>
-                    <li>Bulk purchase discounts</li>
-                    <li>Payment assistance</li>
-                  </ul>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    How it works:
-                  </h4>
-                  <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
-                    <li>Contact our admin via LINE</li>
-                    <li>Tell them your desired coin package</li>
-                    <li>Complete payment as instructed</li>
-                    <li>Receive coins instantly after confirmation</li>
-                  </ol>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    onClick={() => {
-                      // Open LINE app or web version
-                      const lineUrl = "https://line.me/ti/p/~nomanweb_admin";
-                      window.open(lineUrl, "_blank");
-                      toast.success("Opening LINE to contact admin...");
-                    }}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Contact Admin on LINE
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText("nomanweb_admin");
-                      toast.success("LINE ID copied to clipboard!");
-                    }}
-                    className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
-                  >
-                    Copy LINE ID
-                  </Button>
-                </div>
-
-                <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-lg">
-                  <strong>Admin LINE ID:</strong> nomanweb_admin
-                  <br />
-                  <strong>Response time:</strong> Usually within 1-2 hours
-                  during business hours (9 AM - 6 PM GMT+7)
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex justify-start">
+              <Button
+                onClick={() => {
+                  // Open LINE app or web version
+                  const lineUrl = "https://line.me/R/ti/p/@258sxtpv";
+                  window.open(lineUrl, "_blank");
+                  toast.success("Opening LINE to contact admin...");
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Contact Admin on LINE
+              </Button>
+            </div>
           </div>
         </div>
 

@@ -327,7 +327,7 @@ export default function WithdrawPage() {
 
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-[#18243c] hover:bg-[#1e2a42] text-white" 
                     disabled={isSubmitting || !withdrawAmount || calculateCoinsNeeded(withdrawAmount) > coinBalance}
                   >
                     {isSubmitting ? (
