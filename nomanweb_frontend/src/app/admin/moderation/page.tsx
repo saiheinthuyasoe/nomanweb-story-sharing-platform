@@ -1766,3 +1766,7 @@ export default function AdminModerationPage() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
