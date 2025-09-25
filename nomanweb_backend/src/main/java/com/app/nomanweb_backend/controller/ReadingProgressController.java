@@ -1,0 +1,439 @@
+package com.app.nomanweb_backend.controller;
+
+import com.app.nomanweb_backend.entity.ReadingProgress;
+import com.app.nomanweb_backend.repository.ReadingProgressRepository;
+import com.app.nomanweb_backend.repository.StoryRepository;
+import com.app.nomanweb_backend.repository.ChapterRepository;
+import com.app.nomanweb_backend.repository.UserRepository;
+import com.app.nomanweb_backend.repository.LibraryRepository;
+import com.app.nomanweb_backend.entity.Story;
+import com.app.nomanweb_backend.entity.Chapter;
+import com.app.nomanweb_backend.entity.User;
+import com.app.nomanweb_backend.entity.Library;
+import com.app.nomanweb_backend.service.ViewTrackingService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/reading-progress")
+@RequiredArgsConstructor
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001",
+                "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
+public class ReadingProgressController {
+
+        private final ReadingProgressRepository readingProgressRepository;
+        private final StoryRepository storyRepository;
+        private final ChapterRepository chapterRepository;
+        private final UserRepository userRepository;
+        private final LibraryRepository libraryRepository;
+        private final ViewTrackingService viewTrackingService;
+
+        @PostMapping("/chapter/{chapterId}/update")
+        public ResponseEntity<?> updateReadingProgress(@PathVariable UUID chapterId,
+                        @RequestParam Double progressPercentage,
+                        Authentication authentication) {
+                try {
+                        System.out.println("Updating progress for chapter: " + chapterId + ", progress: "
+                                        + progressPercentage);
+
+                        // Validate progress percentage
+                        if (progressPercentage < 0 || progressPercentage > 100) {
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("error", "Progress percentage must be between 0 and 100"));
+                        }
+
+                        BigDecimal progressBigDecimal = BigDecimal.valueOf(progressPercentage);
+
+                        // Check if user is authenticated
+                        if (authentication == null || !authentication.isAuthenticated() ||
+                                        authentication.getName().equals("anonymousUser")) {
+                                System.out.println("Anonymous user - skipping progress update");
+
+                                // Return a success response for anonymous users without saving anything
+                                Map<String, Object> response = new HashMap<>();
+                                response.put("progressPercentage", progressBigDecimal);
+                                response.put("isCompleted", progressBigDecimal.compareTo(new BigDecimal("100")) >= 0);
+                                response.put("lastReadAt", null);
+                                response.put("message", "Progress tracked locally (not saved)");
+
+                                return ResponseEntity.ok(response);
+                        }
+
+                        String userIdString = authentication.getName();
+                        System.out.println("Authentication name (should be user ID): " + userIdString);
+                        UUID userId;
+                        try {
+                                userId = UUID.fromString(userIdString);
+                                System.out.println("Successfully parsed user ID: " + userId);
+                        } catch (IllegalArgumentException e) {
+                                System.err.println("Invalid user ID format: " + userIdString);
+                                throw new RuntimeException("Invalid user ID format: " + userIdString);
+                        }
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        Chapter chapter = chapterRepository.findById(chapterId)
+                                        .orElseThrow(() -> new RuntimeException("Chapter not found"));
+
+                        Story story = chapter.getStory();
+
+                        // Find existing progress or create new one
+                        Optional<ReadingProgress> existingProgress = readingProgressRepository
+                                        .findByUserIdAndStoryIdAndChapterId(user.getId(), story.getId(), chapterId);
+
+                        ReadingProgress progress;
+                        if (existingProgress.isPresent()) {
+                                progress = existingProgress.get();
+                                progress.updateProgress(progressBigDecimal);
+                        } else {
+                                progress = ReadingProgress.builder()
+                                                .user(user)
+                                                .story(story)
+                                                .chapter(chapter)
+                                                .progressPercentage(progressBigDecimal)
+                                                .build();
+                        }
+
+                        readingProgressRepository.save(progress);
+
+                        // Track view if this is the first time reading (progress was 0)
+                        if (existingProgress.isEmpty() ||
+                                        existingProgress.get().getProgressPercentage()
+                                                        .compareTo(BigDecimal.ZERO) == 0) {
+                                viewTrackingService.trackChapterView(chapterId, user.getId());
+                        }
+
+                        // Automatic library management
+                        manageLibraryStatus(user, story);
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("progressPercentage", progress.getProgressPercentage());
+                        response.put("isCompleted", progress.isCompleted());
+                        response.put("lastReadAt", progress.getLastReadAt());
+                        response.put("message", "Reading progress updated");
+
+                        return ResponseEntity.ok(response);
+
+                } catch (Exception e) {
+                        System.err.println("Error updating reading progress: " + e.getMessage());
+                        e.printStackTrace();
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to update reading progress: " + e.getMessage()));
+                }
+        }
+
+        @GetMapping("/story/{storyId}")
+        public ResponseEntity<?> getStoryProgress(@PathVariable UUID storyId, Authentication authentication) {
+                try {
+                        String userIdString = authentication.getName();
+                        UUID userId = UUID.fromString(userIdString);
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        List<ReadingProgress> progressList = readingProgressRepository
+                                        .findByUserIdAndStoryIdOrderByLastReadAtDesc(user.getId(), storyId);
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("progressList", progressList);
+
+                        if (!progressList.isEmpty()) {
+                                ReadingProgress latestProgress = progressList.get(0);
+                                response.put("currentChapter", latestProgress.getChapter());
+                                response.put("lastReadAt", latestProgress.getLastReadAt());
+
+                                // Calculate overall story progress
+                                long totalChapters = chapterRepository.countByStoryIdAndStatus(storyId,
+                                                Chapter.Status.PUBLISHED);
+                                long completedChapters = progressList.stream()
+                                                .map(ReadingProgress::isCompleted)
+                                                .mapToLong(completed -> completed ? 1 : 0)
+                                                .sum();
+
+                                BigDecimal overallProgress = totalChapters > 0
+                                                ? BigDecimal.valueOf(completedChapters * 100.0 / totalChapters)
+                                                : BigDecimal.ZERO;
+
+                                response.put("overallProgress", overallProgress);
+                                response.put("completedChapters", completedChapters);
+                                response.put("totalChapters", totalChapters);
+                        } else {
+                                response.put("overallProgress", BigDecimal.ZERO);
+                                response.put("completedChapters", 0);
+                                response.put("totalChapters",
+                                                chapterRepository.countByStoryIdAndStatus(storyId,
+                                                                Chapter.Status.PUBLISHED));
+                        }
+
+                        return ResponseEntity.ok(response);
+
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to get story progress: " + e.getMessage()));
+                }
+        }
+
+        @GetMapping("/chapter/{chapterId}")
+        public ResponseEntity<?> getChapterProgress(@PathVariable UUID chapterId, Authentication authentication) {
+                try {
+                        System.out.println("Getting chapter progress for chapter: " + chapterId);
+                        Map<String, Object> response = new HashMap<>();
+
+                        // Default values for non-authenticated users
+                        response.put("progressPercentage", BigDecimal.ZERO);
+                        response.put("isCompleted", false);
+                        response.put("lastReadAt", null);
+                        response.put("hasProgress", false);
+
+                        // Check if user is authenticated
+                        if (authentication != null && authentication.isAuthenticated()) {
+                                String userIdString = authentication.getName();
+                                UUID userId = UUID.fromString(userIdString);
+                                User user = userRepository.findById(userId).orElse(null);
+
+                                if (user != null) {
+                                        Optional<ReadingProgress> progress = readingProgressRepository
+                                                        .findByUserIdAndChapterId(user.getId(), chapterId);
+
+                                        if (progress.isPresent()) {
+                                                ReadingProgress p = progress.get();
+                                                response.put("progressPercentage", p.getProgressPercentage());
+                                                response.put("isCompleted", p.isCompleted());
+                                                response.put("lastReadAt", p.getLastReadAt());
+                                                response.put("hasProgress", true);
+                                        }
+                                }
+                        }
+
+                        return ResponseEntity.ok(response);
+
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to get chapter progress: " + e.getMessage()));
+                }
+        }
+
+        @GetMapping("/my-progress")
+        public ResponseEntity<?> getMyReadingProgress(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size,
+                        Authentication authentication) {
+                try {
+                        // Check if user is authenticated
+                        if (authentication == null || !authentication.isAuthenticated() ||
+                                        authentication.getName().equals("anonymousUser")) {
+                                return ResponseEntity.status(403)
+                                                .body(Map.of("error", "Authentication required"));
+                        }
+
+                        String userIdString = authentication.getName();
+                        UUID userId = UUID.fromString(userIdString);
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Get latest progress for each story
+                        List<ReadingProgress> recentProgress = readingProgressRepository
+                                        .findLatestProgressByUserOrderByLastReadAtDesc(user.getId());
+
+                        return ResponseEntity.ok(Map.of(
+                                        "content", recentProgress,
+                                        "totalElements", recentProgress.size()));
+
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to get reading progress: " + e.getMessage()));
+                }
+        }
+
+        @DeleteMapping("/story/{storyId}/reset")
+        public ResponseEntity<?> resetStoryProgress(@PathVariable UUID storyId, Authentication authentication) {
+                try {
+                        if (authentication == null || authentication.getName() == null) {
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("error", "Authentication required"));
+                        }
+
+                        String userIdString = authentication.getName();
+                        UUID userId;
+                        try {
+                                userId = UUID.fromString(userIdString);
+                        } catch (IllegalArgumentException e) {
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("error", "Invalid user ID format"));
+                        }
+
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Verify story exists
+                        Story story = storyRepository.findById(storyId)
+                                        .orElseThrow(() -> new RuntimeException("Story not found"));
+
+                        // Delete all reading progress for this user and story
+                        List<ReadingProgress> progressList = readingProgressRepository
+                                        .findByUserIdAndStoryIdOrderByLastReadAtDesc(userId, storyId);
+
+                        int deletedCount = progressList.size();
+                        readingProgressRepository.deleteAll(progressList);
+
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("message", "Reading progress reset successfully");
+                        response.put("deletedCount", deletedCount);
+
+                        return ResponseEntity.ok(response);
+
+                } catch (Exception e) {
+                        System.err.println("Error resetting story progress: " + e.getMessage());
+                        e.printStackTrace();
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to reset reading progress: " + e.getMessage()));
+                }
+        }
+
+        @DeleteMapping("/clear-history")
+        public ResponseEntity<?> clearReadingHistory(Authentication authentication) {
+                try {
+                        // Check if user is authenticated
+                        if (authentication == null || !authentication.isAuthenticated() ||
+                                        authentication.getName().equals("anonymousUser")) {
+                                return ResponseEntity.status(403)
+                                                .body(Map.of("error", "Authentication required"));
+                        }
+
+                        String userIdString = authentication.getName();
+                        UUID userId = UUID.fromString(userIdString);
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                        // Get all reading progress for user
+                        List<ReadingProgress> userProgress = readingProgressRepository
+                                        .findByUserIdOrderByLastReadAtDesc(user.getId());
+
+                        // Delete all reading progress
+                        readingProgressRepository.deleteAll(userProgress);
+
+                        return ResponseEntity.ok(Map.of(
+                                        "message", "Reading history cleared successfully",
+                                        "deletedCount", userProgress.size()));
+
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("error", "Failed to clear reading history: " + e.getMessage()));
+                }
+        }
+
+        /**
+         * Automatically manage library status based on reading progress
+         */
+        private void manageLibraryStatus(User user, Story story) {
+                try {
+                        // Check current library status
+                        boolean isInReading = libraryRepository.existsByUserIdAndStoryIdAndListType(
+                                        user.getId(), story.getId(), Library.ListType.READING);
+                        boolean isInCompleted = libraryRepository.existsByUserIdAndStoryIdAndListType(
+                                        user.getId(), story.getId(), Library.ListType.COMPLETED);
+
+                        // Get total published chapters for this story
+                        long totalChapters = chapterRepository.countByStoryIdAndStatus(
+                                        story.getId(), Chapter.Status.PUBLISHED);
+
+                        // Get completed chapters count for this user and story
+                        long completedChapters = readingProgressRepository.countCompletedChaptersByUserAndStory(
+                                        user.getId(), story.getId());
+
+                        // Determine if story is completed (all chapters read)
+                        boolean isStoryCompleted = totalChapters > 0 && completedChapters >= totalChapters;
+
+                        if (isStoryCompleted && !isInCompleted) {
+                                // Move from READING to COMPLETED
+                                if (isInReading) {
+                                        // Remove from READING
+                                        libraryRepository.deleteByUserIdAndStoryIdAndListTypeIn(
+                                                        user.getId(), story.getId(), List.of(Library.ListType.READING));
+
+                                        // Update story counts
+                                        story.setTotalCurrentlyReading(
+                                                        Math.max(0, story.getTotalCurrentlyReading() - 1));
+                                }
+
+                                // Add to COMPLETED (check again to prevent duplicates)
+                                if (!libraryRepository.existsByUserIdAndStoryIdAndListType(
+                                                user.getId(), story.getId(), Library.ListType.COMPLETED)) {
+                                        Library completedEntry = Library.builder()
+                                                        .user(user)
+                                                        .story(story)
+                                                        .listType(Library.ListType.COMPLETED)
+                                                        .build();
+                                        libraryRepository.save(completedEntry);
+                                }
+
+                                // Update story counts
+                                story.setTotalCompleted(story.getTotalCompleted() + 1);
+                                storyRepository.save(story);
+
+                                System.out.println("Moved story " + story.getId() + " to COMPLETED for user "
+                                                + user.getId());
+
+                        } else if (!isStoryCompleted && isInCompleted) {
+                                // Move from COMPLETED back to READING (when new chapters are added)
+                                // Remove from COMPLETED
+                                libraryRepository.deleteByUserIdAndStoryIdAndListTypeIn(
+                                                user.getId(), story.getId(), List.of(Library.ListType.COMPLETED));
+
+                                // Update story counts
+                                story.setTotalCompleted(Math.max(0, story.getTotalCompleted() - 1));
+
+                                // Add to READING (check again to prevent duplicates)
+                                if (!libraryRepository.existsByUserIdAndStoryIdAndListType(
+                                                user.getId(), story.getId(), Library.ListType.READING)) {
+                                        Library readingEntry = Library.builder()
+                                                        .user(user)
+                                                        .story(story)
+                                                        .listType(Library.ListType.READING)
+                                                        .build();
+                                        libraryRepository.save(readingEntry);
+                                }
+
+                                // Update story counts
+                                story.setTotalCurrentlyReading(story.getTotalCurrentlyReading() + 1);
+                                storyRepository.save(story);
+
+                                System.out.println("Moved story " + story.getId()
+                                                + " from COMPLETED back to READING for user " + user.getId()
+                                                + " (reading progress preserved)");
+
+                        } else if (!isStoryCompleted && !isInReading && !isInCompleted) {
+                                // Add to READING (when user accesses any chapter, even with 0% progress)
+                                // Double-check to prevent duplicates
+                                if (!libraryRepository.existsByUserIdAndStoryIdAndListType(
+                                                user.getId(), story.getId(), Library.ListType.READING)) {
+                                        Library readingEntry = Library.builder()
+                                                        .user(user)
+                                                        .story(story)
+                                                        .listType(Library.ListType.READING)
+                                                        .build();
+                                        libraryRepository.save(readingEntry);
+                                }
+
+                                // Update story counts
+                                story.setTotalCurrentlyReading(story.getTotalCurrentlyReading() + 1);
+                                storyRepository.save(story);
+
+                                System.out.println("Added story " + story.getId() + " to READING for user "
+                                                + user.getId());
+                        }
+
+                } catch (Exception e) {
+                        System.err.println("Error managing library status: " + e.getMessage());
+                        e.printStackTrace();
+                        // Don't throw exception to avoid breaking the main reading progress update
+                }
+        }
+}

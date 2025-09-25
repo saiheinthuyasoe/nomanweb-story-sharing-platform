@@ -1,0 +1,794 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  useMyStories,
+  useMyStoriesIncludingDeleted,
+  useDeleteStory,
+  useMoveStoryToTrash,
+  useRestoreStoryFromTrash,
+  usePermanentlyDeleteStory,
+} from "@/hooks/useStories";
+import { useAuth } from "@/contexts/AuthContext";
+import { StoryPreview } from "@/types/story";
+
+import {
+  Plus,
+  MoreVertical,
+  Eye,
+  Settings,
+  Trash2,
+  BookOpen,
+  Calendar,
+  Heart,
+  Bookmark,
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
+import { ProtectedActionButton } from "@/components/protection/ProtectedActionButton";
+import { toast } from "react-hot-toast";
+import "./ant-table.css";
+
+type StoryTab = "stories" | "drafts" | "trash";
+type StoryStatus = "DRAFT" | "PUBLISHED" | "COMPLETED" | "SUSPENDED";
+type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export default function MyStoriesPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<StoryTab>("stories");
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundData, setRefundData] = useState<any>(null);
+  const [storyToMove, setStoryToMove] = useState<string | null>(null);
+
+  const {
+    data: storiesPage,
+    isLoading,
+    error,
+  } = useMyStories({
+    page: 0,
+    size: 1000, // Large number to get all stories
+  });
+
+  const { data: allStoriesPage, isLoading: isLoadingAll } =
+    useMyStoriesIncludingDeleted({
+      page: 0,
+      size: 1000, // Large number to get all stories
+    });
+
+  const { mutate: deleteStory, isPending: isDeleting } = useDeleteStory();
+  const { mutate: moveToTrash, isPending: isMovingToTrash } =
+    useMoveStoryToTrash();
+  const { mutate: restoreFromTrash, isPending: isRestoring } =
+    useRestoreStoryFromTrash();
+  const { mutate: permanentlyDelete, isPending: isPermanentlyDeleting } =
+    usePermanentlyDeleteStory();
+
+  const handleCreateNew = () => {
+    router.push("/stories/create");
+  };
+
+  const handleExplore = (storyId: string) => {
+    // Navigate to Writer View (dashboard)
+    router.push(`/dashboard/stories/${storyId}`);
+  };
+
+  const handleStoryClick = (storyId: string) => {
+    // Navigate to Reader View (public)
+    router.push(`/stories/${storyId}`);
+  };
+
+  const handleSettings = (storyId: string) => {
+    router.push(`/dashboard/stories/${storyId}/edit`);
+  };
+
+  const handleMoveToTrashClick = (storyId: string) => {
+    console.log("🗑️ User clicked move to trash for story:", storyId);
+    moveToTrash(storyId, {
+      onSuccess: () => {
+        toast.success("Story moved to trash.");
+        // Optionally refetch stories here if the list doesn't update automatically
+      },
+      onError: (error: any) => {
+        const errorData = error.response?.data;
+        if (errorData?.requiresRefund) {
+          console.log("🔍 Refund required. Details:", errorData.refundDetails);
+          setStoryToMove(storyId);
+          setRefundData(errorData.refundDetails);
+          setShowRefundModal(true);
+        } else {
+          toast.error(
+            `Cannot move story to trash: ${
+              errorData?.message || "Unknown error"
+            }`
+          );
+        }
+      },
+    });
+  };
+
+  const handleRefundConfirm = () => {
+    if (storyToMove) {
+      moveToTrash(storyToMove, {
+        onSuccess: () => {
+          setShowRefundModal(false);
+          setRefundData(null);
+          setStoryToMove(null);
+          toast.success("Story moved to trash with refund.");
+        },
+        onError: (error: any) => {
+          const errorData = error.response?.data;
+          toast.error(
+            `Failed to process refunds: ${
+              errorData?.message || "Unknown error occurred"
+            }`
+          );
+        },
+      });
+    }
+  };
+
+  const handleRestore = (storyId: string) => {
+    restoreFromTrash(storyId);
+    setOpenDropdown(null);
+  };
+
+  const handlePermanentlyDelete = (storyId: string) => {
+    if (
+      window.confirm(
+        "Are you sure you want to permanently delete this story? This action cannot be undone."
+      )
+    ) {
+      permanentlyDelete(storyId);
+      setOpenDropdown(null);
+    }
+  };
+
+  const getBookStatusBadge = (bookStatus: "ONGOING" | "COMPLETED") => {
+    // Map book status from database
+    const statusConfig = {
+      ONGOING: { text: "Ongoing", className: "bg-green-100 text-green-700" },
+      COMPLETED: {
+        text: "Completed",
+        className: "bg-blue-100 text-blue-700",
+      },
+    };
+
+    const config = statusConfig[bookStatus] || statusConfig.ONGOING;
+    return (
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.className}`}
+      >
+        {config.text}
+      </span>
+    );
+  };
+
+  const getPublicationStatusBadge = (status: StoryStatus) => {
+    // Map publication status
+    const statusConfig = {
+      DRAFT: { text: "Draft", className: "bg-gray-100 text-gray-700" },
+      PUBLISHED: { text: "Published", className: "bg-blue-100 text-blue-700" },
+      COMPLETED: { text: "Published", className: "bg-blue-100 text-blue-700" },
+      SUSPENDED: { text: "Suspended", className: "bg-red-100 text-red-700" },
+    };
+
+    const config = statusConfig[status] || statusConfig.DRAFT;
+    return (
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.className}`}
+      >
+        {config.text}
+      </span>
+    );
+  };
+
+  const getModerationBadge = (status: ModerationStatus) => {
+    const statusConfig = {
+      PENDING: {
+        text: "Pending",
+        className: "bg-yellow-100 text-yellow-700",
+        icon: Clock,
+      },
+      APPROVED: {
+        text: "Approved",
+        className: "bg-green-100 text-green-700",
+        icon: CheckCircle,
+      },
+      REJECTED: {
+        text: "Rejected",
+        className: "bg-red-100 text-red-700",
+        icon: XCircle,
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.PENDING;
+    const IconComponent = config.icon;
+
+    return (
+      <span
+        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.className}`}
+      >
+        <IconComponent className="h-3 w-3 mr-1" />
+        {config.text}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+    return num.toString();
+  };
+
+  // Use different data sources based on active tab
+  const stories =
+    activeTab === "trash"
+      ? (allStoriesPage?.content || []).filter((story) => story.isDeleted)
+      : storiesPage?.content || [];
+
+  const filteredStories = stories.filter((story) => {
+    switch (activeTab) {
+      case "stories":
+        return (
+          story.publishStatus === "PUBLISHED" ||
+          story.publishStatus === "COMPLETED"
+        );
+      case "drafts":
+        return story.publishStatus === "DRAFT";
+      case "trash":
+        return story.isDeleted;
+      default:
+        return true;
+    }
+  });
+
+  // Debug logging for trash tab
+  if (activeTab === "trash") {
+    console.log("🗑️ Trash tab debug:", {
+      allStoriesCount: allStoriesPage?.content?.length || 0,
+      deletedStoriesCount: stories.length,
+      filteredStoriesCount: filteredStories.length,
+      allStories:
+        allStoriesPage?.content?.map((s) => ({
+          id: s.id,
+          title: s.title,
+          isDeleted: s.isDeleted,
+        })) || [],
+    });
+  }
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  if (isLoading || (activeTab === "trash" && isLoadingAll)) {
+    return (
+      <div className="min-h-screen bg-white overflow-y-auto">
+        <div className="p-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2"
+              style={{ borderBottomColor: "#18243c" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || (activeTab === "trash" && allStoriesPage === undefined)) {
+    return (
+      <div className="min-h-screen bg-white overflow-y-auto">
+        <div className="p-8">
+          <div className="text-center text-red-600">
+            Error loading your stories. Please try again.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white overflow-y-auto">
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: "#18243c" }}>
+              Stories
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Manage your stories, drafts, and publications
+            </p>
+          </div>
+          <button
+            onClick={handleCreateNew}
+            className="text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            style={{ backgroundColor: "#18243c" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#0f1729")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#18243c")
+            }
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create a Story</span>
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                {
+                  id: "stories",
+                  label: "Stories",
+                  count: (storiesPage?.content || []).filter(
+                    (s) =>
+                      s.publishStatus === "PUBLISHED" ||
+                      s.publishStatus === "COMPLETED"
+                  ).length,
+                },
+                {
+                  id: "drafts",
+                  label: "Drafts",
+                  count: (storiesPage?.content || []).filter(
+                    (s) => s.publishStatus === "DRAFT"
+                  ).length,
+                },
+                {
+                  id: "trash",
+                  label: "Trash",
+                  count: (allStoriesPage?.content || []).filter(
+                    (s) => s.isDeleted
+                  ).length,
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as StoryTab)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? "border-transparent"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                  style={{
+                    borderBottomColor:
+                      activeTab === tab.id ? "#18243c" : "transparent",
+                    color: activeTab === tab.id ? "#18243c" : undefined,
+                  }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>{tab.label}</span>
+                    <span className="text-black px-2 py-0.5 rounded-full text-xs font-medium">
+                      {tab.count}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {showRefundModal && refundData && (
+          <RefundConfirmationModal
+            isOpen={showRefundModal}
+            onClose={() => setShowRefundModal(false)}
+            onConfirm={handleRefundConfirm}
+            refundData={refundData}
+            isLoading={isMovingToTrash}
+          />
+        )}
+
+        {/* Stories Table - Ant Design Style */}
+        <div className="ant-table-wrapper">
+          <div className="ant-spin-nested-loading">
+            <div className="ant-spin-container">
+              <div className="ant-table">
+                <div className="ant-table-container">
+                  <div className="ant-table-content">
+                    {filteredStories.length === 0 ? (
+                      <div className="ant-empty ant-empty-normal">
+                        <div className="ant-empty-image">
+                          <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                        </div>
+                        <div className="ant-empty-description">
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            {activeTab === "stories"
+                              ? "No published stories"
+                              : activeTab === "drafts"
+                              ? "No drafts"
+                              : "No stories in trash"}
+                          </h3>
+                          <p className="text-gray-500 mb-6">
+                            {activeTab === "stories"
+                              ? "Start writing and publish your first story."
+                              : activeTab === "drafts"
+                              ? "Create a new story to start writing."
+                              : "Stories moved to trash will appear here."}
+                          </p>
+                          {activeTab !== "trash" && (
+                            <button
+                              onClick={handleCreateNew}
+                              className="px-6 py-3 text-white font-medium rounded-lg transition-colors"
+                              style={{ backgroundColor: "#18243c" }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#0f1729")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#18243c")
+                              }
+                            >
+                              Create Your First Story
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <table className="ant-table-tbody">
+                        <thead className="ant-table-thead">
+                          <tr>
+                            <th
+                              className="ant-table-cell"
+                              style={{ width: "320px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Story
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell"
+                              style={{ width: "96px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Book Status
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell"
+                              style={{ width: "96px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Status
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell"
+                              style={{ width: "112px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Moderation
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "80px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Chapters
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "80px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Words
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "80px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Views
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "96px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Collections
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "80px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Likes
+                              </div>
+                            </th>
+                            <th
+                              className="ant-table-cell ant-table-cell-align-center"
+                              style={{ width: "128px" }}
+                            >
+                              <div className="ant-table-column-title">
+                                Operation
+                              </div>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="ant-table-tbody">
+                          {filteredStories.map((story: StoryPreview) => (
+                            <tr
+                              key={story.id}
+                              className="ant-table-row ant-table-row-level-0"
+                            >
+                              {/* Story Column */}
+                              <td className="ant-table-cell">
+                                <div className="flex items-start space-x-3">
+                                  <div className="flex-shrink-0">
+                                    {story.coverImageUrl ? (
+                                      <div className="relative w-14 h-20 overflow-hidden rounded-lg shadow-md border border-gray-200">
+                                        <Image
+                                          src={story.coverImageUrl}
+                                          alt={story.title}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                        {/* Book spine effect */}
+                                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-black/40"></div>
+                                      </div>
+                                    ) : (
+                                      <div className="relative w-14 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center shadow-md border border-gray-300 overflow-hidden">
+                                        {/* Book cover design */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100"></div>
+                                        <div className="absolute top-2 left-2 right-2 bottom-2 border border-blue-200 rounded-md bg-white/50"></div>
+                                        <BookOpen className="h-6 w-6 text-blue-600 relative z-10" />
+                                        {/* Book spine shadow */}
+                                        <div className="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-gray-400/30 to-transparent"></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p
+                                      className="text-sm font-medium text-gray-900 truncate max-w-[200px] cursor-pointer hover:text-blue-600 transition-colors"
+                                      title={story.title}
+                                      onClick={() => handleStoryClick(story.id)}
+                                    >
+                                      {story.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {formatDate(story.createdAt)}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                      {story.tags
+                                        ?.slice(0, 2)
+                                        .map((tag, index) => (
+                                          <span
+                                            key={index}
+                                            className="ant-tag ant-tag-default"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      {story.tags && story.tags.length > 2 && (
+                                        <span className="ant-tag ant-tag-default">
+                                          +{story.tags.length - 2}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Book Status Column */}
+                              <td className="ant-table-cell">
+                                {getBookStatusBadge(story.bookStatus)}
+                              </td>
+
+                              {/* Publication Status Column */}
+                              <td className="ant-table-cell">
+                                {getPublicationStatusBadge(
+                                  story.publishStatus as StoryStatus
+                                )}
+                              </td>
+
+                              {/* Moderation Status Column */}
+                              <td className="ant-table-cell">
+                                {getModerationBadge(story.moderationStatus)}
+                              </td>
+
+                              {/* Chapters Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                {story.totalChapters || 0}
+                              </td>
+
+                              {/* Words Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                {formatNumber(0)}{" "}
+                                {/* TODO: Add totalWords to StoryPreview type */}
+                              </td>
+
+                              {/* Views Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                {formatNumber(story.totalViews || 0)}
+                              </td>
+
+                              {/* Collections Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                {formatNumber(0)}{" "}
+                                {/* TODO: Add totalBookmarks to StoryPreview type */}
+                              </td>
+
+                              {/* Likes Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                {formatNumber(story.totalLikes || 0)}
+                              </td>
+
+                              {/* Operation Column */}
+                              <td className="ant-table-cell ant-table-cell-align-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  {/* View Button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleExplore(story.id);
+                                    }}
+                                    className="text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                                    style={{ backgroundColor: "#18243c" }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "#0f1729")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "#18243c")
+                                    }
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span>View</span>
+                                  </button>
+
+                                  {/* Dropdown Menu */}
+                                  <div className="relative">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOpenDropdown(
+                                          openDropdown === story.id
+                                            ? null
+                                            : story.id
+                                        );
+                                      }}
+                                      className="inline-flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                      aria-label="More actions"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </button>
+
+                                    {openDropdown === story.id && (
+                                      <>
+                                        {/* Backdrop */}
+                                        <div
+                                          className="fixed inset-0 z-40"
+                                          onClick={() => setOpenDropdown(null)}
+                                        />
+
+                                        {/* Dropdown Menu */}
+                                        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                          <div className="py-1">
+                                            <button
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setOpenDropdown(null);
+                                                handleSettings(story.id);
+                                              }}
+                                              className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                                            >
+                                              <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+                                              <span>Edit Story</span>
+                                            </button>
+
+                                            <hr className="my-1 border-gray-100" />
+
+                                            {activeTab === "trash" ? (
+                                              <>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setOpenDropdown(null);
+                                                    handleRestore(story.id);
+                                                  }}
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-green-600 hover:bg-green-50 transition-colors text-left"
+                                                >
+                                                  <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                  <span>Restore</span>
+                                                </button>
+
+                                                <hr className="my-1 border-gray-100" />
+
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setOpenDropdown(null);
+                                                    handlePermanentlyDelete(
+                                                      story.id
+                                                    );
+                                                  }}
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2 flex-shrink-0" />
+                                                  <span>
+                                                    Delete Permanently
+                                                  </span>
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <div className="w-full">
+                                                <ProtectedActionButton
+                                                  itemId={story.id}
+                                                  itemType="story"
+                                                  itemTitle={story.title}
+                                                  actionType="moveToTrash"
+                                                  currentPublishStatus={
+                                                    story.publishStatus
+                                                  }
+                                                  currentPricingType={
+                                                    story.pricingType
+                                                  }
+                                                  onAction={() => {
+                                                    setOpenDropdown(null);
+                                                    handleMoveToTrashClick(
+                                                      story.id
+                                                    );
+                                                  }}
+                                                  disabled={isMovingToTrash}
+                                                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-0 bg-transparent justify-start h-auto"
+                                                  variant="destructive"
+                                                >
+                                                  <span className="ml-2">
+                                                    {isMovingToTrash
+                                                      ? "Moving to trash..."
+                                                      : "Move to Trash"}
+                                                  </span>
+                                                </ProtectedActionButton>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

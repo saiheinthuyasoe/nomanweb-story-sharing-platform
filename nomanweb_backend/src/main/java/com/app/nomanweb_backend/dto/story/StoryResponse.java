@@ -1,0 +1,71 @@
+package com.app.nomanweb_backend.dto.story;
+
+import com.app.nomanweb_backend.entity.Story;
+import lombok.Data;
+import lombok.Builder;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Data
+@Builder
+public class StoryResponse {
+
+    private UUID id;
+    private String title;
+    private String description;
+    private String coverImageUrl;
+
+    // Author information
+    private AuthorInfo author;
+
+    // Category information
+    private CategoryInfo category;
+
+    private Story.PublishStatus publishStatus;
+    private Story.PricingType pricingType;
+    private Story.BookStatus bookStatus;
+    private Story.ModerationStatus moderationStatus;
+
+    // Statistics
+    private Integer totalChapters;
+    private Long totalViews;
+    private Long totalLikes;
+    private Long totalComments;
+    private Long totalWantToRead;
+    private Long totalCompleted;
+    private Long totalCurrentlyReading;
+    private BigDecimal totalCoinsEarned;
+
+    // Pricing
+    private BigDecimal bookPrice;
+    private BigDecimal defaultChapterPrice;
+
+    private Boolean isFeatured;
+    private List<String> tags;
+
+    // Timestamps
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime publishedAt;
+
+    @Data
+    @Builder
+    public static class AuthorInfo {
+        private UUID id;
+        private String username;
+        private String displayName;
+        private String profileImageUrl;
+    }
+
+    @Data
+    @Builder
+    public static class CategoryInfo {
+        private UUID id;
+        private String name;
+        private String slug;
+        private String description;
+    }
+}

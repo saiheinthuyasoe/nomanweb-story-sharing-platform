@@ -1,0 +1,236 @@
+package com.app.nomanweb_backend.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "users")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EntityListeners(AuditingEntityListener.class)
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Email
+    @NotBlank
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @NotBlank
+    @Size(min = 3, max = 50)
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Size(max = 100)
+    @Column(name = "display_name")
+    private String displayName;
+
+    @JsonIgnore
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Role role = Role.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
+
+    @Column(name = "coin_balance", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal coinBalance = BigDecimal.ZERO;
+
+    @Column(name = "total_earned_coins", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal totalEarnedCoins = BigDecimal.ZERO;
+
+    @Column(name = "line_user_id", length = 100)
+    private String lineUserId;
+
+    @Column(name = "google_id", length = 100)
+    private String googleId;
+
+    @Column(name = "email_verified")
+    @Builder.Default
+    private Boolean emailVerified = false;
+
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expires")
+    private LocalDateTime passwordResetExpires;
+
+    @Column(name = "last_password_change")
+    private LocalDateTime lastPasswordChange;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    // Notification Preferences
+    @Column(name = "email_notifications_enabled")
+    @Builder.Default
+    private Boolean emailNotificationsEnabled = true;
+
+    @Column(name = "line_notifications_enabled")
+    @Builder.Default
+    private Boolean lineNotificationsEnabled = true;
+
+    @Column(name = "notify_new_followers")
+    @Builder.Default
+    private Boolean notifyNewFollowers = true;
+
+    @Column(name = "notify_new_stories")
+    @Builder.Default
+    private Boolean notifyNewStories = true;
+
+    @Column(name = "notify_new_chapters")
+    @Builder.Default
+    private Boolean notifyNewChapters = true;
+
+    @Column(name = "notify_likes")
+    @Builder.Default
+    private Boolean notifyLikes = true;
+
+    @Column(name = "notify_comments")
+    @Builder.Default
+    private Boolean notifyComments = true;
+
+    @Column(name = "notify_system_messages")
+    @Builder.Default
+    private Boolean notifySystemMessages = true;
+
+    @Column(name = "notify_chapter_moderation")
+    @Builder.Default
+    private Boolean notifyChapterModeration = true;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // Relationships
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<Story> stories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<UserFollow> following = new ArrayList<>();
+
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<UserFollow> followers = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<Reaction> reactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private List<CoinTransaction> coinTransactions = new ArrayList<>();
+
+    // Enums
+    public enum Role {
+        USER, ADMIN
+    }
+
+    public enum Status {
+        ACTIVE, SUSPENDED, BANNED
+    }
+
+    // Helper methods
+    public void addCoins(BigDecimal amount) {
+        this.coinBalance = this.coinBalance.add(amount);
+    }
+
+    public void subtractCoins(BigDecimal amount) {
+        this.coinBalance = this.coinBalance.subtract(amount);
+    }
+
+    public boolean hasEnoughCoins(BigDecimal amount) {
+        return this.coinBalance.compareTo(amount) >= 0;
+    }
+
+    public void addEarnedCoins(BigDecimal amount) {
+        this.totalEarnedCoins = this.totalEarnedCoins.add(amount);
+        this.addCoins(amount);
+    }
+
+    public boolean isActive() {
+        return this.status == Status.ACTIVE;
+    }
+
+    public boolean isAdmin() {
+        return this.role == Role.ADMIN;
+    }
+
+    public String getDisplayNameOrUsername() {
+        return displayName != null && !displayName.trim().isEmpty() ? displayName : username;
+    }
+
+    /**
+     * Determines if the user can use OAuth endpoints (no password required for
+     * sensitive operations).
+     * This is true only for users who have OAuth accounts but no password hash.
+     */
+    public boolean canUseOAuthEndpoints() {
+        return (googleId != null || lineUserId != null) && passwordHash == null;
+    }
+
+    /**
+     * JSON property that indicates if the user can use OAuth endpoints.
+     * This is included in API responses to help the frontend determine which
+     * endpoints to use.
+     */
+    @JsonProperty("canUseOAuthEndpoints")
+    public boolean getCanUseOAuthEndpoints() {
+        return canUseOAuthEndpoints();
+    }
+}

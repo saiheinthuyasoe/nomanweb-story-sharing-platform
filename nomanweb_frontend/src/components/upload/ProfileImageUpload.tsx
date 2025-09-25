@@ -1,0 +1,757 @@
+"use client";
+
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Upload,
+  X,
+  Loader2,
+  Link,
+  Camera,
+  Plus,
+  Edit3,
+  Trash2,
+  User,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
+import { apiClient } from "@/lib/api/client";
+import {
+  preloadImage,
+  isImageCached,
+  markImageAsCached,
+  getCachedImageResult,
+  shouldAttemptOAuthImageLoad,
+} from "@/lib/imageLoader";
+import { ImageCropModal } from "./ImageCropModal";
+
+interface ProfileImageUploadProps {
+  value?: string;
+  onChange?: (url: string) => void;
+  onRemove?: () => void;
+  disabled?: boolean;
+  className?: string;
+  size?: "sm" | "md" | "lg" | "xl";
+  acceptedFileTypes?: string[];
+  maxFileSize?: number; // in MB
+  placeholder?: string;
+}
+
+interface UploadResponse {
+  success: boolean;
+  message: string;
+  imageUrl?: string;
+  publicId?: string;
+  fileSize?: number;
+  originalFilename?: string;
+  folder?: string;
+}
+
+type UploadMode = "choose" | "file" | "url";
+
+const sizeConfig = {
+  sm: { container: "w-16 h-16", text: "text-xs", icon: "w-4 h-4" },
+  md: { container: "w-24 h-24", text: "text-sm", icon: "w-6 h-6" },
+  lg: { container: "w-32 h-32", text: "text-base", icon: "w-8 h-8" },
+  xl: { container: "w-40 h-40", text: "text-lg", icon: "w-10 h-10" },
+};
+
+export function ProfileImageUpload({
+  value,
+  onChange,
+  onRemove,
+  disabled = false,
+  className,
+  size = "lg",
+  acceptedFileTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ],
+  maxFileSize = 10, // 10MB
+  placeholder = "Upload profile image",
+}: ProfileImageUploadProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [mode, setMode] = useState<UploadMode>("choose");
+  const [urlInput, setUrlInput] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const config = sizeConfig[size] || sizeConfig.lg;
+
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      if (!acceptedFileTypes.includes(file.type)) {
+        return `Invalid file type. Accepted types: ${acceptedFileTypes.join(
+          ", "
+        )}`;
+      }
+
+      if (file.size > maxFileSize * 1024 * 1024) {
+        return `File size too large. Maximum size: ${maxFileSize}MB`;
+      }
+
+      return null;
+    },
+    [acceptedFileTypes, maxFileSize]
+  );
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const validationError = validateFile(file);
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+
+      // Create a preview URL for cropping
+      const imageUrl = URL.createObjectURL(file);
+      setImageToCrop(imageUrl);
+      setShowCropModal(true);
+      setShowModal(false);
+      setMode("choose");
+    },
+    [validateFile]
+  );
+
+  const handleCropComplete = useCallback(
+    async (croppedFile: File) => {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", croppedFile);
+
+        const progressInterval = setInterval(() => {
+          setUploadProgress((prev) => Math.min(prev + 10, 90));
+        }, 200);
+
+        const response = await apiClient.post(
+          "/upload/profile-image",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+
+        const result = response.data;
+
+        if (result.success && result.imageUrl) {
+          toast.success("Profile image uploaded successfully!");
+          onChange?.(result.imageUrl);
+          setShowCropModal(false);
+          setImageToCrop("");
+        } else {
+          throw new Error(result.message || "Upload failed");
+        }
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        const errorMessage =
+          error.response?.data?.message || error.message || "Upload failed";
+        toast.error(errorMessage);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    },
+    [onChange]
+  );
+
+  const handleUrlSubmit = useCallback(() => {
+    if (!urlInput.trim()) {
+      toast.error("Please enter a valid image URL");
+      return;
+    }
+
+    try {
+      const url = new URL(urlInput.trim());
+      if (!url.protocol.startsWith("http")) {
+        throw new Error("Invalid URL protocol");
+      }
+
+      onChange?.(urlInput.trim());
+      setUrlInput("");
+      setShowModal(false);
+      setMode("choose");
+      toast.success("Profile image URL added successfully!");
+    } catch (error) {
+      toast.error("Please enter a valid URL");
+    }
+  }, [urlInput, onChange]);
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      if (!disabled && mode === "file") {
+        setIsDragging(true);
+      }
+    },
+    [disabled, mode]
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+
+      if (disabled || mode !== "file") return;
+
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        uploadFile(files[0]);
+      }
+    },
+    [disabled, mode, uploadFile]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        uploadFile(files[0]);
+      }
+      e.target.value = "";
+    },
+    [uploadFile]
+  );
+
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!disabled) {
+        onRemove?.();
+        setMode("choose");
+      }
+    },
+    [disabled, onRemove]
+  );
+
+  const openModal = () => {
+    setShowModal(true);
+    setMode("choose");
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setMode("choose");
+    setUrlInput("");
+  };
+
+  const closeCropModal = () => {
+    setShowCropModal(false);
+    setImageToCrop("");
+    // Clean up the object URL to prevent memory leaks
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+    }
+  };
+
+  // Main profile image display component
+  const ProfileDisplay = React.memo(() => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
+    const [isExternalOAuth, setIsExternalOAuth] = useState(false);
+
+    useEffect(() => {
+      if (value && value.trim()) {
+        // Check if it's an external OAuth image
+        const isExternal =
+          value.includes("googleusercontent.com") ||
+          value.includes("profile-cdn.line-scdn.net") ||
+          value.includes("graph.facebook.com");
+        setIsExternalOAuth(isExternal);
+
+        // Check if image is already cached
+        const cachedResult = getCachedImageResult(value);
+        if (cachedResult) {
+          setImageLoaded(cachedResult.success);
+          setImageError(!cachedResult.success);
+          return;
+        }
+
+        // Check if we should attempt to load OAuth images
+        if (isExternal && !shouldAttemptOAuthImageLoad(value)) {
+          // OAuth image is in cooldown, show error state immediately
+          setImageLoaded(false);
+          setImageError(true);
+          console.warn("OAuth image load skipped - in cooldown period");
+          return;
+        }
+
+        setImageLoaded(false);
+        setImageError(false);
+
+        // Use preloader for better image loading
+        preloadImage(value).then((result) => {
+          setImageLoaded(result.success);
+          setImageError(!result.success);
+          if (!result.success && !isExternalOAuth) {
+            // Only log non-OAuth errors to reduce console noise
+            console.error("Image preload failed:", result.error);
+          }
+        });
+      } else {
+        setImageLoaded(false);
+        setImageError(false);
+        setIsExternalOAuth(false);
+      }
+    }, [value]); // Only depend on value, not on imageLoaded/imageError
+
+    const handleImageLoad = useCallback(() => {
+      setImageLoaded(true);
+      setImageError(false);
+    }, []);
+
+    const handleImageError = useCallback(() => {
+      setImageLoaded(false);
+      setImageError(true);
+    }, []);
+
+    if (value && value.trim()) {
+      return (
+        <div className="text-center">
+          {/* Simple circular image container */}
+          <div className="inline-block relative">
+            {/* Loading state */}
+            {!imageLoaded && !imageError && (
+              <div
+                className={`${config.container} border-2 border-gray-200 rounded-full bg-gray-50 flex items-center justify-center`}
+              >
+                <Loader2
+                  className={`${config.icon} animate-spin text-[#18243c]`}
+                />
+              </div>
+            )}
+
+            {/* Error state - show default avatar for OAuth errors, X for other errors */}
+            {imageError && (
+              <div
+                className={`${config.container} border-2 ${
+                  isExternalOAuth
+                    ? "border-[#18243c]/30 bg-[#18243c]/5"
+                    : "border-red-300 bg-red-50"
+                } rounded-full flex items-center justify-center cursor-pointer ${
+                  isExternalOAuth ? "hover:bg-[#18243c]/10" : "hover:bg-red-100"
+                }`}
+                onClick={openModal}
+                title={
+                  isExternalOAuth
+                    ? "Social media image temporarily unavailable - click to upload a new one"
+                    : "Image failed to load - click to try again"
+                }
+              >
+                {isExternalOAuth ? (
+                  <User className={`${config.icon} text-[#18243c]`} />
+                ) : (
+                  <X className={`${config.icon} text-red-400`} />
+                )}
+                {/* Small indicator for OAuth rate limiting */}
+                {isExternalOAuth && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white flex items-center justify-center">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Profile image display - only show if successfully preloaded */}
+            {!imageError && value && imageLoaded && (
+              <div
+                className={`${config.container} border-2 border-gray-200 rounded-full overflow-hidden group-hover:border-[#18243c]/30 transition-colors duration-300`}
+              >
+                <img
+                  src={value}
+                  alt="Profile"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  loading="eager"
+                  crossOrigin="anonymous"
+                />
+              </div>
+            )}
+
+            {/* Edit button overlay - positioned outside the image */}
+            {(imageLoaded || (imageError && isExternalOAuth)) && (
+              <button
+                onClick={openModal}
+                className="absolute -bottom-1.5 -right-1.5 w-9 h-9 bg-gradient-to-r from-[#18243c] to-[#22325a] text-white rounded-full hover:from-[#22325a] hover:to-[#2d4574] transition-all duration-300 flex items-center justify-center transform hover:scale-110"
+                title="Change profile image"
+              >
+                <Edit3 size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Controls and status */}
+          <div className="mt-2">
+            {size === "lg" && (
+              <div className="space-y-1">
+                <p className={`${config.text} font-medium text-gray-700`}>
+                  Profile Picture
+                </p>
+
+                {!imageLoaded && !imageError && (
+                  <p className="text-xs text-gray-500">Loading...</p>
+                )}
+
+                {imageError && (
+                  <div className="space-y-1">
+                    {isExternalOAuth ? (
+                      <div className="text-center">
+                        <p className="text-xs text-[#18243c] mb-1">
+                          Social media image temporarily unavailable
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Provider rate limit active - please wait a few minutes
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-red-600">
+                        Image failed to load
+                      </p>
+                    )}
+                    <div className="space-x-2">
+                      <button
+                        onClick={openModal}
+                        className={`text-xs ${
+                          isExternalOAuth
+                            ? "text-[#18243c] hover:text-[#22325a]"
+                            : "text-[#18243c] hover:text-[#22325a]"
+                        }`}
+                      >
+                        {isExternalOAuth ? "Upload new image" : "Try again"}
+                      </button>
+                      {onRemove && (
+                        <button
+                          onClick={handleRemove}
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {imageLoaded && onRemove && (
+                  <button
+                    onClick={handleRemove}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Remove image
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Empty state - circular placeholder
+    return (
+      <div className="text-center">
+        <div
+          onClick={openModal}
+          className={`${config.container} border-2 border-dashed border-gray-300 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 hover:border-[#18243c] hover:from-[#18243c]/5 hover:to-[#22325a]/5 transition-all duration-300 mx-auto cursor-pointer flex items-center justify-center group`}
+        >
+          <div className="text-center">
+            <Plus
+              className={`${config.icon} text-gray-500 mx-auto group-hover:text-[#18243c] transition-colors duration-300`}
+            />
+            {size === "lg" && (
+              <p className="text-xs text-gray-500 mt-1 group-hover:text-[#18243c] transition-colors duration-300">
+                Add Photo
+              </p>
+            )}
+          </div>
+        </div>
+
+        {size === "lg" && (
+          <p className="text-xs text-gray-500 mt-2">Click to upload</p>
+        )}
+      </div>
+    );
+  });
+
+  // Modal content components (same as StoryCoverUpload but profile-themed)
+  const ModeSelector = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-gradient-to-br from-[#18243c] to-[#22325a] rounded-full flex items-center justify-center mx-auto mb-4">
+          <User className="w-8 h-8 text-white" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          Add Profile Picture
+        </h3>
+        <p className="text-gray-600">
+          Choose how you'd like to add your profile image
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        <button
+          onClick={() => setMode("file")}
+          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-[#18243c]/10 group-hover:bg-[#18243c]/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
+              <Camera className="w-6 h-6 text-[#18243c]" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">
+                Upload from Device
+              </h4>
+              <p className="text-sm text-gray-600">
+                Choose a file from your computer or drag and drop
+              </p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => setMode("url")}
+          className="group p-6 border-2 border-gray-200 rounded-xl hover:border-[#18243c] hover:bg-[#18243c]/5 transition-all duration-300 text-left"
+        >
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-[#18243c]/10 group-hover:bg-[#18243c]/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-300">
+              <Link className="w-6 h-6 text-[#18243c]" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Add from URL</h4>
+              <p className="text-sm text-gray-600">
+                Enter an image URL from the web
+              </p>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+
+  const FileUploadMode = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-900">
+          Upload Profile Picture
+        </h3>
+        <button
+          onClick={() => setMode("choose")}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={acceptedFileTypes.join(",")}
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={disabled || isUploading}
+      />
+
+      <div
+        className={cn(
+          "relative border-2 border-dashed rounded-xl transition-all duration-300 aspect-square w-full max-w-sm mx-auto",
+          {
+            "border-[#18243c] bg-[#18243c]/5": isDragging && !disabled,
+            "border-gray-300 hover:border-gray-400 bg-gray-50":
+              !isDragging && !disabled,
+            "border-gray-200 cursor-not-allowed opacity-50": disabled,
+          }
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !isUploading && fileInputRef.current?.click()}
+      >
+        {isUploading ? (
+          <div className="absolute inset-0 bg-white bg-opacity-95 flex flex-col items-center justify-center rounded-xl">
+            <div className="w-16 h-16 bg-[#18243c]/10 rounded-full flex items-center justify-center mb-4">
+              <Loader2 className="w-8 h-8 animate-spin text-[#18243c]" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Uploading...
+            </h4>
+            <div className="w-64 bg-gray-200 rounded-full h-3 mb-2">
+              <div
+                className="bg-gradient-to-r from-[#18243c] to-[#22325a] h-3 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-600">{uploadProgress}% complete</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center cursor-pointer">
+            <div
+              className={cn(
+                "w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300",
+                isDragging
+                  ? "bg-[#18243c]/20 text-[#18243c]"
+                  : "bg-gray-200 text-gray-500"
+              )}
+            >
+              <Upload className="w-8 h-8" />
+            </div>
+
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              {isDragging ? "Drop your image here" : "Upload Profile Picture"}
+            </h4>
+
+            <p className="text-gray-600 mb-4">
+              {isDragging
+                ? "Release to upload"
+                : "Drag and drop your image, or click to browse"}
+            </p>
+
+            <div className="space-y-2 text-sm text-gray-500">
+              <p>
+                Supports:{" "}
+                {acceptedFileTypes
+                  .map((type) => type.split("/")[1])
+                  .join(", ")
+                  .toUpperCase()}
+              </p>
+              <p>
+                Max size: {maxFileSize}MB • Will be cropped to square format
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const UrlInputMode = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-gray-900">Add Image from URL</h3>
+        <button
+          onClick={() => setMode("choose")}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Image URL
+          </label>
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://example.com/profile.jpg"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#18243c] focus:border-[#18243c] transition-all duration-200"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Enter a direct link to an image file
+          </p>
+        </div>
+
+        {urlInput && (
+          <div className="p-4 bg-gray-50 rounded-xl border">
+            <p className="text-sm font-medium text-gray-700 mb-3">Preview:</p>
+            <div className="w-32 h-32 bg-white rounded-full border overflow-hidden mx-auto">
+              <img
+                src={urlInput}
+                alt="URL Preview"
+                className="w-full h-full object-cover object-center"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  const nextSibling = e.currentTarget
+                    .nextElementSibling as HTMLElement;
+                  if (nextSibling) {
+                    nextSibling.style.display = "flex";
+                  }
+                }}
+              />
+              <div
+                className="w-full h-full flex items-center justify-center text-gray-400"
+                style={{ display: "none" }}
+              >
+                <div className="text-center">
+                  <X className="w-8 h-8 mx-auto mb-2" />
+                  <p className="text-sm">Invalid image URL</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handleUrlSubmit}
+          disabled={!urlInput.trim()}
+          className="w-full px-6 py-3 bg-gradient-to-r from-[#18243c] to-[#22325a] text-white rounded-xl hover:from-[#22325a] hover:to-[#2d4574] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all duration-200"
+        >
+          Add Profile Picture
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={cn("w-full", className)}>
+      <ProfileDisplay />
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto">
+            <div className="p-6">
+              {mode === "choose" ? (
+                <ModeSelector />
+              ) : mode === "file" ? (
+                <FileUploadMode />
+              ) : mode === "url" ? (
+                <UrlInputMode />
+              ) : null}
+            </div>
+
+            {mode === "choose" && (
+              <div className="px-6 pb-6">
+                <button
+                  onClick={closeModal}
+                  className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={closeCropModal}
+        onCrop={handleCropComplete}
+        imageSrc={imageToCrop}
+        aspectRatio={1} // 1:1 aspect ratio for profile images
+        title="Crop Profile Picture"
+      />
+    </div>
+  );
+}

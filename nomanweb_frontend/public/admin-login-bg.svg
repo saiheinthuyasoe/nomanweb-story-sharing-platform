@@ -1,0 +1,62 @@
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#0f3460;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#533483;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e8c5a0;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d4a574;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b8956a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="foregroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a4a6a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a2a4a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky background -->
+  <rect width="800" height="500" fill="url(#skyGradient)"/>
+  
+  <!-- Stars -->
+  <circle cx="100" cy="50" r="1" fill="white" opacity="0.8"/>
+  <circle cx="200" cy="80" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="350" cy="40" r="1" fill="white" opacity="0.9"/>
+  <circle cx="500" cy="70" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="650" cy="45" r="1" fill="white" opacity="0.8"/>
+  <circle cx="750" cy="90" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="150" cy="120" r="0.5" fill="white" opacity="0.5"/>
+  <circle cx="450" cy="110" r="0.5" fill="white" opacity="0.7"/>
+  
+  <!-- Crescent moon -->
+  <path d="M 400 100 A 15 15 0 1 0 400 130 A 12 12 0 1 1 400 100" fill="#f4f4f4" opacity="0.9"/>
+  
+  <!-- Background mountains -->
+  <path d="M 0 300 L 150 200 L 300 250 L 450 180 L 600 220 L 750 160 L 800 180 L 800 500 L 0 500 Z" fill="url(#mountainGradient)" opacity="0.6"/>
+  
+  <!-- Middle layer mountains -->
+  <path d="M 0 350 L 100 280 L 200 320 L 350 260 L 500 300 L 650 240 L 800 280 L 800 500 L 0 500 Z" fill="url(#mountainGradient)" opacity="0.8"/>
+  
+  <!-- Foreground hills -->
+  <path d="M 0 400 L 150 350 L 300 380 L 450 340 L 600 370 L 800 330 L 800 500 L 0 500 Z" fill="url(#foregroundGradient)"/>
+  
+  <!-- Trees silhouettes -->
+  <polygon points="50,400 55,350 60,400" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="80,420 85,370 90,420" fill="#1a1a2e" opacity="0.7"/>
+  <polygon points="120,410 125,360 130,410" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="180,430 185,380 190,430" fill="#1a1a2e" opacity="0.6"/>
+  <polygon points="220,420 225,370 230,420" fill="#1a1a2e" opacity="0.7"/>
+  <polygon points="280,440 285,390 290,440" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="320,430 325,380 330,430" fill="#1a1a2e" opacity="0.6"/>
+  <polygon points="380,450 385,400 390,450" fill="#1a1a2e" opacity="0.7"/>
+  <polygon points="420,440 425,390 430,440" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="480,460 485,410 490,460" fill="#1a1a2e" opacity="0.6"/>
+  <polygon points="520,450 525,400 530,450" fill="#1a1a2e" opacity="0.7"/>
+  <polygon points="580,470 585,420 590,470" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="620,460 625,410 630,460" fill="#1a1a2e" opacity="0.6"/>
+  <polygon points="680,480 685,430 690,480" fill="#1a1a2e" opacity="0.7"/>
+  <polygon points="720,470 725,420 730,470" fill="#1a1a2e" opacity="0.8"/>
+  <polygon points="760,490 765,440 770,490" fill="#1a1a2e" opacity="0.6"/>
+</svg>
