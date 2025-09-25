@@ -111,18 +111,3 @@ firebase-service-account*.json
 temp/
 tmp/
 
-# AI Models
-distilbert_offensive_language_detector/
-huggingface_deployment/
-huggingface_deployment_Docker/
-huggingface_deployment_gradio_interface/
-offensive_language_api/
-Assets/
-
-# Model files
-*.safetensors
-*.bin
-*.onnx
-*.h5
-*.pkl
-*.joblib
