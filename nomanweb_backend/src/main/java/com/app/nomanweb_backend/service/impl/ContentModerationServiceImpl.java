@@ -174,54 +174,92 @@ public class ContentModerationServiceImpl implements ContentModerationService {
             log.debug("Parsing API response: {}", responseBody);
             JsonNode root = objectMapper.readTree(responseBody);
 
-            // Check if required fields exist and are not null
+            // Handle Hugging Face Spaces response format
+            JsonNode dataNode = root.get("data");
+            if (dataNode != null && dataNode.isArray() && dataNode.size() > 0) {
+                // Hugging Face Spaces format: {"data": [{"label": "...", "confidences": [...]}]}
+                JsonNode firstResult = dataNode.get(0);
+                
+                if (firstResult.has("label")) {
+                    String label = firstResult.get("label").asText();
+                    boolean isOffensive = "OFFENSIVE".equalsIgnoreCase(label) || "offensive".equalsIgnoreCase(label);
+                    
+                    // Extract confidence score
+                    double confidenceScore = 0.5; // Default
+                    Map<String, Double> allProbabilities = new HashMap<>();
+                    
+                    JsonNode confidencesNode = firstResult.get("confidences");
+                    if (confidencesNode != null && confidencesNode.isArray()) {
+                        for (JsonNode confidence : confidencesNode) {
+                            String confLabel = confidence.get("label").asText();
+                            double confScore = confidence.get("confidence").asDouble();
+                            allProbabilities.put(confLabel, confScore);
+                            
+                            // Use the confidence score of the predicted label
+                            if (confLabel.equalsIgnoreCase(label)) {
+                                confidenceScore = confScore;
+                            }
+                        }
+                    }
+                    
+                    String details = String.format("Category: %s, Confidence: %.3f", label, confidenceScore);
+                    
+                    log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
+                            label, confidenceScore, isOffensive);
+                    
+                    if (isOffensive) {
+                        return ContentModerationResult.offensive(confidenceScore, "detected", details, label,
+                                allProbabilities);
+                    } else {
+                        return ContentModerationResult.safe(confidenceScore, "detected", details, label,
+                                allProbabilities);
+                    }
+                }
+            }
+
+            // Fallback: Try to parse custom format (backward compatibility)
             JsonNode isOffensiveNode = root.get("is_offensive");
             JsonNode confidenceScoreNode = root.get("confidence_score");
             JsonNode predictedCategoryNode = root.get("predicted_category");
 
-            if (isOffensiveNode == null) {
-                log.error("Missing 'is_offensive' field in API response: {}", responseBody);
-                return ContentModerationResult.error("Invalid API response: missing 'is_offensive' field");
+            if (isOffensiveNode != null && confidenceScoreNode != null) {
+                boolean isOffensive = isOffensiveNode.asBoolean();
+                double confidenceScore = confidenceScoreNode.asDouble();
+                String predictedCategory = predictedCategoryNode != null ? predictedCategoryNode.asText() : "unknown";
+
+                // Parse probabilities (support both old and new format)
+                Map<String, Double> allProbabilities = new HashMap<>();
+                JsonNode probabilitiesNode = root.get("probabilities");
+                if (probabilitiesNode == null) {
+                    probabilitiesNode = root.get("all_probabilities"); // Fallback to old format
+                }
+
+                if (probabilitiesNode != null) {
+                    probabilitiesNode.fields().forEachRemaining(entry -> {
+                        JsonNode valueNode = entry.getValue();
+                        if (valueNode != null && !valueNode.isNull()) {
+                            allProbabilities.put(entry.getKey(), valueNode.asDouble());
+                        }
+                    });
+                }
+
+                String details = String.format("Category: %s, Confidence: %.3f", predictedCategory, confidenceScore);
+
+                log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
+                        predictedCategory, confidenceScore, isOffensive);
+
+                if (isOffensive) {
+                    return ContentModerationResult.offensive(confidenceScore, "detected", details, predictedCategory,
+                            allProbabilities);
+                } else {
+                    return ContentModerationResult.safe(confidenceScore, "detected", details, predictedCategory,
+                            allProbabilities);
+                }
             }
 
-            if (confidenceScoreNode == null) {
-                log.error("Missing 'confidence_score' field in API response: {}", responseBody);
-                return ContentModerationResult.error("Invalid API response: missing 'confidence_score' field");
-            }
-
-            // Parse response from new Hugging Face endpoint format with null checks
-            boolean isOffensive = isOffensiveNode.asBoolean();
-            double confidenceScore = confidenceScoreNode.asDouble();
-            String predictedCategory = predictedCategoryNode != null ? predictedCategoryNode.asText() : "unknown";
-
-            // Parse probabilities (support both old and new format)
-            Map<String, Double> allProbabilities = new HashMap<>();
-            JsonNode probabilitiesNode = root.get("probabilities");
-            if (probabilitiesNode == null) {
-                probabilitiesNode = root.get("all_probabilities"); // Fallback to old format
-            }
-
-            if (probabilitiesNode != null) {
-                probabilitiesNode.fields().forEachRemaining(entry -> {
-                    JsonNode valueNode = entry.getValue();
-                    if (valueNode != null && !valueNode.isNull()) {
-                        allProbabilities.put(entry.getKey(), valueNode.asDouble());
-                    }
-                });
-            }
-
-            String details = String.format("Category: %s, Confidence: %.3f", predictedCategory, confidenceScore);
-
-            log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
-                    predictedCategory, confidenceScore, isOffensive);
-
-            if (isOffensive) {
-                return ContentModerationResult.offensive(confidenceScore, "detected", details, predictedCategory,
-                        allProbabilities);
-            } else {
-                return ContentModerationResult.safe(confidenceScore, "detected", details, predictedCategory,
-                        allProbabilities);
-            }
+            // If we can't parse the response, log it and return an error
+            log.error("Unable to parse API response format: {}", responseBody);
+            return ContentModerationResult.error("Unsupported API response format");
 
         } catch (Exception e) {
             log.error("Error parsing API response: ", e);
