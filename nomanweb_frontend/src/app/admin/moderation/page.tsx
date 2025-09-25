@@ -138,7 +138,7 @@ export default function AdminModerationPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(800);
 
   useEffect(() => {
     fetchChapters();
@@ -1347,6 +1347,7 @@ export default function AdminModerationPage() {
                         <option value={20}>20</option>
                         <option value={50}>50</option>
                         <option value={100}>100</option>
+                        <option value={800}>800</option>
                       </select>
                       <span>per page</span>
                     </div>
