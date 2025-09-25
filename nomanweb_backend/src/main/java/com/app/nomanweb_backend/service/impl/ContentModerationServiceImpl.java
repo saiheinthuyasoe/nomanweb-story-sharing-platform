@@ -171,12 +171,28 @@ public class ContentModerationServiceImpl implements ContentModerationService {
 
     private ContentModerationResult parseApiResponse(String responseBody) {
         try {
+            log.debug("Parsing API response: {}", responseBody);
             JsonNode root = objectMapper.readTree(responseBody);
 
-            // Parse response from new Hugging Face endpoint format
-            boolean isOffensive = root.get("is_offensive").asBoolean();
-            double confidenceScore = root.get("confidence_score").asDouble();
-            String predictedCategory = root.get("predicted_category").asText();
+            // Check if required fields exist and are not null
+            JsonNode isOffensiveNode = root.get("is_offensive");
+            JsonNode confidenceScoreNode = root.get("confidence_score");
+            JsonNode predictedCategoryNode = root.get("predicted_category");
+
+            if (isOffensiveNode == null) {
+                log.error("Missing 'is_offensive' field in API response: {}", responseBody);
+                return ContentModerationResult.error("Invalid API response: missing 'is_offensive' field");
+            }
+
+            if (confidenceScoreNode == null) {
+                log.error("Missing 'confidence_score' field in API response: {}", responseBody);
+                return ContentModerationResult.error("Invalid API response: missing 'confidence_score' field");
+            }
+
+            // Parse response from new Hugging Face endpoint format with null checks
+            boolean isOffensive = isOffensiveNode.asBoolean();
+            double confidenceScore = confidenceScoreNode.asDouble();
+            String predictedCategory = predictedCategoryNode != null ? predictedCategoryNode.asText() : "unknown";
 
             // Parse probabilities (support both old and new format)
             Map<String, Double> allProbabilities = new HashMap<>();
@@ -187,7 +203,10 @@ public class ContentModerationServiceImpl implements ContentModerationService {
 
             if (probabilitiesNode != null) {
                 probabilitiesNode.fields().forEachRemaining(entry -> {
-                    allProbabilities.put(entry.getKey(), entry.getValue().asDouble());
+                    JsonNode valueNode = entry.getValue();
+                    if (valueNode != null && !valueNode.isNull()) {
+                        allProbabilities.put(entry.getKey(), valueNode.asDouble());
+                    }
                 });
             }
 
