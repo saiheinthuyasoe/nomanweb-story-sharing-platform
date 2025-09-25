@@ -138,7 +138,7 @@ export default function AdminModerationPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(50);
 
   useEffect(() => {
     fetchChapters();
@@ -1328,12 +1328,28 @@ export default function AdminModerationPage() {
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center text-sm text-gray-700">
+                  <div className="flex items-center space-x-4 text-sm text-gray-700">
                     <span>
                       Showing {currentPage * pageSize + 1} to{" "}
                       {Math.min((currentPage + 1) * pageSize, totalElements)} of{" "}
                       {totalElements} results
                     </span>
+                    <div className="flex items-center space-x-2">
+                      <span>Show:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPage(0); // Reset to first page when changing page size
+                        }}
+                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                      >
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                      <span>per page</span>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
