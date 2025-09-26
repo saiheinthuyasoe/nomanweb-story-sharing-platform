@@ -609,7 +609,7 @@ export default function ChapterManagement({
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card-elevated p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-nomanweb-primary mb-4">
               Move Chapter to Trash
@@ -640,7 +640,7 @@ export default function ChapterManagement({
 
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card-elevated p-6 max-w-md w-full">
             <h3
               className={`text-lg font-semibold mb-4 ${
