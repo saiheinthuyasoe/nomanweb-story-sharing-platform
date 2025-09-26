@@ -177,36 +177,37 @@ public class ContentModerationServiceImpl implements ContentModerationService {
             // Handle Hugging Face Spaces response format
             JsonNode dataNode = root.get("data");
             if (dataNode != null && dataNode.isArray() && dataNode.size() > 0) {
-                // Hugging Face Spaces format: {"data": [{"label": "...", "confidences": [...]}]}
+                // Hugging Face Spaces format: {"data": [{"label": "...", "confidences":
+                // [...]}]}
                 JsonNode firstResult = dataNode.get(0);
-                
+
                 if (firstResult.has("label")) {
                     String label = firstResult.get("label").asText();
                     boolean isOffensive = "OFFENSIVE".equalsIgnoreCase(label) || "offensive".equalsIgnoreCase(label);
-                    
+
                     // Extract confidence score
                     double confidenceScore = 0.5; // Default
                     Map<String, Double> allProbabilities = new HashMap<>();
-                    
+
                     JsonNode confidencesNode = firstResult.get("confidences");
                     if (confidencesNode != null && confidencesNode.isArray()) {
                         for (JsonNode confidence : confidencesNode) {
                             String confLabel = confidence.get("label").asText();
                             double confScore = confidence.get("confidence").asDouble();
                             allProbabilities.put(confLabel, confScore);
-                            
+
                             // Use the confidence score of the predicted label
                             if (confLabel.equalsIgnoreCase(label)) {
                                 confidenceScore = confScore;
                             }
                         }
                     }
-                    
+
                     String details = String.format("Category: %s, Confidence: %.3f", label, confidenceScore);
-                    
+
                     log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
                             label, confidenceScore, isOffensive);
-                    
+
                     if (isOffensive) {
                         return ContentModerationResult.offensive(confidenceScore, "detected", details, label,
                                 allProbabilities);

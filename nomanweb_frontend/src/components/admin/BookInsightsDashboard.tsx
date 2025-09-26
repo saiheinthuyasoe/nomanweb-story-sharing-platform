@@ -106,12 +106,12 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       ...insightsData.topRated,
       ...insightsData.mostReadWeekly,
       ...insightsData.newReleases,
-      ...Object.values(insightsData.byGenre).flat()
+      ...Object.values(insightsData.byGenre).flat(),
     ];
-    
+
     // Remove duplicates based on book ID
-    const uniqueBooks = allBooks.filter((book, index, self) => 
-      index === self.findIndex(b => b.id === book.id)
+    const uniqueBooks = allBooks.filter(
+      (book, index, self) => index === self.findIndex((b) => b.id === book.id)
     );
 
     const sectionsMap: Record<string, string[]> = {};
@@ -629,7 +629,6 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             Analytics and performance metrics for intelligent content curation
           </p>
         </div>
-
       </div>
 
       {/* Filter Panel */}
@@ -815,7 +814,9 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
         <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-500" />
-            <label className="text-sm font-medium text-gray-700">Filter by:</label>
+            <label className="text-sm font-medium text-gray-700">
+              Filter by:
+            </label>
           </div>
           <select
             value={activeTab}
@@ -827,13 +828,14 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             <option value="weekly-trending">Weekly Trending</option>
             <option value="new-releases">New Releases</option>
             <option value="by-genre">By Genre</option>
-            {insightsData && Object.keys(insightsData.byGenre).map((genre) => (
-              <option key={genre} value={`genre-${genre}`}>
-                {genre.charAt(0).toUpperCase() + genre.slice(1)}
-              </option>
-            ))}
+            {insightsData &&
+              Object.keys(insightsData.byGenre).map((genre) => (
+                <option key={genre} value={`genre-${genre}`}>
+                  {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                </option>
+              ))}
           </select>
-          
+
           <div className="flex items-center gap-2">
             <Search className="w-4 h-4 text-gray-500" />
             <label className="text-sm font-medium text-gray-700">Search:</label>
@@ -850,57 +852,55 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           </div>
         </div>
 
-        {activeTab === "all" && (() => {
-          // Get all unique books from all categories
-          const allBooks = [
-            ...insightsData.topRated,
-            ...insightsData.mostReadWeekly,
-            ...insightsData.newReleases,
-            ...Object.values(insightsData.byGenre).flat()
-          ];
-          
-          // Remove duplicates based on book ID
-          const uniqueBooks = allBooks.filter((book, index, self) => 
-            index === self.findIndex(b => b.id === book.id)
-          );
-          
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  All Available Books
-                  <Badge variant="secondary" className="ml-2">
-                    {filterBooks(uniqueBooks).length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filterBooks(uniqueBooks).map((book) => (
-                    <BookCard
-                      key={book.id}
-                      book={book}
-                      sectionType="ALL"
-                    />
-                  ))}
-                </div>
-                {filterBooks(uniqueBooks).length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No books match your current filters</p>
-                    <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="mt-2"
-                    >
-                      Clear Filters
-                    </Button>
+        {activeTab === "all" &&
+          (() => {
+            // Get all unique books from all categories
+            const allBooks = [
+              ...insightsData.topRated,
+              ...insightsData.mostReadWeekly,
+              ...insightsData.newReleases,
+              ...Object.values(insightsData.byGenre).flat(),
+            ];
+
+            // Remove duplicates based on book ID
+            const uniqueBooks = allBooks.filter(
+              (book, index, self) =>
+                index === self.findIndex((b) => b.id === book.id)
+            );
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    All Available Books
+                    <Badge variant="secondary" className="ml-2">
+                      {filterBooks(uniqueBooks).length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {filterBooks(uniqueBooks).map((book) => (
+                      <BookCard key={book.id} book={book} sectionType="ALL" />
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
+                  {filterBooks(uniqueBooks).length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No books match your current filters</p>
+                      <Button
+                        onClick={clearFilters}
+                        variant="outline"
+                        className="mt-2"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
         {activeTab === "top-rated" && (
           <Card>
@@ -1062,48 +1062,51 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
         )}
 
         {/* Individual Genre Section */}
-        {activeTab.startsWith('genre-') && (() => {
-          const selectedGenre = activeTab.replace('genre-', '');
-          const genreBooks = insightsData.byGenre[selectedGenre] || [];
-          const filteredBooks = filterBooks(genreBooks);
-          
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="capitalize flex items-center gap-2">
-                  {selectedGenre} Books
-                  <Badge variant="secondary" className="ml-2">
-                    {filteredBooks.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredBooks.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      book={book}
-                      sectionType={selectedGenre.toUpperCase()}
-                    />
-                  ))}
-                </div>
-                {filteredBooks.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No books match your current filters in {selectedGenre}</p>
-                    <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="mt-2"
-                    >
-                      Clear Filters
-                    </Button>
+        {activeTab.startsWith("genre-") &&
+          (() => {
+            const selectedGenre = activeTab.replace("genre-", "");
+            const genreBooks = insightsData.byGenre[selectedGenre] || [];
+            const filteredBooks = filterBooks(genreBooks);
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="capitalize flex items-center gap-2">
+                    {selectedGenre} Books
+                    <Badge variant="secondary" className="ml-2">
+                      {filteredBooks.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {filteredBooks.map((book) => (
+                      <BookCard
+                        key={book.id}
+                        book={book}
+                        sectionType={selectedGenre.toUpperCase()}
+                      />
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
+                  {filteredBooks.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>
+                        No books match your current filters in {selectedGenre}
+                      </p>
+                      <Button
+                        onClick={clearFilters}
+                        variant="outline"
+                        className="mt-2"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
       </div>
 
       {/* Section Selection Modal */}

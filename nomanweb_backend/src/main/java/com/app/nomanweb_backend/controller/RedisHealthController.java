@@ -7,9 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/redis")
@@ -117,6 +116,133 @@ public class RedisHealthController {
             
         } catch (Exception e) {
             log.error("Failed to get cache stats", e);
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/cache-keys")
+    public ResponseEntity<Map<String, Object>> getAllCacheKeys() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Get all keys from Redis
+            Set<String> keys = redisTemplate.keys("*");
+            
+            if (keys == null) {
+                keys = new HashSet<>();
+            }
+            
+            // Group keys by pattern/prefix for better organization
+            Map<String, List<String>> keysByPattern = keys.stream()
+                    .collect(Collectors.groupingBy(key -> {
+                        if (key.contains(":")) {
+                            return key.substring(0, key.indexOf(":"));
+                        }
+                        return "other";
+                    }));
+            
+            response.put("success", true);
+            response.put("totalKeys", keys.size());
+            response.put("allKeys", keys);
+            response.put("keysByPattern", keysByPattern);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            log.info("Retrieved {} cache keys from Redis", keys.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Failed to get cache keys", e);
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @GetMapping("/cache-entries")
+    public ResponseEntity<Map<String, Object>> getAllCacheEntries() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Get all keys from Redis
+            Set<String> keys = redisTemplate.keys("*");
+            
+            if (keys == null) {
+                keys = new HashSet<>();
+            }
+            
+            // Get values for all keys (limit to first 100 to avoid memory issues)
+            Map<String, Object> cacheEntries = new HashMap<>();
+            List<String> keysList = new ArrayList<>(keys);
+            
+            // Limit to first 100 keys to avoid overwhelming response
+            int limit = Math.min(keysList.size(), 100);
+            
+            for (int i = 0; i < limit; i++) {
+                String key = keysList.get(i);
+                try {
+                    Object value = redisTemplate.opsForValue().get(key);
+                    cacheEntries.put(key, value);
+                } catch (Exception e) {
+                    cacheEntries.put(key, "Error retrieving value: " + e.getMessage());
+                }
+            }
+            
+            response.put("success", true);
+            response.put("totalKeys", keys.size());
+            response.put("displayedEntries", limit);
+            response.put("cacheEntries", cacheEntries);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            if (keys.size() > 100) {
+                response.put("note", "Only showing first 100 entries. Total keys: " + keys.size());
+            }
+            
+            log.info("Retrieved {} cache entries from Redis (showing {} entries)", keys.size(), limit);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Failed to get cache entries", e);
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @DeleteMapping("/cache-clear")
+    public ResponseEntity<Map<String, Object>> clearAllCache() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Get all keys first to count them
+            Set<String> keys = redisTemplate.keys("*");
+            int keyCount = keys != null ? keys.size() : 0;
+            
+            // Clear all cache
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+            
+            response.put("success", true);
+            response.put("clearedKeys", keyCount);
+            response.put("message", "All cache entries cleared successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            log.info("Cleared {} cache entries from Redis", keyCount);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Failed to clear cache", e);
             response.put("success", false);
             response.put("error", e.getMessage());
             response.put("timestamp", System.currentTimeMillis());

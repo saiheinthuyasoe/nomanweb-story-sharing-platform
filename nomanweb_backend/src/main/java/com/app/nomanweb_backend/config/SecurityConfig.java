@@ -55,6 +55,13 @@ public class SecurityConfig {
                         // Health endpoints
                         .requestMatchers("/actuator/health").permitAll()
 
+                        // Swagger/OpenAPI endpoints
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-resources/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/websocket/health").permitAll()
@@ -69,6 +76,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/homepage/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/coins/packages").permitAll()
                         .requestMatchers("/api/test/public").permitAll()
+                        .requestMatchers("/actuator/*").permitAll()
 
                         // Admin authentication endpoints - public access for login/register
                         .requestMatchers("/api/admin/auth/login", "/api/admin/auth/register",
@@ -115,13 +123,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // Get allowed origins from environment variable
         String allowedOrigins = System.getenv("APP_CORS_ALLOWED_ORIGINS");
         if (allowedOrigins == null || allowedOrigins.isEmpty()) {
             allowedOrigins = "http://localhost:3000,http://localhost:3001,https://nomanweb-story-sharing-platform-pbc.vercel.app";
         }
-        
+
         configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

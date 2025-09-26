@@ -161,7 +161,10 @@ export default function AdminModerationPage() {
       }
 
       // Add pagination parameters to the API call
-      const url = new URL("/api/admin/moderation/chapters", window.location.origin);
+      const url = new URL(
+        "/api/admin/moderation/chapters",
+        window.location.origin
+      );
       url.searchParams.append("page", currentPage.toString());
       url.searchParams.append("size", pageSize.toString());
 
@@ -863,8 +866,6 @@ export default function AdminModerationPage() {
                 rejection
               </p>
             </div>
-
-
           </div>
         </div>
 
@@ -884,16 +885,15 @@ export default function AdminModerationPage() {
               </button>
 
               <button
-                  onClick={() => setActiveTab("queue")}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "queue"
-                      ? "border-[#18243c] text-[#18243c]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  AI Moderation Queue
-                </button>
-
+                onClick={() => setActiveTab("queue")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "queue"
+                    ? "border-[#18243c] text-[#18243c]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                AI Moderation Queue
+              </button>
             </nav>
           </div>
         </div>
@@ -976,7 +976,6 @@ export default function AdminModerationPage() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Processing Queue Status
                   </h3>
-
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1055,7 +1054,6 @@ export default function AdminModerationPage() {
                       <XCircleIcon className="h-4 w-4 mr-1" />
                       Reject Selected
                     </Button>
-
                   </div>
                 </div>
               </Card>
@@ -1078,7 +1076,7 @@ export default function AdminModerationPage() {
                       : "Select All"}
                   </Button>
                 </div>
-                
+
                 {/* Search and Filter Controls */}
                 <div className="flex items-center space-x-4">
                   {/* Search Bar */}
@@ -1354,43 +1352,54 @@ export default function AdminModerationPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
-                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                      onClick={() =>
+                        setCurrentPage(Math.max(0, currentPage - 1))
+                      }
                       disabled={currentPage === 0}
                       variant="outline"
                       size="sm"
                     >
                       Previous
                     </Button>
-                    
+
                     <div className="flex items-center space-x-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i;
-                        } else if (currentPage < 3) {
-                          pageNum = i;
-                        } else if (currentPage >= totalPages - 3) {
-                          pageNum = totalPages - 5 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i;
+                          } else if (currentPage < 3) {
+                            pageNum = i;
+                          } else if (currentPage >= totalPages - 3) {
+                            pageNum = totalPages - 5 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              variant={
+                                currentPage === pageNum ? "default" : "outline"
+                              }
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                            >
+                              {pageNum + 1}
+                            </Button>
+                          );
                         }
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            variant={currentPage === pageNum ? "default" : "outline"}
-                            size="sm"
-                            className="w-8 h-8 p-0"
-                          >
-                            {pageNum + 1}
-                          </Button>
-                        );
-                      })}
+                      )}
                     </div>
 
                     <Button
-                      onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                      onClick={() =>
+                        setCurrentPage(
+                          Math.min(totalPages - 1, currentPage + 1)
+                        )
+                      }
                       disabled={currentPage >= totalPages - 1}
                       variant="outline"
                       size="sm"
@@ -1403,8 +1412,6 @@ export default function AdminModerationPage() {
             </Card>
           </>
         )}
-
-
 
         {/* Queue Status Tab */}
         {activeTab === "queue" && (
@@ -1610,7 +1617,9 @@ export default function AdminModerationPage() {
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-lg font-semibold text-amber-900">AI Moderation Paused</h4>
+                        <h4 className="text-lg font-semibold text-amber-900">
+                          AI Moderation Paused
+                        </h4>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-medium rounded-full">
@@ -1628,7 +1637,9 @@ export default function AdminModerationPage() {
                     <div className="px-6 py-4 border-b border-gray-50">
                       <h4 className="text-lg font-medium text-gray-900">
                         Pending Chapters
-                        <span className="ml-2 text-sm font-normal text-gray-500">({queueStatus.pendingChapters.length})</span>
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({queueStatus.pendingChapters.length})
+                        </span>
                       </h4>
                     </div>
                     <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
@@ -1641,13 +1652,15 @@ export default function AdminModerationPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-3">
                                 <div className="flex-shrink-0">
-                                  <div className={`w-1.5 h-8 rounded-full ${
-                                    chapter.priority === 1
-                                      ? "bg-red-400"
-                                      : chapter.priority === 2
-                                      ? "bg-amber-400"
-                                      : "bg-blue-400"
-                                  }`}></div>
+                                  <div
+                                    className={`w-1.5 h-8 rounded-full ${
+                                      chapter.priority === 1
+                                        ? "bg-red-400"
+                                        : chapter.priority === 2
+                                        ? "bg-amber-400"
+                                        : "bg-blue-400"
+                                    }`}
+                                  ></div>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h5 className="text-sm font-medium text-gray-900 truncate">
@@ -1661,15 +1674,19 @@ export default function AdminModerationPage() {
                             </div>
                             <div className="flex items-center space-x-3 ml-4">
                               <span className="text-xs text-gray-400">
-                                {new Date(chapter.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  chapter.createdAt
+                                ).toLocaleDateString()}
                               </span>
-                              <div className={`w-2 h-2 rounded-full ${
-                                chapter.priority === 1
-                                  ? "bg-red-400"
-                                  : chapter.priority === 2
-                                  ? "bg-amber-400"
-                                  : "bg-blue-400"
-                              }`}></div>
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  chapter.priority === 1
+                                    ? "bg-red-400"
+                                    : chapter.priority === 2
+                                    ? "bg-amber-400"
+                                    : "bg-blue-400"
+                                }`}
+                              ></div>
                             </div>
                           </div>
                         </div>

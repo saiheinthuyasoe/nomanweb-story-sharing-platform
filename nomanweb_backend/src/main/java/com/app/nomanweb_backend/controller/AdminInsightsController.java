@@ -22,7 +22,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/insights")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001",
+        "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminInsightsController {
@@ -35,15 +36,15 @@ public class AdminInsightsController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             log.info("Getting top-rated books with limit: {}", limit);
-            
+
             Pageable pageable = PageRequest.of(0, limit);
             List<Story> stories = storyRepository.findBestRatedStories(
-                Story.PublishStatus.PUBLISHED, pageable).getContent();
-            
+                    Story.PublishStatus.PUBLISHED, pageable).getContent();
+
             List<Map<String, Object>> insights = stories.stream()
-                .map(this::convertToBookInsight)
-                .collect(Collectors.toList());
-            
+                    .map(this::convertToBookInsight)
+                    .collect(Collectors.toList());
+
             log.info("Returning {} top-rated books", insights.size());
             return ResponseEntity.ok(insights);
         } catch (Exception e) {
@@ -57,23 +58,23 @@ public class AdminInsightsController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             log.info("Getting most read weekly books with limit: {}", limit);
-            
+
             // Get weekly trending stories using existing repository method
             LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
             Pageable pageable = PageRequest.of(0, limit);
             List<Story> stories = storyRepository.findWeeklyTrending(
-                Story.PublishStatus.PUBLISHED, oneWeekAgo, pageable).getContent();
-            
+                    Story.PublishStatus.PUBLISHED, oneWeekAgo, pageable).getContent();
+
             // If not enough from this week, get most viewed overall
             if (stories.size() < limit) {
                 stories = storyRepository.findTrendingStories(
-                    Story.PublishStatus.PUBLISHED, pageable).getContent();
+                        Story.PublishStatus.PUBLISHED, pageable).getContent();
             }
-            
+
             List<Map<String, Object>> insights = stories.stream()
-                .map(this::convertToBookInsight)
-                .collect(Collectors.toList());
-            
+                    .map(this::convertToBookInsight)
+                    .collect(Collectors.toList());
+
             log.info("Returning {} most read weekly books", insights.size());
             return ResponseEntity.ok(insights);
         } catch (Exception e) {
@@ -87,15 +88,15 @@ public class AdminInsightsController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             log.info("Getting new releases with limit: {}", limit);
-            
+
             Pageable pageable = PageRequest.of(0, limit);
             List<Story> stories = storyRepository.findNewestStories(
-                Story.PublishStatus.PUBLISHED, pageable).getContent();
-            
+                    Story.PublishStatus.PUBLISHED, pageable).getContent();
+
             List<Map<String, Object>> insights = stories.stream()
-                .map(this::convertToBookInsight)
-                .collect(Collectors.toList());
-            
+                    .map(this::convertToBookInsight)
+                    .collect(Collectors.toList());
+
             log.info("Returning {} new releases", insights.size());
             return ResponseEntity.ok(insights);
         } catch (Exception e) {
@@ -110,28 +111,28 @@ public class AdminInsightsController {
             @RequestParam(defaultValue = "10") int limit) {
         try {
             log.info("Getting books by genre: {} with limit: {}", genreId, limit);
-            
+
             // Map genre names to category names/slugs
             String categoryName = mapGenreToCategory(genreId);
-            
+
             // Find category by name or slug
             Category category = categoryRepository.findByName(categoryName)
-                .or(() -> categoryRepository.findBySlug(genreId))
-                .orElse(null);
-            
+                    .or(() -> categoryRepository.findBySlug(genreId))
+                    .orElse(null);
+
             if (category == null) {
                 log.warn("Category not found for genre: {}", genreId);
                 return ResponseEntity.ok(List.of());
             }
-            
+
             Pageable pageable = PageRequest.of(0, limit, Sort.by("totalViews").descending());
             List<Story> stories = storyRepository.findByCategoryIdAndPublishStatus(
-                category.getId(), Story.PublishStatus.PUBLISHED, pageable).getContent();
-            
+                    category.getId(), Story.PublishStatus.PUBLISHED, pageable).getContent();
+
             List<Map<String, Object>> insights = stories.stream()
-                .map(this::convertToBookInsight)
-                .collect(Collectors.toList());
-            
+                    .map(this::convertToBookInsight)
+                    .collect(Collectors.toList());
+
             log.info("Returning {} books for genre: {}", insights.size(), genreId);
             return ResponseEntity.ok(insights);
         } catch (Exception e) {
@@ -149,9 +150,9 @@ public class AdminInsightsController {
             @RequestParam(required = false) Integer minViews) {
         try {
             log.info("Getting suggestions for section: {} with limit: {}", sectionType, limit);
-            
+
             List<Map<String, Object>> suggestions;
-            
+
             switch (sectionType.toUpperCase()) {
                 case "TOP_RATED":
                 case "BEST_RATING":
@@ -178,24 +179,24 @@ public class AdminInsightsController {
                     suggestions = getNewReleases(limit).getBody();
                     break;
             }
-            
+
             // Apply additional filters if provided
             if (suggestions != null) {
                 if (minRating != null) {
                     suggestions = suggestions.stream()
-                        .filter(s -> ((Number) s.get("averageRating")).doubleValue() >= minRating)
-                        .collect(Collectors.toList());
+                            .filter(s -> ((Number) s.get("averageRating")).doubleValue() >= minRating)
+                            .collect(Collectors.toList());
                 }
-                
+
                 if (minViews != null) {
                     suggestions = suggestions.stream()
-                        .filter(s -> ((Number) s.get("viewCount")).intValue() >= minViews)
-                        .collect(Collectors.toList());
+                            .filter(s -> ((Number) s.get("viewCount")).intValue() >= minViews)
+                            .collect(Collectors.toList());
                 }
             }
-            
-            log.info("Returning {} suggestions for section: {}", 
-                suggestions != null ? suggestions.size() : 0, sectionType);
+
+            log.info("Returning {} suggestions for section: {}",
+                    suggestions != null ? suggestions.size() : 0, sectionType);
             return ResponseEntity.ok(suggestions != null ? suggestions : List.of());
         } catch (Exception e) {
             log.error("Error getting suggestions for section: {}", sectionType, e);
@@ -236,15 +237,15 @@ public class AdminInsightsController {
         Map<String, Object> insight = new HashMap<>();
         insight.put("id", story.getId().toString());
         insight.put("title", story.getTitle());
-        
+
         // Create author object with displayName and username
         Map<String, String> author = new HashMap<>();
         author.put("displayName", story.getAuthor() != null ? story.getAuthor().getDisplayName() : "Unknown");
         author.put("username", story.getAuthor() != null ? story.getAuthor().getUsername() : "unknown");
         insight.put("author", author);
-        
+
         insight.put("coverImageUrl", story.getCoverImageUrl());
-        
+
         // Create category object with id and name
         if (story.getCategory() != null) {
             Map<String, String> category = new HashMap<>();
@@ -252,13 +253,13 @@ public class AdminInsightsController {
             category.put("name", story.getCategory().getName());
             insight.put("category", category);
         }
-        
+
         Long totalViews = story.getTotalViews() != null ? story.getTotalViews() : 0L;
         Long totalLikes = story.getTotalLikes() != null ? story.getTotalLikes() : 0L;
-        
+
         insight.put("totalViews", totalViews);
         insight.put("totalLikes", totalLikes);
-        
+
         // Calculate rating based on likes-to-views ratio (0.0 to 5.0 scale)
         double averageRating = 0.0;
         if (totalViews > 0 && totalLikes > 0) {
@@ -270,13 +271,14 @@ public class AdminInsightsController {
             averageRating = Math.round(averageRating * 10.0) / 10.0;
         }
         insight.put("averageRating", averageRating);
-        
+
         insight.put("chapterCount", story.getTotalChapters() != null ? story.getTotalChapters() : 0);
-        insight.put("publishedAt", story.getPublishedAt() != null ? story.getPublishedAt().toString() : story.getCreatedAt().toString());
+        insight.put("publishedAt",
+                story.getPublishedAt() != null ? story.getPublishedAt().toString() : story.getCreatedAt().toString());
         insight.put("weeklyViews", 0); // TODO: Calculate weekly views
         insight.put("weeklyLikes", 0); // TODO: Calculate weekly likes
         insight.put("trendingScore", 0); // TODO: Calculate trending score
-        
+
         return insight;
     }
 }

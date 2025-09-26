@@ -476,7 +476,8 @@ export default function MonetizationPage() {
                 onClick={() => setActiveTab(key as any)}
                 className={`px-2 sm:px-3 lg:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 flex items-center justify-center lg:justify-start space-x-1 sm:space-x-2 min-h-[2.5rem] sm:min-h-[2.75rem]`}
                 style={{
-                  backgroundColor: activeTab === key ? "#18243c" : "transparent",
+                  backgroundColor:
+                    activeTab === key ? "#18243c" : "transparent",
                   color: activeTab === key ? "#ffffff" : "#6b7280",
                 }}
                 onMouseEnter={(e) => {
@@ -492,16 +493,26 @@ export default function MonetizationPage() {
                   }
                 }}
               >
-                {Icon && <Icon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />}
-                <span className="hidden sm:inline lg:inline truncate">{label}</span>
+                {Icon && (
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                )}
+                <span className="hidden sm:inline lg:inline truncate">
+                  {label}
+                </span>
                 <span className="sm:hidden text-center leading-tight">
-                  {key === "overview" ? "Overview" :
-                   key === "earned" ? "Earned" :
-                   key === "received" ? "Received" :
-                   key === "sent" ? "Sent" :
-                   key === "purchases" ? "Purchases" :
-                   key === "refunds-earned" ? "R.Earned" :
-                   "R.Paid"}
+                  {key === "overview"
+                    ? "Overview"
+                    : key === "earned"
+                    ? "Earned"
+                    : key === "received"
+                    ? "Received"
+                    : key === "sent"
+                    ? "Sent"
+                    : key === "purchases"
+                    ? "Purchases"
+                    : key === "refunds-earned"
+                    ? "R.Earned"
+                    : "R.Paid"}
                 </span>
               </button>
             ))}
@@ -660,9 +671,7 @@ export default function MonetizationPage() {
                   )}{" "}
                   Coins
                 </p>
-                <p className="text-xs text-gray-500">
-                  Net after platform fees
-                </p>
+                <p className="text-xs text-gray-500">Net after platform fees</p>
               </div>
             </div>
 
@@ -674,9 +683,7 @@ export default function MonetizationPage() {
                 <p className="text-lg font-bold text-gray-900">
                   {earnedMoney.length}
                 </p>
-                <p className="text-xs text-gray-500">
-                  Chapters & Stories sold
-                </p>
+                <p className="text-xs text-gray-500">Chapters & Stories sold</p>
               </div>
             </div>
 
@@ -694,34 +701,28 @@ export default function MonetizationPage() {
 
             <div className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">
-                  This Month
-                </p>
+                <p className="text-sm font-medium text-gray-600">This Month</p>
                 <p className="text-lg font-bold text-gray-900">
-                     {formatCurrency(
-                       earnedMoney
-                         .filter(
-                           (e) =>
-                             new Date(e.createdAt).getMonth() ===
-                             new Date().getMonth()
-                         )
-                         .reduce((sum, earning) => sum + earning.netEarnings, 0)
-                     )}{" "}
-                     Coins
-                   </p>
-                   <p className="text-xs text-gray-500">
-                     Current month earnings
-                   </p>
-                 </div>
-               </div>
+                  {formatCurrency(
+                    earnedMoney
+                      .filter(
+                        (e) =>
+                          new Date(e.createdAt).getMonth() ===
+                          new Date().getMonth()
+                      )
+                      .reduce((sum, earning) => sum + earning.netEarnings, 0)
+                  )}{" "}
+                  Coins
+                </p>
+                <p className="text-xs text-gray-500">Current month earnings</p>
+              </div>
+            </div>
           </div>
 
           {/* Earnings History */}
           <Card>
             <CardHeader>
-              <CardTitle>
-                Earnings History
-              </CardTitle>
+              <CardTitle>Earnings History</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -1113,9 +1114,7 @@ export default function MonetizationPage() {
           {/* Purchase History */}
           <Card>
             <CardHeader>
-              <CardTitle>
-                Purchase History
-              </CardTitle>
+              <CardTitle>Purchase History</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -1360,9 +1359,7 @@ export default function MonetizationPage() {
           {/* Refunds Earned History */}
           <Card>
             <CardHeader>
-              <CardTitle>
-                Refunds Received History
-              </CardTitle>
+              <CardTitle>Refunds Received History</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
