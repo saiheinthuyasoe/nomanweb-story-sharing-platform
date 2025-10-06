@@ -134,19 +134,13 @@ export default function AdminModerationPage() {
     "overview" | "flagged" | "queue" | "reports"
   >("overview");
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [pageSize, setPageSize] = useState(800);
-
   useEffect(() => {
     fetchChapters();
     fetchQueueStatus();
     // Set up interval to refresh queue status every 10 seconds
     const interval = setInterval(fetchQueueStatus, 10000);
     return () => clearInterval(interval);
-  }, [currentPage, pageSize]); // Add pagination dependencies
+  }, []);
 
   useEffect(() => {
     applyFiltersAndSearch();
@@ -160,12 +154,7 @@ export default function AdminModerationPage() {
         throw new Error("Admin token not found. Please login again.");
       }
 
-      // Add pagination parameters to the API call
-      const url = new URL("/api/admin/moderation/chapters", window.location.origin);
-      url.searchParams.append("page", currentPage.toString());
-      url.searchParams.append("size", pageSize.toString());
-
-      const response = await fetch(url.toString(), {
+      const response = await fetch("/api/admin/moderation/chapters", {
         headers: {
           Authorization: `Bearer ${adminToken}`,
           "Content-Type": "application/json",
@@ -180,11 +169,6 @@ export default function AdminModerationPage() {
       // Backend returns a Spring Boot Page object with content property
       const chapters = data.content || [];
       setChapters(chapters);
-
-      // Update pagination info from response
-      setTotalPages(data.totalPages || 0);
-      setTotalElements(data.totalElements || 0);
-      setCurrentPage(data.number || 0);
 
       // Calculate stats
       const today = new Date().toDateString();
@@ -693,7 +677,7 @@ export default function AdminModerationPage() {
                             const icon = isProblematic ? "🔴" : "🟢";
 
                             return `${icon} ${formattedCategory} (${highestPercentage.toFixed(
-                              1
+                              0
                             )}%)`;
                           })()}
                         </span>
@@ -715,7 +699,7 @@ export default function AdminModerationPage() {
                           {Object.entries(analysisResult.allProbabilities)
                             .sort(([, a], [, b]) => b - a)
                             .map(([category, probability]) => {
-                              const percentage = (probability * 100).toFixed(1);
+                              const percentage = (probability * 100).toFixed(0);
                               const displayName = category
                                 .replace("_", " ")
                                 .replace(/\b\w/g, (l) => l.toUpperCase());
@@ -1324,82 +1308,6 @@ export default function AdminModerationPage() {
                   </p>
                 </div>
               )}
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-4 text-sm text-gray-700">
-                    <span>
-                      Showing {currentPage * pageSize + 1} to{" "}
-                      {Math.min((currentPage + 1) * pageSize, totalElements)} of{" "}
-                      {totalElements} results
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span>Show:</span>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => {
-                          setPageSize(Number(e.target.value));
-                          setCurrentPage(0); // Reset to first page when changing page size
-                        }}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
-                      >
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value={800}>800</option>
-                      </select>
-                      <span>per page</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                      disabled={currentPage === 0}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Previous
-                    </Button>
-                    
-                    <div className="flex items-center space-x-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i;
-                        } else if (currentPage < 3) {
-                          pageNum = i;
-                        } else if (currentPage >= totalPages - 3) {
-                          pageNum = totalPages - 5 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            variant={currentPage === pageNum ? "default" : "outline"}
-                            size="sm"
-                            className="w-8 h-8 p-0"
-                          >
-                            {pageNum + 1}
-                          </Button>
-                        );
-                      })}
-                    </div>
-
-                    <Button
-                      onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                      disabled={currentPage >= totalPages - 1}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
             </Card>
           </>
         )}
@@ -1783,6 +1691,8 @@ export default function AdminModerationPage() {
             )}
           </div>
         )}
+
+
       </div>
     </div>
   );

@@ -171,95 +171,50 @@ public class ContentModerationServiceImpl implements ContentModerationService {
 
     private ContentModerationResult parseApiResponse(String responseBody) {
         try {
-            log.debug("Parsing API response: {}", responseBody);
             JsonNode root = objectMapper.readTree(responseBody);
 
-            // Handle Hugging Face Spaces response format
-            JsonNode dataNode = root.get("data");
-            if (dataNode != null && dataNode.isArray() && dataNode.size() > 0) {
-                // Hugging Face Spaces format: {"data": [{"label": "...", "confidences": [...]}]}
-                JsonNode firstResult = dataNode.get(0);
-                
-                if (firstResult.has("label")) {
-                    String label = firstResult.get("label").asText();
-                    boolean isOffensive = "OFFENSIVE".equalsIgnoreCase(label) || "offensive".equalsIgnoreCase(label);
-                    
-                    // Extract confidence score
-                    double confidenceScore = 0.5; // Default
-                    Map<String, Double> allProbabilities = new HashMap<>();
-                    
-                    JsonNode confidencesNode = firstResult.get("confidences");
-                    if (confidencesNode != null && confidencesNode.isArray()) {
-                        for (JsonNode confidence : confidencesNode) {
-                            String confLabel = confidence.get("label").asText();
-                            double confScore = confidence.get("confidence").asDouble();
-                            allProbabilities.put(confLabel, confScore);
-                            
-                            // Use the confidence score of the predicted label
-                            if (confLabel.equalsIgnoreCase(label)) {
-                                confidenceScore = confScore;
-                            }
-                        }
-                    }
-                    
-                    String details = String.format("Category: %s, Confidence: %.3f", label, confidenceScore);
-                    
-                    log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
-                            label, confidenceScore, isOffensive);
-                    
-                    if (isOffensive) {
-                        return ContentModerationResult.offensive(confidenceScore, "detected", details, label,
-                                allProbabilities);
-                    } else {
-                        return ContentModerationResult.safe(confidenceScore, "detected", details, label,
-                                allProbabilities);
-                    }
+            // Parse all probabilities first
+            Map<String, Double> allProbabilities = new HashMap<>();
+            JsonNode probabilitiesNode = root.get("all_probabilities");
+            if (probabilitiesNode != null) {
+                probabilitiesNode.fields().forEachRemaining(entry -> {
+                    allProbabilities.put(entry.getKey(), entry.getValue().asDouble());
+                });
+            }
+
+            // Find the category with the highest probability (correct classification)
+            String actualPredictedCategory = "normal";
+            double highestProbability = 0.0;
+
+            for (Map.Entry<String, Double> entry : allProbabilities.entrySet()) {
+                if (entry.getValue() > highestProbability) {
+                    highestProbability = entry.getValue();
+                    actualPredictedCategory = entry.getKey();
                 }
             }
 
-            // Fallback: Try to parse custom format (backward compatibility)
-            JsonNode isOffensiveNode = root.get("is_offensive");
-            JsonNode confidenceScoreNode = root.get("confidence_score");
-            JsonNode predictedCategoryNode = root.get("predicted_category");
+            // Use the highest probability as confidence score
+            double confidence = highestProbability;
 
-            if (isOffensiveNode != null && confidenceScoreNode != null) {
-                boolean isOffensive = isOffensiveNode.asBoolean();
-                double confidenceScore = confidenceScoreNode.asDouble();
-                String predictedCategory = predictedCategoryNode != null ? predictedCategoryNode.asText() : "unknown";
+            // Determine if content is offensive based on the actual highest probability
+            // category
+            boolean isOffensive = actualPredictedCategory.toLowerCase().contains("offensive") ||
+                    actualPredictedCategory.toLowerCase().contains("hate") ||
+                    actualPredictedCategory.toLowerCase().contains("religious") ||
+                    actualPredictedCategory.toLowerCase().contains("political");
 
-                // Parse probabilities (support both old and new format)
-                Map<String, Double> allProbabilities = new HashMap<>();
-                JsonNode probabilitiesNode = root.get("probabilities");
-                if (probabilitiesNode == null) {
-                    probabilitiesNode = root.get("all_probabilities"); // Fallback to old format
-                }
+            String details = String.format("Category: %s, Confidence: %.3f", actualPredictedCategory, confidence);
 
-                if (probabilitiesNode != null) {
-                    probabilitiesNode.fields().forEachRemaining(entry -> {
-                        JsonNode valueNode = entry.getValue();
-                        if (valueNode != null && !valueNode.isNull()) {
-                            allProbabilities.put(entry.getKey(), valueNode.asDouble());
-                        }
-                    });
-                }
+            log.info("AI Moderation Result - Highest Category: {}, Confidence: {:.3f}, IsOffensive: {}",
+                    actualPredictedCategory, confidence, isOffensive);
 
-                String details = String.format("Category: %s, Confidence: %.3f", predictedCategory, confidenceScore);
-
-                log.info("AI Moderation Result - Category: {}, Confidence: {:.3f}, IsOffensive: {}",
-                        predictedCategory, confidenceScore, isOffensive);
-
-                if (isOffensive) {
-                    return ContentModerationResult.offensive(confidenceScore, "detected", details, predictedCategory,
-                            allProbabilities);
-                } else {
-                    return ContentModerationResult.safe(confidenceScore, "detected", details, predictedCategory,
-                            allProbabilities);
-                }
+            if (isOffensive) {
+                return ContentModerationResult.offensive(confidence, "detected", details, actualPredictedCategory,
+                        allProbabilities);
+            } else {
+                return ContentModerationResult.safe(confidence, "detected", details, actualPredictedCategory,
+                        allProbabilities);
             }
-
-            // If we can't parse the response, log it and return an error
-            log.error("Unable to parse API response format: {}", responseBody);
-            return ContentModerationResult.error("Unsupported API response format");
 
         } catch (Exception e) {
             log.error("Error parsing API response: ", e);

@@ -120,6 +120,6 @@ STRIPE_SUCCESS_URL=https://nomanweb-story-sharing-platform-pbc.vercel.app/paymen
 STRIPE_CANCEL_URL=https://nomanweb-story-sharing-platform-pbc.vercel.app/payment/cancel
 
 # Moderation
-MODERATION_API_URL=https://saiheinthuyasoe-offensive-language-detector.hf.space/predict
+MODERATION_API_URL=https://arkar1431-language-detector.hf.space/predict
 MODERATION_OFFENSIVE_THRESHOLD=0.7
 MODERATION_AUTO_APPROVE_THRESHOLD=0.3
