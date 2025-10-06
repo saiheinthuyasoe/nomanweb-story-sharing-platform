@@ -648,7 +648,7 @@ export default function Navbar() {
                     Dashboard
                   </MobileNavLink>
                   <MobileNavLink
-                    href="/purchase-history"
+                    href="/library?tab=purchased"
                     icon={History}
                     onClick={closeMobileMenu}
                   >
