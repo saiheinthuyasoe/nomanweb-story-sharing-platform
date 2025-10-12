@@ -10,16 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TypesenseConfig {
 
-    @Value("${typesense.host:localhost}")
+    @Value("${typesense.host:dlqusyr19k8hmv73p-1.a1.typesense.net}")
     private String host;
 
-    @Value("${typesense.port:8108}")
+    @Value("${typesense.port:443}")
     private int port;
 
-    @Value("${typesense.protocol:http}")
+    @Value("${typesense.protocol:https}")
     private String protocol;
 
-    @Value("${typesense.api-key:nomanweb-search-api-key-2024}")
+    @Value("${typesense.api-key:Vcbj2pB65IOURbr3HNu7Q6rxzeIdiR0E}")
     private String apiKey;
 
     @Value("${typesense.connection-timeout:5000}")
