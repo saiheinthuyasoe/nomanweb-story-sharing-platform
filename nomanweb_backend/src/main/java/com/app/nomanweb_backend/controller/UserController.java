@@ -104,6 +104,19 @@ public class UserController {
         }
     }
 
+    // Get current user's analytics time-series data
+    @GetMapping("/me/analytics")
+    public ResponseEntity<Map<String, Object>> getMyAnalytics(HttpServletRequest request) {
+        try {
+            UUID userId = getCurrentUserId(request);
+            Map<String, Object> analytics = userService.getUserAnalytics(userId);
+            return ResponseEntity.ok(analytics);
+        } catch (Exception e) {
+            log.error("Error getting user analytics", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // Get user's followers
     @GetMapping("/{userId}/followers")
     public ResponseEntity<Page<Map<String, Object>>> getFollowers(

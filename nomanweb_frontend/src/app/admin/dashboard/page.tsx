@@ -64,6 +64,28 @@ interface UserAnalytics {
   verifiedUsers: number;
 }
 
+interface MonthlyDataPoint {
+  month: string;
+  year: number;
+  registrations?: number;
+  revenue?: number;
+}
+
+interface MonthlyData {
+  userRegistrations: MonthlyDataPoint[];
+  revenueData: MonthlyDataPoint[];
+}
+
+interface ContentAnalytics {
+  totalViews: number;
+  totalLikes: number;
+  recentActivity: number;
+  avgViewsPerStory: number;
+  avgLikesPerStory: number;
+  engagementRate: number;
+  totalPublishedStories: number;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalStories: 0,
@@ -96,6 +118,21 @@ export default function AdminDashboard() {
     verifiedUsers: 0,
   });
 
+  const [monthlyData, setMonthlyData] = useState<MonthlyData>({
+    userRegistrations: [],
+    revenueData: []
+  });
+  
+  const [contentAnalytics, setContentAnalytics] = useState<ContentAnalytics>({
+    totalViews: 0,
+    totalLikes: 0,
+    recentActivity: 0,
+    avgViewsPerStory: 0,
+    avgLikesPerStory: 0,
+    engagementRate: 0,
+    totalPublishedStories: 0
+  });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -111,10 +148,13 @@ export default function AdminDashboard() {
       };
 
       // Fetch all data in parallel
-      const [dashboardResponse, coinResponse, withdrawalResponse] = await Promise.all([
+      const [dashboardResponse, coinResponse, withdrawalResponse, userAnalyticsResponse, monthlyDataResponse, contentAnalyticsResponse] = await Promise.all([
         fetch("/api/admin/dashboard/stats", { headers }),
         fetch("/api/admin/coins/stats", { headers }),
         fetch("/api/admin/withdrawals/stats", { headers }),
+        fetch("/api/admin/dashboard/user-analytics", { headers }),
+        fetch("/api/admin/dashboard/monthly-data", { headers }),
+        fetch("/api/admin/dashboard/content-analytics", { headers }),
       ]);
 
       if (dashboardResponse.ok) {
@@ -149,13 +189,64 @@ export default function AdminDashboard() {
         setWithdrawalStats(withdrawalData);
       }
 
-      // Mock user analytics data (you can replace with real API)
-      setUserAnalytics({
-        activeUsers: Math.floor(stats.totalUsers * 0.7),
-        newUsers: Math.floor(stats.recentActivity * 0.3),
-        suspendedUsers: Math.floor(stats.totalUsers * 0.05),
-        verifiedUsers: Math.floor(stats.totalUsers * 0.8),
-      });
+      if (userAnalyticsResponse.ok) {
+        const userAnalyticsData = await userAnalyticsResponse.json();
+        setUserAnalytics({
+          activeUsers: userAnalyticsData.activeUsers || 0,
+          newUsers: userAnalyticsData.newUsers || 0,
+          suspendedUsers: userAnalyticsData.suspendedUsers || 0,
+          verifiedUsers: userAnalyticsData.verifiedUsers || 0,
+        });
+      } else {
+         console.error("Failed to fetch user analytics:", userAnalyticsResponse.status);
+         // Set fallback values if API fails
+         setUserAnalytics({
+           activeUsers: 0,
+           newUsers: 0,
+           suspendedUsers: 0,
+           verifiedUsers: 0,
+         });
+       }
+
+       if (monthlyDataResponse.ok) {
+         const monthlyDataResult = await monthlyDataResponse.json();
+         setMonthlyData({
+           userRegistrations: monthlyDataResult.userRegistrations || [],
+           revenueData: monthlyDataResult.revenueData || [],
+         });
+       } else {
+         console.error("Failed to fetch monthly data:", monthlyDataResponse.status);
+         // Set fallback values if API fails
+         setMonthlyData({
+           userRegistrations: [],
+           revenueData: [],
+         });
+       }
+
+       if (contentAnalyticsResponse.ok) {
+         const contentAnalyticsData = await contentAnalyticsResponse.json();
+         setContentAnalytics({
+           totalViews: contentAnalyticsData.totalViews || 0,
+           totalLikes: contentAnalyticsData.totalLikes || 0,
+           recentActivity: contentAnalyticsData.recentActivity || 0,
+           avgViewsPerStory: contentAnalyticsData.avgViewsPerStory || 0,
+           avgLikesPerStory: contentAnalyticsData.avgLikesPerStory || 0,
+           engagementRate: contentAnalyticsData.engagementRate || 0,
+           totalPublishedStories: contentAnalyticsData.totalPublishedStories || 0,
+         });
+       } else {
+         console.error("Failed to fetch content analytics:", contentAnalyticsResponse.status);
+         // Set fallback values if API fails
+         setContentAnalytics({
+           totalViews: 0,
+           totalLikes: 0,
+           recentActivity: 0,
+           avgViewsPerStory: 0,
+           avgLikesPerStory: 0,
+           engagementRate: 0,
+           totalPublishedStories: 0,
+         });
+       }
 
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -230,18 +321,24 @@ export default function AdminDashboard() {
   };
 
   const userAnalyticsChartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: monthlyData.userRegistrations.length > 0 
+      ? monthlyData.userRegistrations.map(data => `${data.month.substring(0, 3)} ${data.year}`)
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
         label: 'New Users',
-        data: [65, 59, 80, 81, 56, 55],
+        data: monthlyData.userRegistrations.length > 0 
+          ? monthlyData.userRegistrations.map(data => data.registrations || 0)
+          : [0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
       },
       {
         label: 'Active Users',
-        data: [28, 48, 40, 19, 86, 27],
+        data: monthlyData.userRegistrations.length > 0 
+          ? monthlyData.userRegistrations.map(data => Math.floor((data.registrations || 0) * 0.7)) // Estimate active as 70% of new users
+          : [0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1,
@@ -250,24 +347,15 @@ export default function AdminDashboard() {
   };
 
   const revenueeTrendsData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: monthlyData.revenueData.length > 0 
+      ? monthlyData.revenueData.map(data => `${data.month.substring(0, 3)} ${data.year}`)
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
         label: 'Total Platform Revenue',
-        data: [
-          Math.floor((coinStats.totalIssued || 0) * 0.08),
-          Math.floor((coinStats.totalIssued || 0) * 0.06),
-          Math.floor((coinStats.totalIssued || 0) * 0.09),
-          Math.floor((coinStats.totalIssued || 0) * 0.07),
-          Math.floor((coinStats.totalIssued || 0) * 0.11),
-          Math.floor((coinStats.totalIssued || 0) * 0.08),
-          Math.floor((coinStats.totalIssued || 0) * 0.12),
-          Math.floor((coinStats.totalIssued || 0) * 0.09),
-          Math.floor((coinStats.totalIssued || 0) * 0.10),
-          Math.floor((coinStats.totalIssued || 0) * 0.08),
-          Math.floor((coinStats.totalIssued || 0) * 0.07),
-          Math.floor((coinStats.totalIssued || 0) * 0.05),
-        ],
+        data: monthlyData.revenueData.length > 0 
+          ? monthlyData.revenueData.map(data => data.revenue || 0)
+          : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: 'rgb(34, 197, 94)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -275,20 +363,9 @@ export default function AdminDashboard() {
       },
       {
         label: 'Author Earnings (70%)',
-        data: [
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.06 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.09 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.07 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.11 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.12 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.09 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.10 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.07 * 0.7),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.05 * 0.7),
-        ],
+        data: monthlyData.revenueData.length > 0 
+          ? monthlyData.revenueData.map(data => Math.floor((data.revenue || 0) * 0.7))
+          : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -296,20 +373,9 @@ export default function AdminDashboard() {
       },
       {
         label: 'Platform Share (30%)',
-        data: [
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.06 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.09 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.07 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.11 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.12 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.09 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.10 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.08 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.07 * 0.3),
-          Math.floor((coinStats.totalPurchaseRevenue || 0) * 0.05 * 0.3),
-        ],
+        data: monthlyData.revenueData.length > 0 
+          ? monthlyData.revenueData.map(data => Math.floor((data.revenue || 0) * 0.3))
+          : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         fill: false,
         borderColor: 'rgb(139, 92, 246)',
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -405,21 +471,21 @@ export default function AdminDashboard() {
             <div className="bg-indigo-50 p-4 rounded-lg">
               <div>
                 <p className="text-sm font-medium text-indigo-600">Total Views</p>
-                <p className="text-2xl font-bold text-indigo-900">{(stats.totalStories * 1250).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-indigo-900">{contentAnalytics.totalViews.toLocaleString()}</p>
               </div>
             </div>
             
             <div className="bg-pink-50 p-4 rounded-lg">
               <div>
                 <p className="text-sm font-medium text-pink-600">Total Likes</p>
-                <p className="text-2xl font-bold text-pink-900">{(stats.totalStories * 89).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-pink-900">{contentAnalytics.totalLikes.toLocaleString()}</p>
               </div>
             </div>
             
             <div className="bg-emerald-50 p-4 rounded-lg">
               <div>
                 <p className="text-sm font-medium text-emerald-600">Recent Activity</p>
-                <p className="text-2xl font-bold text-emerald-900">{stats.recentActivity}</p>
+                <p className="text-2xl font-bold text-emerald-900">{contentAnalytics.recentActivity}</p>
               </div>
             </div>
           </div>
@@ -427,8 +493,9 @@ export default function AdminDashboard() {
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">
               Content engagement metrics show healthy platform growth with an average of{" "}
-              <span className="font-semibold">{Math.round((stats.totalStories * 1250) / stats.totalStories)}</span> views per story
-              and <span className="font-semibold">{Math.round((stats.totalStories * 89) / stats.totalStories)}</span> likes per story.
+              <span className="font-semibold">{contentAnalytics.avgViewsPerStory}</span> views per story
+              and <span className="font-semibold">{contentAnalytics.avgLikesPerStory}</span> likes per story.
+              Engagement rate: <span className="font-semibold">{contentAnalytics.engagementRate}%</span>
             </p>
           </div>
         </Card>

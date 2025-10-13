@@ -36,6 +36,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate")
         long countUsersCreatedAfter(@Param("startDate") java.time.LocalDateTime startDate);
 
+        // Count users by status
+        long countByStatus(User.Status status);
+
+        // Count users by email verification status
+        long countByEmailVerified(boolean emailVerified);
+
+        // Count users who logged in after a specific date
+        @Query("SELECT COUNT(u) FROM User u WHERE u.lastLoginAt >= :startDate")
+        long countByLastLoginAtAfter(@Param("startDate") java.time.LocalDateTime startDate);
+
         // Find users by role
         java.util.List<User> findByRole(User.Role role);
 

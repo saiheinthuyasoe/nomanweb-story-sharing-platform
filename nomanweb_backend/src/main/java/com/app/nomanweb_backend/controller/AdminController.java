@@ -106,6 +106,133 @@ public class AdminController {
                 }
         }
 
+        // User Analytics
+        @GetMapping("/dashboard/user-analytics")
+        public ResponseEntity<Map<String, Object>> getUserAnalytics() {
+                try {
+                        Map<String, Object> analytics = new HashMap<>();
+
+                        // Get total users
+                        long totalUsers = userRepository.count();
+
+                        // Get active users (users who have logged in within the last 30 days)
+                        java.time.LocalDateTime thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30);
+                        long activeUsers = userRepository.countByLastLoginAtAfter(thirtyDaysAgo);
+
+                        // Get new users (registered in the last 30 days)
+                        long newUsers = userRepository.countUsersCreatedAfter(thirtyDaysAgo);
+
+                        // Get suspended users
+                        long suspendedUsers = userRepository.countByStatus(User.Status.SUSPENDED);
+
+                        // Get verified users (email verified)
+                        long verifiedUsers = userRepository.countByEmailVerified(true);
+
+                        analytics.put("totalUsers", totalUsers);
+                        analytics.put("activeUsers", activeUsers);
+                        analytics.put("newUsers", newUsers);
+                        analytics.put("suspendedUsers", suspendedUsers);
+                        analytics.put("verifiedUsers", verifiedUsers);
+
+                        log.info("User analytics: Total={}, Active={}, New={}, Suspended={}, Verified={}",
+                                        totalUsers, activeUsers, newUsers, suspendedUsers, verifiedUsers);
+
+                        return ResponseEntity.ok(analytics);
+                } catch (Exception e) {
+                        log.error("Error getting user analytics", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        // Monthly Time-Series Data
+        @GetMapping("/dashboard/monthly-data")
+        public ResponseEntity<Map<String, Object>> getMonthlyTimeSeriesData() {
+                try {
+                        Map<String, Object> timeSeriesData = new HashMap<>();
+                        
+                        // Get last 12 months of data
+                        List<Map<String, Object>> userRegistrations = new ArrayList<>();
+                        List<Map<String, Object>> revenueData = new ArrayList<>();
+                        
+                        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                        
+                        for (int i = 11; i >= 0; i--) {
+                                java.time.LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+                                java.time.LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
+                                
+                                // User registrations for this month
+                                long registrations = userRepository.countUsersCreatedAfter(monthStart) - 
+                                        (i == 0 ? 0 : userRepository.countUsersCreatedAfter(monthEnd.plusSeconds(1)));
+                                
+                                Map<String, Object> userDataPoint = new HashMap<>();
+                                userDataPoint.put("month", monthStart.getMonth().toString());
+                                userDataPoint.put("year", monthStart.getYear());
+                                userDataPoint.put("registrations", registrations);
+                                userRegistrations.add(userDataPoint);
+                                
+                                // Revenue data for this month (placeholder - will be enhanced with real revenue data)
+                                Map<String, Object> revenueDataPoint = new HashMap<>();
+                                revenueDataPoint.put("month", monthStart.getMonth().toString());
+                                revenueDataPoint.put("year", monthStart.getYear());
+                                revenueDataPoint.put("revenue", registrations * 10); // Placeholder calculation
+                                revenueData.add(revenueDataPoint);
+                        }
+                        
+                        timeSeriesData.put("userRegistrations", userRegistrations);
+                        timeSeriesData.put("revenueData", revenueData);
+                        
+                        return ResponseEntity.ok(timeSeriesData);
+                } catch (Exception e) {
+                        log.error("Error getting monthly time-series data", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        @GetMapping("/dashboard/content-analytics")
+        public ResponseEntity<Map<String, Object>> getContentAnalytics() {
+                try {
+                        Map<String, Object> contentAnalytics = new HashMap<>();
+                        
+                        // Get total views across all published stories
+                        List<Story> publishedStories = storyRepository.findAll().stream()
+                                .filter(story -> story.getPublishStatus() == Story.PublishStatus.PUBLISHED)
+                                .collect(Collectors.toList());
+                        
+                        long totalViews = publishedStories.stream()
+                                .mapToLong(story -> story.getTotalViews() != null ? story.getTotalViews() : 0L)
+                                .sum();
+                        
+                        // Get total likes across all published stories
+                        long totalLikes = publishedStories.stream()
+                                .mapToLong(story -> story.getTotalLikes() != null ? story.getTotalLikes() : 0L)
+                                .sum();
+                        
+                        // Get recent activity (stories updated in last 7 days)
+                        java.time.LocalDateTime weekAgo = java.time.LocalDateTime.now().minusDays(7);
+                        long recentActivity = publishedStories.stream()
+                                .filter(story -> story.getUpdatedAt() != null && story.getUpdatedAt().isAfter(weekAgo))
+                                .count();
+                        
+                        // Calculate engagement metrics
+                        double avgViewsPerStory = publishedStories.size() > 0 ? (double) totalViews / publishedStories.size() : 0;
+                        double avgLikesPerStory = publishedStories.size() > 0 ? (double) totalLikes / publishedStories.size() : 0;
+                        double engagementRate = totalViews > 0 ? (double) totalLikes / totalViews * 100 : 0;
+                        
+                        contentAnalytics.put("totalViews", totalViews);
+                        contentAnalytics.put("totalLikes", totalLikes);
+                        contentAnalytics.put("recentActivity", recentActivity);
+                        contentAnalytics.put("avgViewsPerStory", Math.round(avgViewsPerStory));
+                        contentAnalytics.put("avgLikesPerStory", Math.round(avgLikesPerStory));
+                        contentAnalytics.put("engagementRate", Math.round(engagementRate * 100.0) / 100.0);
+                        contentAnalytics.put("totalPublishedStories", publishedStories.size());
+                        
+                        return ResponseEntity.ok(contentAnalytics);
+                } catch (Exception e) {
+                        log.error("Error getting content analytics", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
         // Queue Status and Processing Metrics
         @GetMapping("/moderation/queue/status")
         public ResponseEntity<Map<String, Object>> getQueueStatus() {

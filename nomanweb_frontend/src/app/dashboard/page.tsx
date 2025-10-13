@@ -1,8 +1,9 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Coins,
@@ -20,6 +21,31 @@ import {
 } from "lucide-react";
 import { useMyStories } from "@/hooks/useStories";
 import { useUserStats } from "@/hooks/useUserStats";
+import { useUserAnalytics } from "@/hooks/useUserAnalytics";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 // Chart Filter Options
 const chartFilters = [
@@ -31,14 +57,27 @@ const chartFilters = [
 ];
 
 export default function WriterDashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const { data: myStories } = useMyStories({ page: 0, size: 100 });
   const {
     data: userStats,
     isLoading: statsLoading,
     error: statsError,
   } = useUserStats();
+  const {
+    data: analyticsData,
+    isLoading: analyticsLoading,
+    error: analyticsError,
+  } = useUserAnalytics();
   const [chartFilter, setChartFilter] = useState("30d");
+
+  // Check authentication and redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
 
   // Calculate dashboard stats from real data
   const totalStories = myStories?.totalElements || 0;
@@ -51,8 +90,79 @@ export default function WriterDashboard() {
     ? new Date(user.createdAt).getFullYear()
     : new Date().getFullYear();
 
-  // Show loading state while fetching stats
-  if (statsLoading) {
+  // Prepare chart data
+  const getChartData = () => {
+    if (!analyticsData) return null;
+
+    const { monthlyViews = [], monthlyLikes = [], monthlyStories = [] } = analyticsData;
+
+    // Add debugging logs
+    console.log('Analytics Data:', analyticsData);
+    console.log('Monthly Views:', monthlyViews);
+    console.log('Monthly Likes:', monthlyLikes);
+    console.log('Monthly Stories:', monthlyStories);
+
+    return {
+      labels: monthlyViews.map((item: any) => item.month),
+      datasets: [
+        {
+          label: 'Views',
+          data: monthlyViews.map((item: any) => item.views),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'Likes',
+          data: monthlyLikes.map((item: any) => item.likes),
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'Stories Created',
+          data: monthlyStories.map((item: any) => item.stories),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+      x: {
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+  };
+
+  const chartData = getChartData();
+
+  // Show loading state while checking authentication or fetching stats
+  if (loading || !user || statsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -194,41 +304,36 @@ export default function WriterDashboard() {
               </div>
             </div>
 
-            {/* Chart Placeholder */}
-            <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 h-40 sm:h-48 flex items-center justify-center border border-gray-200 shadow-inner relative overflow-hidden">
-              {/* Chart background pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="grid grid-cols-8 h-full">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="border-r border-gray-400 last:border-r-0"
-                    ></div>
-                  ))}
+            {/* Analytics Chart */}
+            <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 h-64 sm:h-80 border border-gray-200 shadow-sm">
+              {analyticsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading analytics...</p>
+                  </div>
                 </div>
-                <div className="absolute inset-0 grid grid-rows-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="border-b border-gray-400 last:border-b-0"
-                    ></div>
-                  ))}
+              ) : analyticsError ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-sm text-red-600 mb-2">Failed to load analytics</p>
+                    <p className="text-xs text-gray-500">Please try refreshing the page</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="text-center relative z-10">
-                <h4 className="text-lg font-bold text-gray-800 mb-2">
-                  Analytics Overview
-                </h4>
-                <p className="text-sm text-gray-600 max-w-xs mx-auto">
-                  Performance insights for{" "}
-                  <span className="font-semibold" style={{ color: "#18243c" }}>
-                    {chartFilters
-                      .find((f) => f.value === chartFilter)
-                      ?.label.toLowerCase()}
-                  </span>
-                </p>
-              </div>
+              ) : chartData ? (
+                <Line data={chartData} options={chartOptions} />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <h4 className="text-lg font-bold text-gray-800 mb-2">
+                      No Analytics Data
+                    </h4>
+                    <p className="text-sm text-gray-600 max-w-xs mx-auto">
+                      Start creating stories to see your performance insights
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

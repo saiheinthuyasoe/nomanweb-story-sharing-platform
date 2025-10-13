@@ -83,6 +83,12 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
         // Count stories created after a specific date
         long countByCreatedAtAfter(LocalDateTime date);
 
+        // Count stories by author ID and created between dates
+        @Query("SELECT COUNT(s) FROM Story s WHERE s.author.id = :userId AND s.createdAt BETWEEN :startDate AND :endDate")
+        long countByAuthorIdAndCreatedAtBetween(@Param("userId") UUID userId, 
+                @Param("startDate") LocalDateTime startDate, 
+                @Param("endDate") LocalDateTime endDate);
+
         // Find stories with specific content type
         Page<Story> findByPricingTypeAndPublishStatus(Story.PricingType pricingType,
                         Story.PublishStatus publishStatus,

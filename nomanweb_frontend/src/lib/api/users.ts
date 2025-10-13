@@ -11,6 +11,7 @@ export interface UserStats {
   totalEarnedCoins: number;
   booksCompleted: number;
   booksPurchased: number;
+  notificationsCount: number;
 }
 
 export interface UserProfile {
@@ -62,6 +63,12 @@ const usersApi = {
   // Get current user's statistics
   getMyStats: async (): Promise<UserStats> => {
     const response = await apiClient.get(`/users/me/stats`);
+    return response.data;
+  },
+
+  // Get current user's analytics time-series data
+  getMyAnalytics: async (): Promise<any> => {
+    const response = await apiClient.get(`/users/me/analytics`);
     return response.data;
   },
 

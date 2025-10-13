@@ -12,6 +12,9 @@ public interface UserService {
     // Get user statistics
     Map<String, Object> getUserStats(UUID userId);
 
+    // Get user analytics time-series data
+    Map<String, Object> getUserAnalytics(UUID userId);
+
     // Get user's followers
     Page<Map<String, Object>> getFollowers(UUID userId, Pageable pageable);
 
