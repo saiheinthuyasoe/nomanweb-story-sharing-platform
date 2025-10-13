@@ -281,4 +281,13 @@ export const chaptersApi = {
   async emptyTrash(storyId: string): Promise<void> {
     await apiClient.delete(`/chapters/story/${storyId}/trash`);
   },
+
+  // Moderation feedback
+  async submitModerationFeedback(chapterId: string, feedback: string): Promise<void> {
+    await apiClient.post(`/chapters/${chapterId}/submit-feedback`, { feedback });
+  },
 };
+
+// Export the submitModerationFeedback function for direct use
+export const submitModerationFeedback = (chapterId: string, feedback: string) =>
+  chaptersApi.submitModerationFeedback(chapterId, feedback);

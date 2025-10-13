@@ -1031,6 +1031,9 @@ public class ChapterServiceImpl implements ChapterService {
                     .status(chapter.getStatus())
                     .moderationStatus(chapter.getModerationStatus())
                     .moderationNotes(chapter.getModerationNotes())
+                    .writerFeedback(chapter.getWriterFeedback())
+                    .feedbackSubmittedAt(chapter.getFeedbackSubmittedAt())
+                    .feedbackReviewedAt(chapter.getFeedbackReviewedAt())
                     .story(storyInfo)
                     .views(chapter.getViews())
                     .likes(chapter.getLikes())
@@ -1056,6 +1059,8 @@ public class ChapterServiceImpl implements ChapterService {
                     .status(chapter.getStatus())
                     .moderationStatus(chapter.getModerationStatus())
                     .moderationNotes(chapter.getModerationNotes())
+                    .writerFeedback(chapter.getWriterFeedback())
+                    .feedbackSubmittedAt(chapter.getFeedbackSubmittedAt())
                     .story(ChapterResponse.StoryInfo.builder()
                             .id(null)
                             .title("Story Not Found")
@@ -1699,6 +1704,83 @@ public class ChapterServiceImpl implements ChapterService {
         }
     }
 
+    @Override
+    public void submitModerationFeedback(UUID chapterId, UUID writerId, String feedback) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+
+        // Verify the writer owns this chapter
+        if (!chapter.getStory().getAuthor().getId().equals(writerId)) {
+            throw new IllegalArgumentException("You can only submit feedback for your own chapters");
+        }
+
+        // Verify the chapter has been rejected (can only provide feedback on rejected content)
+        if (chapter.getModerationStatus() != ModerationStatus.REJECTED) {
+            throw new IllegalArgumentException("Feedback can only be submitted for rejected chapters");
+        }
+
+        // Check if feedback has already been submitted
+        if (chapter.getWriterFeedback() != null && !chapter.getWriterFeedback().trim().isEmpty()) {
+            throw new IllegalArgumentException("Feedback has already been submitted for this chapter");
+        }
+
+        // Update chapter with feedback
+        chapter.setWriterFeedback(feedback);
+        chapter.setFeedbackSubmittedAt(LocalDateTime.now());
+        chapterRepository.save(chapter);
+
+        // Send notification to admins about the feedback
+        try {
+            String title = "Writer Feedback on Moderation Decision";
+            String message = String.format(
+                    "Writer %s has submitted feedback on the rejection of chapter '%s' in story '%s'. Please review the feedback in the moderation panel.",
+                    chapter.getStory().getAuthor().getUsername(),
+                    chapter.getTitle(),
+                    chapter.getStory().getTitle());
+
+            // Send notification to all admins
+            notificationService.sendNotificationToAdmins(
+                    title,
+                    message,
+                    Notification.RelatedType.CHAPTER,
+                    chapter.getId());
+
+            log.info("Feedback submitted for chapter {} by writer {}", chapterId, writerId);
+        } catch (Exception e) {
+            log.warn("Failed to send feedback notification to admins for chapter {}: {}", chapterId, e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ChapterResponse> getFeedbackSubmissions(Pageable pageable, String status) {
+        Page<Chapter> chapters;
+        
+        if (status != null && !status.isEmpty()) {
+            switch (status.toLowerCase()) {
+                case "pending":
+                    // Chapters with feedback submitted but not yet reviewed by admin
+                    chapters = chapterRepository.findByWriterFeedbackIsNotNullAndModerationStatus(
+                            ModerationStatus.REJECTED, pageable);
+                    break;
+                case "reviewed":
+                    // Chapters that have been reviewed after feedback (approved or re-rejected)
+                    chapters = chapterRepository.findByWriterFeedbackIsNotNullAndModerationStatusIn(
+                            List.of(ModerationStatus.APPROVED, ModerationStatus.REJECTED), pageable);
+                    break;
+                default:
+                    // All chapters with feedback
+                    chapters = chapterRepository.findByWriterFeedbackIsNotNull(pageable);
+                    break;
+            }
+        } else {
+            // All chapters with feedback submissions
+            chapters = chapterRepository.findByWriterFeedbackIsNotNull(pageable);
+        }
+        
+        return chapters.map(chapter -> mapToChapterResponse(chapter, null));
+    }
+
     private void sendNotificationToAuthor(User author, Chapter chapter, boolean approved) {
         try {
             String title = approved ? "Chapter Moderation Approved" : "Chapter Moderation Rejected";
@@ -1720,6 +1802,68 @@ public class ChapterServiceImpl implements ChapterService {
                     chapter.getId());
         } catch (Exception e) {
             log.warn("Failed to send moderation notification to author {}: {}", author.getId(), e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Chapter> getChaptersWithFeedback(Pageable pageable) {
+        return chapterRepository.findByWriterFeedbackIsNotNull(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Chapter> getChaptersWithFeedbackByStatus(List<ModerationStatus> statuses, Pageable pageable) {
+        return chapterRepository.findByWriterFeedbackIsNotNullAndModerationStatusIn(statuses, pageable);
+    }
+
+    @Override
+    @Transactional
+    public void markFeedbackAsReviewed(UUID chapterId) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+        
+        if (chapter.getWriterFeedback() == null || chapter.getWriterFeedback().trim().isEmpty()) {
+            throw new IllegalArgumentException("No feedback found for this chapter");
+        }
+        
+        // Add a field to track if feedback was reviewed by admin
+        // For now, we'll use a simple approach by updating the moderation status
+        // In a more complete implementation, you might add a separate field like 'feedbackReviewed'
+        chapter.setFeedbackReviewedAt(LocalDateTime.now());
+        chapterRepository.save(chapter);
+        
+        log.info("Feedback marked as reviewed for chapter: {}", chapterId);
+    }
+
+    @Override
+    @Transactional
+    public void respondToFeedback(UUID chapterId, String response) {
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
+        
+        if (chapter.getWriterFeedback() == null || chapter.getWriterFeedback().trim().isEmpty()) {
+            throw new IllegalArgumentException("No feedback found for this chapter");
+        }
+        
+        // Set admin response to feedback
+        chapter.setAdminResponse(response);
+        chapter.setFeedbackReviewedAt(LocalDateTime.now());
+        chapterRepository.save(chapter);
+        
+        log.info("Admin response added to feedback for chapter: {}", chapterId);
+        
+        // Optionally send notification to the author about the response
+        try {
+            User author = chapter.getStory().getAuthor();
+            notificationService.sendSystemNotification(
+                author.getId(),
+                "Admin Response to Your Feedback",
+                "An admin has responded to your feedback on chapter: " + chapter.getTitle()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send feedback response notification to author {}: {}", 
+                chapter.getStory().getAuthor().getId(), e.getMessage());
         }
     }
 }

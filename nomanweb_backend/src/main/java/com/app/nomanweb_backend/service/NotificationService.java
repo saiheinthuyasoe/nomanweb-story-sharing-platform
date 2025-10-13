@@ -67,7 +67,11 @@ public interface NotificationService {
         void sendModerationNotification(UUID userId, String title, String message,
                         Notification.RelatedType relatedType, UUID relatedId);
 
-        // Cleanup and maintenance
+        // Send notification to all admin users
+        void sendNotificationToAdmins(String title, String message,
+                        Notification.RelatedType relatedType, UUID relatedId);
+
+        // Cleanup and statistics
         void cleanupOldNotifications(int daysToKeep);
 
         // Statistics

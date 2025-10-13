@@ -79,6 +79,18 @@ public class Chapter {
     @Column(name = "moderation_notes", columnDefinition = "TEXT")
     private String moderationNotes;
 
+    @Column(name = "writer_feedback", columnDefinition = "TEXT")
+    private String writerFeedback;
+
+    @Column(name = "feedback_submitted_at")
+    private LocalDateTime feedbackSubmittedAt;
+
+    @Column(name = "feedback_reviewed_at")
+    private LocalDateTime feedbackReviewedAt;
+
+    @Column(name = "admin_response", columnDefinition = "TEXT")
+    private String adminResponse;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

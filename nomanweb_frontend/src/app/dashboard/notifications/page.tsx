@@ -18,6 +18,7 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
+import FeedbackSubmissionModal from "@/components/notifications/FeedbackSubmissionModal";
 import {
   useNotifications,
   useUnreadCount,
@@ -716,6 +717,11 @@ function AlertCard({
   onDelete: (id: string) => void;
   isDeleting: boolean;
 }) {
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // Check if this is a rejected moderation notification
+  const isRejectedModeration = alert.type === "moderation" && 
+    (alert.message?.includes("rejected") || alert.message?.includes("declined"));
   const getColorClasses = (color: string) => {
     const colors = {
       blue: "bg-blue-100 text-blue-600",
@@ -834,6 +840,19 @@ function AlertCard({
               </p>
             </div>
           )}
+
+          {/* Feedback button for rejected moderation notifications */}
+          {isRejectedModeration && (
+            <div className="mt-3">
+              <button
+                onClick={() => setShowFeedbackModal(true)}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                Submit Feedback
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -866,6 +885,16 @@ function AlertCard({
           )}
         </button>
       </div>
+
+      {/* Feedback Modal */}
+       {showFeedbackModal && alert.relatedId && (
+         <FeedbackSubmissionModal
+           isOpen={showFeedbackModal}
+           onClose={() => setShowFeedbackModal(false)}
+           chapterId={alert.relatedId}
+           moderationMessage={alert.message}
+         />
+       )}
     </div>
   );
 }

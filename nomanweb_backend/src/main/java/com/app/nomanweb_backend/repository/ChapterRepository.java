@@ -149,4 +149,18 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
         long countByStoryAndStatusAndCreatedAtBefore(@Param("story") Story story, 
                 @Param("status") Chapter.Status status, 
                 @Param("date") LocalDateTime date);
+
+        // Feedback-related queries for admin management
+        
+        // Find all chapters with writer feedback (for admin feedback management)
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
+        Page<Chapter> findByWriterFeedbackIsNotNull(Pageable pageable);
+        
+        // Find chapters with feedback by moderation status
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND c.moderationStatus = :moderationStatus AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
+        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatus(@Param("moderationStatus") Chapter.ModerationStatus moderationStatus, Pageable pageable);
+        
+        // Find chapters with feedback by multiple moderation statuses
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND c.moderationStatus IN :moderationStatuses AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
+        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatusIn(@Param("moderationStatuses") List<Chapter.ModerationStatus> moderationStatuses, Pageable pageable);
 }

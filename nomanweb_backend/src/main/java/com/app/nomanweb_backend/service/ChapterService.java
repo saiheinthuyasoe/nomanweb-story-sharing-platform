@@ -1,6 +1,7 @@
 package com.app.nomanweb_backend.service;
 
 import com.app.nomanweb_backend.dto.chapter.*;
+import com.app.nomanweb_backend.entity.Chapter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -77,6 +78,17 @@ public interface ChapterService {
     Page<ChapterResponse> getChaptersForModeration(Pageable pageable);
 
     ChapterResponse moderateChapter(UUID chapterId, String moderationNotes, boolean approved, UUID moderatorId);
+
+    // Writer feedback on moderation decisions
+    void submitModerationFeedback(UUID chapterId, UUID writerId, String feedback);
+
+    // Admin feedback management
+    Page<ChapterResponse> getFeedbackSubmissions(Pageable pageable, String status);
+    
+    Page<Chapter> getChaptersWithFeedback(Pageable pageable);
+    Page<Chapter> getChaptersWithFeedbackByStatus(List<Chapter.ModerationStatus> statuses, Pageable pageable);
+    void markFeedbackAsReviewed(UUID chapterId);
+    void respondToFeedback(UUID chapterId, String response);
 
     // Admin-specific chapter access (bypasses ownership checks)
     ChapterResponse getChapterByIdForAdmin(UUID chapterId);

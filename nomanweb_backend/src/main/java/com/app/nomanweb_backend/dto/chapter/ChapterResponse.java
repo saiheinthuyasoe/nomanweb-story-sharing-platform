@@ -22,6 +22,9 @@ public class ChapterResponse {
     private Chapter.Status status;
     private Chapter.ModerationStatus moderationStatus;
     private String moderationNotes;
+    private String writerFeedback;
+    private LocalDateTime feedbackSubmittedAt;
+    private LocalDateTime feedbackReviewedAt;
 
     // Story information (minimal)
     private StoryInfo story;

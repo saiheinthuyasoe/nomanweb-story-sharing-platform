@@ -555,6 +555,36 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    public void sendNotificationToAdmins(String title, String message,
+            Notification.RelatedType relatedType, UUID relatedId) {
+        try {
+            // Find all admin users
+            List<User> adminUsers = userRepository.findByRole(User.Role.ADMIN);
+            
+            if (adminUsers.isEmpty()) {
+                log.warn("No admin users found to send notification");
+                return;
+            }
+
+            // Send notification to each admin
+            for (User admin : adminUsers) {
+                createNotification(
+                        admin,
+                        Notification.NotificationType.MODERATION,
+                        title,
+                        message,
+                        relatedType,
+                        relatedId);
+            }
+
+            log.info("Sent notification to {} admin users: {}", adminUsers.size(), title);
+        } catch (Exception e) {
+            log.error("Failed to send notification to admins: {}", e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
     public void sendBulkSystemNotification(List<UUID> userIds, String title, String message) {
         for (UUID userId : userIds) {
             sendSystemNotification(userId, title, message);

@@ -29,6 +29,9 @@ interface ChapterForModeration {
   content: string;
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   moderationNotes?: string;
+  writerFeedback?: string;
+  feedbackSubmittedAt?: string;
+  feedbackReviewedAt?: string;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -131,8 +134,13 @@ export default function AdminModerationPage() {
   );
   const [showDetailView, setShowDetailView] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "flagged" | "queue" | "reports"
+    "overview" | "flagged" | "queue" | "reports" | "feedback"
   >("overview");
+
+  // Feedback management state
+  const [feedbackSubmissions, setFeedbackSubmissions] = useState<ChapterForModeration[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "pending" | "reviewed">("all");
 
   useEffect(() => {
     fetchChapters();
@@ -145,6 +153,12 @@ export default function AdminModerationPage() {
   useEffect(() => {
     applyFiltersAndSearch();
   }, [chapters, currentFilter, searchQuery, sortBy]);
+
+  useEffect(() => {
+    if (activeTab === "feedback") {
+      fetchFeedbackSubmissions();
+    }
+  }, [activeTab, feedbackFilter]);
 
   const fetchChapters = async () => {
     try {
@@ -278,6 +292,71 @@ export default function AdminModerationPage() {
     } catch (error) {
       console.error("Error stopping AI moderation:", error);
       toast.error("Failed to stop AI moderation");
+    }
+  };
+
+  const fetchFeedbackSubmissions = async () => {
+    setFeedbackLoading(true);
+    try {
+      const adminToken = Cookies.get("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin token not found. Please login again.");
+      }
+
+      let url = "/api/chapters/feedback-submissions";
+      if (feedbackFilter !== "all") {
+        url += `?status=${feedbackFilter}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch feedback submissions");
+      }
+
+      const data = await response.json();
+      setFeedbackSubmissions(data.content || []);
+    } catch (error) {
+      console.error("Error fetching feedback submissions:", error);
+      toast.error("Failed to load feedback submissions");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const markFeedbackAsReviewed = async (chapterId: string) => {
+    try {
+      const adminToken = Cookies.get("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin token not found. Please login again.");
+      }
+
+      const response = await fetch(
+        `/api/admin/chapters/${chapterId}/feedback/mark-reviewed`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to mark feedback as reviewed");
+      }
+
+      toast.success("Feedback marked as reviewed");
+      fetchFeedbackSubmissions(); // Refresh the list
+    } catch (error) {
+      console.error("Error marking feedback as reviewed:", error);
+      toast.error("Failed to mark feedback as reviewed");
     }
   };
 
@@ -796,6 +875,30 @@ export default function AdminModerationPage() {
                     />
                   </div>
 
+                  {/* Writer Feedback Section */}
+                  {selectedChapter.writerFeedback && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start space-x-2 mb-2">
+                        <UserIcon className="h-5 w-5 text-amber-600 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-amber-900">
+                            Writer Feedback on Moderation Decision
+                          </h4>
+                          {selectedChapter.feedbackSubmittedAt && (
+                            <p className="text-xs text-amber-700 mt-1">
+                              Submitted on {new Date(selectedChapter.feedbackSubmittedAt).toLocaleDateString()} at {new Date(selectedChapter.feedbackSubmittedAt).toLocaleTimeString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-amber-200">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {selectedChapter.writerFeedback}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center gap-3">
                     <Button
                       onClick={() => moderateChapter(selectedChapter.id, true)}
@@ -880,6 +983,17 @@ export default function AdminModerationPage() {
                 >
                   AI Moderation Queue
                 </button>
+
+              <button
+                onClick={() => setActiveTab("feedback")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "feedback"
+                    ? "border-[#18243c] text-[#18243c]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Writer Feedback
+              </button>
 
             </nav>
           </div>
@@ -1695,6 +1809,184 @@ export default function AdminModerationPage() {
           </div>
         )}
 
+        {/* Writer Feedback Tab */}
+        {activeTab === "feedback" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Writer Feedback Management
+              </h2>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={feedbackFilter}
+                  onChange={(e) => setFeedbackFilter(e.target.value as "all" | "pending" | "reviewed")}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Feedback</option>
+                  <option value="pending">Pending Review</option>
+                  <option value="reviewed">Reviewed</option>
+                </select>
+                <Button
+                  onClick={fetchFeedbackSubmissions}
+                  disabled={feedbackLoading}
+                  className="flex items-center space-x-2"
+                >
+                  <MagnifyingGlassIcon className="h-4 w-4" />
+                  <span>Refresh</span>
+                </Button>
+              </div>
+            </div>
+
+            {feedbackLoading ? (
+              <Card className="p-6">
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading feedback submissions...</p>
+                </div>
+              </Card>
+            ) : feedbackSubmissions.length === 0 ? (
+              <Card className="p-6">
+                <div className="text-center py-12">
+                  <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No Feedback Submissions
+                  </h3>
+                  <p className="text-gray-600">
+                    No writer feedback submissions found for the selected filter.
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Chapter
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Author
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Feedback
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Submitted
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Review Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {feedbackSubmissions.map((chapter) => (
+                        <tr key={chapter.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {chapter.title}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {chapter.story.title}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {chapter.story.author.displayName || chapter.story.author.username}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  @{chapter.story.author.username}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge
+                              variant={
+                                chapter.moderationStatus === "APPROVED"
+                                  ? "default"
+                                  : chapter.moderationStatus === "REJECTED"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {chapter.moderationStatus}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="max-w-xs">
+                              <p className="text-sm text-gray-900 truncate">
+                                {chapter.writerFeedback}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {chapter.feedbackSubmittedAt
+                              ? new Date(chapter.feedbackSubmittedAt).toLocaleDateString()
+                              : "N/A"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {chapter.feedbackReviewedAt ? (
+                              <div>
+                                <Badge variant="default" className="mb-1">
+                                  Reviewed
+                                </Badge>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(chapter.feedbackReviewedAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            ) : (
+                              <Badge variant="secondary">
+                                Pending Review
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedChapter(chapter);
+                                  setShowDetailView(true);
+                                }}
+                                className="flex items-center space-x-1"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                                <span>View</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => markFeedbackAsReviewed(chapter.id)}
+                                disabled={!!chapter.feedbackReviewedAt}
+                                className="flex items-center space-x-1"
+                              >
+                                <CheckCircleIcon className="h-4 w-4" />
+                                <span>{chapter.feedbackReviewedAt ? "Reviewed" : "Mark Reviewed"}</span>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

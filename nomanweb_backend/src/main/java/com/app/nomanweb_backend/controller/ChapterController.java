@@ -534,6 +534,50 @@ public class ChapterController {
         }
     }
 
+    @PostMapping("/{chapterId}/submit-feedback")
+    public ResponseEntity<?> submitModerationFeedback(
+            @PathVariable UUID chapterId,
+            @RequestBody Map<String, String> feedbackRequest,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID writerId = getCurrentUserId(httpRequest);
+            String feedback = feedbackRequest.get("feedback");
+            
+            if (feedback == null || feedback.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Feedback cannot be empty");
+            }
+            
+            chapterService.submitModerationFeedback(chapterId, writerId, feedback);
+            return ResponseEntity.ok().body("Feedback submitted successfully");
+        } catch (IllegalArgumentException e) {
+            log.error("Error submitting moderation feedback: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error submitting moderation feedback", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @GetMapping("/feedback-submissions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<ChapterResponse>> getFeedbackSubmissions(
+            @PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String status,
+            HttpServletRequest httpRequest) {
+        try {
+            log.info("Fetching feedback submissions for admin review - status: {}, page: {}, size: {}", 
+                    status, pageable.getPageNumber(), pageable.getPageSize());
+            
+            Page<ChapterResponse> feedbackSubmissions = chapterService.getFeedbackSubmissions(pageable, status);
+            log.info("Retrieved {} feedback submissions", feedbackSubmissions.getTotalElements());
+            
+            return ResponseEntity.ok(feedbackSubmissions);
+        } catch (Exception e) {
+            log.error("Error fetching feedback submissions", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Trash management endpoints
 
     // Move chapter to trash
