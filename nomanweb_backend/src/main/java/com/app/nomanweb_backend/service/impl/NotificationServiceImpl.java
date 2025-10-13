@@ -541,38 +541,15 @@ public class NotificationServiceImpl implements NotificationService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            // Create in-app notification
-            createNotification(user, Notification.NotificationType.MODERATION, title, message,
+            // Use enhanced notification service which properly handles user preferences
+            // and sends notifications through all channels (in-app, email, LINE)
+            enhancedNotificationService.sendMultiChannelNotification(user,
+                    Notification.NotificationType.MODERATION, title, message,
                     relatedType, relatedId);
 
-            // Send LINE notification with book cover image for both story and chapter moderation
-            String actionUrl = enhancedNotificationService.generateActionUrl(
-                    Notification.NotificationType.MODERATION, relatedType, relatedId);
-
-            String coverImageUrl = null;
-            
-            if (relatedType == Notification.RelatedType.STORY && relatedId != null) {
-                Story story = storyRepository.findById(relatedId).orElse(null);
-                if (story != null) {
-                    coverImageUrl = story.getCoverImageUrl();
-                }
-            } else if (relatedType == Notification.RelatedType.CHAPTER && relatedId != null) {
-                Chapter chapter = chapterRepository.findById(relatedId).orElse(null);
-                if (chapter != null && chapter.getStory() != null) {
-                    coverImageUrl = chapter.getStory().getCoverImageUrl();
-                }
-            }
-
-            if (coverImageUrl != null) {
-                enhancedNotificationService.sendLineNotificationWithImage(
-                        user, Notification.NotificationType.MODERATION, title, message,
-                        coverImageUrl, actionUrl);
-            } else {
-                enhancedNotificationService.sendLineNotification(
-                        user, Notification.NotificationType.MODERATION, title, message, actionUrl);
-            }
+            log.info("Sent moderation notification to user {}: {}", userId, title);
         } catch (Exception e) {
-            log.error("Failed to send moderation notification", e);
+            log.error("Failed to send moderation notification to user {}: {}", userId, e.getMessage(), e);
         }
     }
 

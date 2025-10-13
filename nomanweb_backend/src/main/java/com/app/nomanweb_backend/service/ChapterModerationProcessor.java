@@ -32,10 +32,19 @@ public class ChapterModerationProcessor {
     private volatile boolean aiModerationEnabled = false;
 
     /**
-     * Process jobs from the queue every 5 seconds (only when AI moderation is
-     * enabled)
+     * Initialize AI moderation on application startup
      */
-    @Scheduled(fixedDelay = 5000)
+    @PostConstruct
+    public void initializeAiModeration() {
+        aiModerationEnabled = true;
+        log.info("AI moderation automatically enabled on application startup");
+    }
+
+    /**
+     * Process jobs from the queue every 2 seconds (only when AI moderation is
+     * enabled) - processes multiple jobs per cycle for faster throughput
+     */
+    @Scheduled(fixedDelay = 2000)
     public void processQueue() {
         log.debug("processQueue() called - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
         if (processing || !aiModerationEnabled) {
@@ -45,14 +54,35 @@ public class ChapterModerationProcessor {
         processing = true;
         try {
             log.debug("Starting to process queue sequentially");
-            // Process jobs one by one sequentially to ensure proper notification workflow
-            Map<String, Object> job = queueService.getNextJob();
-            if (job != null) {
-                log.info("Found job to process: {}", job.get("jobId"));
-                // Process job synchronously to ensure completion before moving to next
-                processJobSync(job);
-            } else {
-                log.debug("No jobs in queue");
+            int processedCount = 0;
+            int maxJobsPerCycle = 5; // Process up to 5 jobs per cycle for faster throughput
+            
+            // Process multiple jobs sequentially to ensure proper notification workflow
+            while (processedCount < maxJobsPerCycle) {
+                Map<String, Object> job = queueService.getNextJob();
+                if (job != null) {
+                    log.info("Found job to process: {} (batch {}/{})", job.get("jobId"), processedCount + 1, maxJobsPerCycle);
+                    // Process job synchronously to ensure completion and notification before moving to next
+                    processJobSync(job);
+                    processedCount++;
+                    
+                    // Small delay between jobs to prevent overwhelming the system
+                    if (processedCount < maxJobsPerCycle) {
+                        try {
+                            Thread.sleep(500); // 500ms delay between jobs
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                } else {
+                    log.debug("No more jobs in queue after processing {} jobs", processedCount);
+                    break;
+                }
+            }
+            
+            if (processedCount > 0) {
+                log.info("Completed processing {} jobs in this cycle", processedCount);
             }
         } finally {
             processing = false;
@@ -67,11 +97,11 @@ public class ChapterModerationProcessor {
         String chapterId = (String) job.get("chapterId");
         String operation = (String) job.get("operation");
 
-        log.info("Processing moderation job {} for chapter {} (operation: {})",
+        log.info("DEBUG: Processing moderation job {} for chapter {} (operation: {})",
                 jobId, chapterId, operation);
 
         try {
-            Optional<Chapter> chapterOpt = chapterRepository.findById(UUID.fromString(chapterId));
+            Optional<Chapter> chapterOpt = chapterRepository.findByIdWithStoryAndAuthor(UUID.fromString(chapterId));
             if (chapterOpt.isEmpty()) {
                 queueService.markJobFailed(jobId, "Chapter not found: " + chapterId);
                 return;
@@ -86,7 +116,9 @@ public class ChapterModerationProcessor {
             updateChapterModerationStatus(chapter, result, operation);
 
             // Send notification to author - this completes before moving to next job
+            log.info("DEBUG: About to send moderation notification for job {} chapter {}", jobId, chapterId);
             sendModerationNotification(chapter, result);
+            log.info("DEBUG: Completed sending moderation notification for job {} chapter {}", jobId, chapterId);
 
             // Mark job as completed
             Map<String, Object> jobResult = new HashMap<>();
@@ -97,7 +129,8 @@ public class ChapterModerationProcessor {
 
             queueService.markJobCompleted(jobId, jobResult);
 
-            log.info("Successfully processed moderation job {} for chapter {} and sent notification", jobId, chapterId);
+            log.info("DEBUG: Successfully processed moderation job {} for chapter {} and sent notification", jobId,
+                    chapterId);
 
         } catch (Exception e) {
             log.error("Failed to process moderation job {} for chapter {}", jobId, chapterId, e);
@@ -234,12 +267,19 @@ public class ChapterModerationProcessor {
     private void sendModerationNotification(Chapter chapter, ContentModerationResult result) {
         try {
             var author = chapter.getStory().getAuthor();
+            log.info("DEBUG: Starting to send moderation notification for chapter {} to author {} ({})",
+                    chapter.getId(), author.getId(), author.getUsername());
+
             String title;
             String message;
 
             // Use the comprehensive shouldAutoApprove logic instead of just checking
             // isOffensive
             boolean shouldApprove = contentModerationService.shouldAutoApprove(result);
+            log.info(
+                    "DEBUG: AI moderation result for chapter {}: shouldApprove={}, isOffensive={}, category={}, confidence={}",
+                    chapter.getId(), shouldApprove, result.isOffensive(), result.getPredictedCategory(),
+                    result.getConfidenceScore());
 
             if (!shouldApprove) {
                 title = "Chapter Moderation Rejected";
@@ -253,16 +293,25 @@ public class ChapterModerationProcessor {
                         chapter.getTitle(),
                         chapter.getStory().getTitle(),
                         rejectionReason);
+
+                log.info("DEBUG: Sending REJECTION notification for chapter {} with message: {}", chapter.getId(),
+                        message);
             } else {
                 title = "Chapter Moderation Approved";
                 message = String.format(
                         "Your chapter '%s' in story '%s' has passed moderation review and is now published.",
                         chapter.getTitle(),
                         chapter.getStory().getTitle());
+
+                log.info("DEBUG: Sending APPROVAL notification for chapter {} with message: {}", chapter.getId(),
+                        message);
             }
 
             // Use sendModerationNotification to ensure proper preference checking and
             // multi-channel delivery
+            log.info("DEBUG: Calling notificationService.sendModerationNotification for author {} with title: {}",
+                    author.getId(), title);
+
             notificationService.sendModerationNotification(
                     author.getId(),
                     title,
@@ -270,8 +319,12 @@ public class ChapterModerationProcessor {
                     Notification.RelatedType.CHAPTER,
                     chapter.getId());
 
+            log.info("DEBUG: Successfully called notificationService.sendModerationNotification for chapter {}",
+                    chapter.getId());
+
         } catch (Exception e) {
-            log.error("Failed to send moderation notification for chapter {}", chapter.getId(), e);
+            log.error("DEBUG: Failed to send moderation notification for chapter {} - Error: {}", chapter.getId(),
+                    e.getMessage(), e);
             // Don't fail the job for notification errors
         }
     }

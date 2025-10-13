@@ -1393,7 +1393,7 @@ export default function AdminModerationPage() {
                     <Button
                       onClick={startAiModeration}
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
-                      disabled={stats.pendingReviews === 0}
+                      disabled={!queueStatus || queueStatus.queueStats.queueSize === 0}
                     >
                       <div className="w-0 h-0 border-l-4 border-l-white border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
                       <span>Start AI Moderation</span>
@@ -1514,7 +1514,7 @@ export default function AdminModerationPage() {
 
               {/* Paused State */}
               {!queueStatus?.aiModerationEnabled &&
-                stats.pendingReviews > 0 && (
+                queueStatus?.queueStats.queueSize > 0 && (
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1522,7 +1522,7 @@ export default function AdminModerationPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-medium rounded-full">
-                          {stats.pendingReviews}
+                          {queueStatus?.queueStats.queueSize || 0}
                         </div>
                       </div>
                     </div>

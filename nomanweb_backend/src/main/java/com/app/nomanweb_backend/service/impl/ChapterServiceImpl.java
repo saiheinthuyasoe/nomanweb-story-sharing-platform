@@ -894,19 +894,13 @@ public class ChapterServiceImpl implements ChapterService {
     @Override
     @Transactional(readOnly = true)
     public Page<ChapterResponse> getChaptersForModeration(Pageable pageable) {
-        // Fetch all chapters that have gone through moderation (PENDING, APPROVED,
-        // REJECTED)
+        // Fetch chapters that have gone through moderation (PENDING, APPROVED, REJECTED)
         // This allows admins to see auto-approved and auto-rejected content
-        Page<Chapter> allChapters = chapterRepository.findAll(pageable);
+        // Using proper repository query for correct pagination
+        Page<Chapter> moderatedChapters = chapterRepository.findChaptersWithModerationStatus(pageable);
 
-        // Filter to only include chapters with moderation status (exclude null)
-        List<Chapter> moderatedChapters = allChapters.getContent().stream()
-                .filter(chapter -> chapter.getModerationStatus() != null)
-                .collect(Collectors.toList());
-
-        // Filter out orphaned chapters (chapters whose stories don't exist) and map to
-        // response
-        List<ChapterResponse> validChapters = moderatedChapters.stream()
+        // Map to response objects, filtering out orphaned chapters
+        List<ChapterResponse> validChapters = moderatedChapters.getContent().stream()
                 .map(chapter -> {
                     try {
                         return mapToChapterResponse(chapter, null);
@@ -919,11 +913,8 @@ public class ChapterServiceImpl implements ChapterService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // Create a new page with filtered results
-        // Note: This is a simplified approach. For better performance with large
-        // datasets,
-        // consider creating a custom repository method with proper pagination
-        return new PageImpl<>(validChapters, pageable, validChapters.size());
+        // Return properly paginated results
+        return new PageImpl<>(validChapters, pageable, moderatedChapters.getTotalElements());
     }
 
     @Override
