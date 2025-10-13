@@ -373,6 +373,9 @@ export default function AdminModerationPage() {
       }
 
       const result = await response.json();
+      console.log("Frontend received API response:", result);
+      console.log("allProbabilities in response:", result.allProbabilities);
+      console.log("Type of allProbabilities:", typeof result.allProbabilities);
       setAnalysisResult(result);
     } catch (error) {
       console.error("Error analyzing content:", error);
