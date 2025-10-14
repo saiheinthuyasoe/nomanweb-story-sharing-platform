@@ -18,6 +18,7 @@ import com.app.nomanweb_backend.service.ViewMigrationService;
 import com.app.nomanweb_backend.service.WithdrawService;
 import com.app.nomanweb_backend.service.StripeWithdrawService;
 import com.app.nomanweb_backend.service.WithdrawalScheduledService;
+import com.app.nomanweb_backend.service.CachedAdminService;
 import com.app.nomanweb_backend.dto.withdraw.WithdrawResponse;
 import com.app.nomanweb_backend.entity.Withdraw;
 import com.app.nomanweb_backend.util.JwtUtil;
@@ -65,40 +66,13 @@ public class AdminController {
         private final WithdrawService withdrawService;
         private final StripeWithdrawService stripeWithdrawService;
         private final WithdrawalScheduledService withdrawalScheduledService;
+        private final CachedAdminService cachedAdminService;
 
         // Dashboard Statistics
         @GetMapping("/dashboard/stats")
         public ResponseEntity<Map<String, Object>> getDashboardStats() {
                 try {
-                        Map<String, Object> stats = new HashMap<>();
-
-                        // Get real statistics from database
-                        long totalStories = storyRepository.count();
-                        long totalChapters = chapterRepository.count();
-                        long totalUsers = userRepository.count();
-
-                        // Count pending moderations (stories and chapters)
-                        long pendingStoryModerations = storyRepository
-                                        .countByModerationStatus(Story.ModerationStatus.PENDING);
-                        long pendingChapterModerations = chapterRepository
-                                        .countByModerationStatus(Chapter.ModerationStatus.PENDING);
-                        long pendingModerations = pendingStoryModerations + pendingChapterModerations;
-
-                        // Recent activity (stories + chapters created in last 24 hours)
-                        java.time.LocalDateTime yesterday = java.time.LocalDateTime.now().minusDays(1);
-                        long recentStories = storyRepository.countByCreatedAtAfter(yesterday);
-                        long recentChapters = chapterRepository.countByCreatedAtAfter(yesterday);
-                        long recentActivity = recentStories + recentChapters;
-
-                        stats.put("totalStories", totalStories);
-                        stats.put("totalChapters", totalChapters);
-                        stats.put("pendingModerations", pendingModerations);
-                        stats.put("totalUsers", totalUsers);
-                        stats.put("recentActivity", recentActivity);
-
-                        log.info("Dashboard stats: Stories={}, Chapters={}, Users={}, Pending={}, Recent={}",
-                                        totalStories, totalChapters, totalUsers, pendingModerations, recentActivity);
-
+                        Map<String, Object> stats = cachedAdminService.getDashboardStatsCached();
                         return ResponseEntity.ok(stats);
                 } catch (Exception e) {
                         log.error("Error getting dashboard stats", e);
@@ -110,33 +84,7 @@ public class AdminController {
         @GetMapping("/dashboard/user-analytics")
         public ResponseEntity<Map<String, Object>> getUserAnalytics() {
                 try {
-                        Map<String, Object> analytics = new HashMap<>();
-
-                        // Get total users
-                        long totalUsers = userRepository.count();
-
-                        // Get active users (users who have logged in within the last 30 days)
-                        java.time.LocalDateTime thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30);
-                        long activeUsers = userRepository.countByLastLoginAtAfter(thirtyDaysAgo);
-
-                        // Get new users (registered in the last 30 days)
-                        long newUsers = userRepository.countUsersCreatedAfter(thirtyDaysAgo);
-
-                        // Get suspended users
-                        long suspendedUsers = userRepository.countByStatus(User.Status.SUSPENDED);
-
-                        // Get verified users (email verified)
-                        long verifiedUsers = userRepository.countByEmailVerified(true);
-
-                        analytics.put("totalUsers", totalUsers);
-                        analytics.put("activeUsers", activeUsers);
-                        analytics.put("newUsers", newUsers);
-                        analytics.put("suspendedUsers", suspendedUsers);
-                        analytics.put("verifiedUsers", verifiedUsers);
-
-                        log.info("User analytics: Total={}, Active={}, New={}, Suspended={}, Verified={}",
-                                        totalUsers, activeUsers, newUsers, suspendedUsers, verifiedUsers);
-
+                        Map<String, Object> analytics = cachedAdminService.getUserAnalyticsCached();
                         return ResponseEntity.ok(analytics);
                 } catch (Exception e) {
                         log.error("Error getting user analytics", e);
@@ -148,43 +96,7 @@ public class AdminController {
         @GetMapping("/dashboard/monthly-data")
         public ResponseEntity<Map<String, Object>> getMonthlyTimeSeriesData() {
                 try {
-                        Map<String, Object> timeSeriesData = new HashMap<>();
-
-                        // Get last 12 months of data
-                        List<Map<String, Object>> userRegistrations = new ArrayList<>();
-                        List<Map<String, Object>> revenueData = new ArrayList<>();
-
-                        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-
-                        for (int i = 11; i >= 0; i--) {
-                                java.time.LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0)
-                                                .withMinute(0).withSecond(0).withNano(0);
-                                java.time.LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
-
-                                // User registrations for this month
-                                long registrations = userRepository.countUsersCreatedAfter(monthStart) -
-                                                (i == 0 ? 0
-                                                                : userRepository.countUsersCreatedAfter(
-                                                                                monthEnd.plusSeconds(1)));
-
-                                Map<String, Object> userDataPoint = new HashMap<>();
-                                userDataPoint.put("month", monthStart.getMonth().toString());
-                                userDataPoint.put("year", monthStart.getYear());
-                                userDataPoint.put("registrations", registrations);
-                                userRegistrations.add(userDataPoint);
-
-                                // Revenue data for this month (placeholder - will be enhanced with real revenue
-                                // data)
-                                Map<String, Object> revenueDataPoint = new HashMap<>();
-                                revenueDataPoint.put("month", monthStart.getMonth().toString());
-                                revenueDataPoint.put("year", monthStart.getYear());
-                                revenueDataPoint.put("revenue", registrations * 10); // Placeholder calculation
-                                revenueData.add(revenueDataPoint);
-                        }
-
-                        timeSeriesData.put("userRegistrations", userRegistrations);
-                        timeSeriesData.put("revenueData", revenueData);
-
+                        Map<String, Object> timeSeriesData = cachedAdminService.getMonthlyTimeSeriesDataCached();
                         return ResponseEntity.ok(timeSeriesData);
                 } catch (Exception e) {
                         log.error("Error getting monthly time-series data", e);
@@ -195,46 +107,7 @@ public class AdminController {
         @GetMapping("/dashboard/content-analytics")
         public ResponseEntity<Map<String, Object>> getContentAnalytics() {
                 try {
-                        Map<String, Object> contentAnalytics = new HashMap<>();
-
-                        // Get total views across all published stories
-                        List<Story> publishedStories = storyRepository.findAll().stream()
-                                        .filter(story -> story.getPublishStatus() == Story.PublishStatus.PUBLISHED)
-                                        .collect(Collectors.toList());
-
-                        long totalViews = publishedStories.stream()
-                                        .mapToLong(story -> story.getTotalViews() != null ? story.getTotalViews() : 0L)
-                                        .sum();
-
-                        // Get total likes across all published stories
-                        long totalLikes = publishedStories.stream()
-                                        .mapToLong(story -> story.getTotalLikes() != null ? story.getTotalLikes() : 0L)
-                                        .sum();
-
-                        // Get recent activity (stories updated in last 7 days)
-                        java.time.LocalDateTime weekAgo = java.time.LocalDateTime.now().minusDays(7);
-                        long recentActivity = publishedStories.stream()
-                                        .filter(story -> story.getUpdatedAt() != null
-                                                        && story.getUpdatedAt().isAfter(weekAgo))
-                                        .count();
-
-                        // Calculate engagement metrics
-                        double avgViewsPerStory = publishedStories.size() > 0
-                                        ? (double) totalViews / publishedStories.size()
-                                        : 0;
-                        double avgLikesPerStory = publishedStories.size() > 0
-                                        ? (double) totalLikes / publishedStories.size()
-                                        : 0;
-                        double engagementRate = totalViews > 0 ? (double) totalLikes / totalViews * 100 : 0;
-
-                        contentAnalytics.put("totalViews", totalViews);
-                        contentAnalytics.put("totalLikes", totalLikes);
-                        contentAnalytics.put("recentActivity", recentActivity);
-                        contentAnalytics.put("avgViewsPerStory", Math.round(avgViewsPerStory));
-                        contentAnalytics.put("avgLikesPerStory", Math.round(avgLikesPerStory));
-                        contentAnalytics.put("engagementRate", Math.round(engagementRate * 100.0) / 100.0);
-                        contentAnalytics.put("totalPublishedStories", publishedStories.size());
-
+                        Map<String, Object> contentAnalytics = cachedAdminService.getContentAnalyticsCached();
                         return ResponseEntity.ok(contentAnalytics);
                 } catch (Exception e) {
                         log.error("Error getting content analytics", e);

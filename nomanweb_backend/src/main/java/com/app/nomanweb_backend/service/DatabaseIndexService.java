@@ -82,7 +82,37 @@ public class DatabaseIndexService {
             // Story ratings table indexes
             "CREATE INDEX IF NOT EXISTS idx_story_ratings_story_id ON story_ratings (story_id)",
             "CREATE INDEX IF NOT EXISTS idx_story_ratings_rating ON story_ratings (rating)",
-            "CREATE INDEX IF NOT EXISTS idx_story_ratings_created_at ON story_ratings (created_at DESC)"
+            "CREATE INDEX IF NOT EXISTS idx_story_ratings_created_at ON story_ratings (created_at DESC)",
+
+            // Chapters table indexes
+            "CREATE INDEX IF NOT EXISTS idx_chapters_story_id ON chapters (story_id)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_chapter_number ON chapters (chapter_number)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_story_chapter_number ON chapters (story_id, chapter_number)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_status ON chapters (status)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_moderation_status ON chapters (moderation_status)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_created_at ON chapters (created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_updated_at ON chapters (updated_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_views ON chapters (views DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_likes ON chapters (likes DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_chapters_is_deleted ON chapters (is_deleted)",
+
+            // Comments table indexes
+            "CREATE INDEX IF NOT EXISTS idx_comments_story_id ON comments (story_id)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_chapter_id ON comments (chapter_id)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_parent_comment_id ON comments (parent_comment_id)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_moderation_status ON comments (moderation_status)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments (created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_likes ON comments (likes DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_comments_is_pinned ON comments (is_pinned)",
+
+            // Users table indexes for admin analytics
+            "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_users_last_login_at ON users (last_login_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_users_is_active ON users (is_active)",
+            "CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users (is_verified)",
+            "CREATE INDEX IF NOT EXISTS idx_users_role ON users (role)",
+            "CREATE INDEX IF NOT EXISTS idx_users_status ON users (status)"
         );
 
         int successCount = 0;

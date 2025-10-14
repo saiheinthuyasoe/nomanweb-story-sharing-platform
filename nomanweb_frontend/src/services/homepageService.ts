@@ -4,6 +4,30 @@ const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 ).replace(/\/api$/, "");
 
+// Cache for homepage data
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+// Cache TTL in milliseconds
+const CACHE_TTL = {
+  HOMEPAGE_SECTIONS: 5 * 60 * 1000, // 5 minutes
+  FEATURED_STORIES: 10 * 60 * 1000, // 10 minutes
+  TRENDING_STORIES: 3 * 60 * 1000, // 3 minutes
+  CATEGORY_STORIES: 15 * 60 * 1000, // 15 minutes
+};
+
+function getCachedData<T>(key: string): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCachedData<T>(key: string, data: T, ttl: number): void {
+  cache.set(key, { data, timestamp: Date.now(), ttl });
+}
+
 export interface PagedResponse<T> {
   content: T[];
   totalElements: number;
