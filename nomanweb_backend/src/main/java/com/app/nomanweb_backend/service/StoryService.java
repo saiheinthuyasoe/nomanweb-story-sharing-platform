@@ -39,6 +39,8 @@ public interface StoryService {
 
     Page<StoryPreviewResponse> getFeaturedStories(int page, int size);
 
+    Page<StoryPreviewResponse> getPopularStories(int page, int size);
+
     Page<StoryPreviewResponse> getStoriesWithFilters(
             String publishStatus, UUID categoryId, String pricingType, String bookStatus, UUID authorId,
             String sortBy, int page, int size);

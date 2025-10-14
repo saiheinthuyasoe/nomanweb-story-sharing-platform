@@ -8,6 +8,9 @@ import com.app.nomanweb_backend.entity.Story;
 import com.app.nomanweb_backend.entity.User;
 import com.app.nomanweb_backend.controller.UserController;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -157,6 +160,8 @@ public class LibraryController {
 
     @GetMapping("/my-lists")
     public ResponseEntity<?> getMyLibraries(@RequestParam(required = false) String listType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
         try {
             String userIdStr = authentication.getName();
@@ -164,18 +169,19 @@ public class LibraryController {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            List<Library> libraries;
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Library> libraries;
 
             if (listType != null) {
                 try {
                     Library.ListType type = Library.ListType.valueOf(listType.toUpperCase());
-                    libraries = libraryRepository.findByUserIdAndListTypeOrderByAddedAtDesc(user.getId(), type);
+                    libraries = libraryRepository.findByUserIdAndListTypeOrderByAddedAtDesc(user.getId(), type, pageable);
                 } catch (IllegalArgumentException e) {
-                    // Invalid list type, return empty list
-                    libraries = new java.util.ArrayList<>();
+                    // Invalid list type, return empty page
+                    libraries = Page.empty(pageable);
                 }
             } else {
-                libraries = libraryRepository.findByUserIdOrderByAddedAtDesc(user.getId());
+                libraries = libraryRepository.findByUserIdOrderByAddedAtDesc(user.getId(), pageable);
             }
 
             return ResponseEntity.ok(libraries);
@@ -188,24 +194,27 @@ public class LibraryController {
 
     @GetMapping("/user/{userId}/lists")
     public ResponseEntity<?> getUserLibraries(@PathVariable UUID userId,
-            @RequestParam(required = false) String listType) {
+            @RequestParam(required = false) String listType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         try {
             // Verify user exists
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            List<Library> libraries;
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Library> libraries;
 
             if (listType != null) {
                 try {
                     Library.ListType type = Library.ListType.valueOf(listType.toUpperCase());
-                    libraries = libraryRepository.findByUserIdAndListTypeOrderByAddedAtDesc(userId, type);
+                    libraries = libraryRepository.findByUserIdAndListTypeOrderByAddedAtDesc(userId, type, pageable);
                 } catch (IllegalArgumentException e) {
-                    // Invalid list type, return empty list
-                    libraries = new java.util.ArrayList<>();
+                    // Invalid list type, return empty page
+                    libraries = Page.empty(pageable);
                 }
             } else {
-                libraries = libraryRepository.findByUserIdOrderByAddedAtDesc(userId);
+                libraries = libraryRepository.findByUserIdOrderByAddedAtDesc(userId, pageable);
             }
 
             return ResponseEntity.ok(libraries);

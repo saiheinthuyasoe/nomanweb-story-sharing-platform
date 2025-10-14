@@ -17,25 +17,25 @@ import java.util.UUID;
 @Repository
 public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
-        // Find chapters by story ordered by chapter number (excluding deleted)
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        // Find chapters by story ordered by chapter number (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         List<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story);
 
-        // Find chapters by story with pagination (excluding deleted)
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        // Find chapters by story with pagination (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         Page<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story, Pageable pageable);
 
-        // Find specific chapter by story and chapter number (excluding deleted)
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        // Find specific chapter by story and chapter number (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND (c.isDeleted = false OR c.isDeleted IS NULL)")
         Optional<Chapter> findByStoryAndChapterNumber(@Param("story") Story story,
                         @Param("chapterNumber") Integer chapterNumber);
 
-        // Find chapters by story and status (excluding deleted)
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL)")
+        // Find chapters by story and status (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL)")
         List<Chapter> findByStoryAndStatus(@Param("story") Story story, @Param("status") Chapter.Status status);
 
-        // Find published chapters by story (excluding deleted)
-        @Query("SELECT c FROM Chapter c WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
+        // Find published chapters by story (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         List<Chapter> findByStoryAndStatusOrderByChapterNumberAsc(@Param("story") Story story,
                         @Param("status") Chapter.Status status);
 

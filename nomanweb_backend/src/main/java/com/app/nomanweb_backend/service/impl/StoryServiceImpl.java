@@ -843,6 +843,15 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<StoryPreviewResponse> getPopularStories(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Story> stories = storyRepository.findPopularStories(Story.PublishStatus.PUBLISHED, pageable);
+
+        return stories.map(this::convertToStoryPreviewResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<StoryPreviewResponse> getStoriesWithFilters(
             String publishStatus, UUID categoryId, String pricingType, String bookStatus, UUID authorId,
             String sortBy, int page, int size) {

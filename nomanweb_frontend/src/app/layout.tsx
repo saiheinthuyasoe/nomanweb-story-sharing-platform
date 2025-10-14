@@ -6,6 +6,12 @@ import { ToastProvider } from "@/components/providers/ToastProvider";
 import ConditionalNavbar from "@/components/layout/ConditionalNavbar";
 import ConditionalMainContent from "@/components/layout/ConditionalMainContent";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import dynamic from "next/dynamic";
+
+// Client-side components wrapper
+const ClientComponents = dynamic(
+  () => import("@/components/ClientComponents")
+);
 
 const inter = Inter({
   subsets: ["latin"],
@@ -42,6 +48,7 @@ export default function RootLayout({
             {children}
           </ConditionalMainContent>
           <ToastProvider />
+          <ClientComponents />
         </Providers>
         <SpeedInsights />
       </body>

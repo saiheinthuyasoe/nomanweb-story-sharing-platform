@@ -147,13 +147,13 @@
             <version>1.34.0</version>
         </dependency>
 
-        <!-- Development Tools -->
-        <dependency>
+        <!-- Development Tools - DevTools removed to prevent infinite refresh -->
+        <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
-        </dependency>
+        </dependency> -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

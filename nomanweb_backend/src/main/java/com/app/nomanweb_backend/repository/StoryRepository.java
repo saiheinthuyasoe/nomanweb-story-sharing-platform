@@ -18,28 +18,33 @@ import java.util.UUID;
 @Repository
 public interface StoryRepository extends JpaRepository<Story, UUID> {
 
-        // Find stories by author (excluding deleted)
-        @Query("SELECT s FROM Story s WHERE s.author = :author AND (s.isDeleted = false OR s.isDeleted IS NULL) ORDER BY s.updatedAt DESC")
+        // Find stories by author (excluding deleted) - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.author = :author AND (s.isDeleted = false OR s.isDeleted IS NULL) ORDER BY s.updatedAt DESC")
         Page<Story> findByAuthor(@Param("author") User author, Pageable pageable);
 
-        // Find stories by author and publish status
-        Page<Story> findByAuthorAndPublishStatus(User author, Story.PublishStatus publishStatus, Pageable pageable);
+        // Find stories by author and publish status - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.author = :author AND s.publishStatus = :publishStatus")
+        Page<Story> findByAuthorAndPublishStatus(@Param("author") User author, @Param("publishStatus") Story.PublishStatus publishStatus, Pageable pageable);
 
-        // Find published stories ordered by creation date
-        Page<Story> findByPublishStatusOrderByCreatedAtDesc(Story.PublishStatus publishStatus, Pageable pageable);
+        // Find published stories ordered by creation date - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.publishStatus = :publishStatus ORDER BY s.createdAt DESC")
+        Page<Story> findByPublishStatusOrderByCreatedAtDesc(@Param("publishStatus") Story.PublishStatus publishStatus, Pageable pageable);
 
-        // Find stories by category
-        Page<Story> findByCategoryAndPublishStatus(Category category, Story.PublishStatus publishStatus,
+        // Find stories by category - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author JOIN FETCH s.category WHERE s.category = :category AND s.publishStatus = :publishStatus")
+        Page<Story> findByCategoryAndPublishStatus(@Param("category") Category category, @Param("publishStatus") Story.PublishStatus publishStatus,
                         Pageable pageable);
 
-        // Find featured stories
-        Page<Story> findByIsFeaturedTrueAndPublishStatus(Story.PublishStatus publishStatus, Pageable pageable);
+        // Find featured stories - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.isFeatured = true AND s.publishStatus = :publishStatus")
+        Page<Story> findByIsFeaturedTrueAndPublishStatus(@Param("publishStatus") Story.PublishStatus publishStatus, Pageable pageable);
 
-        // Find stories by moderation status
-        Page<Story> findByModerationStatus(Story.ModerationStatus moderationStatus, Pageable pageable);
+        // Find stories by moderation status - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.moderationStatus = :moderationStatus")
+        Page<Story> findByModerationStatus(@Param("moderationStatus") Story.ModerationStatus moderationStatus, Pageable pageable);
 
-        // Search stories by title, description, or author name
-        @Query("SELECT s FROM Story s WHERE s.publishStatus = :publishStatus AND " +
+        // Search stories by title, description, or author name - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.publishStatus = :publishStatus AND " +
                         "(LOWER(s.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(s.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(s.author.displayName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
@@ -48,13 +53,13 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
                         @Param("publishStatus") Story.PublishStatus publishStatus,
                         Pageable pageable);
 
-        // Find trending stories (most views in recent time)
-        @Query("SELECT s FROM Story s WHERE s.publishStatus = :publishStatus " +
+        // Find trending stories (most views in recent time) - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.publishStatus = :publishStatus " +
                         "ORDER BY s.totalViews DESC, s.createdAt DESC")
         Page<Story> findTrendingStories(@Param("publishStatus") Story.PublishStatus publishStatus, Pageable pageable);
 
-        // Find popular stories (most likes)
-        @Query("SELECT s FROM Story s WHERE s.publishStatus = :publishStatus " +
+        // Find popular stories (most likes) - Optimized with JOIN FETCH
+        @Query("SELECT s FROM Story s JOIN FETCH s.author LEFT JOIN FETCH s.category WHERE s.publishStatus = :publishStatus " +
                         "ORDER BY s.totalLikes DESC, s.createdAt DESC")
         Page<Story> findPopularStories(@Param("publishStatus") Story.PublishStatus publishStatus, Pageable pageable);
 

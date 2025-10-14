@@ -5,6 +5,7 @@ import com.app.nomanweb_backend.dto.story.UpdateStoryRequest;
 import com.app.nomanweb_backend.dto.story.StoryResponse;
 import com.app.nomanweb_backend.dto.story.StoryPreviewResponse;
 import com.app.nomanweb_backend.service.StoryService;
+import com.app.nomanweb_backend.service.CachedStoryService;
 import com.app.nomanweb_backend.service.ViewTrackingService;
 import com.app.nomanweb_backend.service.PurchaseProtectionService;
 import com.app.nomanweb_backend.service.PurchaseProtectionException;
@@ -34,6 +35,7 @@ import java.util.UUID;
 public class StoryController {
 
     private final StoryService storyService;
+    private final CachedStoryService cachedStoryService;
     private final JwtUtil jwtUtil;
     private final ViewTrackingService viewTrackingService;
     private final PurchaseProtectionService purchaseProtectionService;
@@ -350,7 +352,7 @@ public class StoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
-            Page<StoryPreviewResponse> stories = storyService.getStoriesByCategory(categoryId, page, size);
+            Page<StoryPreviewResponse> stories = cachedStoryService.getStoriesByCategoryCached(categoryId, page, size);
             return ResponseEntity.ok(stories);
         } catch (RuntimeException e) {
             log.error("Error getting stories by category {}: {}", categoryId, e.getMessage());
@@ -364,7 +366,7 @@ public class StoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
-            Page<StoryPreviewResponse> stories = storyService.searchStories(query, page, size);
+            Page<StoryPreviewResponse> stories = cachedStoryService.searchStoriesCached(query, page, size);
             return ResponseEntity.ok(stories);
         } catch (RuntimeException e) {
             log.error("Error searching stories with query '{}': {}", query, e.getMessage());
@@ -377,7 +379,7 @@ public class StoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
-            Page<StoryPreviewResponse> stories = storyService.getTrendingStories(page, size);
+            Page<StoryPreviewResponse> stories = cachedStoryService.getTrendingStoriesCached(page, size);
             return ResponseEntity.ok(stories);
         } catch (RuntimeException e) {
             log.error("Error getting trending stories: {}", e.getMessage());
@@ -390,10 +392,23 @@ public class StoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
-            Page<StoryPreviewResponse> stories = storyService.getFeaturedStories(page, size);
+            Page<StoryPreviewResponse> stories = cachedStoryService.getFeaturedStoriesCached(page, size);
             return ResponseEntity.ok(stories);
         } catch (RuntimeException e) {
             log.error("Error getting featured stories: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<Page<StoryPreviewResponse>> getPopularStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        try {
+            Page<StoryPreviewResponse> stories = cachedStoryService.getPopularStoriesCached(page, size);
+            return ResponseEntity.ok(stories);
+        } catch (RuntimeException e) {
+            log.error("Error getting popular stories: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

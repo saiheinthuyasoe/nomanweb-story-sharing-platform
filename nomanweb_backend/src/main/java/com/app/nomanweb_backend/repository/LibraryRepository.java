@@ -1,6 +1,8 @@
 package com.app.nomanweb_backend.repository;
 
 import com.app.nomanweb_backend.entity.Library;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -45,4 +47,9 @@ public interface LibraryRepository extends JpaRepository<Library, UUID> {
     @Query("SELECT l FROM Library l WHERE l.story.id = :storyId AND l.listType = :listType")
     List<Library> findByStoryIdAndListType(@Param("storyId") UUID storyId,
             @Param("listType") Library.ListType listType);
+
+    // Paginated methods for library endpoints
+    Page<Library> findByUserIdAndListTypeOrderByAddedAtDesc(UUID userId, Library.ListType listType, Pageable pageable);
+    
+    Page<Library> findByUserIdOrderByAddedAtDesc(UUID userId, Pageable pageable);
 }
