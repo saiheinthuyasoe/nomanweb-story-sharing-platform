@@ -22,6 +22,13 @@ import {
   Story,
 } from "../../../services/adminHomepageService";
 import { BookInsight } from "../../../services/bookInsightsService";
+import {
+  useFeaturedContent,
+  useFeaturedContentStats,
+  useAdminDashboardStats,
+  useAddToFeaturedContent,
+  useInvalidateAdminCache,
+} from "../../../hooks/useAdminData";
 
 import EditExpirationModal from "../../../components/admin/EditExpirationModal";
 import BulkExpirationModal from "../../../components/admin/BulkExpirationModal";
@@ -47,15 +54,36 @@ const SECTION_TYPES = [
 ];
 
 const HomepageManagementPage = () => {
-  const [featuredContent, setFeaturedContent] = useState<FeaturedContent[]>([]);
-  const [stats, setStats] = useState<FeaturedContentStats | null>(null);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
-    null
-  );
+  // TanStack Query hooks for data fetching with caching
+  const [selectedSection, setSelectedSection] = useState<string>("NEW_RELEASES");
+  
+  const { 
+    data: featuredContentData, 
+    isLoading: featuredContentLoading, 
+    error: featuredContentError,
+    refetch: refetchFeaturedContent 
+  } = useFeaturedContent(selectedSection);
+  
+  const { 
+    data: stats, 
+    isLoading: statsLoading, 
+    error: statsError 
+  } = useFeaturedContentStats();
+  
+  const { 
+    data: dashboardStats, 
+    isLoading: dashboardStatsLoading, 
+    error: dashboardStatsError 
+  } = useAdminDashboardStats();
 
-  const [loading, setLoading] = useState(true);
-  const [selectedSection, setSelectedSection] =
-    useState<string>("NEW_RELEASES");
+  const addToFeaturedContentMutation = useAddToFeaturedContent();
+  const { invalidateFeaturedContent } = useInvalidateAdminCache();
+
+  // Derived state
+  const featuredContent = featuredContentData?.content || [];
+  const loading = featuredContentLoading || statsLoading || dashboardStatsLoading;
+
+  // UI state
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Story[]>([]);
@@ -70,31 +98,21 @@ const HomepageManagementPage = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
-  // Fetch featured content and stats
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch featured content for selected section
-      const contentData = await adminHomepageService.getFeaturedContent(
-        selectedSection
-      );
-      setFeaturedContent(contentData.content || []);
-
-      // Fetch stats
-      const statsData = await adminHomepageService.getFeaturedContentStats();
-      setStats(statsData);
-
-      // Fetch dashboard stats
-      const dashboardData = await adminHomepageService.getDashboardStats();
-      setDashboardStats(dashboardData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
+  // Handle errors
+  useEffect(() => {
+    if (featuredContentError) {
+      console.error("Error fetching featured content:", featuredContentError);
+      toast.error("Failed to load featured content");
     }
-  };
+    if (statsError) {
+      console.error("Error fetching stats:", statsError);
+      toast.error("Failed to load statistics");
+    }
+    if (dashboardStatsError) {
+      console.error("Error fetching dashboard stats:", dashboardStatsError);
+      toast.error("Failed to load dashboard statistics");
+    }
+  }, [featuredContentError, statsError, dashboardStatsError]);
 
   // Search stories
   const searchStories = async (query: string) => {
@@ -115,42 +133,48 @@ const HomepageManagementPage = () => {
     }
   };
 
-  // Add story to featured content
+  // Add story to featured content using TanStack Query mutation
   const addToFeatured = async (storyId: string, duration: number) => {
     console.log("🔄 Adding story to featured content:", {
       storyId,
       selectedSection,
       duration,
     });
-    try {
-      const result = await adminHomepageService.addToFeaturedContent(
-        storyId,
-        selectedSection,
-        duration
-      );
-      console.log("✅ Story added successfully:", result);
-      toast.success("Story added to featured content");
-      setShowAddModal(false);
-      setSearchQuery("");
-      setSearchResults([]);
-      fetchData();
-    } catch (error) {
-      console.error("❌ Error adding story:", error);
+    
+    addToFeaturedContentMutation.mutate(
+      {
+        bookId: storyId,
+        sectionType: selectedSection,
+        duration,
+      },
+      {
+        onSuccess: (result) => {
+          console.log("✅ Story added successfully:", result);
+          toast.success("Story added to featured content");
+          setShowAddModal(false);
+          setSearchQuery("");
+          setSearchResults([]);
+          // TanStack Query automatically invalidates and refetches the data
+        },
+        onError: (error) => {
+          console.error("❌ Error adding story:", error);
 
-      // Check if the error is due to story already being featured
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes("already featured") ||
-        errorMessage.includes("Story is already featured in this section")
-      ) {
-        toast.warning(
-          "This story is already added to the selected homepage section!"
-        );
-      } else {
-        toast.error("Failed to add story");
+          // Check if the error is due to story already being featured
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          if (
+            errorMessage.includes("already featured") ||
+            errorMessage.includes("Story is already featured in this section")
+          ) {
+            toast.warning(
+              "This story is already added to the selected homepage section!"
+            );
+          } else {
+            toast.error("Failed to add story");
+          }
+        },
       }
-    }
+    );
   };
 
   // Get section label
@@ -323,9 +347,7 @@ const HomepageManagementPage = () => {
       }
     });
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedSection]);
+  // TanStack Query automatically refetches when selectedSection changes
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -357,9 +379,9 @@ const HomepageManagementPage = () => {
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => window.open('/', '_blank')}
+              onClick={() => window.open("/", "_blank")}
               className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-              style={{backgroundColor: '#18243c'}}
+              style={{ backgroundColor: "#18243c" }}
             >
               <EyeIcon className="h-4 w-4 mr-2" />
               Preview Homepage
@@ -367,8 +389,6 @@ const HomepageManagementPage = () => {
           </div>
         </div>
       </div>
-
-
 
       {/* Featured Content Stats */}
       {stats && (
@@ -387,7 +407,7 @@ const HomepageManagementPage = () => {
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">New Releases</h3>
-            <p className="text-2xl font-bold" style={{color: '#18243c'}}>
+            <p className="text-2xl font-bold" style={{ color: "#18243c" }}>
               {stats.sectionCounts.NEW_RELEASES || 0}
             </p>
           </div>
@@ -437,7 +457,7 @@ const HomepageManagementPage = () => {
                     <button
                       onClick={() => setShowAddModal(true)}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
-                      style={{backgroundColor: '#18243c'}}
+                      style={{ backgroundColor: "#18243c" }}
                     >
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Manual Search
@@ -456,7 +476,10 @@ const HomepageManagementPage = () => {
                       </button>
                     )}
                     {selectedItems.size > 0 && (
-                      <div className="px-2 py-1 text-white text-xs rounded-full font-medium" style={{backgroundColor: '#18243c'}}>
+                      <div
+                        className="px-2 py-1 text-white text-xs rounded-full font-medium"
+                        style={{ backgroundColor: "#18243c" }}
+                      >
                         {selectedItems.size} selected
                       </div>
                     )}
@@ -578,7 +601,7 @@ const HomepageManagementPage = () => {
                     {featuredContent.length} items
                   </span>
                   {selectedItems.size > 0 && (
-                    <span className="font-medium" style={{color: '#18243c'}}>
+                    <span className="font-medium" style={{ color: "#18243c" }}>
                       • {selectedItems.size} selected
                     </span>
                   )}
@@ -589,11 +612,17 @@ const HomepageManagementPage = () => {
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center gap-2 text-sm">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-medium" style={{color: '#18243c'}}>
+                      <span
+                        className="font-medium"
+                        style={{ color: "#18243c" }}
+                      >
                         Carousel Display Settings
                       </span>
                     </div>
-                    <div className="mt-2 text-xs space-y-1" style={{color: '#18243c'}}>
+                    <div
+                      className="mt-2 text-xs space-y-1"
+                      style={{ color: "#18243c" }}
+                    >
                       <p>
                         • Books will appear in a horizontal scrolling carousel
                         on the homepage
@@ -693,7 +722,7 @@ const HomepageManagementPage = () => {
                           }
                         }}
                         className="rounded border-gray-300 focus:ring-gray-500"
-                        style={{accentColor: '#18243c'}}
+                        style={{ accentColor: "#18243c" }}
                       />
                       <label className="text-sm font-medium text-gray-700">
                         Select All ({filteredAndSortedContent.length} items)
@@ -712,7 +741,7 @@ const HomepageManagementPage = () => {
                             checked={selectedItems.has(item.id)}
                             onChange={() => toggleItemSelection(item.id)}
                             className="rounded border-gray-300 focus:ring-gray-500"
-                        style={{accentColor: '#18243c'}}
+                            style={{ accentColor: "#18243c" }}
                           />
                         )}
                         <img
@@ -735,7 +764,10 @@ const HomepageManagementPage = () => {
                             <span className="text-xs text-gray-400">
                               Order: {item.displayOrder}
                             </span>
-                            <span className="text-xs" style={{color: '#18243c'}}>
+                            <span
+                              className="text-xs"
+                              style={{ color: "#18243c" }}
+                            >
                               {item.story.totalViews.toLocaleString()} views
                             </span>
                             <span className="text-xs text-red-600">
@@ -779,7 +811,7 @@ const HomepageManagementPage = () => {
                                       openEditExpirationModal(item)
                                     }
                                     className="text-xs underline hover:opacity-80"
-                        style={{color: '#18243c'}}
+                                    style={{ color: "#18243c" }}
                                     title="Edit expiration date"
                                   >
                                     Edit
@@ -835,7 +867,7 @@ const HomepageManagementPage = () => {
                             <button
                               onClick={() => updateDisplayOrder(item.id, "up")}
                               className="p-1 text-white hover:opacity-90 rounded"
-                              style={{backgroundColor: '#18243c'}}
+                              style={{ backgroundColor: "#18243c" }}
                               title="Move left in carousel"
                             >
                               <ArrowUpIcon className="h-3 w-3" />
@@ -845,7 +877,7 @@ const HomepageManagementPage = () => {
                                 updateDisplayOrder(item.id, "down")
                               }
                               className="p-1 text-white hover:opacity-90 rounded"
-                              style={{backgroundColor: '#18243c'}}
+                              style={{ backgroundColor: "#18243c" }}
                               title="Move right in carousel"
                             >
                               <ArrowDownIcon className="h-3 w-3" />
@@ -1000,7 +1032,7 @@ const HomepageManagementPage = () => {
                           <button
                             onClick={() => addToFeatured(story.id, 0)} // 0 means permanent (no expiration)
                             className="text-xs px-3 py-1 text-white rounded hover:opacity-90"
-                            style={{backgroundColor: '#18243c'}}
+                            style={{ backgroundColor: "#18243c" }}
                           >
                             Add to Home Page Section
                           </button>

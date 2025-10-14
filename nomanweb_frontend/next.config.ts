@@ -7,12 +7,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  
+
   // Optimize bundle splitting
   experimental: {
-    optimizePackageImports: ['@heroicons/react', 'lucide-react', 'recharts'],
+    optimizePackageImports: ["@heroicons/react", "lucide-react", "recharts"],
   },
-  
+
   // Configure webpack for better code splitting
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -22,30 +22,30 @@ const nextConfig: NextConfig = {
         cacheGroups: {
           ...config.optimization.splitChunks.cacheGroups,
           admin: {
-            name: 'admin',
+            name: "admin",
             test: /[\\/]app[\\/]admin[\\/]/,
-            chunks: 'all',
+            chunks: "all",
             priority: 10,
             enforce: true,
           },
           adminComponents: {
-            name: 'admin-components',
+            name: "admin-components",
             test: /[\\/]components[\\/]admin[\\/]/,
-            chunks: 'all',
+            chunks: "all",
             priority: 9,
             enforce: true,
           },
           charts: {
-            name: 'charts',
+            name: "charts",
             test: /[\\/]node_modules[\\/](recharts|chart\.js|react-chartjs-2)[\\/]/,
-            chunks: 'all',
+            chunks: "all",
             priority: 8,
             enforce: true,
           },
           editor: {
-            name: 'editor',
+            name: "editor",
             test: /[\\/]components[\\/]editor[\\/]/,
-            chunks: 'all',
+            chunks: "all",
             priority: 7,
             enforce: true,
           },

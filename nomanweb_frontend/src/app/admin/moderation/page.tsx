@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Cookies from "js-cookie";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  useModerationChapters,
+  useModerationStats,
+  useQueueStatus,
+  useFeedbackSubmissions,
+  useModerateChapter,
+  useInvalidateAdminCache,
+} from "@/hooks/useAdminData";
 import {
   EyeIcon,
   CheckCircleIcon,
@@ -103,268 +111,80 @@ type FilterType = "ALL" | "PENDING" | "APPROVED" | "REJECTED" | "AUTO_FLAGGED";
 type SortType = "NEWEST" | "OLDEST" | "HIGHEST_RISK" | "MOST_FLAGGED";
 
 export default function AdminModerationPage() {
-  const [chapters, setChapters] = useState<ChapterForModeration[]>([]);
-  const [filteredChapters, setFilteredChapters] = useState<
-    ChapterForModeration[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedChapter, setSelectedChapter] =
-    useState<ChapterForModeration | null>(null);
+  // TanStack Query hooks for data fetching with caching
+  const { 
+    data: chaptersData, 
+    isLoading: chaptersLoading, 
+    error: chaptersError,
+    refetch: refetchChapters 
+  } = useModerationChapters();
+  
+  const { 
+    data: stats, 
+    isLoading: statsLoading, 
+    error: statsError 
+  } = useModerationStats();
+  
+  const { 
+    data: queueStatus, 
+    isLoading: queueLoading, 
+    error: queueError 
+  } = useQueueStatus();
+  
+  const { 
+    data: feedbackData, 
+    isLoading: feedbackLoading, 
+    error: feedbackError 
+  } = useFeedbackSubmissions();
+
+  const moderateChapterMutation = useModerateChapter();
+  const { invalidateModeration } = useInvalidateAdminCache();
+
+  // Derived state - memoized to prevent infinite re-renders
+  const chapters = useMemo(() => chaptersData?.content || [], [chaptersData?.content]);
+  const feedbackSubmissions = feedbackData || [];
+  const loading = chaptersLoading || statsLoading || queueLoading;
+  const aiModerationRunning = queueStatus?.processing || false;
+
+  // UI state
+  const [filteredChapters, setFilteredChapters] = useState<ChapterForModeration[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<ChapterForModeration | null>(null);
   const [moderationNotes, setModerationNotes] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [moderating, setModerating] = useState(false);
-  const [analysisResult, setAnalysisResult] =
-    useState<ContentModerationResult | null>(null);
-  const [stats, setStats] = useState<ModerationStats>({
-    flaggedToday: 0,
-    pendingReviews: 0,
-    approved: 0,
-    rejected: 0,
-    detectionAccuracy: 87,
-  });
-  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
-  const [aiModerationRunning, setAiModerationRunning] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<ContentModerationResult | null>(null);
 
-  // New state for enhanced dashboard
+  // Enhanced dashboard state
   const [currentFilter, setCurrentFilter] = useState<FilterType>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortType>("NEWEST");
-  const [selectedChapters, setSelectedChapters] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
   const [showDetailView, setShowDetailView] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "flagged" | "queue" | "reports" | "feedback"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "flagged" | "queue" | "reports" | "feedback">("overview");
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "pending" | "reviewed">("all");
 
-  // Feedback management state
-  const [feedbackSubmissions, setFeedbackSubmissions] = useState<
-    ChapterForModeration[]
-  >([]);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const [feedbackFilter, setFeedbackFilter] = useState<
-    "all" | "pending" | "reviewed"
-  >("all");
-
+  // Handle errors
   useEffect(() => {
-    fetchChapters();
-    fetchQueueStatus();
-    // Set up interval to refresh queue status every 10 seconds
-    const interval = setInterval(fetchQueueStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    applyFiltersAndSearch();
-  }, [chapters, currentFilter, searchQuery, sortBy]);
-
-  useEffect(() => {
-    if (activeTab === "feedback") {
-      fetchFeedbackSubmissions();
-    }
-  }, [activeTab, feedbackFilter]);
-
-  const fetchChapters = async () => {
-    try {
-      setLoading(true);
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      const response = await fetch("/api/admin/moderation/chapters", {
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch chapters");
-      }
-
-      const data = await response.json();
-      // Backend returns a Spring Boot Page object with content property
-      const chapters = data.content || [];
-      setChapters(chapters);
-
-      // Calculate stats
-      const today = new Date().toDateString();
-      const todayChapters = chapters.filter(
-        (ch: ChapterForModeration) =>
-          new Date(ch.createdAt).toDateString() === today
-      );
-
-      setStats({
-        flaggedToday: todayChapters.length,
-        pendingReviews: chapters.filter(
-          (ch: ChapterForModeration) => ch.moderationStatus === "PENDING"
-        ).length,
-        approved: chapters.filter(
-          (ch: ChapterForModeration) => ch.moderationStatus === "APPROVED"
-        ).length,
-        rejected: chapters.filter(
-          (ch: ChapterForModeration) => ch.moderationStatus === "REJECTED"
-        ).length,
-        detectionAccuracy: 87,
-      });
-    } catch (error) {
-      console.error("Error fetching chapters:", error);
+    if (chaptersError) {
+      console.error("Error fetching chapters:", chaptersError);
       toast.error("Failed to load chapters for moderation");
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const fetchQueueStatus = async () => {
-    try {
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        return;
-      }
-
-      const response = await fetch("/api/admin/moderation/queue/status", {
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setQueueStatus(data);
-        // Update AI moderation running status based on aiModerationEnabled flag
-        setAiModerationRunning(data.aiModerationEnabled || false);
-      }
-    } catch (error) {
-      console.error("Error fetching queue status:", error);
+    if (statsError) {
+      console.error("Error fetching moderation stats:", statsError);
+      toast.error("Failed to load moderation statistics");
     }
-  };
-
-  const startAiModeration = async () => {
-    try {
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      const response = await fetch("/api/admin/moderation/ai/start", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to start AI moderation");
-      }
-
-      toast.success("AI Moderation started successfully");
-
-      // Refresh queue status to get updated aiModerationEnabled status
-      fetchQueueStatus();
-    } catch (error) {
-      console.error("Error starting AI moderation:", error);
-      toast.error("Failed to start AI moderation");
+    if (queueError) {
+      console.error("Error fetching queue status:", queueError);
+      toast.error("Failed to load queue status");
     }
-  };
-
-  const stopAiModeration = async () => {
-    try {
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      const response = await fetch("/api/admin/moderation/ai/stop", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to stop AI moderation");
-      }
-
-      toast.success("AI Moderation stopped successfully");
-
-      // Refresh queue status to get updated aiModerationEnabled status
-      fetchQueueStatus();
-    } catch (error) {
-      console.error("Error stopping AI moderation:", error);
-      toast.error("Failed to stop AI moderation");
-    }
-  };
-
-  const fetchFeedbackSubmissions = async () => {
-    setFeedbackLoading(true);
-    try {
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      let url = "/api/chapters/feedback-submissions";
-      if (feedbackFilter !== "all") {
-        url += `?status=${feedbackFilter}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch feedback submissions");
-      }
-
-      const data = await response.json();
-      setFeedbackSubmissions(data.content || []);
-    } catch (error) {
-      console.error("Error fetching feedback submissions:", error);
+    if (feedbackError) {
+      console.error("Error fetching feedback submissions:", feedbackError);
       toast.error("Failed to load feedback submissions");
-    } finally {
-      setFeedbackLoading(false);
     }
-  };
+  }, [chaptersError, statsError, queueError, feedbackError]);
 
-  const markFeedbackAsReviewed = async (chapterId: string) => {
-    try {
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      const response = await fetch(
-        `/api/admin/chapters/${chapterId}/feedback/mark-reviewed`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${adminToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to mark feedback as reviewed");
-      }
-
-      toast.success("Feedback marked as reviewed");
-      fetchFeedbackSubmissions(); // Refresh the list
-    } catch (error) {
-      console.error("Error marking feedback as reviewed:", error);
-      toast.error("Failed to mark feedback as reviewed");
-    }
-  };
-
-  const applyFiltersAndSearch = () => {
+  // Apply filters and search when dependencies change
+  useEffect(() => {
     let filtered = [...chapters];
 
     // Apply status filter
@@ -428,7 +248,102 @@ export default function AdminModerationPage() {
     });
 
     setFilteredChapters(filtered);
+  }, [chapters, currentFilter, searchQuery, sortBy]);
+
+  // TanStack Query handles data fetching automatically
+
+  const startAiModeration = async () => {
+    try {
+      const adminToken = Cookies.get("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin token not found. Please login again.");
+      }
+
+      const response = await fetch("/api/admin/moderation/ai/start", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start AI moderation");
+      }
+
+      toast.success("AI Moderation started successfully");
+
+      // Refresh queue status to get updated aiModerationEnabled status
+      invalidateModeration();
+    } catch (error) {
+      console.error("Error starting AI moderation:", error);
+      toast.error("Failed to start AI moderation");
+    }
   };
+
+  const stopAiModeration = async () => {
+    try {
+      const adminToken = Cookies.get("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin token not found. Please login again.");
+      }
+
+      const response = await fetch("/api/admin/moderation/ai/stop", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to stop AI moderation");
+      }
+
+      toast.success("AI Moderation stopped successfully");
+
+      // Refresh queue status to get updated aiModerationEnabled status
+      invalidateModeration();
+    } catch (error) {
+      console.error("Error stopping AI moderation:", error);
+      toast.error("Failed to stop AI moderation");
+    }
+  };
+
+  // fetchFeedbackSubmissions is now handled by TanStack Query useFeedbackSubmissions hook
+
+  const markFeedbackAsReviewed = async (chapterId: string) => {
+    try {
+      const adminToken = Cookies.get("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin token not found. Please login again.");
+      }
+
+      const response = await fetch(
+        `/api/admin/chapters/${chapterId}/feedback/mark-reviewed`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${adminToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to mark feedback as reviewed");
+      }
+
+      toast.success("Feedback marked as reviewed");
+      invalidateModeration(); // Refresh the list
+    } catch (error) {
+      console.error("Error marking feedback as reviewed:", error);
+      toast.error("Failed to mark feedback as reviewed");
+    }
+  };
+
+
 
   const analyzeContent = async (chapterId: string) => {
     try {
@@ -476,29 +391,11 @@ export default function AdminModerationPage() {
     try {
       setModerating(true);
 
-      const adminToken = Cookies.get("adminToken");
-      if (!adminToken) {
-        throw new Error("Admin token not found. Please login again.");
-      }
-
-      const formData = new FormData();
-      formData.append("approved", approved.toString());
-      formData.append("notes", moderationNotes || "");
-
-      const response = await fetch(
-        `/api/admin/moderation/chapters/${chapterId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${adminToken}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to moderate chapter");
-      }
+      await moderateChapterMutation.mutateAsync({
+        chapterId,
+        approved,
+        notes: moderationNotes || ""
+      });
 
       toast.success(
         approved
@@ -506,8 +403,7 @@ export default function AdminModerationPage() {
           : "Chapter rejected and returned to draft."
       );
 
-      // Refresh the chapters list
-      await fetchChapters();
+      // Clear form and close modal
       setSelectedChapter(null);
       setModerationNotes("");
       setAnalysisResult(null);

@@ -19,6 +19,7 @@ import com.app.nomanweb_backend.service.WithdrawService;
 import com.app.nomanweb_backend.service.StripeWithdrawService;
 import com.app.nomanweb_backend.service.WithdrawalScheduledService;
 import com.app.nomanweb_backend.service.CachedAdminService;
+import com.app.nomanweb_backend.service.CachedModerationService;
 import com.app.nomanweb_backend.dto.withdraw.WithdrawResponse;
 import com.app.nomanweb_backend.entity.Withdraw;
 import com.app.nomanweb_backend.util.JwtUtil;
@@ -67,6 +68,7 @@ public class AdminController {
         private final StripeWithdrawService stripeWithdrawService;
         private final WithdrawalScheduledService withdrawalScheduledService;
         private final CachedAdminService cachedAdminService;
+        private final CachedModerationService cachedModerationService;
 
         // Dashboard Statistics
         @GetMapping("/dashboard/stats")
@@ -119,10 +121,36 @@ public class AdminController {
         @GetMapping("/moderation/queue/status")
         public ResponseEntity<Map<String, Object>> getQueueStatus() {
                 try {
-                        Map<String, Object> status = chapterModerationProcessor.getProcessorStatus();
+                        Map<String, Object> status = cachedModerationService.getQueueStatusCached();
                         return ResponseEntity.ok(status);
                 } catch (Exception e) {
                         log.error("Error getting queue status", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        // Moderation Statistics
+        @GetMapping("/moderation/stats")
+        public ResponseEntity<Map<String, Object>> getModerationStats() {
+                try {
+                        Map<String, Object> stats = cachedModerationService.getModerationStatsCached();
+                        return ResponseEntity.ok(stats);
+                } catch (Exception e) {
+                        log.error("Error getting moderation stats", e);
+                        return ResponseEntity.internalServerError().build();
+                }
+        }
+
+        // Feedback Submissions
+        @GetMapping("/moderation/feedback")
+        public ResponseEntity<Page<ChapterResponse>> getFeedbackSubmissions(
+                        @PageableDefault(size = 20) Pageable pageable,
+                        @RequestParam(required = false) String status) {
+                try {
+                        Page<ChapterResponse> feedbackSubmissions = chapterService.getFeedbackSubmissions(pageable, status);
+                        return ResponseEntity.ok(feedbackSubmissions);
+                } catch (Exception e) {
+                        log.error("Error getting feedback submissions", e);
                         return ResponseEntity.internalServerError().build();
                 }
         }
@@ -132,6 +160,12 @@ public class AdminController {
         public ResponseEntity<Map<String, Object>> startAiModeration() {
                 try {
                         boolean started = chapterModerationProcessor.startAiModeration();
+                        
+                        // Clear queue status cache to ensure real-time updates
+                        if (started) {
+                                cachedModerationService.clearQueueStatusCache();
+                        }
+                        
                         Map<String, Object> response = new HashMap<>();
                         response.put("success", started);
                         response.put("message", started ? "AI moderation started successfully"
@@ -147,6 +181,12 @@ public class AdminController {
         public ResponseEntity<Map<String, Object>> stopAiModeration() {
                 try {
                         boolean stopped = chapterModerationProcessor.stopAiModeration();
+                        
+                        // Clear queue status cache to ensure real-time updates
+                        if (stopped) {
+                                cachedModerationService.clearQueueStatusCache();
+                        }
+                        
                         Map<String, Object> response = new HashMap<>();
                         response.put("success", stopped);
                         response.put("message", stopped ? "AI moderation stopped successfully"
@@ -163,7 +203,7 @@ public class AdminController {
         public ResponseEntity<Page<ChapterResponse>> getChaptersForModeration(
                         @PageableDefault(size = 20) Pageable pageable) {
                 try {
-                        Page<ChapterResponse> chapters = chapterService.getChaptersForModeration(pageable);
+                        Page<ChapterResponse> chapters = cachedModerationService.getChaptersForModerationCached(pageable);
                         return ResponseEntity.ok(chapters);
                 } catch (Exception e) {
                         log.error("Error getting chapters for moderation", e);
@@ -181,6 +221,10 @@ public class AdminController {
                         UUID moderatorId = getCurrentUserId(httpRequest);
                         ChapterResponse chapter = chapterService.moderateChapter(chapterId, notes, approved,
                                         moderatorId);
+                        
+                        // Clear moderation caches after action
+                        cachedModerationService.clearChaptersCacheAfterModeration();
+                        
                         return ResponseEntity.ok(chapter);
                 } catch (IllegalArgumentException e) {
                         log.error("Error moderating chapter: {}", e.getMessage());

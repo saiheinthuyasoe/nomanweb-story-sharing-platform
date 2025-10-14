@@ -30,9 +30,6 @@ import {
   PlusIcon,
   Gift,
   BookmarkIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Coins, Gift as LucideGift } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -69,38 +66,7 @@ export default function StoryDetailPage() {
   // Check if current user is the story author
   const isAuthor = user && story && user.id === story.author.id;
 
-  // Helper function for moderation status badges
-  const getModerationBadge = (status: "PENDING" | "APPROVED" | "REJECTED") => {
-    const statusConfig = {
-      PENDING: {
-        text: "Pending",
-        className: "bg-yellow-100 text-yellow-700",
-        icon: ClockIcon,
-      },
-      APPROVED: {
-        text: "Approved",
-        className: "bg-green-100 text-green-700",
-        icon: CheckCircleIcon,
-      },
-      REJECTED: {
-        text: "Rejected",
-        className: "bg-red-100 text-red-700",
-        icon: XCircleIcon,
-      },
-    };
 
-    const config = statusConfig[status] || statusConfig.PENDING;
-    const IconComponent = config.icon;
-
-    return (
-      <span
-        className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded w-full sm:w-auto text-center ${config.className}`}
-      >
-        <IconComponent className="h-4 w-4 mr-2" />
-        {config.text}
-      </span>
-    );
-  };
 
   if (isLoading) {
     return <StoryDetailSkeleton />;
@@ -306,10 +272,7 @@ export default function StoryDetailPage() {
                     {story.bookStatus}
                   </span>
 
-                  {/* Moderation Status Badge */}
-                  <div className="w-full sm:w-auto">
-                    {getModerationBadge(story.moderationStatus)}
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -528,20 +491,7 @@ export default function StoryDetailPage() {
                 {story.publishStatus}
               </p>
             </div>
-            <div>
-              <span className="text-xs text-gray-500">Moderation</span>
-              <p
-                className={`text-sm font-medium ${
-                  story.moderationStatus === "APPROVED"
-                    ? "text-green-600"
-                    : story.moderationStatus === "PENDING"
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
-              >
-                {story.moderationStatus}
-              </p>
-            </div>
+
             <div>
               <span className="text-xs text-gray-500">Type</span>
               <p
@@ -628,7 +578,7 @@ export default function StoryDetailPage() {
                 label="Reading"
               />
               <StatCard
-                icon={CheckCircleIcon}
+                icon={BookOpenIcon}
                 value={(story.totalCompleted || 0).toLocaleString()}
                 label="Completed"
               />

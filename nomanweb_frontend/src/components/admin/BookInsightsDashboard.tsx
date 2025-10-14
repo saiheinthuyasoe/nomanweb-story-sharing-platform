@@ -35,6 +35,12 @@ import {
 import { adminHomepageService } from "@/services/adminHomepageService";
 import { bookSectionCache } from "@/services/bookSectionCache";
 import { toast } from "react-hot-toast";
+import { 
+  useBookInsights, 
+  useAllBookSections, 
+  useAddToFeaturedContent,
+  useInvalidateAdminCache 
+} from "@/hooks/useAdminData";
 
 interface BookInsightsDashboardProps {
   onAddToSection?: (book: BookInsight, sectionType: string) => void;
@@ -43,19 +49,22 @@ interface BookInsightsDashboardProps {
 const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
   onAddToSection,
 }) => {
-  const [insightsData, setInsightsData] = useState<BookInsightsData | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
+  // TanStack Query hooks
+  const { data: insightsData, isLoading: loading, error: insightsError } = useBookInsights();
+  
+  // Extract book IDs from insights data for fetching sections
+  const bookIds = insightsData?.allBooks?.map(book => book.id) || [];
+  const { data: bookSections = {}, error: sectionsError } = useAllBookSections(bookIds);
+  
+  const addToFeaturedContentMutation = useAddToFeaturedContent();
+  const invalidateCache = useInvalidateAdminCache();
+
   const [addingToSection, setAddingToSection] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [selectedBookForSection, setSelectedBookForSection] =
     useState<BookInsight | null>(null);
   const [selectedSectionType, setSelectedSectionType] = useState<string>("");
-  const [bookSections, setBookSections] = useState<Record<string, string[]>>(
-    {}
-  );
   const [removingFromSection, setRemovingFromSection] = useState<string | null>(
     null
   );
@@ -98,93 +107,20 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
     { value: "YOUNG_ADULT", label: "Young Adult" },
   ];
 
-  // Load book sections for all books with caching
-  const loadBookSections = async () => {
-    if (!insightsData) return;
-
-    const allBooks = [
-      ...insightsData.topRated,
-      ...insightsData.mostReadWeekly,
-      ...insightsData.newReleases,
-      ...Object.values(insightsData.byGenre).flat()
-    ];
-    
-    // Remove duplicates based on book ID
-    const uniqueBooks = allBooks.filter((book, index, self) => 
-      index === self.findIndex(b => b.id === book.id)
-    );
-
-    const sectionsMap: Record<string, string[]> = {};
-    const booksToFetch: BookInsight[] = [];
-
-    // First, try to get sections from cache
-    for (const book of uniqueBooks) {
-      const cachedSections = bookSectionCache.get(book.id);
-      if (cachedSections !== null) {
-        sectionsMap[book.id] = cachedSections;
-      } else {
-        booksToFetch.push(book);
-      }
-    }
-
-    // Update UI immediately with cached data
-    setBookSections(sectionsMap);
-
-    // Fetch missing sections from API
-    if (booksToFetch.length > 0) {
-      const fetchPromises = booksToFetch.map(async (book) => {
-        try {
-          const sections = await adminHomepageService.getBookSections(book.id);
-          bookSectionCache.set(book.id, sections);
-          return { bookId: book.id, sections };
-        } catch (error) {
-          console.error(`Error loading sections for book ${book.id}:`, error);
-          bookSectionCache.set(book.id, []);
-          return { bookId: book.id, sections: [] };
-        }
-      });
-
-      const results = await Promise.all(fetchPromises);
-
-      // Update state with fresh data
-      const updatedSectionsMap = { ...sectionsMap };
-      results.forEach(({ bookId, sections }) => {
-        updatedSectionsMap[bookId] = sections;
-      });
-
-      setBookSections(updatedSectionsMap);
-    }
-  };
-
+  // Error handling for TanStack Query hooks
   useEffect(() => {
-    loadInsightsData();
-  }, []);
-
-  useEffect(() => {
-    if (insightsData) {
-      loadBookSections();
-    }
-  }, [insightsData]);
-
-  const loadInsightsData = async (clearCache: boolean = false) => {
-    try {
-      setLoading(true);
-
-      // Clear cache if requested
-      if (clearCache) {
-        bookSectionCache.clear();
-        setBookSections({});
-      }
-
-      const data = await bookInsightsService.getBookInsightsDashboard();
-      setInsightsData(data);
-    } catch (error) {
-      console.error("Error loading insights data:", error);
+    if (insightsError) {
+      console.error("Error loading insights data:", insightsError);
       toast.error("Failed to load book insights");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [insightsError]);
+
+  useEffect(() => {
+    if (sectionsError) {
+      console.error("Error loading book sections:", sectionsError);
+      toast.error("Failed to load book sections");
+    }
+  }, [sectionsError]);
 
   // Filter and sort books based on current filter criteria
   const filterBooks = (books: BookInsight[]): BookInsight[] => {
@@ -396,17 +332,12 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
     }
 
     try {
-      // Try to add to backend
-      if (onAddToSection) {
-        await onAddToSection(selectedBookForSection, selectedSectionType, 30); // 30 days duration
-      } else {
-        // Fallback to adminHomepageService
-        await adminHomepageService.addToFeaturedContent(
-          selectedBookForSection.id,
-          selectedSectionType,
-          30
-        );
-      }
+      // Use TanStack Query mutation
+      await addToFeaturedContentMutation.mutateAsync({
+        bookId: selectedBookForSection.id,
+        sectionType: selectedSectionType,
+        duration: 30
+      });
 
       toast.success(
         `${selectedBookForSection.title} added to ${
@@ -416,22 +347,9 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       setShowSectionModal(false);
       setSelectedBookForSection(null);
       setSelectedSectionType("");
-
-      // Invalidate cache for this book to ensure fresh data on next load
-      bookSectionCache.remove(selectedBookForSection.id);
-
-      // Refresh from server to ensure consistency
-      setTimeout(() => {
-        bookSectionCache.remove(selectedBookForSection.id);
-        loadBookSections();
-      }, 1000);
     } catch (error) {
       console.error("Error adding book to section:", error);
       toast.error("Failed to add book to section");
-
-      // Revert optimistic update on error
-      bookSectionCache.remove(selectedBookForSection.id);
-      await loadBookSections();
     } finally {
       setAddingToSection(null);
     }
@@ -629,7 +547,6 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             Analytics and performance metrics for intelligent content curation
           </p>
         </div>
-
       </div>
 
       {/* Filter Panel */}
@@ -815,7 +732,9 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
         <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-500" />
-            <label className="text-sm font-medium text-gray-700">Filter by:</label>
+            <label className="text-sm font-medium text-gray-700">
+              Filter by:
+            </label>
           </div>
           <select
             value={activeTab}
@@ -827,13 +746,14 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
             <option value="weekly-trending">Weekly Trending</option>
             <option value="new-releases">New Releases</option>
             <option value="by-genre">By Genre</option>
-            {insightsData && Object.keys(insightsData.byGenre).map((genre) => (
-              <option key={genre} value={`genre-${genre}`}>
-                {genre.charAt(0).toUpperCase() + genre.slice(1)}
-              </option>
-            ))}
+            {insightsData &&
+              Object.keys(insightsData.byGenre).map((genre) => (
+                <option key={genre} value={`genre-${genre}`}>
+                  {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                </option>
+              ))}
           </select>
-          
+
           <div className="flex items-center gap-2">
             <Search className="w-4 h-4 text-gray-500" />
             <label className="text-sm font-medium text-gray-700">Search:</label>
@@ -850,57 +770,55 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
           </div>
         </div>
 
-        {activeTab === "all" && (() => {
-          // Get all unique books from all categories
-          const allBooks = [
-            ...insightsData.topRated,
-            ...insightsData.mostReadWeekly,
-            ...insightsData.newReleases,
-            ...Object.values(insightsData.byGenre).flat()
-          ];
-          
-          // Remove duplicates based on book ID
-          const uniqueBooks = allBooks.filter((book, index, self) => 
-            index === self.findIndex(b => b.id === book.id)
-          );
-          
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  All Available Books
-                  <Badge variant="secondary" className="ml-2">
-                    {filterBooks(uniqueBooks).length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filterBooks(uniqueBooks).map((book) => (
-                    <BookCard
-                      key={book.id}
-                      book={book}
-                      sectionType="ALL"
-                    />
-                  ))}
-                </div>
-                {filterBooks(uniqueBooks).length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No books match your current filters</p>
-                    <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="mt-2"
-                    >
-                      Clear Filters
-                    </Button>
+        {activeTab === "all" &&
+          (() => {
+            // Get all unique books from all categories
+            const allBooks = [
+              ...insightsData.topRated,
+              ...insightsData.mostReadWeekly,
+              ...insightsData.newReleases,
+              ...Object.values(insightsData.byGenre).flat(),
+            ];
+
+            // Remove duplicates based on book ID
+            const uniqueBooks = allBooks.filter(
+              (book, index, self) =>
+                index === self.findIndex((b) => b.id === book.id)
+            );
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    All Available Books
+                    <Badge variant="secondary" className="ml-2">
+                      {filterBooks(uniqueBooks).length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {filterBooks(uniqueBooks).map((book) => (
+                      <BookCard key={book.id} book={book} sectionType="ALL" />
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
+                  {filterBooks(uniqueBooks).length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No books match your current filters</p>
+                      <Button
+                        onClick={clearFilters}
+                        variant="outline"
+                        className="mt-2"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
         {activeTab === "top-rated" && (
           <Card>
@@ -1062,48 +980,51 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
         )}
 
         {/* Individual Genre Section */}
-        {activeTab.startsWith('genre-') && (() => {
-          const selectedGenre = activeTab.replace('genre-', '');
-          const genreBooks = insightsData.byGenre[selectedGenre] || [];
-          const filteredBooks = filterBooks(genreBooks);
-          
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="capitalize flex items-center gap-2">
-                  {selectedGenre} Books
-                  <Badge variant="secondary" className="ml-2">
-                    {filteredBooks.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {filteredBooks.map((book) => (
-                    <BookCard
-                      key={book.id}
-                      book={book}
-                      sectionType={selectedGenre.toUpperCase()}
-                    />
-                  ))}
-                </div>
-                {filteredBooks.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No books match your current filters in {selectedGenre}</p>
-                    <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="mt-2"
-                    >
-                      Clear Filters
-                    </Button>
+        {activeTab.startsWith("genre-") &&
+          (() => {
+            const selectedGenre = activeTab.replace("genre-", "");
+            const genreBooks = insightsData.byGenre[selectedGenre] || [];
+            const filteredBooks = filterBooks(genreBooks);
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="capitalize flex items-center gap-2">
+                    {selectedGenre} Books
+                    <Badge variant="secondary" className="ml-2">
+                      {filteredBooks.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {filteredBooks.map((book) => (
+                      <BookCard
+                        key={book.id}
+                        book={book}
+                        sectionType={selectedGenre.toUpperCase()}
+                      />
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
+                  {filteredBooks.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>
+                        No books match your current filters in {selectedGenre}
+                      </p>
+                      <Button
+                        onClick={clearFilters}
+                        variant="outline"
+                        className="mt-2"
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
       </div>
 
       {/* Section Selection Modal */}

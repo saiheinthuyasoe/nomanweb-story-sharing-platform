@@ -191,36 +191,70 @@ class BookInsightsService {
     }
   }
 
-  // Get comprehensive book insights dashboard
+  // Get comprehensive book insights dashboard (cached)
   async getBookInsightsDashboard(): Promise<BookInsightsData> {
     try {
-      const [topRated, mostReadWeekly, newReleases] = await Promise.all([
-        this.getTopRatedBooks(10),
-        this.getMostReadWeekly(10),
-        this.getNewReleases(10),
-      ]);
+      // Use the new cached dashboard endpoint for better performance
+      const response = await fetch(
+        `${this.baseUrl}/api/admin/insights/dashboard`,
+        {
+          headers: this.getAuthHeaders(),
+        }
+      );
 
+      if (response.status === 401) {
+        throw new Error(
+          "Authentication required. Please log in to access admin features."
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(`Dashboard API request failed with status ${response.status}`);
+      }
+
+      const dashboardData = await response.json();
+      
+      // Transform the response to match the expected interface
       return {
-        topRated,
-        mostReadWeekly,
-        newReleases,
-        mostShared: [], // TODO: Implement getMostShared API endpoint
-        byGenre: {
-          fantasy: await this.getBooksByGenre("fantasy", 5),
-          romance: await this.getBooksByGenre("romance", 5),
-          mystery: await this.getBooksByGenre("mystery", 5),
-          "sci-fi": await this.getBooksByGenre("sci-fi", 5),
-          adventure: await this.getBooksByGenre("adventure", 5),
-          thriller: await this.getBooksByGenre("thriller", 5),
-          horror: await this.getBooksByGenre("horror", 5),
-          comedy: await this.getBooksByGenre("comedy", 5),
-          drama: await this.getBooksByGenre("drama", 5),
-          "young-adult": await this.getBooksByGenre("young-adult", 5),
-        },
+        topRated: dashboardData.topRated || [],
+        mostReadWeekly: dashboardData.mostReadWeekly || [],
+        newReleases: dashboardData.newReleases || [],
+        mostShared: dashboardData.mostShared || [], 
+        byGenre: dashboardData.byGenre || {},
       };
     } catch (error) {
       console.error("Error fetching book insights dashboard:", error);
-      throw error;
+      // Fallback to individual API calls if dashboard endpoint fails
+      console.warn("Falling back to individual API calls...");
+      try {
+        const [topRated, mostReadWeekly, newReleases] = await Promise.all([
+          this.getTopRatedBooks(10),
+          this.getMostReadWeekly(10),
+          this.getNewReleases(10),
+        ]);
+
+        return {
+          topRated,
+          mostReadWeekly,
+          newReleases,
+          mostShared: [],
+          byGenre: {
+            fantasy: await this.getBooksByGenre("fantasy", 5),
+            romance: await this.getBooksByGenre("romance", 5),
+            mystery: await this.getBooksByGenre("mystery", 5),
+            "sci-fi": await this.getBooksByGenre("sci-fi", 5),
+            adventure: await this.getBooksByGenre("adventure", 5),
+            thriller: await this.getBooksByGenre("thriller", 5),
+            horror: await this.getBooksByGenre("horror", 5),
+            comedy: await this.getBooksByGenre("comedy", 5),
+            drama: await this.getBooksByGenre("drama", 5),
+            "young-adult": await this.getBooksByGenre("young-adult", 5),
+          },
+        };
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        throw error; // Throw original error
+      }
     }
   }
 

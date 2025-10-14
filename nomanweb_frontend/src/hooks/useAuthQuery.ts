@@ -1,9 +1,14 @@
-import { useQuery, UseQueryOptions, UseQueryResult } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { tokenRefreshEvents } from '@/contexts/AuthContext';
+import {
+  useQuery,
+  UseQueryOptions,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { tokenRefreshEvents } from "@/contexts/AuthContext";
 
-interface UseAuthQueryOptions<TData, TError> extends Omit<UseQueryOptions<TData, TError>, 'retry'> {
+interface UseAuthQueryOptions<TData, TError>
+  extends Omit<UseQueryOptions<TData, TError>, "retry"> {
   // Add any additional options specific to auth queries
 }
 
@@ -17,7 +22,7 @@ export function useAuthQuery<TData, TError = unknown>(
   // Subscribe to token refresh events to invalidate queries
   useEffect(() => {
     const unsubscribe = tokenRefreshEvents.subscribe((token, refreshToken) => {
-      console.log('🔄 Invalidating queries due to token refresh');
+      console.log("🔄 Invalidating queries due to token refresh");
       // Invalidate all queries when tokens are refreshed
       queryClient.invalidateQueries();
     });
@@ -41,4 +46,4 @@ export function useAuthQuery<TData, TError = unknown>(
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-} 
+}

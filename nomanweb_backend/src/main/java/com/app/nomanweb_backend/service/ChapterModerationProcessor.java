@@ -40,7 +40,8 @@ public class ChapterModerationProcessor {
     public void processQueue() {
         log.info("processQueue() called - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
         if (processing || !aiModerationEnabled) {
-            log.info("Skipping queue processing - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
+            log.info("Skipping queue processing - processing: {}, aiModerationEnabled: {}", processing,
+                    aiModerationEnabled);
             return; // Prevent concurrent processing or skip if AI moderation is disabled
         }
 
@@ -303,7 +304,8 @@ public class ChapterModerationProcessor {
             }
 
             // Use sendModerationNotificationWithImage to include story cover image
-            log.info("DEBUG: Calling notificationService.sendModerationNotificationWithImage for author {} with title: {}",
+            log.info(
+                    "DEBUG: Calling notificationService.sendModerationNotificationWithImage for author {} with title: {}",
                     author.getId(), title);
 
             String coverImageUrl = chapter.getStory().getCoverImageUrl();

@@ -115,6 +115,9 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
         // Count chapters by moderation status
         long countByModerationStatus(Chapter.ModerationStatus moderationStatus);
 
+        // Count chapters by moderation status and updated after a specific date
+        long countByModerationStatusAndUpdatedAtAfter(Chapter.ModerationStatus moderationStatus, LocalDateTime date);
+
         // Count chapters created after a specific date
         long countByCreatedAtAfter(LocalDateTime date);
 

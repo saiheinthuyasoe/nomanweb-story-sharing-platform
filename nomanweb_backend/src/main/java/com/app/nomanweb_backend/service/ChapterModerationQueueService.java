@@ -54,6 +54,9 @@ public class ChapterModerationQueueService {
             // Update stats
             incrementStat("queued");
 
+            // Clear chapters cache so new chapter appears immediately in moderation queue
+            clearChaptersCache();
+
             log.info("Chapter {} queued for moderation with job ID: {}", chapter.getId(), jobId);
             return jobId;
 
@@ -250,5 +253,18 @@ public class ChapterModerationQueueService {
         String key = today + ":" + statName;
         redisTemplate.opsForHash().increment(STATS_KEY, key, 1);
         redisTemplate.expire(STATS_KEY, java.time.Duration.ofDays(30)); // Keep stats for 30 days
+    }
+
+    /**
+     * Clear chapters cache when new chapters are queued for moderation
+     */
+    private void clearChaptersCache() {
+        try {
+            String pattern = "moderation:chapters:*";
+            redisTemplate.delete(redisTemplate.keys(pattern));
+            log.debug("Cleared chapters cache after new chapter queued");
+        } catch (Exception e) {
+            log.error("Error clearing chapters cache", e);
+        }
     }
 }

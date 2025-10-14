@@ -9,9 +9,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
 
 // Client-side components wrapper
-const ClientComponents = dynamic(
-  () => import("@/components/ClientComponents")
-);
+const ClientComponents = dynamic(() => import("@/components/ClientComponents"));
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,12 +39,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${merriweather.variable} ${openSans.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${merriweather.variable} ${openSans.variable} font-sans antialiased`}
+      >
         <Providers>
           <ConditionalNavbar />
-          <ConditionalMainContent>
-            {children}
-          </ConditionalMainContent>
+          <ConditionalMainContent>{children}</ConditionalMainContent>
           <ToastProvider />
           <ClientComponents />
         </Providers>

@@ -1,7 +1,7 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-import { ComponentType } from 'react';
+import dynamic from "next/dynamic";
+import { ComponentType } from "react";
 
 // Loading component for admin pages
 const AdminLoadingSpinner = () => (
@@ -20,151 +20,145 @@ const AdminLoadingSpinner = () => (
 
 // Lazy load admin dashboard components
 export const LazyAdminDashboard = dynamic(
-  () => import('@/app/admin/dashboard/page'),
+  () => import("@/app/admin/dashboard/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminAnalytics = dynamic(
-  () => import('@/app/admin/analytics/page'),
+  () => import("@/app/admin/analytics/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
-export const LazyAdminUsers = dynamic(
-  () => import('@/app/admin/users/page'),
-  {
-    loading: () => <AdminLoadingSpinner />,
-    ssr: false
-  }
-);
+export const LazyAdminUsers = dynamic(() => import("@/app/admin/users/page"), {
+  loading: () => <AdminLoadingSpinner />,
+  ssr: false,
+});
 
 export const LazyAdminModeration = dynamic(
-  () => import('@/app/admin/moderation/page'),
+  () => import("@/app/admin/moderation/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
-export const LazyAdminCoins = dynamic(
-  () => import('@/app/admin/coins/page'),
-  {
-    loading: () => <AdminLoadingSpinner />,
-    ssr: false
-  }
-);
+export const LazyAdminCoins = dynamic(() => import("@/app/admin/coins/page"), {
+  loading: () => <AdminLoadingSpinner />,
+  ssr: false,
+});
 
 export const LazyAdminWithdrawals = dynamic(
-  () => import('@/app/admin/withdrawals/page'),
+  () => import("@/app/admin/withdrawals/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminHomepage = dynamic(
-  () => import('@/app/admin/homepage/page'),
+  () => import("@/app/admin/homepage/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminInsights = dynamic(
-  () => import('@/app/admin/insights/page'),
+  () => import("@/app/admin/insights/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminMonetization = dynamic(
-  () => import('@/app/admin/monetization/page'),
+  () => import("@/app/admin/monetization/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminMigration = dynamic(
-  () => import('@/app/admin/migration/page'),
+  () => import("@/app/admin/migration/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAdminTestNotifications = dynamic(
-  () => import('@/app/admin/test-notifications/page'),
+  () => import("@/app/admin/test-notifications/page"),
   {
     loading: () => <AdminLoadingSpinner />,
-    ssr: false
+    ssr: false,
   }
 );
 
 // Lazy load admin component utilities
 export const LazyBookInsightsDashboard = dynamic(
-  () => import('@/components/admin/BookInsightsDashboard'),
+  () => import("@/components/admin/BookInsightsDashboard"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-64 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyAutoSuggestPanel = dynamic(
-  () => import('@/components/admin/AutoSuggestPanel'),
+  () => import("@/components/admin/AutoSuggestPanel"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyBookSuggestionModal = dynamic(
-  () => import('@/components/admin/BookSuggestionModal'),
+  () => import("@/components/admin/BookSuggestionModal"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-48 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyBulkExpirationModal = dynamic(
-  () => import('@/components/admin/BulkExpirationModal'),
+  () => import("@/components/admin/BulkExpirationModal"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-48 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyEditExpirationModal = dynamic(
-  () => import('@/components/admin/EditExpirationModal'),
+  () => import("@/components/admin/EditExpirationModal"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-48 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
 export const LazyExpirationAlerts = dynamic(
-  () => import('@/components/admin/ExpirationAlerts'),
+  () => import("@/components/admin/ExpirationAlerts"),
   {
     loading: () => (
       <div className="animate-pulse bg-gray-200 rounded-lg h-24 w-full"></div>
     ),
-    ssr: false
+    ssr: false,
   }
 );
 
@@ -173,17 +167,17 @@ export type LazyAdminComponentType = ComponentType<any>;
 
 // Admin route configuration with lazy loading
 export const adminRouteConfig = {
-  '/admin/dashboard': LazyAdminDashboard,
-  '/admin/analytics': LazyAdminAnalytics,
-  '/admin/users': LazyAdminUsers,
-  '/admin/moderation': LazyAdminModeration,
-  '/admin/coins': LazyAdminCoins,
-  '/admin/withdrawals': LazyAdminWithdrawals,
-  '/admin/homepage': LazyAdminHomepage,
-  '/admin/insights': LazyAdminInsights,
-  '/admin/monetization': LazyAdminMonetization,
-  '/admin/migration': LazyAdminMigration,
-  '/admin/test-notifications': LazyAdminTestNotifications,
+  "/admin/dashboard": LazyAdminDashboard,
+  "/admin/analytics": LazyAdminAnalytics,
+  "/admin/users": LazyAdminUsers,
+  "/admin/moderation": LazyAdminModeration,
+  "/admin/coins": LazyAdminCoins,
+  "/admin/withdrawals": LazyAdminWithdrawals,
+  "/admin/homepage": LazyAdminHomepage,
+  "/admin/insights": LazyAdminInsights,
+  "/admin/monetization": LazyAdminMonetization,
+  "/admin/migration": LazyAdminMigration,
+  "/admin/test-notifications": LazyAdminTestNotifications,
 } as const;
 
 export type AdminRoute = keyof typeof adminRouteConfig;

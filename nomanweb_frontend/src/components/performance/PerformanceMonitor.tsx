@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface PerformanceMetrics {
   loadTime: number;
@@ -18,9 +18,9 @@ interface PerformanceMonitorProps {
   onMetricsUpdate?: (metrics: Partial<PerformanceMetrics>) => void;
 }
 
-export default function PerformanceMonitor({ 
-  enabled = process.env.NODE_ENV === 'development',
-  onMetricsUpdate 
+export default function PerformanceMonitor({
+  enabled = process.env.NODE_ENV === "development",
+  onMetricsUpdate,
 }: PerformanceMonitorProps) {
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     loadTime: 0,
@@ -38,26 +38,34 @@ export default function PerformanceMonitor({
     if (!enabled) return;
 
     const collectMetrics = () => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      const paint = performance.getEntriesByType('paint');
-      
+      const navigation = performance.getEntriesByType(
+        "navigation"
+      )[0] as PerformanceNavigationTiming;
+      const paint = performance.getEntriesByType("paint");
+
       const newMetrics: Partial<PerformanceMetrics> = {
         loadTime: navigation.loadEventEnd - navigation.loadEventStart,
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+        domContentLoaded:
+          navigation.domContentLoadedEventEnd -
+          navigation.domContentLoadedEventStart,
       };
 
       // Get INP (Interaction to Next Paint)
-      if ('PerformanceObserver' in window) {
+      if ("PerformanceObserver" in window) {
         try {
           const observer = new PerformanceObserver((list) => {
             const entries = list.getEntries();
-            const inpEntries = entries.filter(entry => entry.entryType === 'event');
+            const inpEntries = entries.filter(
+              (entry) => entry.entryType === "event"
+            );
             if (inpEntries.length > 0) {
-              const maxDuration = Math.max(...inpEntries.map(entry => (entry as any).duration || 0));
+              const maxDuration = Math.max(
+                ...inpEntries.map((entry) => (entry as any).duration || 0)
+              );
               newMetrics.interactionToNextPaint = maxDuration;
             }
           });
-          observer.observe({ entryTypes: ['event'] });
+          observer.observe({ entryTypes: ["event"] });
         } catch (e) {
           // INP not supported
           newMetrics.interactionToNextPaint = 0;
@@ -65,17 +73,20 @@ export default function PerformanceMonitor({
       }
 
       // Largest Contentful Paint
-      if ('PerformanceObserver' in window) {
+      if ("PerformanceObserver" in window) {
         try {
           const lcpObserver = new PerformanceObserver((list) => {
             const entries = list.getEntries();
             const lastEntry = entries[entries.length - 1];
             if (lastEntry) {
               newMetrics.largestContentfulPaint = lastEntry.startTime;
-              setMetrics(prev => ({ ...prev, largestContentfulPaint: lastEntry.startTime }));
+              setMetrics((prev) => ({
+                ...prev,
+                largestContentfulPaint: lastEntry.startTime,
+              }));
             }
           });
-          lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+          lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
 
           // Cumulative Layout Shift
           const clsObserver = new PerformanceObserver((list) => {
@@ -86,63 +97,78 @@ export default function PerformanceMonitor({
               }
             }
             newMetrics.cumulativeLayoutShift = clsValue;
-            setMetrics(prev => ({ ...prev, cumulativeLayoutShift: clsValue }));
+            setMetrics((prev) => ({
+              ...prev,
+              cumulativeLayoutShift: clsValue,
+            }));
           });
-          clsObserver.observe({ entryTypes: ['layout-shift'] });
+          clsObserver.observe({ entryTypes: ["layout-shift"] });
 
           // First Input Delay
           const fidObserver = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
-              newMetrics.firstInputDelay = (entry as any).processingStart - entry.startTime;
-              setMetrics(prev => ({ ...prev, firstInputDelay: (entry as any).processingStart - entry.startTime }));
+              newMetrics.firstInputDelay =
+                (entry as any).processingStart - entry.startTime;
+              setMetrics((prev) => ({
+                ...prev,
+                firstInputDelay:
+                  (entry as any).processingStart - entry.startTime,
+              }));
             }
           });
-          fidObserver.observe({ entryTypes: ['first-input'] });
+          fidObserver.observe({ entryTypes: ["first-input"] });
         } catch (error) {
-          console.warn('Performance Observer not fully supported:', error);
+          console.warn("Performance Observer not fully supported:", error);
         }
       }
 
       // Bundle size estimation
-      const resources = performance.getEntriesByType('resource');
-      const jsResources = resources.filter(resource => 
-        resource.name.includes('.js') && !resource.name.includes('node_modules')
+      const resources = performance.getEntriesByType("resource");
+      const jsResources = resources.filter(
+        (resource) =>
+          resource.name.includes(".js") &&
+          !resource.name.includes("node_modules")
       );
-      const totalBundleSize = jsResources.reduce((total, resource) => 
-        total + ((resource as any).transferSize || 0), 0
+      const totalBundleSize = jsResources.reduce(
+        (total, resource) => total + ((resource as any).transferSize || 0),
+        0
       );
       newMetrics.bundleSize = totalBundleSize;
 
       // Cache hit rate estimation
-      const cachedResources = resources.filter(resource => 
-        (resource as any).transferSize === 0 && (resource as any).decodedBodySize > 0
+      const cachedResources = resources.filter(
+        (resource) =>
+          (resource as any).transferSize === 0 &&
+          (resource as any).decodedBodySize > 0
       );
-      newMetrics.cacheHitRate = resources.length > 0 ? 
-        (cachedResources.length / resources.length) * 100 : 0;
+      newMetrics.cacheHitRate =
+        resources.length > 0
+          ? (cachedResources.length / resources.length) * 100
+          : 0;
 
-      setMetrics(prev => ({ ...prev, ...newMetrics }));
+      setMetrics((prev) => ({ ...prev, ...newMetrics }));
       onMetricsUpdate?.(newMetrics);
     };
 
     // Collect initial metrics
-    if (document.readyState === 'complete') {
+    if (document.readyState === "complete") {
       collectMetrics();
     } else {
-      window.addEventListener('load', collectMetrics);
+      window.addEventListener("load", collectMetrics);
     }
 
     // Keyboard shortcut to toggle visibility (Ctrl+Shift+Z)
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
-        setIsVisible(prev => !prev);
+      if (e.ctrlKey && e.shiftKey && e.key === "Z") {
+        setIsVisible((prev) => !prev);
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
 
     return () => {
-      window.removeEventListener('load', collectMetrics);
-      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener("load", collectMetrics);
+      window.removeEventListener("keydown", handleKeyPress);
     };
   }, [enabled, onMetricsUpdate]);
 
@@ -150,35 +176,53 @@ export default function PerformanceMonitor({
     return null;
   }
 
-  const formatMetric = (value: number | undefined, unit: string = 'ms') => {
-    if (value === undefined) return 'N/A';
-    if (unit === 'ms') return `${Math.round(value)}ms`;
-    if (unit === 'bytes') return `${(value / 1024).toFixed(1)}KB`;
-    if (unit === '%') return `${value.toFixed(1)}%`;
+  const formatMetric = (value: number | undefined, unit: string = "ms") => {
+    if (value === undefined) return "N/A";
+    if (unit === "ms") return `${Math.round(value)}ms`;
+    if (unit === "bytes") return `${(value / 1024).toFixed(1)}KB`;
+    if (unit === "%") return `${value.toFixed(1)}%`;
     return value.toString();
   };
 
   const getScoreColor = (metric: string, value: number | undefined): string => {
-    if (!value) return 'text-gray-400';
-    
+    if (!value) return "text-gray-400";
+
     switch (metric) {
-      case 'lcp':
-        return value < 2500 ? 'text-green-600' : value < 4000 ? 'text-yellow-600' : 'text-red-600';
-      case 'cls':
-        return value < 0.1 ? 'text-green-600' : value < 0.25 ? 'text-yellow-600' : 'text-red-600';
-      case 'inp':
-        return value < 200 ? 'text-green-600' : value < 500 ? 'text-yellow-600' : 'text-red-600';
-      case 'fid':
-        return value < 100 ? 'text-green-600' : value < 300 ? 'text-yellow-600' : 'text-red-600';
+      case "lcp":
+        return value < 2500
+          ? "text-green-600"
+          : value < 4000
+          ? "text-yellow-600"
+          : "text-red-600";
+      case "cls":
+        return value < 0.1
+          ? "text-green-600"
+          : value < 0.25
+          ? "text-yellow-600"
+          : "text-red-600";
+      case "inp":
+        return value < 200
+          ? "text-green-600"
+          : value < 500
+          ? "text-yellow-600"
+          : "text-red-600";
+      case "fid":
+        return value < 100
+          ? "text-green-600"
+          : value < 300
+          ? "text-yellow-600"
+          : "text-red-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
 
   return (
     <div className="fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm z-50">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Performance Metrics</h3>
+        <h3 className="text-sm font-semibold text-gray-900">
+          Performance Metrics
+        </h3>
         <button
           onClick={() => setIsVisible(false)}
           className="text-gray-400 hover:text-gray-600 text-sm"
@@ -186,62 +230,66 @@ export default function PerformanceMonitor({
           ✕
         </button>
       </div>
-      
+
       <div className="space-y-2 text-xs">
         <div className="flex justify-between">
           <span className="text-gray-600">Load Time:</span>
-          <span className={getScoreColor('load', metrics.loadTime)}>
+          <span className={getScoreColor("load", metrics.loadTime)}>
             {formatMetric(metrics.loadTime)}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
           <span className="text-gray-600">Largest Contentful Paint (LCP):</span>
-          <span className={getScoreColor('lcp', metrics.largestContentfulPaint)}>
+          <span
+            className={getScoreColor("lcp", metrics.largestContentfulPaint)}
+          >
             {formatMetric(metrics.largestContentfulPaint)}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
           <span className="text-gray-600">Cumulative Layout Shift (CLS):</span>
-          <span className={getScoreColor('cls', metrics.cumulativeLayoutShift)}>
-            {formatMetric(metrics.cumulativeLayoutShift, '')}
+          <span className={getScoreColor("cls", metrics.cumulativeLayoutShift)}>
+            {formatMetric(metrics.cumulativeLayoutShift, "")}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
-          <span className="text-gray-600">Interaction to Next Paint (INP):</span>
-          <span className={getScoreColor('inp', metrics.interactionToNextPaint)}>
+          <span className="text-gray-600">
+            Interaction to Next Paint (INP):
+          </span>
+          <span
+            className={getScoreColor("inp", metrics.interactionToNextPaint)}
+          >
             {formatMetric(metrics.interactionToNextPaint)}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
           <span className="text-gray-600">First Input Delay (FID):</span>
-          <span className={getScoreColor('fid', metrics.firstInputDelay)}>
+          <span className={getScoreColor("fid", metrics.firstInputDelay)}>
             {formatMetric(metrics.firstInputDelay)}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
           <span className="text-gray-600">Bundle Size:</span>
           <span className="text-gray-700">
-            {formatMetric(metrics.bundleSize, 'bytes')}
+            {formatMetric(metrics.bundleSize, "bytes")}
           </span>
         </div>
-        
+
         <div className="flex justify-between">
           <span className="text-gray-600">Cache Hit Rate:</span>
-          <span className={getScoreColor('cache', metrics.cacheHitRate)}>
-            {formatMetric(metrics.cacheHitRate, '%')}
+          <span className={getScoreColor("cache", metrics.cacheHitRate)}>
+            {formatMetric(metrics.cacheHitRate, "%")}
           </span>
         </div>
       </div>
-      
+
       <div className="mt-3 pt-2 border-t border-gray-100">
-        <p className="text-xs text-gray-500">
-          Press Ctrl+Shift+Z to toggle
-        </p>
+        <p className="text-xs text-gray-500">Press Ctrl+Shift+Z to toggle</p>
       </div>
     </div>
   );

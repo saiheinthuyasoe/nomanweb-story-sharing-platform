@@ -26,9 +26,6 @@ import {
   Heart,
   Bookmark,
   FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
   AlertCircle,
 } from "lucide-react";
 import { RefundConfirmationModal } from "@/components/modals/RefundConfirmationModal";
@@ -38,7 +35,6 @@ import "./ant-table.css";
 
 type StoryTab = "stories" | "drafts" | "trash";
 type StoryStatus = "DRAFT" | "PUBLISHED" | "COMPLETED" | "SUSPENDED";
-type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export default function MyStoriesPage() {
   const { user } = useAuth();
@@ -190,37 +186,7 @@ export default function MyStoriesPage() {
     );
   };
 
-  const getModerationBadge = (status: ModerationStatus) => {
-    const statusConfig = {
-      PENDING: {
-        text: "Pending",
-        className: "bg-yellow-100 text-yellow-700",
-        icon: Clock,
-      },
-      APPROVED: {
-        text: "Approved",
-        className: "bg-green-100 text-green-700",
-        icon: CheckCircle,
-      },
-      REJECTED: {
-        text: "Rejected",
-        className: "bg-red-100 text-red-700",
-        icon: XCircle,
-      },
-    };
 
-    const config = statusConfig[status] || statusConfig.PENDING;
-    const IconComponent = config.icon;
-
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.className}`}
-      >
-        <IconComponent className="h-3 w-3 mr-1" />
-        {config.text}
-      </span>
-    );
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -470,14 +436,7 @@ export default function MyStoriesPage() {
                                 Status
                               </div>
                             </th>
-                            <th
-                              className="ant-table-cell"
-                              style={{ width: "112px" }}
-                            >
-                              <div className="ant-table-column-title">
-                                Moderation
-                              </div>
-                            </th>
+
                             <th
                               className="ant-table-cell ant-table-cell-align-center"
                               style={{ width: "80px" }}
@@ -604,10 +563,7 @@ export default function MyStoriesPage() {
                                 )}
                               </td>
 
-                              {/* Moderation Status Column */}
-                              <td className="ant-table-cell">
-                                {getModerationBadge(story.moderationStatus)}
-                              </td>
+
 
                               {/* Chapters Column */}
                               <td className="ant-table-cell ant-table-cell-align-center">

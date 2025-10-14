@@ -77,20 +77,38 @@ function LibraryContent() {
   const [sortBy, setSortBy] = useState<"recent" | "title" | "author">("recent");
 
   // Reading lists data with additional safety checks - only fetch when user is authenticated
-  const { data: currentlyReadingData = [], error: currentlyReadingError } = useCurrentlyReading(!!user);
-  const { data: likedStoriesData = [], error: likedStoriesError } = useLikedStories(!!user);
-  const { data: completedStoriesData = [], error: completedStoriesError } = useCompletedStories(!!user);
-  const { data: wantToReadData = [], error: wantToReadError } = useWantToReadStories(!!user);
-  const { data: purchasedStoriesData = [], error: purchasedStoriesError } = usePurchasedStories(!!user);
-  const { data: historyStoriesData = [], error: historyStoriesError } = useHistoryStories(!!user);
+  const { data: currentlyReadingData = [], error: currentlyReadingError } =
+    useCurrentlyReading(!!user);
+  const { data: likedStoriesData = [], error: likedStoriesError } =
+    useLikedStories(!!user);
+  const { data: completedStoriesData = [], error: completedStoriesError } =
+    useCompletedStories(!!user);
+  const { data: wantToReadData = [], error: wantToReadError } =
+    useWantToReadStories(!!user);
+  const { data: purchasedStoriesData = [], error: purchasedStoriesError } =
+    usePurchasedStories(!!user);
+  const { data: historyStoriesData = [], error: historyStoriesError } =
+    useHistoryStories(!!user);
 
   // Ensure all data arrays are properly initialized
-  const safeCurrentlyReadingData = Array.isArray(currentlyReadingData) ? currentlyReadingData : [];
-  const safeLikedStoriesData = Array.isArray(likedStoriesData) ? likedStoriesData : [];
-  const safeCompletedStoriesData = Array.isArray(completedStoriesData) ? completedStoriesData : [];
-  const safeWantToReadData = Array.isArray(wantToReadData) ? wantToReadData : [];
-  const safePurchasedStoriesData = Array.isArray(purchasedStoriesData) ? purchasedStoriesData : [];
-  const safeHistoryStoriesData = Array.isArray(historyStoriesData) ? historyStoriesData : [];
+  const safeCurrentlyReadingData = Array.isArray(currentlyReadingData)
+    ? currentlyReadingData
+    : [];
+  const safeLikedStoriesData = Array.isArray(likedStoriesData)
+    ? likedStoriesData
+    : [];
+  const safeCompletedStoriesData = Array.isArray(completedStoriesData)
+    ? completedStoriesData
+    : [];
+  const safeWantToReadData = Array.isArray(wantToReadData)
+    ? wantToReadData
+    : [];
+  const safePurchasedStoriesData = Array.isArray(purchasedStoriesData)
+    ? purchasedStoriesData
+    : [];
+  const safeHistoryStoriesData = Array.isArray(historyStoriesData)
+    ? historyStoriesData
+    : [];
 
   // Fetch purchase history for count calculation
   const { data: purchaseHistory, isLoading: isLoadingPurchases } = useQuery({
@@ -187,7 +205,12 @@ function LibraryContent() {
           ...safeCompletedStoriesData,
           ...safeWantToReadData,
         ].forEach((item) => {
-          if (item && item.story && item.story.id && !storyMap.has(item.story.id)) {
+          if (
+            item &&
+            item.story &&
+            item.story.id &&
+            !storyMap.has(item.story.id)
+          ) {
             storyMap.set(item.story.id, item);
           }
         });
@@ -243,7 +266,12 @@ function LibraryContent() {
         ...safeCompletedStoriesData,
         ...safeWantToReadData,
       ].forEach((item) => {
-        if (item && item.story && item.story.id && !storyMap.has(item.story.id)) {
+        if (
+          item &&
+          item.story &&
+          item.story.id &&
+          !storyMap.has(item.story.id)
+        ) {
           storyMap.set(item.story.id, item);
         }
       });
@@ -901,7 +929,8 @@ function LibraryBookCard({
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 <span className="truncate">
-                  {storyProgress.completedChapters}/{storyProgress.totalChapters}
+                  {storyProgress.completedChapters}/
+                  {storyProgress.totalChapters}
                 </span>
                 {storyProgress.currentChapter && (
                   <span className="text-blue-600 ml-1">
@@ -931,8 +960,6 @@ function LibraryBookCard({
                   Start Reading
                 </Link>
               )}
-
-
             </div>
           )}
         </div>
