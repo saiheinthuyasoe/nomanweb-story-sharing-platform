@@ -31,14 +31,66 @@ export const useNotificationsRealtime = (
       return;
     }
 
-    const connectToSSE = async () => {
+    const connectToSSE = async (retryCount = 0) => {
       try {
-        const token = Cookies.get("token");
+        let token = Cookies.get("token");
         if (!token) {
           console.log(
             "❌ No token found in cookies, skipping notification SSE connection"
           );
           return;
+        }
+
+        // Check if token is close to expiring (within 2 minutes) and refresh proactively
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = tokenPayload.exp * 1000; // Convert to milliseconds
+          const currentTime = Date.now();
+          const timeUntilExpiry = expirationTime - currentTime;
+          
+          console.log("🕐 Notification SSE token expires in:", Math.round(timeUntilExpiry / 1000), "seconds");
+          
+          // If token expires within 2 minutes, refresh it proactively
+          if (timeUntilExpiry < 120000) { // 2 minutes
+            console.log("🔄 Notification SSE token expires soon, refreshing proactively...");
+            
+            const refreshToken = Cookies.get("refreshToken");
+            if (refreshToken) {
+              const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+              const refreshResponse = await fetch(`${backendUrl}/auth/refresh`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refreshToken }),
+              });
+
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                
+                // Update cookies with new tokens
+                Cookies.set("token", refreshData.token, {
+                  expires: 7,
+                  path: "/",
+                  secure: false,
+                  sameSite: "strict",
+                });
+                Cookies.set("refreshToken", refreshData.refreshToken, {
+                  expires: 7,
+                  path: "/",
+                  secure: false,
+                  sameSite: "strict",
+                });
+
+                token = refreshData.token; // Use the new token
+                console.log("✅ Notification SSE token refreshed proactively");
+              } else {
+                console.warn("⚠️ Proactive notification SSE token refresh failed, continuing with current token");
+              }
+            }
+          }
+        } catch (tokenParseError) {
+          console.warn("⚠️ Could not parse notification SSE token for expiry check:", tokenParseError);
         }
 
         // Cancel existing connection if any
@@ -69,6 +121,57 @@ export const useNotificationsRealtime = (
           console.error(
             `❌ Notification SSE connection failed: ${response.status} ${response.statusText}`
           );
+          
+          // Handle authentication errors (401/403) by attempting token refresh
+          if ((response.status === 401 || response.status === 403) && retryCount < 2) {
+            console.log("🔄 Notification SSE authentication failed, attempting token refresh...");
+            
+            try {
+              const refreshToken = Cookies.get("refreshToken");
+              if (!refreshToken) {
+                console.error("❌ No refresh token available for notification SSE reconnection");
+                throw new Error("No refresh token available");
+              }
+
+              // Attempt to refresh the token
+              const refreshResponse = await fetch(`${backendUrl}/auth/refresh`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refreshToken }),
+              });
+
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                
+                // Update cookies with new tokens
+                Cookies.set("token", refreshData.token, {
+                  expires: 7,
+                  path: "/",
+                  secure: false,
+                  sameSite: "strict",
+                });
+                Cookies.set("refreshToken", refreshData.refreshToken, {
+                  expires: 7,
+                  path: "/",
+                  secure: false,
+                  sameSite: "strict",
+                });
+
+                console.log("✅ Token refreshed successfully for notification SSE, retrying connection...");
+                
+                // Retry the SSE connection with the new token
+                setTimeout(() => connectToSSE(retryCount + 1), 1000);
+                return;
+              } else {
+                console.error("❌ Token refresh failed for notification SSE:", refreshResponse.status);
+              }
+            } catch (refreshError) {
+              console.error("❌ Error during notification SSE token refresh:", refreshError);
+            }
+          }
+          
           throw new Error(
             `Notification SSE connection failed: ${response.status}`
           );

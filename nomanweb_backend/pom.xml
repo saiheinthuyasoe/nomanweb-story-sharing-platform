@@ -295,6 +295,15 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <!-- JVM settings to prevent memory issues -->
+                    <jvmArguments>
+                        -Xmx1024m
+                        -Xms512m
+                        -XX:MaxMetaspaceSize=256m
+                        -Dspring.jpa.show-sql=false
+                        -Dlogging.level.org.hibernate=WARN
+                        -Dlogging.level.org.springframework=WARN
+                    </jvmArguments>
                 </configuration>
             </plugin>
         </plugins>
