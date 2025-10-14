@@ -17,28 +17,34 @@ import java.util.UUID;
 @Repository
 public interface FeaturedContentRepository extends JpaRepository<FeaturedContent, UUID> {
 
-       // Find active featured content by section type
-       @Query("SELECT fc FROM FeaturedContent fc " +
-                     "WHERE fc.sectionType = :sectionType " +
-                     "AND fc.isActive = true " +
-                     "AND (fc.startDate IS NULL OR fc.startDate <= :now) " +
-                     "AND (fc.endDate IS NULL OR fc.endDate >= :now) " +
-                     "ORDER BY fc.displayOrder ASC, fc.createdAt DESC")
-       List<FeaturedContent> findActiveBySectionType(
-                     @Param("sectionType") FeaturedContent.SectionType sectionType,
-                     @Param("now") LocalDateTime now);
+       // Find active featured content by section type - Optimized with JOIN FETCH
+    @Query("SELECT fc FROM FeaturedContent fc " +
+                  "JOIN FETCH fc.story s " +
+                  "JOIN FETCH s.author " +
+                  "LEFT JOIN FETCH s.category " +
+                  "WHERE fc.sectionType = :sectionType " +
+                  "AND fc.isActive = true " +
+                  "AND (fc.startDate IS NULL OR fc.startDate <= :now) " +
+                  "AND (fc.endDate IS NULL OR fc.endDate >= :now) " +
+                  "ORDER BY fc.displayOrder ASC, fc.createdAt DESC")
+    List<FeaturedContent> findActiveBySectionType(
+                  @Param("sectionType") FeaturedContent.SectionType sectionType,
+                  @Param("now") LocalDateTime now);
 
-       // Find active featured content by section type with pagination
-       @Query("SELECT fc FROM FeaturedContent fc " +
-                     "WHERE fc.sectionType = :sectionType " +
-                     "AND fc.isActive = true " +
-                     "AND (fc.startDate IS NULL OR fc.startDate <= :now) " +
-                     "AND (fc.endDate IS NULL OR fc.endDate >= :now) " +
-                     "ORDER BY fc.displayOrder ASC, fc.createdAt DESC")
-       Page<FeaturedContent> findActiveBySectionType(
-                     @Param("sectionType") FeaturedContent.SectionType sectionType,
-                     @Param("now") LocalDateTime now,
-                     Pageable pageable);
+       // Find active featured content by section type with pagination - Optimized with JOIN FETCH
+    @Query("SELECT fc FROM FeaturedContent fc " +
+                  "JOIN FETCH fc.story s " +
+                  "JOIN FETCH s.author " +
+                  "LEFT JOIN FETCH s.category " +
+                  "WHERE fc.sectionType = :sectionType " +
+                  "AND fc.isActive = true " +
+                  "AND (fc.startDate IS NULL OR fc.startDate <= :now) " +
+                  "AND (fc.endDate IS NULL OR fc.endDate >= :now) " +
+                  "ORDER BY fc.displayOrder ASC, fc.createdAt DESC")
+    Page<FeaturedContent> findActiveBySectionType(
+                  @Param("sectionType") FeaturedContent.SectionType sectionType,
+                  @Param("now") LocalDateTime now,
+                  Pageable pageable);
 
        // Find all featured content by section type (including inactive)
        List<FeaturedContent> findBySectionTypeOrderByDisplayOrderAscCreatedAtDesc(
@@ -84,9 +90,20 @@ public interface FeaturedContentRepository extends JpaRepository<FeaturedContent
        Integer getNextDisplayOrder(@Param("sectionType") FeaturedContent.SectionType sectionType);
 
        // Find featured content that needs to be activated (start date reached)
-       @Query("SELECT fc FROM FeaturedContent fc " +
-                     "WHERE fc.isActive = false " +
-                     "AND fc.startDate IS NOT NULL " +
-                     "AND fc.startDate <= :now")
-       List<FeaturedContent> findContentToActivate(@Param("now") LocalDateTime now);
+    @Query("SELECT fc FROM FeaturedContent fc " +
+                  "WHERE fc.isActive = false " +
+                  "AND fc.startDate IS NOT NULL " +
+                  "AND fc.startDate <= :now")
+    List<FeaturedContent> findContentToActivate(@Param("now") LocalDateTime now);
+
+    // Bulk query to fetch all active featured content for homepage - Optimized with JOIN FETCH
+    @Query("SELECT fc FROM FeaturedContent fc " +
+                  "JOIN FETCH fc.story s " +
+                  "JOIN FETCH s.author " +
+                  "LEFT JOIN FETCH s.category " +
+                  "WHERE fc.isActive = true " +
+                  "AND (fc.startDate IS NULL OR fc.startDate <= :now) " +
+                  "AND (fc.endDate IS NULL OR fc.endDate >= :now) " +
+                  "ORDER BY fc.sectionType, fc.displayOrder ASC, fc.createdAt DESC")
+    List<FeaturedContent> findAllActiveHomepageContent(@Param("now") LocalDateTime now);
 }

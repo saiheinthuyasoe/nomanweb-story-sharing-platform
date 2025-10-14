@@ -67,11 +67,9 @@ export default function AdminUsersPage() {
   const [dateToFilter, setDateToFilter] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
-  const [showBanModal, setShowBanModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
-  const [banReason, setBanReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -317,94 +315,9 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleBanUser = async () => {
-    if (!selectedUser || !banReason.trim()) return;
 
-    setActionLoading(true);
-    try {
-      const adminToken = Cookies.get("adminToken");
-      const response = await fetch(`/api/admin/users/${selectedUser.id}/ban`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reason: banReason.trim(),
-        }),
-      });
 
-      if (!response.ok) {
-        throw new Error("Failed to ban user");
-      }
 
-      // Update user status in local state immediately
-      setUsers(
-        users.map((u) =>
-          u.id === selectedUser.id ? { ...u, status: "banned" as const } : u
-        )
-      );
-
-      // Also update allUsers for filtering
-      setAllUsers(
-        allUsers.map((u) =>
-          u.id === selectedUser.id ? { ...u, status: "banned" as const } : u
-        )
-      );
-
-      setShowBanModal(false);
-      setSelectedUser(null);
-      setBanReason("");
-
-      // Show success message
-      alert("User banned successfully");
-    } catch (error) {
-      console.error("Error banning user:", error);
-      alert("Failed to ban user. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleUnbanUser = async (user: User) => {
-    setActionLoading(true);
-    try {
-      const adminToken = Cookies.get("adminToken");
-      const response = await fetch(`/api/admin/users/${user.id}/unban`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to unban user");
-      }
-
-      // Update user status in local state immediately
-      setUsers(
-        users.map((u) =>
-          u.id === user.id ? { ...u, status: "active" as const } : u
-        )
-      );
-
-      // Also update allUsers for filtering
-      setAllUsers(
-        allUsers.map((u) =>
-          u.id === user.id ? { ...u, status: "active" as const } : u
-        )
-      );
-
-      // Show success message
-      alert("User unbanned successfully");
-    } catch (error) {
-      console.error("Error unbanning user:", error);
-      alert("Failed to unban user. Please try again.");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -509,14 +422,7 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div>
-            <p className="text-sm font-medium text-gray-600">Banned</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {users.filter((u) => u.status === "banned").length}
-            </p>
-          </div>
-        </div>
+
 
         <div className="bg-white rounded-lg shadow p-6">
           <div>
@@ -1097,38 +1003,9 @@ export default function AdminUsersPage() {
                                               </button>
                                             )}
 
-                                            {user.status === "banned" && (
-                                              <button
-                                                onClick={() => {
-                                                  handleUnbanUser(user);
-                                                  setOpenDropdown(null);
-                                                }}
-                                                className="ant-dropdown-menu-item"
-                                                disabled={actionLoading}
-                                              >
-                                                <div className="ant-dropdown-menu-title-content">
-                                                  <CheckCircleIcon className="h-4 w-4 mr-2" />
-                                                  <span>Unban User</span>
-                                                </div>
-                                              </button>
-                                            )}
 
-                                            {user.status !== "banned" &&
-                                              user.role !== "ADMIN" && (
-                                                <button
-                                                  onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowBanModal(true);
-                                                    setOpenDropdown(null);
-                                                  }}
-                                                  className="ant-dropdown-menu-item ant-dropdown-menu-item-danger"
-                                                >
-                                                  <div className="ant-dropdown-menu-title-content">
-                                                    <XCircleIcon className="h-4 w-4 mr-2" />
-                                                    <span>Ban User</span>
-                                                  </div>
-                                                </button>
-                                              )}
+
+
 
                                             {user.role !== "ADMIN" && (
                                               <button
@@ -1316,55 +1193,7 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Ban User Modal */}
-      {showBanModal && selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
-                <XCircleIcon className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="mt-4 text-center">
-                <h3 className="text-lg font-medium text-gray-900">Ban User</h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  Are you sure you want to permanently ban{" "}
-                  <strong>{selectedUser.username}</strong>? This action will
-                  prevent them from accessing their account permanently.
-                </p>
-                <div className="mt-4">
-                  <textarea
-                    value={banReason}
-                    onChange={(e) => setBanReason(e.target.value)}
-                    placeholder="Reason for ban (required)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-center space-x-4 mt-6">
-                <button
-                  onClick={() => {
-                    setShowBanModal(false);
-                    setSelectedUser(null);
-                    setBanReason("");
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-500"
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBanUser}
-                  disabled={!banReason.trim() || actionLoading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                >
-                  {actionLoading ? "Banning..." : "Ban User"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -21,34 +21,14 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { homepageService, HomepageSections } from "../services/homepageService";
+import { useHomepageData } from "../hooks/useHomepage";
 import { Story } from "../types/story";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [homepageData, setHomepageData] = useState<HomepageSections | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch homepage data on component mount
-  useEffect(() => {
-    const fetchHomepageData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await homepageService.getAllHomepageSections();
-        setHomepageData(data);
-      } catch (err) {
-        console.error("Failed to fetch homepage data:", err);
-        setError("Failed to load homepage content");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHomepageData();
-  }, []);
+  
+  // Use React Query hook for homepage data
+  const { data: homepageData, isLoading, error } = useHomepageData(0, 12);
 
   // Featured stories now come from API data (carousel)
 
@@ -79,6 +59,41 @@ export default function HomePage() {
         Math.max((homepageData?.carousel?.content || []).length, 1)
     );
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading homepage content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to load homepage content</h2>
+          <p className="text-gray-600 mb-4">Please try refreshing the page</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

@@ -56,8 +56,18 @@ public class RedisConfig {
                         org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
                                 .fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
 
+        // Configure specific cache for homepage sections with shorter TTL
+        RedisCacheConfiguration homepageSectionsConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10)) // 10 minutes TTL for homepage sections
+                .serializeKeysWith(org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
+                        .fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(
+                        org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair
+                                .fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
+                .withCacheConfiguration("homepage-sections", homepageSectionsConfig)
                 .build();
     }
 }

@@ -284,47 +284,30 @@ public class HomepageController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size) {
         try {
+            // Use the new bulk method to fetch all sections in a single database call
+            Map<FeaturedContent.SectionType, Page<Story>> bulkSections = featuredContentService.getAllHomepageSections(page, size);
+            
+            // Convert enum keys to string keys for frontend compatibility
             Map<String, Page<Story>> sections = new HashMap<>();
-
-            sections.put("newReleases",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.NEW_RELEASES, page, size));
-            sections.put("bestRating",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.BEST_RATING, page, size));
-            sections.put("weeklyFeatures",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.WEEKLY_FEATURES, page,
-                            size));
-            sections.put("bestOfAllTime",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.BEST_OF_ALL_TIME, page,
-                            size));
-            sections.put("recommended",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.RECOMMENDED_FOR_YOU, page,
-                            size));
-            sections.put("homepageCarousel",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.HOMEPAGE_CAROUSEL, page,
-                            size));
+            sections.put("newReleases", bulkSections.get(FeaturedContent.SectionType.NEW_RELEASES));
+            sections.put("bestRating", bulkSections.get(FeaturedContent.SectionType.BEST_RATING));
+            sections.put("weeklyFeatures", bulkSections.get(FeaturedContent.SectionType.WEEKLY_FEATURES));
+            sections.put("bestOfAllTime", bulkSections.get(FeaturedContent.SectionType.BEST_OF_ALL_TIME));
+            sections.put("recommended", bulkSections.get(FeaturedContent.SectionType.RECOMMENDED_FOR_YOU));
+            sections.put("homepageCarousel", bulkSections.get(FeaturedContent.SectionType.HOMEPAGE_CAROUSEL));
+            sections.put("carousel", bulkSections.get(FeaturedContent.SectionType.HOMEPAGE_CAROUSEL)); // Alias for compatibility
 
             // Genre sections
-            sections.put("adventure",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.ADVENTURE, page, size));
-            sections.put("comedy",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.COMEDY, page, size));
-            sections.put("drama",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.DRAMA, page, size));
-            sections.put("fantasy",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.FANTASY, page, size));
-            sections.put("horror",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.HORROR, page, size));
-            sections.put("mystery",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.MYSTERY, page, size));
-            sections.put("romance",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.ROMANCE, page, size));
-            sections.put("scienceFiction",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.SCIENCE_FICTION, page,
-                            size));
-            sections.put("thriller",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.THRILLER, page, size));
-            sections.put("youngAdult",
-                    featuredContentService.getStoriesForSection(FeaturedContent.SectionType.YOUNG_ADULT, page, size));
+            sections.put("adventure", bulkSections.get(FeaturedContent.SectionType.ADVENTURE));
+            sections.put("comedy", bulkSections.get(FeaturedContent.SectionType.COMEDY));
+            sections.put("drama", bulkSections.get(FeaturedContent.SectionType.DRAMA));
+            sections.put("fantasy", bulkSections.get(FeaturedContent.SectionType.FANTASY));
+            sections.put("horror", bulkSections.get(FeaturedContent.SectionType.HORROR));
+            sections.put("mystery", bulkSections.get(FeaturedContent.SectionType.MYSTERY));
+            sections.put("romance", bulkSections.get(FeaturedContent.SectionType.ROMANCE));
+            sections.put("scienceFiction", bulkSections.get(FeaturedContent.SectionType.SCIENCE_FICTION));
+            sections.put("thriller", bulkSections.get(FeaturedContent.SectionType.THRILLER));
+            sections.put("youngAdult", bulkSections.get(FeaturedContent.SectionType.YOUNG_ADULT));
 
             return ResponseEntity.ok(sections);
         } catch (Exception e) {
