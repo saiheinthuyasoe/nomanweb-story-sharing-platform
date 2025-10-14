@@ -244,13 +244,18 @@ export const useModerateChapter = () => {
         throw new Error("No admin token found");
       }
 
-      const response = await fetch(`/api/admin/moderation/chapters/${chapterId}/${action}`, {
+      const approved = action === 'approve';
+      const params = new URLSearchParams({
+        notes: notes || '',
+        approved: approved.toString()
+      });
+
+      const response = await fetch(`/api/admin/moderation/chapters/${chapterId}?${params}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${adminToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notes }),
       });
 
       if (!response.ok) {

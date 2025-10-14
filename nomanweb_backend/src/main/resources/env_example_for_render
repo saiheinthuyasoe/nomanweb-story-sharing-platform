@@ -41,7 +41,7 @@ TYPESENSE_READ_TIMEOUT=5000
 
 # JWT
 APP_JWT_SECRET=mour-248-key-horses-see-bend-doll-it-very-hard-and-secure-for-websiteappp   # <-- secret
-APP_JWT_EXPIRATION=900000
+APP_JWT_EXPIRATION=604800000
 APP_JWT_REFRESH_EXPIRATION=604800000
 
 # File Upload

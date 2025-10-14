@@ -134,7 +134,8 @@ export default function AdminModerationPage() {
   const { 
     data: feedbackData, 
     isLoading: feedbackLoading, 
-    error: feedbackError 
+    error: feedbackError,
+    refetch: refetchFeedbackSubmissions
   } = useFeedbackSubmissions();
 
   const moderateChapterMutation = useModerateChapter();
@@ -142,7 +143,7 @@ export default function AdminModerationPage() {
 
   // Derived state - memoized to prevent infinite re-renders
   const chapters = useMemo(() => chaptersData?.content || [], [chaptersData?.content]);
-  const feedbackSubmissions = feedbackData || [];
+  const feedbackSubmissions = feedbackData?.content || [];
   const loading = chaptersLoading || statsLoading || queueLoading;
   const aiModerationRunning = queueStatus?.processing || false;
 
@@ -393,7 +394,7 @@ export default function AdminModerationPage() {
 
       await moderateChapterMutation.mutateAsync({
         chapterId,
-        approved,
+        action: approved ? 'approve' : 'reject',
         notes: moderationNotes || ""
       });
 
@@ -1743,7 +1744,7 @@ export default function AdminModerationPage() {
                   <option value="reviewed">Reviewed</option>
                 </select>
                 <Button
-                  onClick={fetchFeedbackSubmissions}
+                  onClick={() => refetchFeedbackSubmissions()}
                   disabled={feedbackLoading}
                   className="flex items-center space-x-2"
                 >
