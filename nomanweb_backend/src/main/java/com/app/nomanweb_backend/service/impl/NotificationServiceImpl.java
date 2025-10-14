@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -555,12 +556,56 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
+    public void sendModerationNotificationWithImage(UUID userId, String title, String message,
+            Notification.RelatedType relatedType, UUID relatedId, String coverImageUrl) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            // Create the notification record
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .type(Notification.NotificationType.MODERATION)
+                    .title(title)
+                    .message(message)
+                    .relatedType(relatedType)
+                    .relatedId(relatedId)
+                    .isRead(false)
+                    .build();
+
+            notification = notificationRepository.save(notification);
+
+            // Generate action URL
+            String actionUrl = enhancedNotificationService.generateActionUrl(Notification.NotificationType.MODERATION, relatedType, relatedId);
+
+            // Send email notification (without image for now)
+            enhancedNotificationService.sendEmailNotification(user, Notification.NotificationType.MODERATION, title, message);
+
+            // Send LINE notification with image
+            String lineMessageId = enhancedNotificationService.sendLineNotificationWithImage(user,
+                    Notification.NotificationType.MODERATION, title, message, coverImageUrl, actionUrl);
+
+            // Update notification with LINE message ID if sent
+            if (StringUtils.hasText(lineMessageId)) {
+                notification.setSentViaLine(true);
+                notification.setLineMessageId(lineMessageId);
+                notificationRepository.save(notification);
+            }
+
+            log.info("Sent moderation notification with image to user {}: {}", userId, title);
+        } catch (Exception e) {
+            log.error("Failed to send moderation notification with image to user {}: {}", userId, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
     public void sendNotificationToAdmins(String title, String message,
             Notification.RelatedType relatedType, UUID relatedId) {
         try {
             // Find all admin users
             List<User> adminUsers = userRepository.findByRole(User.Role.ADMIN);
-            
+
             if (adminUsers.isEmpty()) {
                 log.warn("No admin users found to send notification");
                 return;

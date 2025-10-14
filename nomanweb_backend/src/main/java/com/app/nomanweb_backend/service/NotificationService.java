@@ -67,6 +67,9 @@ public interface NotificationService {
         void sendModerationNotification(UUID userId, String title, String message,
                         Notification.RelatedType relatedType, UUID relatedId);
 
+        void sendModerationNotificationWithImage(UUID userId, String title, String message,
+                        Notification.RelatedType relatedType, UUID relatedId, String coverImageUrl);
+
         // Send notification to all admin users
         void sendNotificationToAdmins(String title, String message,
                         Notification.RelatedType relatedType, UUID relatedId);

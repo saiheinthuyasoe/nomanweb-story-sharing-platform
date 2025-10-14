@@ -974,10 +974,16 @@ public class ChapterServiceImpl implements ChapterService {
                                 : "No specific reason provided");
             }
 
-            // Use sendModerationNotification which handles preference checking
-            // automatically
-            notificationService.sendModerationNotification(authorId, title, message,
-                    Notification.RelatedType.CHAPTER, chapter.getId());
+            // Use sendModerationNotificationWithImage to include story cover image
+            String coverImageUrl = chapter.getStory().getCoverImageUrl();
+            if (coverImageUrl != null && !coverImageUrl.trim().isEmpty()) {
+                notificationService.sendModerationNotificationWithImage(authorId, title, message,
+                        Notification.RelatedType.CHAPTER, chapter.getId(), coverImageUrl);
+            } else {
+                // Fallback to regular notification if no cover image
+                notificationService.sendModerationNotification(authorId, title, message,
+                        Notification.RelatedType.CHAPTER, chapter.getId());
+            }
             log.info("Moderation notification sent to author {} for chapter {}", authorId, chapterId);
         } catch (Exception e) {
             log.warn("Failed to send moderation notification for chapter {}: {}", chapterId, e.getMessage());
@@ -1792,14 +1798,25 @@ public class ChapterServiceImpl implements ChapterService {
                             "Your chapter '%s' in story '%s' has been rejected during moderation. Please review and resubmit.",
                             chapter.getTitle(), chapter.getStory().getTitle());
 
-            // Use sendModerationNotification to ensure proper preference checking and
-            // multi-channel delivery
-            notificationService.sendModerationNotification(
-                    author.getId(),
-                    title,
-                    message,
-                    Notification.RelatedType.CHAPTER,
-                    chapter.getId());
+            // Use sendModerationNotificationWithImage to include story cover image
+            String coverImageUrl = chapter.getStory().getCoverImageUrl();
+            if (coverImageUrl != null && !coverImageUrl.trim().isEmpty()) {
+                notificationService.sendModerationNotificationWithImage(
+                        author.getId(),
+                        title,
+                        message,
+                        Notification.RelatedType.CHAPTER,
+                        chapter.getId(),
+                        coverImageUrl);
+            } else {
+                // Fallback to regular notification if no cover image
+                notificationService.sendModerationNotification(
+                        author.getId(),
+                        title,
+                        message,
+                        Notification.RelatedType.CHAPTER,
+                        chapter.getId());
+            }
         } catch (Exception e) {
             log.warn("Failed to send moderation notification to author {}: {}", author.getId(), e.getMessage());
         }

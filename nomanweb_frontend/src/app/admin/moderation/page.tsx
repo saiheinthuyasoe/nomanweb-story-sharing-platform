@@ -138,9 +138,13 @@ export default function AdminModerationPage() {
   >("overview");
 
   // Feedback management state
-  const [feedbackSubmissions, setFeedbackSubmissions] = useState<ChapterForModeration[]>([]);
+  const [feedbackSubmissions, setFeedbackSubmissions] = useState<
+    ChapterForModeration[]
+  >([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "pending" | "reviewed">("all");
+  const [feedbackFilter, setFeedbackFilter] = useState<
+    "all" | "pending" | "reviewed"
+  >("all");
 
   useEffect(() => {
     fetchChapters();
@@ -229,8 +233,8 @@ export default function AdminModerationPage() {
       if (response.ok) {
         const data = await response.json();
         setQueueStatus(data);
-        // Update AI moderation running status based on queue processing
-        setAiModerationRunning(data.processing || false);
+        // Update AI moderation running status based on aiModerationEnabled flag
+        setAiModerationRunning(data.aiModerationEnabled || false);
       }
     } catch (error) {
       console.error("Error fetching queue status:", error);
@@ -886,7 +890,14 @@ export default function AdminModerationPage() {
                           </h4>
                           {selectedChapter.feedbackSubmittedAt && (
                             <p className="text-xs text-amber-700 mt-1">
-                              Submitted on {new Date(selectedChapter.feedbackSubmittedAt).toLocaleDateString()} at {new Date(selectedChapter.feedbackSubmittedAt).toLocaleTimeString()}
+                              Submitted on{" "}
+                              {new Date(
+                                selectedChapter.feedbackSubmittedAt
+                              ).toLocaleDateString()}{" "}
+                              at{" "}
+                              {new Date(
+                                selectedChapter.feedbackSubmittedAt
+                              ).toLocaleTimeString()}
                             </p>
                           )}
                         </div>
@@ -953,8 +964,6 @@ export default function AdminModerationPage() {
                 rejection
               </p>
             </div>
-
-
           </div>
         </div>
 
@@ -974,15 +983,15 @@ export default function AdminModerationPage() {
               </button>
 
               <button
-                  onClick={() => setActiveTab("queue")}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "queue"
-                      ? "border-[#18243c] text-[#18243c]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  AI Moderation Queue
-                </button>
+                onClick={() => setActiveTab("queue")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "queue"
+                    ? "border-[#18243c] text-[#18243c]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                AI Moderation Queue
+              </button>
 
               <button
                 onClick={() => setActiveTab("feedback")}
@@ -994,7 +1003,6 @@ export default function AdminModerationPage() {
               >
                 Writer Feedback
               </button>
-
             </nav>
           </div>
         </div>
@@ -1077,7 +1085,6 @@ export default function AdminModerationPage() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Processing Queue Status
                   </h3>
-
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1156,7 +1163,6 @@ export default function AdminModerationPage() {
                       <XCircleIcon className="h-4 w-4 mr-1" />
                       Reject Selected
                     </Button>
-
                   </div>
                 </div>
               </Card>
@@ -1179,7 +1185,7 @@ export default function AdminModerationPage() {
                       : "Select All"}
                   </Button>
                 </div>
-                
+
                 {/* Search and Filter Controls */}
                 <div className="flex items-center space-x-4">
                   {/* Search Bar */}
@@ -1429,8 +1435,6 @@ export default function AdminModerationPage() {
           </>
         )}
 
-
-
         {/* Queue Status Tab */}
         {activeTab === "queue" && (
           <div className="space-y-6">
@@ -1510,7 +1514,9 @@ export default function AdminModerationPage() {
                     <Button
                       onClick={startAiModeration}
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
-                      disabled={!queueStatus || queueStatus.queueStats.queueSize === 0}
+                      disabled={
+                        !queueStatus || queueStatus.queueStats.queueSize === 0
+                      }
                     >
                       <div className="w-0 h-0 border-l-4 border-l-white border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
                       <span>Start AI Moderation</span>
@@ -1635,7 +1641,9 @@ export default function AdminModerationPage() {
                   <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-lg font-semibold text-amber-900">AI Moderation Paused</h4>
+                        <h4 className="text-lg font-semibold text-amber-900">
+                          AI Moderation Paused
+                        </h4>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-medium rounded-full">
@@ -1653,7 +1661,9 @@ export default function AdminModerationPage() {
                     <div className="px-6 py-4 border-b border-gray-50">
                       <h4 className="text-lg font-medium text-gray-900">
                         Pending Chapters
-                        <span className="ml-2 text-sm font-normal text-gray-500">({queueStatus.pendingChapters.length})</span>
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({queueStatus.pendingChapters.length})
+                        </span>
                       </h4>
                     </div>
                     <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
@@ -1666,13 +1676,15 @@ export default function AdminModerationPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-3">
                                 <div className="flex-shrink-0">
-                                  <div className={`w-1.5 h-8 rounded-full ${
-                                    chapter.priority === 1
-                                      ? "bg-red-400"
-                                      : chapter.priority === 2
-                                      ? "bg-amber-400"
-                                      : "bg-blue-400"
-                                  }`}></div>
+                                  <div
+                                    className={`w-1.5 h-8 rounded-full ${
+                                      chapter.priority === 1
+                                        ? "bg-red-400"
+                                        : chapter.priority === 2
+                                        ? "bg-amber-400"
+                                        : "bg-blue-400"
+                                    }`}
+                                  ></div>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h5 className="text-sm font-medium text-gray-900 truncate">
@@ -1686,15 +1698,19 @@ export default function AdminModerationPage() {
                             </div>
                             <div className="flex items-center space-x-3 ml-4">
                               <span className="text-xs text-gray-400">
-                                {new Date(chapter.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  chapter.createdAt
+                                ).toLocaleDateString()}
                               </span>
-                              <div className={`w-2 h-2 rounded-full ${
-                                chapter.priority === 1
-                                  ? "bg-red-400"
-                                  : chapter.priority === 2
-                                  ? "bg-amber-400"
-                                  : "bg-blue-400"
-                              }`}></div>
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  chapter.priority === 1
+                                    ? "bg-red-400"
+                                    : chapter.priority === 2
+                                    ? "bg-amber-400"
+                                    : "bg-blue-400"
+                                }`}
+                              ></div>
                             </div>
                           </div>
                         </div>
@@ -1819,7 +1835,11 @@ export default function AdminModerationPage() {
               <div className="flex items-center space-x-4">
                 <select
                   value={feedbackFilter}
-                  onChange={(e) => setFeedbackFilter(e.target.value as "all" | "pending" | "reviewed")}
+                  onChange={(e) =>
+                    setFeedbackFilter(
+                      e.target.value as "all" | "pending" | "reviewed"
+                    )
+                  }
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Feedback</option>
@@ -1841,7 +1861,9 @@ export default function AdminModerationPage() {
               <Card className="p-6">
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading feedback submissions...</p>
+                  <p className="text-gray-600">
+                    Loading feedback submissions...
+                  </p>
                 </div>
               </Card>
             ) : feedbackSubmissions.length === 0 ? (
@@ -1852,7 +1874,8 @@ export default function AdminModerationPage() {
                     No Feedback Submissions
                   </h3>
                   <p className="text-gray-600">
-                    No writer feedback submissions found for the selected filter.
+                    No writer feedback submissions found for the selected
+                    filter.
                   </p>
                 </div>
               </Card>
@@ -1903,7 +1926,8 @@ export default function AdminModerationPage() {
                               <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
                               <div>
                                 <div className="text-sm font-medium text-gray-900">
-                                  {chapter.story.author.displayName || chapter.story.author.username}
+                                  {chapter.story.author.displayName ||
+                                    chapter.story.author.username}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   @{chapter.story.author.username}
@@ -1933,7 +1957,9 @@ export default function AdminModerationPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {chapter.feedbackSubmittedAt
-                              ? new Date(chapter.feedbackSubmittedAt).toLocaleDateString()
+                              ? new Date(
+                                  chapter.feedbackSubmittedAt
+                                ).toLocaleDateString()
                               : "N/A"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1943,13 +1969,13 @@ export default function AdminModerationPage() {
                                   Reviewed
                                 </Badge>
                                 <div className="text-xs text-gray-500">
-                                  {new Date(chapter.feedbackReviewedAt).toLocaleDateString()}
+                                  {new Date(
+                                    chapter.feedbackReviewedAt
+                                  ).toLocaleDateString()}
                                 </div>
                               </div>
                             ) : (
-                              <Badge variant="secondary">
-                                Pending Review
-                              </Badge>
+                              <Badge variant="secondary">Pending Review</Badge>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1969,12 +1995,18 @@ export default function AdminModerationPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => markFeedbackAsReviewed(chapter.id)}
+                                onClick={() =>
+                                  markFeedbackAsReviewed(chapter.id)
+                                }
                                 disabled={!!chapter.feedbackReviewedAt}
                                 className="flex items-center space-x-1"
                               >
                                 <CheckCircleIcon className="h-4 w-4" />
-                                <span>{chapter.feedbackReviewedAt ? "Reviewed" : "Mark Reviewed"}</span>
+                                <span>
+                                  {chapter.feedbackReviewedAt
+                                    ? "Reviewed"
+                                    : "Mark Reviewed"}
+                                </span>
                               </Button>
                             </div>
                           </td>
@@ -1987,7 +2019,6 @@ export default function AdminModerationPage() {
             )}
           </div>
         )}
-
       </div>
     </div>
   );

@@ -32,22 +32,15 @@ public class ChapterModerationProcessor {
     private volatile boolean aiModerationEnabled = false;
 
     /**
-     * Initialize AI moderation on application startup
+     * AI moderation is disabled by default on application startup.
+     * Admin must manually enable it through the admin panel.
      */
-    @PostConstruct
-    public void initializeAiModeration() {
-        aiModerationEnabled = true;
-        log.info("AI moderation automatically enabled on application startup");
-    }
 
-    /**
-     * Process jobs from the queue every 2 seconds (only when AI moderation is
-     * enabled) - processes multiple jobs per cycle for faster throughput
-     */
     @Scheduled(fixedDelay = 2000)
     public void processQueue() {
-        log.debug("processQueue() called - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
+        log.info("processQueue() called - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
         if (processing || !aiModerationEnabled) {
+            log.info("Skipping queue processing - processing: {}, aiModerationEnabled: {}", processing, aiModerationEnabled);
             return; // Prevent concurrent processing or skip if AI moderation is disabled
         }
 
@@ -56,16 +49,18 @@ public class ChapterModerationProcessor {
             log.debug("Starting to process queue sequentially");
             int processedCount = 0;
             int maxJobsPerCycle = 5; // Process up to 5 jobs per cycle for faster throughput
-            
+
             // Process multiple jobs sequentially to ensure proper notification workflow
             while (processedCount < maxJobsPerCycle) {
                 Map<String, Object> job = queueService.getNextJob();
                 if (job != null) {
-                    log.info("Found job to process: {} (batch {}/{})", job.get("jobId"), processedCount + 1, maxJobsPerCycle);
-                    // Process job synchronously to ensure completion and notification before moving to next
+                    log.info("Found job to process: {} (batch {}/{})", job.get("jobId"), processedCount + 1,
+                            maxJobsPerCycle);
+                    // Process job synchronously to ensure completion and notification before moving
+                    // to next
                     processJobSync(job);
                     processedCount++;
-                    
+
                     // Small delay between jobs to prevent overwhelming the system
                     if (processedCount < maxJobsPerCycle) {
                         try {
@@ -80,7 +75,7 @@ public class ChapterModerationProcessor {
                     break;
                 }
             }
-            
+
             if (processedCount > 0) {
                 log.info("Completed processing {} jobs in this cycle", processedCount);
             }
@@ -307,17 +302,28 @@ public class ChapterModerationProcessor {
                         message);
             }
 
-            // Use sendModerationNotification to ensure proper preference checking and
-            // multi-channel delivery
-            log.info("DEBUG: Calling notificationService.sendModerationNotification for author {} with title: {}",
+            // Use sendModerationNotificationWithImage to include story cover image
+            log.info("DEBUG: Calling notificationService.sendModerationNotificationWithImage for author {} with title: {}",
                     author.getId(), title);
 
-            notificationService.sendModerationNotification(
-                    author.getId(),
-                    title,
-                    message,
-                    Notification.RelatedType.CHAPTER,
-                    chapter.getId());
+            String coverImageUrl = chapter.getStory().getCoverImageUrl();
+            if (coverImageUrl != null && !coverImageUrl.trim().isEmpty()) {
+                notificationService.sendModerationNotificationWithImage(
+                        author.getId(),
+                        title,
+                        message,
+                        Notification.RelatedType.CHAPTER,
+                        chapter.getId(),
+                        coverImageUrl);
+            } else {
+                // Fallback to regular notification if no cover image
+                notificationService.sendModerationNotification(
+                        author.getId(),
+                        title,
+                        message,
+                        Notification.RelatedType.CHAPTER,
+                        chapter.getId());
+            }
 
             log.info("DEBUG: Successfully called notificationService.sendModerationNotification for chapter {}",
                     chapter.getId());
