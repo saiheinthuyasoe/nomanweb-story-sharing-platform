@@ -39,39 +39,52 @@ public class CommentServiceImpl implements CommentService {
                 .content(content)
                 .moderationStatus(Comment.ModerationStatus.APPROVED); // Auto-approve for now
 
+        // Store references for notification after save
+        Chapter chapter = null;
+        Story story = null;
+
         // Determine if this is a story or chapter comment
         if (chapterId != null) {
-            Chapter chapter = chapterRepository.findById(chapterId)
+            chapter = chapterRepository.findById(chapterId)
                     .orElseThrow(() -> new IllegalArgumentException("Chapter not found"));
             commentBuilder.chapter(chapter).story(chapter.getStory());
-
-            // Notify chapter author
-            if (!chapter.getStory().getAuthor().getId().equals(userId)) {
-                notificationService.notifyNewComment(
-                        chapter.getStory().getAuthor().getId(), userId,
-                        chapter.getStory().getId(), chapterId, null);
-            }
+            story = chapter.getStory();
         } else if (storyId != null) {
-            Story story = storyRepository.findById(storyId)
+            story = storyRepository.findById(storyId)
                     .orElseThrow(() -> new IllegalArgumentException("Story not found"));
             commentBuilder.story(story);
-
-            // Notify story author
-            if (!story.getAuthor().getId().equals(userId)) {
-                notificationService.notifyNewComment(
-                        story.getAuthor().getId(), userId,
-                        storyId, null, null);
-            }
         } else {
             throw new IllegalArgumentException("Either storyId or chapterId must be provided");
         }
 
+        // Save the comment first
         Comment comment = commentRepository.save(commentBuilder.build());
 
         // Update story comment count
-        Story story = comment.getStory();
         story.incrementComments();
         storyRepository.save(story);
+
+        // Send notifications AFTER the comment is saved
+        try {
+            if (chapterId != null && chapter != null) {
+                // Notify chapter author
+                if (!chapter.getStory().getAuthor().getId().equals(userId)) {
+                    notificationService.notifyNewComment(
+                            chapter.getStory().getAuthor().getId(), userId,
+                            chapter.getStory().getId(), chapterId, comment.getId());
+                }
+            } else if (storyId != null) {
+                // Notify story author
+                if (!story.getAuthor().getId().equals(userId)) {
+                    notificationService.notifyNewComment(
+                            story.getAuthor().getId(), userId,
+                            storyId, null, comment.getId());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send notification for comment {}: {}", comment.getId(), e.getMessage());
+            // Don't fail the transaction if notification fails
+        }
 
         log.info("Created comment {} by user {} on {}",
                 comment.getId(), userId, chapterId != null ? "chapter " + chapterId : "story " + storyId);
@@ -104,9 +117,14 @@ public class CommentServiceImpl implements CommentService {
         storyRepository.save(story);
 
         // Notify parent comment author
-        if (!parentComment.getUser().getId().equals(userId)) {
-            notificationService.notifyCommentReply(
-                    parentComment.getUser().getId(), userId, reply.getId());
+        try {
+            if (!parentComment.getUser().getId().equals(userId)) {
+                notificationService.notifyCommentReply(
+                        parentComment.getUser().getId(), userId, reply.getId());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send notification for reply {}: {}", reply.getId(), e.getMessage());
+            // Don't fail the transaction if notification fails
         }
 
         log.info("Created reply {} by user {} to comment {}",
