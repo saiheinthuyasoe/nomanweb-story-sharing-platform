@@ -35,7 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
 
 export default function ProfilePage() {
-  const { user, updateUser, refreshUser } = useAuth();
+  const { user, updateUser, refreshUser, loading: authLoading } = useAuth();
   const { stats, followers, following, isLoading, error } = useUserProfile();
   const [activeTab, setActiveTab] = useState<"followers" | "following">(
     "followers"
@@ -44,13 +44,15 @@ export default function ProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
 
-  // Books data
+  // Books data - only fetch when user is authenticated
   const { data: myStoriesData } = useMyStories();
-  const { data: currentlyReadingData = [] } = useCurrentlyReading();
-  const { data: completedStoriesData = [] } = useCompletedStories();
+  const { data: currentlyReadingData = [] } = useCurrentlyReading(!!user);
+  const { data: completedStoriesData = [] } = useCompletedStories(!!user);
 
-  // Combine reading data
-  const readBooksData = [...currentlyReadingData, ...completedStoriesData];
+  // Ensure all data arrays are properly initialized and combine reading data
+  const safeCurrentlyReadingData = Array.isArray(currentlyReadingData) ? currentlyReadingData : [];
+  const safeCompletedStoriesData = Array.isArray(completedStoriesData) ? completedStoriesData : [];
+  const readBooksData = [...safeCurrentlyReadingData, ...safeCompletedStoriesData];
 
   // Real-time updates for follow/unfollow
   useSocialRealtime();
@@ -105,6 +107,18 @@ export default function ProfilePage() {
   // Debug logging (can be removed in production)
   // console.log('User profile data:', user);
   // console.log('Profile image URL:', user?.profileImageUrl);
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

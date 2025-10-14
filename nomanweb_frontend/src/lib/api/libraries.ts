@@ -59,7 +59,8 @@ export const libraryApi = {
     const response = await apiClient.get("/libraries/my-lists", {
       params: listType ? { listType } : {},
     });
-    return response.data;
+    // Backend returns paginated response, extract content array
+    return response.data.content || [];
   },
 
   async getUserLibraries(
@@ -69,7 +70,8 @@ export const libraryApi = {
     const response = await apiClient.get(`/libraries/user/${userId}/lists`, {
       params: listType ? { listType } : {},
     });
-    return response.data;
+    // Backend returns paginated response, extract content array
+    return response.data.content || [];
   },
 
   // Reading status

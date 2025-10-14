@@ -40,38 +40,84 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getUserStats(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Map<String, Object> stats = new HashMap<>();
+            Map<String, Object> stats = new HashMap<>();
 
-        // Basic user info
-        stats.put("userId", user.getId().toString());
+            // Basic user info
+            stats.put("userId", user.getId().toString());
 
-        // Story and chapter counts
-        long writtenBooks = storyRepository.countByAuthorIdAndPublishStatus(userId, "PUBLISHED");
-        stats.put("writtenBooks", writtenBooks);
+            // Story and chapter counts with error handling
+            try {
+                long writtenBooks = storyRepository.countByAuthorIdAndPublishStatus(userId, "PUBLISHED");
+                stats.put("writtenBooks", writtenBooks);
+            } catch (Exception e) {
+                log.warn("Could not get written books count for user {}: {}", userId, e.getMessage());
+                stats.put("writtenBooks", 0L);
+            }
 
-        // Follower counts
-        long followers = userFollowRepository.countByFollowingId(userId);
-        long following = userFollowRepository.countByFollowerId(userId);
-        stats.put("followers", followers);
-        stats.put("following", following);
+            // Follower counts with error handling
+            try {
+                long followers = userFollowRepository.countByFollowingId(userId);
+                long following = userFollowRepository.countByFollowerId(userId);
+                stats.put("followers", followers);
+                stats.put("following", following);
+            } catch (Exception e) {
+                log.warn("Could not get follower counts for user {}: {}", userId, e.getMessage());
+                stats.put("followers", 0L);
+                stats.put("following", 0L);
+            }
 
-        // Reading statistics
-        long booksCompleted = readingProgressRepository.countCompletedBooksByUser(userId);
-        stats.put("booksCompleted", booksCompleted);
+            // Reading statistics with error handling
+            try {
+                long booksCompleted = readingProgressRepository.countCompletedBooksByUser(userId);
+                stats.put("booksCompleted", booksCompleted);
+            } catch (Exception e) {
+                log.warn("Could not get completed books count for user {}: {}", userId, e.getMessage());
+                stats.put("booksCompleted", 0L);
+            }
 
-        // Additional stats
-        stats.put("totalEarnedCoins", user.getTotalEarnedCoins());
-        stats.put("totalViews", getTotalViewsForUser(userId));
-        stats.put("totalLikes", getTotalLikesForUser(userId));
-        
-        // Notification count (unread notifications)
-        long notificationsCount = notificationService.getUnreadCount(userId);
-        stats.put("notificationsCount", notificationsCount);
+            // Additional stats with error handling
+            try {
+                stats.put("totalEarnedCoins", user.getTotalEarnedCoins() != null ? user.getTotalEarnedCoins() : 0);
+            } catch (Exception e) {
+                log.warn("Could not get total earned coins for user {}: {}", userId, e.getMessage());
+                stats.put("totalEarnedCoins", 0);
+            }
 
-        return stats;
+            stats.put("totalViews", getTotalViewsForUser(userId));
+            stats.put("totalLikes", getTotalLikesForUser(userId));
+            
+            // Notification count (unread notifications) with error handling
+            try {
+                long notificationsCount = notificationService.getUnreadCount(userId);
+                stats.put("notificationsCount", notificationsCount);
+            } catch (Exception e) {
+                log.warn("Could not get notifications count for user {}: {}", userId, e.getMessage());
+                stats.put("notificationsCount", 0L);
+            }
+
+            return stats;
+        } catch (IllegalArgumentException e) {
+            log.error("User not found: {}", userId);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error getting user stats for user {}: {}", userId, e.getMessage(), e);
+            // Return minimal stats to prevent complete failure
+            Map<String, Object> fallbackStats = new HashMap<>();
+            fallbackStats.put("userId", userId.toString());
+            fallbackStats.put("writtenBooks", 0L);
+            fallbackStats.put("followers", 0L);
+            fallbackStats.put("following", 0L);
+            fallbackStats.put("booksCompleted", 0L);
+            fallbackStats.put("totalEarnedCoins", 0);
+            fallbackStats.put("totalViews", 0L);
+            fallbackStats.put("totalLikes", 0L);
+            fallbackStats.put("notificationsCount", 0L);
+            return fallbackStats;
+        }
     }
 
     @Override
@@ -239,28 +285,52 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getUserProfile(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Map<String, Object> profile = new HashMap<>();
-        profile.put("id", user.getId().toString());
-        profile.put("email", user.getEmail());
-        profile.put("username", user.getUsername());
-        profile.put("displayName", user.getDisplayName());
-        profile.put("profileImageUrl", user.getProfileImageUrl());
-        profile.put("bio", user.getBio());
-        profile.put("role", user.getRole().toString());
-        profile.put("status", user.getStatus().toString());
-        profile.put("coinBalance", user.getCoinBalance());
-        profile.put("totalEarnedCoins", user.getTotalEarnedCoins());
-        profile.put("emailVerified", user.getEmailVerified());
-        profile.put("createdAt", user.getCreatedAt());
-        profile.put("updatedAt", user.getUpdatedAt());
+            Map<String, Object> profile = new HashMap<>();
+            profile.put("id", user.getId().toString());
+            profile.put("email", user.getEmail());
+            profile.put("username", user.getUsername());
+            profile.put("displayName", user.getDisplayName());
+            profile.put("profileImageUrl", user.getProfileImageUrl());
+            profile.put("bio", user.getBio());
+            profile.put("role", user.getRole() != null ? user.getRole().toString() : "USER");
+            profile.put("status", user.getStatus() != null ? user.getStatus().toString() : "ACTIVE");
+            profile.put("coinBalance", user.getCoinBalance() != null ? user.getCoinBalance() : 0);
+            profile.put("totalEarnedCoins", user.getTotalEarnedCoins() != null ? user.getTotalEarnedCoins() : 0);
+            profile.put("emailVerified", user.getEmailVerified() != null ? user.getEmailVerified() : false);
+            profile.put("createdAt", user.getCreatedAt());
+            profile.put("updatedAt", user.getUpdatedAt());
 
-        // Add statistics
-        profile.put("stats", getUserStats(userId));
+            // Add statistics with error handling
+            try {
+                profile.put("stats", getUserStats(userId));
+            } catch (Exception e) {
+                log.warn("Could not get user stats for profile {}: {}", userId, e.getMessage());
+                // Provide empty stats object to prevent frontend errors
+                Map<String, Object> emptyStats = new HashMap<>();
+                emptyStats.put("userId", userId.toString());
+                emptyStats.put("writtenBooks", 0L);
+                emptyStats.put("followers", 0L);
+                emptyStats.put("following", 0L);
+                emptyStats.put("booksCompleted", 0L);
+                emptyStats.put("totalEarnedCoins", 0);
+                emptyStats.put("totalViews", 0L);
+                emptyStats.put("totalLikes", 0L);
+                emptyStats.put("notificationsCount", 0L);
+                profile.put("stats", emptyStats);
+            }
 
-        return profile;
+            return profile;
+        } catch (IllegalArgumentException e) {
+            log.error("User not found for profile: {}", userId);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error getting user profile for user {}: {}", userId, e.getMessage(), e);
+            throw new RuntimeException("Failed to get user profile", e);
+        }
     }
 
     @Override

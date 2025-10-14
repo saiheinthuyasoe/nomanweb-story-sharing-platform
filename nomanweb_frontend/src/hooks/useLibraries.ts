@@ -34,10 +34,11 @@ export const useToggleBookmark = () => {
 };
 
 // Library lists
-export const useMyLibraries = (listType?: string) => {
+export const useMyLibraries = (listType?: string, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['libraries', listType],
     queryFn: () => libraryApi.getMyLibraries(listType),
+    enabled,
   });
 };
 
@@ -64,9 +65,9 @@ export const useUpdateReadingStatus = () => {
 };
 
 // Convenience hooks for specific list types
-export const useLikedStories = () => useMyLibraries('LIKE');
-export const useCurrentlyReading = () => useMyLibraries('READING');
-export const useCompletedStories = () => useMyLibraries('COMPLETED');
-export const useWantToReadStories = () => useMyLibraries('WANT_TO_READ');
-export const usePurchasedStories = () => useMyLibraries('PURCHASED');
-export const useHistoryStories = () => useMyLibraries('HISTORY');
+export const useLikedStories = (enabled: boolean = true) => useMyLibraries('LIKE', enabled);
+export const useCurrentlyReading = (enabled: boolean = true) => useMyLibraries('READING', enabled);
+export const useCompletedStories = (enabled: boolean = true) => useMyLibraries('COMPLETED', enabled);
+export const useWantToReadStories = (enabled: boolean = true) => useMyLibraries('WANT_TO_READ', enabled);
+export const usePurchasedStories = (enabled: boolean = true) => useMyLibraries('PURCHASED', enabled);
+export const useHistoryStories = (enabled: boolean = true) => useMyLibraries('HISTORY', enabled);

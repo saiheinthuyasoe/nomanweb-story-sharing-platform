@@ -68,7 +68,7 @@ export default function LibraryPage() {
 }
 
 function LibraryContent() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>("library");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
@@ -76,13 +76,21 @@ function LibraryContent() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"recent" | "title" | "author">("recent");
 
-  // Reading lists data
-  const { data: currentlyReadingData = [] } = useCurrentlyReading();
-  const { data: likedStoriesData = [] } = useLikedStories();
-  const { data: completedStoriesData = [] } = useCompletedStories();
-  const { data: wantToReadData = [] } = useWantToReadStories();
-  const { data: purchasedStoriesData = [] } = usePurchasedStories();
-  const { data: historyStoriesData = [] } = useHistoryStories();
+  // Reading lists data with additional safety checks - only fetch when user is authenticated
+  const { data: currentlyReadingData = [], error: currentlyReadingError } = useCurrentlyReading(!!user);
+  const { data: likedStoriesData = [], error: likedStoriesError } = useLikedStories(!!user);
+  const { data: completedStoriesData = [], error: completedStoriesError } = useCompletedStories(!!user);
+  const { data: wantToReadData = [], error: wantToReadError } = useWantToReadStories(!!user);
+  const { data: purchasedStoriesData = [], error: purchasedStoriesError } = usePurchasedStories(!!user);
+  const { data: historyStoriesData = [], error: historyStoriesError } = useHistoryStories(!!user);
+
+  // Ensure all data arrays are properly initialized
+  const safeCurrentlyReadingData = Array.isArray(currentlyReadingData) ? currentlyReadingData : [];
+  const safeLikedStoriesData = Array.isArray(likedStoriesData) ? likedStoriesData : [];
+  const safeCompletedStoriesData = Array.isArray(completedStoriesData) ? completedStoriesData : [];
+  const safeWantToReadData = Array.isArray(wantToReadData) ? wantToReadData : [];
+  const safePurchasedStoriesData = Array.isArray(purchasedStoriesData) ? purchasedStoriesData : [];
+  const safeHistoryStoriesData = Array.isArray(historyStoriesData) ? historyStoriesData : [];
 
   // Fetch purchase history for count calculation
   const { data: purchaseHistory, isLoading: isLoadingPurchases } = useQuery({
@@ -114,8 +122,8 @@ function LibraryContent() {
 
   // Memoize purchasedStoriesData to prevent infinite re-renders
   const memoizedPurchasedStories = useMemo(
-    () => purchasedStoriesData,
-    [JSON.stringify(purchasedStoriesData)]
+    () => safePurchasedStoriesData,
+    [JSON.stringify(safePurchasedStoriesData)]
   );
 
   useEffect(() => {
@@ -157,16 +165,16 @@ function LibraryContent() {
 
     switch (libraryFilter) {
       case "reading":
-        items = currentlyReadingData;
+        items = safeCurrentlyReadingData;
         break;
       case "completed":
-        items = completedStoriesData;
+        items = safeCompletedStoriesData;
         break;
       case "liked":
-        items = likedStoriesData;
+        items = safeLikedStoriesData;
         break;
       case "want_to_read":
-        items = wantToReadData;
+        items = safeWantToReadData;
         break;
 
       case "all":
@@ -174,12 +182,12 @@ function LibraryContent() {
         // Use Map for more robust deduplication
         const storyMap = new Map();
         [
-          ...currentlyReadingData,
-          ...likedStoriesData,
-          ...completedStoriesData,
-          ...wantToReadData,
+          ...safeCurrentlyReadingData,
+          ...safeLikedStoriesData,
+          ...safeCompletedStoriesData,
+          ...safeWantToReadData,
         ].forEach((item) => {
-          if (!storyMap.has(item.story.id)) {
+          if (item && item.story && item.story.id && !storyMap.has(item.story.id)) {
             storyMap.set(item.story.id, item);
           }
         });
@@ -230,21 +238,21 @@ function LibraryContent() {
     all: (() => {
       const storyMap = new Map();
       [
-        ...currentlyReadingData,
-        ...likedStoriesData,
-        ...completedStoriesData,
-        ...wantToReadData,
+        ...safeCurrentlyReadingData,
+        ...safeLikedStoriesData,
+        ...safeCompletedStoriesData,
+        ...safeWantToReadData,
       ].forEach((item) => {
-        if (!storyMap.has(item.story.id)) {
+        if (item && item.story && item.story.id && !storyMap.has(item.story.id)) {
           storyMap.set(item.story.id, item);
         }
       });
       return storyMap.size;
     })(),
-    reading: currentlyReadingData.length,
-    completed: completedStoriesData.length,
-    liked: likedStoriesData.length,
-    want_to_read: wantToReadData.length,
+    reading: safeCurrentlyReadingData.length,
+    completed: safeCompletedStoriesData.length,
+    liked: safeLikedStoriesData.length,
+    want_to_read: safeWantToReadData.length,
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -297,6 +305,15 @@ function LibraryContent() {
       clearHistory();
     }
   };
+
+  // Show loading spinner while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#18243c]"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

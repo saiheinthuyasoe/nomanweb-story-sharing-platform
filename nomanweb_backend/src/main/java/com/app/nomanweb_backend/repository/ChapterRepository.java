@@ -17,24 +17,29 @@ import java.util.UUID;
 @Repository
 public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
-        // Find chapters by story ordered by chapter number (excluding deleted) - Optimized with JOIN FETCH
+        // Find chapters by story ordered by chapter number (excluding deleted) -
+        // Optimized with JOIN FETCH
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         List<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story);
 
-        // Find chapters by story with pagination (excluding deleted) - Optimized with JOIN FETCH
+        // Find chapters by story with pagination (excluding deleted) - Optimized with
+        // JOIN FETCH
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         Page<Chapter> findByStoryOrderByChapterNumberAsc(@Param("story") Story story, Pageable pageable);
 
-        // Find specific chapter by story and chapter number (excluding deleted) - Optimized with JOIN FETCH
+        // Find specific chapter by story and chapter number (excluding deleted) -
+        // Optimized with JOIN FETCH
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.chapterNumber = :chapterNumber AND (c.isDeleted = false OR c.isDeleted IS NULL)")
         Optional<Chapter> findByStoryAndChapterNumber(@Param("story") Story story,
                         @Param("chapterNumber") Integer chapterNumber);
 
-        // Find chapters by story and status (excluding deleted) - Optimized with JOIN FETCH
+        // Find chapters by story and status (excluding deleted) - Optimized with JOIN
+        // FETCH
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL)")
         List<Chapter> findByStoryAndStatus(@Param("story") Story story, @Param("status") Chapter.Status status);
 
-        // Find published chapters by story (excluding deleted) - Optimized with JOIN FETCH
+        // Find published chapters by story (excluding deleted) - Optimized with JOIN
+        // FETCH
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story WHERE c.story = :story AND c.status = :status AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.chapterNumber ASC")
         List<Chapter> findByStoryAndStatusOrderByChapterNumberAsc(@Param("story") Story story,
                         @Param("status") Chapter.Status status);
@@ -71,18 +76,20 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
         // Find chapters by moderation status
         Page<Chapter> findByModerationStatus(Chapter.ModerationStatus moderationStatus, Pageable pageable);
-        
+
         // Find chapters by moderation status ordered by creation date
         List<Chapter> findByModerationStatusOrderByCreatedAtAsc(Chapter.ModerationStatus moderationStatus);
-        
+
         // Find chapters by moderation status with story and author eagerly fetched
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.moderationStatus = :moderationStatus ORDER BY c.createdAt ASC")
-        List<Chapter> findByModerationStatusWithStoryAndAuthor(@Param("moderationStatus") Chapter.ModerationStatus moderationStatus);
-        
-        // Find chapter by ID with story and author eagerly fetched (for moderation notifications)
+        List<Chapter> findByModerationStatusWithStoryAndAuthor(
+                        @Param("moderationStatus") Chapter.ModerationStatus moderationStatus);
+
+        // Find chapter by ID with story and author eagerly fetched (for moderation
+        // notifications)
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.id = :id")
         Optional<Chapter> findByIdWithStoryAndAuthor(@Param("id") UUID id);
-        
+
         // Find all chapters with non-null moderation status (for admin moderation page)
         @Query("SELECT c FROM Chapter c WHERE c.moderationStatus IS NOT NULL AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.createdAt DESC")
         Page<Chapter> findChaptersWithModerationStatus(Pageable pageable);
@@ -146,21 +153,24 @@ public interface ChapterRepository extends JpaRepository<Chapter, UUID> {
 
         // Count chapters by story, status, and created before a specific date
         @Query("SELECT COUNT(c) FROM Chapter c WHERE c.story = :story AND c.status = :status AND c.createdAt <= :date AND (c.isDeleted = false OR c.isDeleted IS NULL)")
-        long countByStoryAndStatusAndCreatedAtBefore(@Param("story") Story story, 
-                @Param("status") Chapter.Status status, 
-                @Param("date") LocalDateTime date);
+        long countByStoryAndStatusAndCreatedAtBefore(@Param("story") Story story,
+                        @Param("status") Chapter.Status status,
+                        @Param("date") LocalDateTime date);
 
         // Feedback-related queries for admin management
-        
+
         // Find all chapters with writer feedback (for admin feedback management)
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
         Page<Chapter> findByWriterFeedbackIsNotNull(Pageable pageable);
-        
+
         // Find chapters with feedback by moderation status
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND c.moderationStatus = :moderationStatus AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
-        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatus(@Param("moderationStatus") Chapter.ModerationStatus moderationStatus, Pageable pageable);
-        
+        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatus(
+                        @Param("moderationStatus") Chapter.ModerationStatus moderationStatus, Pageable pageable);
+
         // Find chapters with feedback by multiple moderation statuses
         @Query("SELECT c FROM Chapter c JOIN FETCH c.story s JOIN FETCH s.author WHERE c.writerFeedback IS NOT NULL AND c.moderationStatus IN :moderationStatuses AND (c.isDeleted = false OR c.isDeleted IS NULL) ORDER BY c.feedbackSubmittedAt DESC")
-        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatusIn(@Param("moderationStatuses") List<Chapter.ModerationStatus> moderationStatuses, Pageable pageable);
+        Page<Chapter> findByWriterFeedbackIsNotNullAndModerationStatusIn(
+                        @Param("moderationStatuses") List<Chapter.ModerationStatus> moderationStatuses,
+                        Pageable pageable);
 }

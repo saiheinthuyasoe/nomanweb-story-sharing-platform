@@ -114,8 +114,12 @@ export default function ChapterReadPage() {
       // Prevent common copy/select shortcuts
       if (
         (e.ctrlKey || e.metaKey) &&
-        (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'x' || 
-         e.key.toLowerCase() === 'v' || e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'p')
+        (e.key.toLowerCase() === "c" ||
+          e.key.toLowerCase() === "a" ||
+          e.key.toLowerCase() === "x" ||
+          e.key.toLowerCase() === "v" ||
+          e.key.toLowerCase() === "s" ||
+          e.key.toLowerCase() === "p")
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -123,11 +127,11 @@ export default function ChapterReadPage() {
       }
       // Prevent F12, Ctrl+Shift+I, Ctrl+U, Win+Shift+S, Win+Shift+T
       if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') ||
-        (e.ctrlKey && e.key.toLowerCase() === 'u') ||
-        (e.metaKey && e.shiftKey && e.key.toLowerCase() === 's') ||
-        (e.metaKey && e.shiftKey && e.key.toLowerCase() === 't')
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i") ||
+        (e.ctrlKey && e.key.toLowerCase() === "u") ||
+        (e.metaKey && e.shiftKey && e.key.toLowerCase() === "s") ||
+        (e.metaKey && e.shiftKey && e.key.toLowerCase() === "t")
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -148,27 +152,27 @@ export default function ChapterReadPage() {
     };
 
     // Add event listeners with capture phase for better blocking
-    document.addEventListener('selectstart', preventSelection, true);
-    document.addEventListener('contextmenu', preventContextMenu, true);
-    document.addEventListener('keydown', preventCopy, true);
-    document.addEventListener('keyup', preventCopy, true);
-    document.addEventListener('keypress', preventCopy, true);
-    document.addEventListener('dragstart', preventDragStart, true);
-    document.addEventListener('copy', preventSelection, true);
-    document.addEventListener('cut', preventSelection, true);
-    document.addEventListener('paste', preventSelection, true);
+    document.addEventListener("selectstart", preventSelection, true);
+    document.addEventListener("contextmenu", preventContextMenu, true);
+    document.addEventListener("keydown", preventCopy, true);
+    document.addEventListener("keyup", preventCopy, true);
+    document.addEventListener("keypress", preventCopy, true);
+    document.addEventListener("dragstart", preventDragStart, true);
+    document.addEventListener("copy", preventSelection, true);
+    document.addEventListener("cut", preventSelection, true);
+    document.addEventListener("paste", preventSelection, true);
 
     // Cleanup
     return () => {
-      document.removeEventListener('selectstart', preventSelection, true);
-      document.removeEventListener('contextmenu', preventContextMenu, true);
-      document.removeEventListener('keydown', preventCopy, true);
-      document.removeEventListener('keyup', preventCopy, true);
-      document.removeEventListener('keypress', preventCopy, true);
-      document.removeEventListener('dragstart', preventDragStart, true);
-      document.removeEventListener('copy', preventSelection, true);
-      document.removeEventListener('cut', preventSelection, true);
-      document.removeEventListener('paste', preventSelection, true);
+      document.removeEventListener("selectstart", preventSelection, true);
+      document.removeEventListener("contextmenu", preventContextMenu, true);
+      document.removeEventListener("keydown", preventCopy, true);
+      document.removeEventListener("keyup", preventCopy, true);
+      document.removeEventListener("keypress", preventCopy, true);
+      document.removeEventListener("dragstart", preventDragStart, true);
+      document.removeEventListener("copy", preventSelection, true);
+      document.removeEventListener("cut", preventSelection, true);
+      document.removeEventListener("paste", preventSelection, true);
     };
   }, []);
 
