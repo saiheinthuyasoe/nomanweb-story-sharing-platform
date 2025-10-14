@@ -1,0 +1,116 @@
+{
+  "overall": {
+    "totalRoutes": 12,
+    "averageLoadTime": 3138.819444444445,
+    "averageFCP": 698.1513888910413,
+    "averageLCP": 0,
+    "averageMemory": 20144784.083333336,
+    "timestamp": "2025-10-14T11:34:41.577Z"
+  },
+  "routes": [
+    {
+      "route": "/",
+      "averageLoadTime": 4961.666666666667,
+      "averageFCP": 824.6999999980131,
+      "averageLCP": 0,
+      "averageMemory": 12727101,
+      "bundleCount": 21
+    },
+    {
+      "route": "/dashboard",
+      "averageLoadTime": 10961.333333333334,
+      "averageFCP": 1401.2666666607063,
+      "averageLCP": 0,
+      "averageMemory": 26730497.333333332,
+      "bundleCount": 36
+    },
+    {
+      "route": "/admin",
+      "averageLoadTime": 2732,
+      "averageFCP": 831.9666666686535,
+      "averageLCP": 0,
+      "averageMemory": 20657772.333333332,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/dashboard",
+      "averageLoadTime": 2510,
+      "averageFCP": 756.0666666726271,
+      "averageLCP": 0,
+      "averageMemory": 22421537.666666668,
+      "bundleCount": 30
+    },
+    {
+      "route": "/admin/homepage-management",
+      "averageLoadTime": 2111.5,
+      "averageFCP": 581.1500000059605,
+      "averageLCP": 0,
+      "averageMemory": 21168057,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/book-insights",
+      "averageLoadTime": 2674,
+      "averageFCP": 889.4000000059605,
+      "averageLCP": 0,
+      "averageMemory": 19806039,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/content-moderation",
+      "averageLoadTime": 2122.6666666666665,
+      "averageFCP": 540.6000000039736,
+      "averageLCP": 0,
+      "averageMemory": 18965728.666666668,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/user-management",
+      "averageLoadTime": 1927.6666666666667,
+      "averageFCP": 542.8333333432674,
+      "averageLCP": 0,
+      "averageMemory": 19124289.666666668,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/coin-management",
+      "averageLoadTime": 2113.6666666666665,
+      "averageFCP": 718.433333337307,
+      "averageLCP": 0,
+      "averageMemory": 19117552.333333332,
+      "bundleCount": 24
+    },
+    {
+      "route": "/admin/withdrawal-management",
+      "averageLoadTime": 1993.6666666666667,
+      "averageFCP": 424.13333332538605,
+      "averageLCP": 0,
+      "averageMemory": 18988331.333333332,
+      "bundleCount": 24
+    },
+    {
+      "route": "/editor",
+      "averageLoadTime": 1845.6666666666667,
+      "averageFCP": 403.4666666686535,
+      "averageLCP": 0,
+      "averageMemory": 21029361.333333332,
+      "bundleCount": 24
+    },
+    {
+      "route": "/story/create",
+      "averageLoadTime": 1712,
+      "averageFCP": 463.8000000019868,
+      "averageLCP": 0,
+      "averageMemory": 21001141.333333332,
+      "bundleCount": 24
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "performance",
+      "severity": "high",
+      "message": "Slow loading routes detected: /, /dashboard",
+      "suggestion": "Consider implementing additional code splitting or optimizing these routes"
+    }
+  ]
+}

@@ -82,6 +82,9 @@ public interface StoryRepository extends JpaRepository<Story, UUID> {
         @Query("SELECT COALESCE(SUM(s.totalLikes), 0) FROM Story s WHERE s.author.id = :userId AND s.publishStatus = 'PUBLISHED'")
         long getTotalLikesByAuthor(@Param("userId") UUID userId);
 
+        // Count stories by publish status
+        long countByPublishStatus(Story.PublishStatus publishStatus);
+
         // Count stories by moderation status
         long countByModerationStatus(Story.ModerationStatus moderationStatus);
 

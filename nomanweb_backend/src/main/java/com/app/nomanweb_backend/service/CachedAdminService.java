@@ -168,11 +168,9 @@ public class CachedAdminService {
         
         Map<String, Object> contentAnalytics = new HashMap<>();
 
-        // Get total published stories
-        long publishedStories = storyRepository.countByStatus(Story.Status.PUBLISHED);
-        
-        // Get total draft stories
-        long draftStories = storyRepository.countByStatus(Story.Status.DRAFT);
+        // Story statistics
+        long publishedStories = storyRepository.countByPublishStatus(Story.PublishStatus.PUBLISHED);
+        long draftStories = storyRepository.countByPublishStatus(Story.PublishStatus.DRAFT);
         
         // Get stories created in last 7 days
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
