@@ -54,7 +54,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
   
   // Extract book IDs from insights data for fetching sections
   const bookIds = insightsData?.allBooks?.map(book => book.id) || [];
-  const { data: bookSections = {}, error: sectionsError } = useAllBookSections(bookIds);
+  const { data: bookSections = {}, isLoading: sectionsLoading, error: sectionsError } = useAllBookSections(bookIds);
   
   const addToFeaturedContentMutation = useAddToFeaturedContent();
   const invalidateCache = useInvalidateAdminCache();
@@ -227,17 +227,11 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
 
     setRemovingFromSection(selectedBookForRemoval.id);
 
-    // Optimistic update - immediately update UI
+    // Optimistic update - immediately update cache
     bookSectionCache.removeFromSections(
       selectedBookForRemoval.id,
       selectedRemovalSections
     );
-    const updatedSections = { ...bookSections };
-    const currentSections = updatedSections[selectedBookForRemoval.id] || [];
-    updatedSections[selectedBookForRemoval.id] = currentSections.filter(
-      (section) => !selectedRemovalSections.includes(section)
-    );
-    setBookSections(updatedSections);
 
     try {
       for (const sectionType of selectedRemovalSections) {
@@ -277,21 +271,18 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       setSelectedBookForRemoval(null);
       setSelectedRemovalSections([]);
 
-      // Invalidate cache for this book to ensure fresh data on next load
-      bookSectionCache.remove(selectedBookForRemoval.id);
-
-      // Refresh from server to ensure consistency
+      // Invalidate TanStack Query cache to refresh API data
+      // Use a slight delay to ensure the backend has processed the change
       setTimeout(() => {
-        bookSectionCache.remove(selectedBookForRemoval.id);
-        loadBookSections();
-      }, 1000);
+        invalidateCache.invalidateAll();
+      }, 100);
     } catch (error) {
       console.error("Error removing book from sections:", error);
       toast.error("Failed to remove book from sections");
 
       // Revert optimistic update on error
       bookSectionCache.remove(selectedBookForRemoval.id);
-      await loadBookSections();
+      invalidateCache.invalidateAll();
     } finally {
       setRemovingFromSection(null);
     }
@@ -316,20 +307,11 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
 
     setAddingToSection(selectedBookForSection.id);
 
-    // Optimistic update - immediately update UI
+    // Optimistic update - immediately update cache
     bookSectionCache.addToSection(
       selectedBookForSection.id,
       selectedSectionType
     );
-    const updatedSections = { ...bookSections };
-    const currentSections = updatedSections[selectedBookForSection.id] || [];
-    if (!currentSections.includes(selectedSectionType)) {
-      updatedSections[selectedBookForSection.id] = [
-        ...currentSections,
-        selectedSectionType,
-      ];
-      setBookSections(updatedSections);
-    }
 
     try {
       // Use TanStack Query mutation
@@ -338,6 +320,12 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
         sectionType: selectedSectionType,
         duration: 30
       });
+
+      // Invalidate TanStack Query cache to refresh API data
+      // Use a slight delay to ensure the backend has processed the change
+      setTimeout(() => {
+        invalidateCache.invalidateAll();
+      }, 100);
 
       toast.success(
         `${selectedBookForSection.title} added to ${
@@ -349,7 +337,22 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
       setSelectedSectionType("");
     } catch (error) {
       console.error("Error adding book to section:", error);
-      toast.error("Failed to add book to section");
+      
+      // Check if the error is due to story already being featured
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("already featured") ||
+        errorMessage.includes("Story is already featured in this section") ||
+        errorMessage.includes("400")
+      ) {
+        toast.warning(
+          `${selectedBookForSection.title} is already added to the ${
+            SECTION_TYPES.find((s) => s.value === selectedSectionType)?.label
+          } section!`
+        );
+      } else {
+        toast.error("Failed to add book to section");
+      }
     } finally {
       setAddingToSection(null);
     }
@@ -384,11 +387,13 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
     showAddButton?: boolean;
     sectionType?: string;
     showWeeklyStats?: boolean;
+    sectionsLoading?: boolean;
   }> = ({
     book,
     showAddButton = true,
     sectionType = "weekly_features",
     showWeeklyStats = false,
+    sectionsLoading = false,
   }) => (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
@@ -451,7 +456,29 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
 
             {showAddButton && (
               <div className="flex gap-2 mt-2">
-                {(bookSections[book.id]?.length || 0) > 0 ? (
+                {(() => {
+                  // Check cache first for immediate feedback, then fall back to API data
+                  const cachedSections = bookSectionCache.get(book.id);
+                  const apiSections = bookSections[book.id];
+                  const sections = cachedSections || apiSections || [];
+                  const hasAnySections = sections.length > 0;
+                  
+                  // Show loading only if we have no data at all and sections are loading
+                  if (sectionsLoading && !cachedSections && !apiSections) {
+                    return (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={true}
+                      >
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-1"></div>
+                        Loading...
+                      </Button>
+                    );
+                  }
+                  
+                  return hasAnySections ? (
                   <>
                     <Button
                       size="sm"
@@ -478,20 +505,21 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                         : "Remove"}
                     </Button>
                   </>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    onClick={() => handleAddToHome(book)}
-                    disabled={addingToSection === book.id}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    {addingToSection === book.id
-                      ? "Adding..."
-                      : "Add to Homepage Section"}
-                  </Button>
-                )}
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => handleAddToHome(book)}
+                      disabled={addingToSection === book.id}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {addingToSection === book.id
+                        ? "Adding..."
+                        : "Add to Homepage Section"}
+                    </Button>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -799,7 +827,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                 <CardContent>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {filterBooks(uniqueBooks).map((book) => (
-                      <BookCard key={book.id} book={book} sectionType="ALL" />
+                      <BookCard key={book.id} book={book} sectionType="ALL" sectionsLoading={sectionsLoading} />
                     ))}
                   </div>
                   {filterBooks(uniqueBooks).length === 0 && (
@@ -837,6 +865,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                     key={book.id}
                     book={book}
                     sectionType="BEST_RATING"
+                    sectionsLoading={sectionsLoading}
                   />
                 ))}
               </div>
@@ -875,6 +904,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                     book={book}
                     sectionType="WEEKLY_FEATURES"
                     showWeeklyStats={true}
+                    sectionsLoading={sectionsLoading}
                   />
                 ))}
               </div>
@@ -912,6 +942,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                     key={book.id}
                     book={book}
                     sectionType="NEW_RELEASES"
+                    sectionsLoading={sectionsLoading}
                   />
                 ))}
               </div>
@@ -955,6 +986,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                           book={book}
                           sectionType={genre.toUpperCase()}
                           compact={true}
+                          sectionsLoading={sectionsLoading}
                         />
                       ))}
                     </div>
@@ -1003,6 +1035,7 @@ const BookInsightsDashboard: React.FC<BookInsightsDashboardProps> = ({
                         key={book.id}
                         book={book}
                         sectionType={selectedGenre.toUpperCase()}
+                        sectionsLoading={sectionsLoading}
                       />
                     ))}
                   </div>

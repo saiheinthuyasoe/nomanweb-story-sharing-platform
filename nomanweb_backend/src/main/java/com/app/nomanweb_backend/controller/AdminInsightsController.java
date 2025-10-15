@@ -13,7 +13,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin/insights")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001",
+        "https://nomanweb-story-sharing-platform-pbc.vercel.app" })
 @Slf4j
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminInsightsController {
@@ -87,7 +88,7 @@ public class AdminInsightsController {
         try {
             log.info("Getting suggestions for section: {} with limit: {} (using cache)", sectionType, limit);
             List<Map<String, Object>> suggestions = cachedInsightsService.getSuggestionsCached(
-                sectionType, limit, genre, minRating, minViews);
+                    sectionType, limit, genre, minRating, minViews);
             log.info("Returning {} suggestions for section: {}", suggestions.size(), sectionType);
             return ResponseEntity.ok(suggestions);
         } catch (Exception e) {
@@ -105,24 +106,6 @@ public class AdminInsightsController {
             return ResponseEntity.ok(dashboardData);
         } catch (Exception e) {
             log.error("Error getting insights dashboard", e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PostMapping("/clear-cache")
-    public ResponseEntity<Map<String, String>> clearCache() {
-        try {
-            log.info("Clearing insights cache");
-            cachedInsightsService.evictDashboardCache();
-            cachedInsightsService.evictAllPublishedBooksCache();
-            
-            Map<String, String> response = Map.of(
-                "message", "Cache cleared successfully",
-                "status", "success"
-            );
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error clearing cache", e);
             return ResponseEntity.internalServerError().build();
         }
     }

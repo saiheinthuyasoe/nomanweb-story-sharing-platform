@@ -164,12 +164,23 @@ class AdminHomepageService {
   async addToFeaturedContent(
     storyId: string,
     sectionType: string,
-    duration: number
+    duration: number = 30
   ): Promise<FeaturedContent> {
     try {
       // Validate inputs to prevent URL construction issues
       if (!sectionType || !storyId) {
         throw new Error("Section type and story ID are required");
+      }
+      
+      // Ensure duration is a valid number
+      if (typeof duration !== 'number' || isNaN(duration) || duration < 0) {
+        duration = 30; // Default fallback
+      }
+
+      // Check if book is already in the section to provide better error handling
+      const isAlreadyInSection = await this.isBookInSection(storyId, sectionType);
+      if (isAlreadyInSection) {
+        throw new Error("Story is already featured in this section");
       }
 
       const url = `${

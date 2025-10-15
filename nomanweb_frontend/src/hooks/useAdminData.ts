@@ -223,8 +223,8 @@ export const useAddToFeaturedContent = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ bookId, sectionType, duration }: { bookId: string; sectionType: string; duration?: number }) =>
-      adminHomepageService.addToFeaturedContent(bookId, sectionType, duration),
+    mutationFn: ({ bookId, sectionType, duration = 30 }: { bookId: string; sectionType: string; duration?: number }) =>
+      adminHomepageService.addToFeaturedContent(bookId, sectionType, duration || 30),
     onSuccess: (_, { sectionType }) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.featuredContent(sectionType) });

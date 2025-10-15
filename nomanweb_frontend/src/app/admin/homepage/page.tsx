@@ -277,7 +277,7 @@ const HomepageManagementPage = () => {
     try {
       await adminHomepageService.removeFromFeaturedContent(featuredId);
       toast.success("Story removed from featured content");
-      fetchData();
+      refetchFeaturedContent();
     } catch (error) {
       console.error("Error removing story:", error);
       toast.error("Failed to remove story");
@@ -289,7 +289,7 @@ const HomepageManagementPage = () => {
     try {
       await adminHomepageService.toggleActiveStatus(featuredId);
       toast.success(`Story ${isActive ? "deactivated" : "activated"}`);
-      fetchData();
+      refetchFeaturedContent();
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
@@ -314,7 +314,7 @@ const HomepageManagementPage = () => {
 
       await adminHomepageService.updateDisplayOrder(featuredId, newOrder);
       toast.success("Display order updated");
-      fetchData();
+      refetchFeaturedContent();
     } catch (error) {
       console.error("Error updating order:", error);
       toast.error("Failed to update order");
