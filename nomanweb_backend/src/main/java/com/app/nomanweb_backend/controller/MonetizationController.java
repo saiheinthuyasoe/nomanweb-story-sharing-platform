@@ -246,6 +246,22 @@ public class MonetizationController {
         return ResponseEntity.ok(refunds);
     }
 
+    @GetMapping("/bulk")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Get all monetization data in a single request")
+    public ResponseEntity<BulkMonetizationResponse> getBulkMonetizationData(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest httpRequest) {
+
+        User currentUser = getCurrentUser(httpRequest);
+        Pageable pageable = PageRequest.of(page, size);
+        BulkMonetizationResponse response = monetizationService.getBulkMonetizationData(currentUser, pageable);
+
+        log.debug("Bulk monetization data requested for user: {}", currentUser.getId());
+        return ResponseEntity.ok(response);
+    }
+
     private User getCurrentUser(HttpServletRequest request) {
         UUID userId = getCurrentUserId(request);
         return authService.getCurrentUser(userId);

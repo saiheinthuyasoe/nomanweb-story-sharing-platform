@@ -59,4 +59,7 @@ public interface MonetizationService {
     Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable);
 
     Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable);
+
+    // Bulk Data Fetching
+    BulkMonetizationResponse getBulkMonetizationData(User user, Pageable pageable);
 }

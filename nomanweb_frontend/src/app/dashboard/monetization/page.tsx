@@ -16,9 +16,11 @@ import {
   BookOpen,
   Users,
   RotateCcw,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { apiClient } from "@/lib/api/client";
+import { useMonetizationData, useInvalidateMonetization } from "@/hooks/useMonetization";
 
 interface RevenueAnalytics {
   totalEarnings: number;
@@ -138,14 +140,25 @@ interface RefundPaid {
 
 export default function MonetizationPage() {
   const { user } = useAuth();
-  const [analytics, setAnalytics] = useState<RevenueAnalytics | null>(null);
-  const [receivedGifts, setReceivedGifts] = useState<GiftTransaction[]>([]);
-  const [sentGifts, setSentGifts] = useState<GiftTransaction[]>([]);
-  const [earnedMoney, setEarnedMoney] = useState<EarnedMoney[]>([]);
-  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([]);
-  const [refundsEarned, setRefundsEarned] = useState<RefundEarned[]>([]);
-  const [refundsPaid, setRefundsPaid] = useState<RefundPaid[]>([]);
-  const [coinBalance, setCoinBalance] = useState<number>(0);
+  const invalidateMonetization = useInvalidateMonetization();
+  
+  // Use React Query hooks for data fetching with caching
+  const {
+    analytics,
+    coinBalance,
+    receivedGifts,
+    sentGifts,
+    earnedMoney,
+    purchaseHistory,
+    refundsEarned,
+    refundsPaid,
+    isLoading,
+    isError,
+    error,
+    loadingStates,
+    refetch
+  } = useMonetizationData();
+
   const [activeTab, setActiveTab] = useState<
     | "overview"
     | "earned"
@@ -155,21 +168,12 @@ export default function MonetizationPage() {
     | "refunds-earned"
     | "refunds-paid"
   >("overview");
-  const [loading, setLoading] = useState(true);
   const [previousBalance, setPreviousBalance] = useState<number>(0);
   const [sseConnected, setSseConnected] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchMonetizationData();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
   // Monitor coin balance changes and show notifications
   useEffect(() => {
-    if (previousBalance > 0 && coinBalance !== previousBalance) {
+    if (previousBalance > 0 && coinBalance !== undefined && coinBalance !== previousBalance) {
       const difference = coinBalance - previousBalance;
       if (difference > 0) {
         toast.success(
@@ -181,15 +185,10 @@ export default function MonetizationPage() {
         );
       }
     }
-    setPreviousBalance(coinBalance);
-  }, [coinBalance, previousBalance]);
-
-  // Update local balance when user context changes
-  useEffect(() => {
-    if (user?.coinBalance !== undefined) {
-      setCoinBalance(user.coinBalance);
+    if (coinBalance !== undefined) {
+      setPreviousBalance(coinBalance);
     }
-  }, [user?.coinBalance]);
+  }, [coinBalance, previousBalance]);
 
   // Monitor SSE connection status
   useEffect(() => {
@@ -218,95 +217,7 @@ export default function MonetizationPage() {
     checkSseConnection();
   }, []);
 
-  const fetchMonetizationData = async () => {
-    try {
-      setLoading(true);
 
-      // Fetch revenue analytics
-      try {
-        const revenueResponse = await apiClient.get("/monetization/revenue");
-        setAnalytics(revenueResponse.data);
-      } catch (error) {
-        console.error("Failed to fetch revenue analytics:", error);
-      }
-
-      // Fetch coin balance
-      try {
-        const balanceResponse = await apiClient.get("/monetization/balance");
-        setCoinBalance(balanceResponse.data);
-      } catch (error) {
-        console.error("Failed to fetch coin balance:", error);
-      }
-
-      // Fetch received gifts
-      try {
-        const receivedResponse = await apiClient.get(
-          "/monetization/gifts/received?page=0&size=10"
-        );
-        setReceivedGifts(receivedResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch received gifts:", error);
-      }
-
-      // Fetch sent gifts
-      try {
-        const sentResponse = await apiClient.get(
-          "/monetization/gifts/sent?page=0&size=10"
-        );
-        setSentGifts(sentResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch sent gifts:", error);
-      }
-
-      // Fetch earned money from reader purchases
-      try {
-        const earnedResponse = await apiClient.get(
-          "/monetization/earnings?page=0&size=20"
-        );
-        setEarnedMoney(earnedResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch earned money:", error);
-      }
-
-      // Fetch purchase history (user's own purchases)
-      try {
-        const purchaseResponse = await apiClient.get(
-          "/monetization/purchases?page=0&size=20"
-        );
-        setPurchaseHistory(purchaseResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch purchase history:", error);
-      }
-
-      // Fetch refunds earned (refunds received by user as reader)
-      try {
-        console.log("Fetching refunds earned...");
-        const refundsEarnedResponse = await apiClient.get(
-          "/monetization/refunds/earned?page=0&size=20"
-        );
-        console.log("Refunds earned response:", refundsEarnedResponse.data);
-        setRefundsEarned(refundsEarnedResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch refunds earned:", error);
-      }
-
-      // Fetch refunds paid (refunds given by user as writer)
-      try {
-        console.log("Fetching refunds paid...");
-        const refundsPaidResponse = await apiClient.get(
-          "/monetization/refunds/paid?page=0&size=20"
-        );
-        console.log("Refunds paid response:", refundsPaidResponse.data);
-        setRefundsPaid(refundsPaidResponse.data.content || []);
-      } catch (error) {
-        console.error("Failed to fetch refunds paid:", error);
-      }
-    } catch (error) {
-      console.error("Error fetching monetization data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -376,10 +287,45 @@ export default function MonetizationPage() {
     );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle className="text-center text-red-600">
+              Error Loading Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-gray-600 mb-4">
+              Failed to load monetization data. Please try again.
+            </p>
+            <Button
+              onClick={() => {
+                refetch.revenue();
+                refetch.balance();
+                refetch.receivedGifts();
+                refetch.sentGifts();
+                refetch.earnings();
+                refetch.purchaseHistory();
+                refetch.refundsEarned();
+                refetch.refundsPaid();
+              }}
+              className="w-full"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

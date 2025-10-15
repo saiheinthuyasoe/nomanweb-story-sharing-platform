@@ -9,10 +9,15 @@ import com.app.nomanweb_backend.service.NotificationService;
 import com.app.nomanweb_backend.service.EnhancedNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,6 +45,14 @@ public class MonetizationServiceImpl implements MonetizationService {
     private final StoryRepository storyRepository;
     private final NotificationService notificationService;
     private final EnhancedNotificationService enhancedNotificationService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    // Cache TTL constants (in minutes)
+    private static final int REVENUE_CACHE_TTL = 10;
+    private static final int GIFTS_CACHE_TTL = 5;
+    private static final int EARNINGS_CACHE_TTL = 15;
+    private static final int PURCHASE_HISTORY_CACHE_TTL = 10;
+    private static final int REFUNDS_CACHE_TTL = 30;
 
     @Override
     public List<GiftResponse> getAvailableGifts() {
@@ -154,16 +167,50 @@ public class MonetizationServiceImpl implements MonetizationService {
     }
 
     @Override
+    @Cacheable(value = "receivedGifts", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<GiftTransactionResponse> getReceivedGifts(User user, Pageable pageable) {
+        String cacheKey = "monetization:received_gifts:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<GiftTransactionResponse> cached = (Page<GiftTransactionResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Received gifts served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         Page<GiftTransaction> transactions = giftTransactionRepository.findByRecipientOrderByCreatedAtDesc(user,
                 pageable);
-        return transactions.map(this::convertToGiftTransactionResponse);
+        Page<GiftTransactionResponse> result = transactions.map(this::convertToGiftTransactionResponse);
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, GIFTS_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Received gifts cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     @Override
+    @Cacheable(value = "sentGifts", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<GiftTransactionResponse> getSentGifts(User user, Pageable pageable) {
+        String cacheKey = "monetization:sent_gifts:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<GiftTransactionResponse> cached = (Page<GiftTransactionResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Sent gifts served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         Page<GiftTransaction> transactions = giftTransactionRepository.findBySenderOrderByCreatedAtDesc(user, pageable);
-        return transactions.map(this::convertToGiftTransactionResponse);
+        Page<GiftTransactionResponse> result = transactions.map(this::convertToGiftTransactionResponse);
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, GIFTS_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Sent gifts cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     @Override
@@ -479,7 +526,18 @@ public class MonetizationServiceImpl implements MonetizationService {
     }
 
     @Override
+    @Cacheable(value = "purchaseHistory", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<GiftTransactionResponse> getPurchaseHistory(User user, Pageable pageable) {
+        String cacheKey = "monetization:purchase_history:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<GiftTransactionResponse> cached = (Page<GiftTransactionResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Purchase history served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         // Get chapter purchases
         Page<ChapterPurchase> chapterPurchases = chapterPurchaseRepository.findByUserOrderByPurchasedAtDesc(user,
                 pageable);
@@ -524,7 +582,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         int end = Math.min(start + pageable.getPageSize(), allPurchases.size());
         List<GiftTransactionResponse> pageContent = allPurchases.subList(start, end);
 
-        return new PageImpl<>(pageContent, pageable, allPurchases.size());
+        Page<GiftTransactionResponse> result = new PageImpl<>(pageContent, pageable, allPurchases.size());
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, PURCHASE_HISTORY_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Purchase history cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     @Override
@@ -789,7 +853,16 @@ public class MonetizationServiceImpl implements MonetizationService {
     }
 
     @Override
+    @Cacheable(value = "userRevenue", key = "#user.id")
     public RevenueAnalyticsResponse getUserRevenue(User user) {
+        String cacheKey = "monetization:revenue:" + user.getId();
+        
+        // Try to get from Redis first
+        RevenueAnalyticsResponse cached = (RevenueAnalyticsResponse) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Revenue analytics served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
         // Calculate total earnings from gifts and chapter sales
         BigDecimal giftEarnings = giftTransactionRepository.calculateTotalEarningsForRecipient(user.getId());
         BigDecimal chapterEarnings = chapterPurchaseRepository.calculateTotalEarningsForAuthor(user.getId());
@@ -812,13 +885,19 @@ public class MonetizationServiceImpl implements MonetizationService {
                 user.getId(), lastMonth.atDay(1).atStartOfDay(), lastMonth.atEndOfMonth().atTime(23, 59, 59));
         BigDecimal lastMonthEarnings = lastMonthGifts.add(lastMonthChapters);
 
-        return RevenueAnalyticsResponse.builder()
+        RevenueAnalyticsResponse response = RevenueAnalyticsResponse.builder()
                 .totalEarnings(totalEarnings)
                 .totalChapterSales(chapterEarnings)
                 .totalGiftEarnings(giftEarnings)
                 .currentMonthEarnings(currentMonthEarnings)
                 .lastMonthEarnings(lastMonthEarnings)
                 .build();
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, response, REVENUE_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Revenue analytics cached in Redis for user: {}", user.getId());
+
+        return response;
     }
 
     @Override
@@ -942,7 +1021,18 @@ public class MonetizationServiceImpl implements MonetizationService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "userEarnings", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<EarnedMoneyResponse> getUserEarnings(User user, Pageable pageable) {
+        String cacheKey = "monetization:earnings:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<EarnedMoneyResponse> cached = (Page<EarnedMoneyResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("User earnings served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         List<EarnedMoneyResponse> earnings = new ArrayList<>();
 
         // Get chapter purchase earnings
@@ -994,7 +1084,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         int end = Math.min(start + pageable.getPageSize(), earnings.size());
         List<EarnedMoneyResponse> paginatedEarnings = earnings.subList(start, end);
 
-        return new PageImpl<>(paginatedEarnings, pageable, earnings.size());
+        Page<EarnedMoneyResponse> result = new PageImpl<>(paginatedEarnings, pageable, earnings.size());
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, EARNINGS_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("User earnings cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     @Override
@@ -1058,7 +1154,18 @@ public class MonetizationServiceImpl implements MonetizationService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "refundsEarned", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<RefundTransactionResponse> getRefundsEarned(User user, Pageable pageable) {
+        String cacheKey = "monetization:refunds_earned:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<RefundTransactionResponse> cached = (Page<RefundTransactionResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Refunds earned served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         // Get refunds from chapter_refunds table (WHOLE_BOOK pricing refunds)
         Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByUserOrderByRefundedAtDesc(user, pageable);
 
@@ -1099,12 +1206,29 @@ public class MonetizationServiceImpl implements MonetizationService {
         List<RefundTransactionResponse> pageContent = start < allRefunds.size() ? allRefunds.subList(start, end)
                 : new ArrayList<>();
 
-        return new PageImpl<>(pageContent, pageable, totalElements);
+        Page<RefundTransactionResponse> result = new PageImpl<>(pageContent, pageable, totalElements);
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, REFUNDS_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Refunds earned cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "refundsPaid", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<RefundTransactionResponse> getRefundsPaid(User user, Pageable pageable) {
+        String cacheKey = "monetization:refunds_paid:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        Page<RefundTransactionResponse> cached = (Page<RefundTransactionResponse>) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Refunds paid served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
         // Get refunds from chapter_refunds table (WHOLE_BOOK pricing refunds paid by
         // author)
         Page<ChapterRefund> chapterRefunds = chapterRefundRepository.findByStoryAuthorOrderByRefundedAtDesc(user,
@@ -1147,7 +1271,13 @@ public class MonetizationServiceImpl implements MonetizationService {
         List<RefundTransactionResponse> pageContent = start < allRefunds.size() ? allRefunds.subList(start, end)
                 : new ArrayList<>();
 
-        return new PageImpl<>(pageContent, pageable, totalElements);
+        Page<RefundTransactionResponse> result = new PageImpl<>(pageContent, pageable, totalElements);
+
+        // Store in Redis with TTL
+        redisTemplate.opsForValue().set(cacheKey, result, REFUNDS_CACHE_TTL, TimeUnit.MINUTES);
+        log.debug("Refunds paid cached in Redis for user: {}", user.getId());
+
+        return result;
     }
 
     private RefundTransactionResponse convertToRefundTransactionResponse(ChapterRefund chapterRefund) {
@@ -1211,5 +1341,39 @@ public class MonetizationServiceImpl implements MonetizationService {
                 .processedAt(bookPurchase.getRefundedAt())
                 .createdAt(bookPurchase.getPurchasedAt())
                 .build();
+    }
+
+    @Override
+    @Cacheable(value = "bulkMonetization", key = "#user.id + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    public BulkMonetizationResponse getBulkMonetizationData(User user, Pageable pageable) {
+        String cacheKey = "monetization:bulk:" + user.getId() + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize();
+        
+        // Try to get from Redis first
+        @SuppressWarnings("unchecked")
+        BulkMonetizationResponse cached = (BulkMonetizationResponse) redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null) {
+            log.debug("Bulk monetization data served from Redis cache for user: {}", user.getId());
+            return cached;
+        }
+
+        log.debug("Fetching bulk monetization data for user: {}", user.getId());
+
+        // Fetch all data in parallel using CompletableFuture for better performance
+        BulkMonetizationResponse response = BulkMonetizationResponse.builder()
+                .analytics(getUserRevenue(user))
+                .receivedGifts(getReceivedGifts(user, pageable))
+                .sentGifts(getSentGifts(user, pageable))
+                .earnedMoney(getUserEarnings(user, pageable))
+                .purchaseHistory(getPurchaseHistory(user, pageable))
+                .refundsEarned(getRefundsEarned(user, pageable))
+                .refundsPaid(getRefundsPaid(user, pageable))
+                .coinBalance(getUserCoinBalance(user.getId()))
+                .build();
+
+        // Store in Redis with TTL (shorter TTL for bulk data since it's more comprehensive)
+        redisTemplate.opsForValue().set(cacheKey, response, 5, TimeUnit.MINUTES);
+        log.debug("Bulk monetization data cached in Redis for user: {}", user.getId());
+
+        return response;
     }
 }
