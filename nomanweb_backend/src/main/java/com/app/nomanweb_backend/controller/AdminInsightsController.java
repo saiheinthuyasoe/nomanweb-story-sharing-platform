@@ -108,4 +108,22 @@ public class AdminInsightsController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PostMapping("/clear-cache")
+    public ResponseEntity<Map<String, String>> clearCache() {
+        try {
+            log.info("Clearing insights cache");
+            cachedInsightsService.evictDashboardCache();
+            cachedInsightsService.evictAllPublishedBooksCache();
+            
+            Map<String, String> response = Map.of(
+                "message", "Cache cleared successfully",
+                "status", "success"
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error clearing cache", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

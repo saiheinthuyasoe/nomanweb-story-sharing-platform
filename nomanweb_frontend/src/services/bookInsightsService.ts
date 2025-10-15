@@ -28,6 +28,7 @@ interface BookInsightsData {
   newReleases: BookInsight[];
   mostShared: BookInsight[];
   byGenre: Record<string, BookInsight[]>;
+  allBooks: BookInsight[];
 }
 
 interface SuggestionCriteria {
@@ -221,6 +222,7 @@ class BookInsightsService {
         newReleases: dashboardData.newReleases || [],
         mostShared: dashboardData.mostShared || [], 
         byGenre: dashboardData.byGenre || {},
+        allBooks: dashboardData.allBooks || [],
       };
     } catch (error) {
       console.error("Error fetching book insights dashboard:", error);
@@ -228,28 +230,51 @@ class BookInsightsService {
       console.warn("Falling back to individual API calls...");
       try {
         const [topRated, mostReadWeekly, newReleases] = await Promise.all([
-          this.getTopRatedBooks(10),
-          this.getMostReadWeekly(10),
-          this.getNewReleases(10),
+          this.getTopRatedBooks(50),
+          this.getMostReadWeekly(50),
+          this.getNewReleases(50),
         ]);
+
+        const byGenre = {
+          fantasy: await this.getBooksByGenre("fantasy", 20),
+          romance: await this.getBooksByGenre("romance", 20),
+          mystery: await this.getBooksByGenre("mystery", 20),
+          "sci-fi": await this.getBooksByGenre("sci-fi", 20),
+          adventure: await this.getBooksByGenre("adventure", 20),
+          thriller: await this.getBooksByGenre("thriller", 20),
+          horror: await this.getBooksByGenre("horror", 20),
+          comedy: await this.getBooksByGenre("comedy", 20),
+          drama: await this.getBooksByGenre("drama", 20),
+          "young-adult": await this.getBooksByGenre("young-adult", 20),
+        };
+
+        // Create allBooks by combining all unique books
+        const allBooksSet = new Set();
+        const allBooks: BookInsight[] = [];
+        
+        // Add books from main categories
+        [...topRated, ...mostReadWeekly, ...newReleases].forEach(book => {
+          if (!allBooksSet.has(book.id)) {
+            allBooksSet.add(book.id);
+            allBooks.push(book);
+          }
+        });
+        
+        // Add books from genre categories
+        Object.values(byGenre).flat().forEach(book => {
+          if (!allBooksSet.has(book.id)) {
+            allBooksSet.add(book.id);
+            allBooks.push(book);
+          }
+        });
 
         return {
           topRated,
           mostReadWeekly,
           newReleases,
           mostShared: [],
-          byGenre: {
-            fantasy: await this.getBooksByGenre("fantasy", 5),
-            romance: await this.getBooksByGenre("romance", 5),
-            mystery: await this.getBooksByGenre("mystery", 5),
-            "sci-fi": await this.getBooksByGenre("sci-fi", 5),
-            adventure: await this.getBooksByGenre("adventure", 5),
-            thriller: await this.getBooksByGenre("thriller", 5),
-            horror: await this.getBooksByGenre("horror", 5),
-            comedy: await this.getBooksByGenre("comedy", 5),
-            drama: await this.getBooksByGenre("drama", 5),
-            "young-adult": await this.getBooksByGenre("young-adult", 5),
-          },
+          byGenre,
+          allBooks,
         };
       } catch (fallbackError) {
         console.error("Fallback also failed:", fallbackError);

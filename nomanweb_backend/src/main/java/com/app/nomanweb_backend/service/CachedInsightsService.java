@@ -7,6 +7,7 @@ import com.app.nomanweb_backend.repository.StoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -14,9 +15,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -220,6 +224,33 @@ public class CachedInsightsService {
         }
     }
 
+    // Get all published books for admin insights
+    @Cacheable(value = "admin_insights_all_published", key = "'all_published'")
+    public List<Map<String, Object>> getAllPublishedBooksCached() {
+        log.info("Fetching all published books from database");
+        
+        try {
+            // Fetch all published books (no limit)
+            Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("createdAt").descending());
+            List<Story> stories = storyRepository.findByPublishStatusOrderByCreatedAtDesc(
+                Story.PublishStatus.PUBLISHED, pageable).getContent();
+            
+            List<Map<String, Object>> insights = stories.stream()
+                .map(this::convertToBookInsight)
+                .collect(Collectors.toList());
+            
+            // Store in Redis with TTL
+            String cacheKey = "admin:insights:all_published";
+            redisTemplate.opsForValue().set(cacheKey, insights, 60, TimeUnit.MINUTES);
+            
+            log.info("Cached {} published books for 60 minutes", insights.size());
+            return insights;
+        } catch (Exception e) {
+            log.error("Error fetching all published books", e);
+            throw e;
+        }
+    }
+
     // Comprehensive dashboard data with caching
     @Cacheable(value = "admin_insights_dashboard", key = "'dashboard_data'")
     public Map<String, Object> getInsightsDashboardCached() {
@@ -228,24 +259,28 @@ public class CachedInsightsService {
         try {
             Map<String, Object> dashboardData = new HashMap<>();
             
-            // Fetch all main categories with smaller limits for dashboard overview
-            dashboardData.put("topRated", getTopRatedBooksCached(10));
-            dashboardData.put("mostReadWeekly", getMostReadWeeklyCached(10));
-            dashboardData.put("newReleases", getNewReleasesCached(10));
+            // Fetch all main categories with increased limits for better filtering
+            dashboardData.put("topRated", getTopRatedBooksCached(50));
+            dashboardData.put("mostReadWeekly", getMostReadWeeklyCached(50));
+            dashboardData.put("newReleases", getNewReleasesCached(50));
             
-            // Fetch books by genre (smaller limits for overview)
+            // Fetch books by genre (increased limits for better filtering)
             Map<String, Object> byGenre = new HashMap<>();
             String[] genres = {"fantasy", "romance", "mystery", "sci-fi", "adventure", "thriller", "horror", "comedy", "drama", "young-adult"};
             
             for (String genre : genres) {
-                byGenre.put(genre, getBooksByGenreCached(genre, 5));
+                byGenre.put(genre, getBooksByGenreCached(genre, 20));
             }
             dashboardData.put("byGenre", byGenre);
+            
+            // Add allBooks property - fetch all published books directly
+            List<Map<String, Object>> allBooksList = getAllPublishedBooksCached();
+            dashboardData.put("allBooks", allBooksList);
             
             // Store complete dashboard in Redis with TTL
             redisTemplate.opsForValue().set("admin:insights:dashboard", dashboardData, 20, TimeUnit.MINUTES);
             
-            log.info("Cached complete insights dashboard for 20 minutes");
+            log.info("Cached complete insights dashboard with {} total books for 20 minutes", allBooksList.size());
             return dashboardData;
         } catch (Exception e) {
             log.error("Error fetching insights dashboard", e);
@@ -324,5 +359,19 @@ public class CachedInsightsService {
         insight.put("trendingScore", 0);
         
         return insight;
+    }
+
+    // Cache eviction methods
+    @CacheEvict(value = "admin_insights_dashboard", key = "'dashboard_data'")
+    public void evictDashboardCache() {
+        log.info("Evicting dashboard cache to force refresh with updated data");
+        // Also clear Redis cache manually
+        redisTemplate.delete("admin:insights:dashboard");
+    }
+
+    @CacheEvict(value = "admin_insights_all_published", key = "'all_published'")
+    public void evictAllPublishedBooksCache() {
+        log.info("Evicting all published books cache");
+        redisTemplate.delete("admin:insights:all_published");
     }
 }
